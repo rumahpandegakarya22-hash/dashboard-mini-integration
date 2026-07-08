@@ -33,7 +33,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
         <h1>{mod.icon} {mod.title}</h1>
       </div>
       {mod.ready && mod.fields ? (
-        <DynamicForm moduleId={mod.id} fields={mod.fields} />
+        <DynamicForm moduleId={mod.id} fields={mod.fields} hasPreview={mod.hasPreview} />
       ) : (
         <div className="card">
           <p className="muted">Form modul ini segera hadir.</p>

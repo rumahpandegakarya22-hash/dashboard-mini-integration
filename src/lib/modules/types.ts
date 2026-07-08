@@ -21,6 +21,8 @@ export interface FieldDef {
   helpText?: string;
   dependsOn?: string; // type=select-async: nama field lain yg mengontrol filter (mis. "tipeAkun")
   filterBy?: string; // properti objek master dicocokkan dgn nilai field dependsOn (mis. "tipe")
+  showIf?: { field: string; equals: string | string[] }; // tampilkan field ini hanya jika field lain bernilai tertentu
+  // (mis. { field: 'jenisPembayaran', equals: 'Sewa' }). Field yg disembunyikan tidak divalidasi/dikirim.
 }
 
 export interface SubmitContext {
@@ -37,3 +39,15 @@ export interface SubmitResult {
 
 /** Kontrak handler submit per modul. Implementasi konkret ditambahkan modul-per-modul (Tahap 3-5). */
 export type SubmitHandler = (values: Record<string, unknown>, ctx: SubmitContext) => Promise<SubmitResult>;
+
+/**
+ * Hasil preview: hitung nilai (mis. invoice) TANPA menulis apa pun & TANPA efek samping.
+ * `fields` = daftar {label, value} yang ditampilkan ke user sebelum dia konfirmasi kirim.
+ */
+export interface PreviewResult {
+  fields: { label: string; value: string }[];
+  raw: Record<string, unknown>; // nilai mentah, dikirim balik ke handler submit saat konfirmasi (hindari hitung ulang/rebeda)
+}
+
+/** Kontrak handler preview — dipanggil sebelum submit sungguhan untuk modul dgn hasPreview:true. */
+export type PreviewHandler = (values: Record<string, unknown>, ctx: SubmitContext) => Promise<PreviewResult>;

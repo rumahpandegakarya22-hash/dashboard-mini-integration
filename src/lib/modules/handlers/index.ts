@@ -1,7 +1,8 @@
-import type { SubmitHandler } from '../types';
+import type { SubmitHandler, PreviewHandler } from '../types';
 import { submitPenghuniBaru } from './penghuni-baru';
 import { submitPengeluaran } from './pengeluaran';
 import { submitPembayaranSewa } from './pembayaran-sewa';
+import { previewPembayaranSewa } from './pembayaran-sewa-preview';
 import { submitSurvey } from './survey';
 import { submitPerawatanPreventif } from './perawatan-preventif';
 import { submitPerbaikanKorektif } from './perbaikan-korektif';
@@ -38,4 +39,9 @@ export const HANDLERS: Record<string, SubmitHandler> = {
   leads: submitLeads,
   konten: submitKonten,
   promosi: submitPromosi
+};
+
+/** Handler preview (hitung tanpa efek samping) — cuma modul dgn ModuleMeta.hasPreview:true perlu entry di sini. */
+export const PREVIEW_HANDLERS: Record<string, PreviewHandler> = {
+  'pembayaran-sewa': previewPembayaranSewa
 };

@@ -246,6 +246,114 @@ async function getGenericSettingOptions(type: string): Promise<{ id: string; lab
   return list.map((v) => ({ id: v, label: v }));
 }
 
+export interface InvoiceSewaPenghuni {
+  noKamar: string;
+  nama: string;
+  email: string;
+  tipe: string;
+}
+
+export interface InvoiceSewaMaster {
+  penghuni: InvoiceSewaPenghuni[];
+  durasiOptions: number[];
+  harga: Record<string, Record<number, number>>; // harga[tipe][durasiBulan] = Rp/bulan
+}
+
+/**
+ * Master Invoice Generator SEWA (spreadsheet INVOICE_SEWA, sheet "Data") — dibaca POSISI kolom, BUKAN
+ * header, karena Apps Script sumbernya (getFormData) juga baca posisi tetap: A=NoKamar B=Nama C=Email
+ * D=Tipe (mulai baris 2), dan tabel harga F2:K5 (baris2=header durasi G:K, baris3-5=tipe+harga).
+ * Dipakai buat preview invoice — HARUS baca dari sini (bukan Room master Log Sales) supaya angka preview
+ * sama persis dgn yang bakal di-generate Apps Script.
+ */
+async function fetchInvoiceSewaMasterUncached(): Promise<InvoiceSewaMaster> {
+  const rows = await readRange(SHEETS.INVOICE_SEWA, "'Data'!A2:D300");
+  const penghuni: InvoiceSewaPenghuni[] = rows
+    .filter((r) => String(r[1] ?? '').trim() !== '')
+    .map((r) => ({
+      noKamar: String(r[0] ?? '').trim(),
+      nama: String(r[1] ?? '').trim(),
+      email: String(r[2] ?? '').trim(),
+      tipe: String(r[3] ?? '').trim()
+    }));
+
+  const block = await readRange(SHEETS.INVOICE_SEWA, "'Data'!F2:K5");
+  const durasiRow = block[0] || [];
+  const durasiOptions = durasiRow
+    .slice(1)
+    .map((v) => Number(v))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  const harga: Record<string, Record<number, number>> = {};
+  for (let i = 1; i < block.length; i++) {
+    const tipe = String(block[i][0] ?? '').trim();
+    if (!tipe) continue;
+    harga[tipe] = {};
+    durasiOptions.forEach((d, j) => {
+      harga[tipe][d] = parseNum(block[i][j + 1]);
+    });
+  }
+  return { penghuni, durasiOptions, harga };
+}
+
+export async function getInvoiceSewaMaster(): Promise<InvoiceSewaMaster> {
+  return cached('invoice-sewa', fetchInvoiceSewaMasterUncached);
+}
+
+/** Listrik/bulan per No Kamar — sumber sama dgn getActiveTenants (DATABASE_PENGHUNI/DATA), kolom "Listrik". */
+async function fetchListrikByKamarUncached(): Promise<Record<string, number>> {
+  const rows = await readTable(SHEETS.DATABASE_PENGHUNI, "'DATA'!A:Z");
+  if (rows.length === 0) return {};
+  const headers = Object.keys(rows[0]);
+  const hKamar = findHeaderOptional(headers, 'No Kamar', 'no. kamar', 'kamar');
+  const hListrik = findHeaderOptional(headers, 'Listrik');
+  const map: Record<string, number> = {};
+  if (!hKamar || !hListrik) return map;
+  for (const r of rows) {
+    const kamar = String(r[hKamar] ?? '').trim();
+    if (!kamar) continue;
+    map[kamar] = parseNum(r[hListrik]);
+  }
+  return map;
+}
+
+export async function getListrikByKamar(): Promise<Record<string, number>> {
+  return cached('listrik-by-kamar', fetchListrikByKamarUncached);
+}
+
+export interface InvoiceDpPenghuni {
+  noKamar: string;
+  nama: string;
+  email: string;
+  tipe: string;
+  hargaKamar: number;
+}
+
+/** Master Invoice Generator DP (spreadsheet INVOICE_DP, sheet "Sheet1") — header baris 1 (beda dgn Sewa). */
+async function fetchInvoiceDpMasterUncached(): Promise<InvoiceDpPenghuni[]> {
+  const rows = await readTable(SHEETS.INVOICE_DP, "'Sheet1'!A:Z");
+  if (rows.length === 0) return [];
+  const headers = Object.keys(rows[0]);
+  const hNama = findHeaderOptional(headers, 'Nama');
+  const hEmail = findHeaderOptional(headers, 'Email');
+  const hKamar = findHeaderOptional(headers, 'No Kamar', 'kamar');
+  const hTipe = findHeaderOptional(headers, 'Tipe Kamar', 'tipe');
+  const hHarga = findHeaderOptional(headers, 'Harga Kamar', 'harga');
+  if (!hNama || !hKamar) return [];
+  return rows
+    .filter((r) => String(r[hNama!] ?? '').trim() !== '')
+    .map((r) => ({
+      noKamar: String(r[hKamar!] ?? '').trim(),
+      nama: String(r[hNama!] ?? '').trim(),
+      email: hEmail ? String(r[hEmail] ?? '').trim() : '',
+      tipe: hTipe ? String(r[hTipe] ?? '').trim() : '',
+      hargaKamar: hHarga ? parseNum(r[hHarga]) : 0
+    }));
+}
+
+export async function getInvoiceDpMaster(): Promise<InvoiceDpPenghuni[]> {
+  return cached('invoice-dp', fetchInvoiceDpMasterUncached);
+}
+
 /** Dispatcher dipakai API /api/master/[type]. */
 export async function getMasterData(type: string): Promise<unknown> {
   if (type.startsWith('setting:')) return getGenericSettingOptions(type);
@@ -264,6 +372,10 @@ export async function getMasterData(type: string): Promise<unknown> {
       return getStatusBookingOptions();
     case 'sumber-leads':
       return getSumberLeadsOptions();
+    case 'invoice-sewa-durasi': {
+      const { durasiOptions } = await getInvoiceSewaMaster();
+      return durasiOptions.map((d) => ({ id: String(d), label: `${d} bulan` }));
+    }
     default:
       throw new Error(`Tipe master data tidak dikenal: "${type}".`);
   }

@@ -9,6 +9,7 @@ export interface ModuleMeta {
   icon: string;
   ready: boolean; // false = form belum di-build, menu menampilkan "segera"
   fields?: FieldDef[]; // diisi saat modul di-build; handler submit terkait ada di modules/handlers/
+  hasPreview?: boolean; // true = sebelum submit, tampilkan preview (hitung via /api/preview/[id]) + minta konfirmasi
 }
 
 export const MODULES: ModuleMeta[] = [
@@ -62,10 +63,11 @@ export const MODULES: ModuleMeta[] = [
     title: 'Pembayaran Sewa',
     icon: '💳',
     ready: true,
+    hasPreview: true,
     fields: [
       {
         name: 'penghuni',
-        label: 'Penghuni',
+        label: 'Nama Penghuni',
         type: 'select-async',
         required: true,
         master: 'tenants',
@@ -82,22 +84,46 @@ export const MODULES: ModuleMeta[] = [
           { value: 'Sewa', label: 'Sewa' }
         ]
       },
-      { name: 'tanggalBayar', label: 'Tanggal Bayar', type: 'date', required: true, defaultToday: true },
-      { name: 'nominal', label: 'Nominal', type: 'number', required: true },
+      { name: 'tanggalBayar', label: 'Tanggal Pembayaran', type: 'date', required: true, defaultToday: true },
+      // --- Field khusus Sewa (samakan persis dgn Invoice Generator "Sewa") ---
       {
         name: 'jumlahBulan',
-        label: 'Jumlah Bulan',
-        type: 'select',
+        label: 'Lama Sewa',
+        type: 'select-async',
         required: true,
-        options: [
-          { value: '1', label: '1 bulan' },
-          { value: '2', label: '2 bulan' },
-          { value: '3', label: '3 bulan' },
-          { value: '6', label: '6 bulan' },
-          { value: '9', label: '9 bulan' },
-          { value: '12', label: '12 bulan' }
-        ]
+        showIf: { field: 'jenisPembayaran', equals: 'Sewa' },
+        master: 'invoice-sewa-durasi',
+        masterValue: 'id',
+        masterLabel: 'label',
+        helpText: 'Opsi durasi diambil langsung dari tabel harga Invoice Generator Sewa.'
       },
+      {
+        name: 'periodeAwalSewa',
+        label: 'Periode Awal Sewa',
+        type: 'date',
+        required: true,
+        showIf: { field: 'jenisPembayaran', equals: 'Sewa' }
+      },
+      {
+        name: 'biayaDendaPerUnit',
+        label: 'Biaya Denda / unit',
+        type: 'number',
+        required: false,
+        showIf: { field: 'jenisPembayaran', equals: 'Sewa' },
+        helpText: 'Kosongkan/0 jika tidak ada denda.'
+      },
+      {
+        name: 'jumlahDenda',
+        label: 'Jumlah Denda',
+        type: 'number',
+        required: false,
+        showIf: { field: 'jenisPembayaran', equals: 'Sewa' }
+      },
+      // --- Field Pajak/Diskon: dipakai baik Sewa maupun DP (sama di kedua Invoice Generator) ---
+      { name: 'pajak', label: 'Pajak (Rp)', type: 'number', required: false, helpText: 'Kosongkan/0 jika tidak ada pajak.' },
+      { name: 'diskon', label: 'Diskon (Rp)', type: 'number', required: false, helpText: 'Kosongkan/0 jika tidak ada diskon.' },
+      // --- Field internal mini app (bukan bagian Invoice Generator) — buat pencatatan ledger ---
+      { name: 'nominal', label: 'Nominal', type: 'number', required: true, helpText: 'Nominal yang dicatat di Log Input Transaksi.' },
       {
         name: 'akunKasBank',
         label: 'Akun Kas/Bank Tujuan',

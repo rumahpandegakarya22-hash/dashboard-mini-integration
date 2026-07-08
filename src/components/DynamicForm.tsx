@@ -1,16 +1,17 @@
 'use client';
 
 import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react';
-import type { FieldDef, FieldOption } from '@/lib/modules/types';
+import type { FieldDef, FieldOption, PreviewResult } from '@/lib/modules/types';
 
 interface Props {
   moduleId: string;
   fields: FieldDef[];
+  hasPreview?: boolean;
 }
 
 type ChangeEl = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
 
-export default function DynamicForm({ moduleId, fields }: Props) {
+export default function DynamicForm({ moduleId, fields, hasPreview }: Props) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [options, setOptions] = useState<Record<string, FieldOption[]>>({});
   const [masterRaw, setMasterRaw] = useState<Record<string, Record<string, unknown>[]>>({});
@@ -18,7 +19,15 @@ export default function DynamicForm({ moduleId, fields }: Props) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [warning, setWarning] = useState('');
+  const [previewData, setPreviewData] = useState<PreviewResult | null>(null);
   const draftKey = `draft:${moduleId}`;
+
+  function visibleValuesNow(): Record<string, string> {
+    const visibleFields = fields.filter((f) => isVisible(f, values));
+    const out: Record<string, string> = {};
+    for (const f of visibleFields) out[f.name] = values[f.name] ?? '';
+    return out;
+  }
 
   // Muat draft tersimpan (koneksi lapangan buruk → data tidak hilang, PRD §10) + default tanggal hari ini.
   useEffect(() => {
@@ -62,6 +71,11 @@ export default function DynamicForm({ moduleId, fields }: Props) {
     for (const f of fields) {
       if (f.dependsOn === name) next[f.name] = '';
     }
+    // Reset field yang showIf-nya bergantung ke field ini dan jadi tidak terlihat lagi, biar tidak
+    // menyisakan nilai lama dari field yang sudah disembunyikan (mis. ganti Jenis Pembayaran Sewa→DP).
+    for (const f of fields) {
+      if (f.showIf?.field === name && !isVisible(f, next)) next[f.name] = '';
+    }
     setValues(next);
     localStorage.setItem(draftKey, JSON.stringify(next));
   }
@@ -79,10 +93,28 @@ export default function DynamicForm({ moduleId, fields }: Props) {
     return filtered.map((item) => ({ value: String(item[vKey]), label: String(item[lKey]) }));
   }
 
+  async function doSubmit() {
+    const requestId =
+      typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    const res = await fetch(`/api/submit/${moduleId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestId, values: visibleValuesNow() })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Gagal menyimpan data.');
+    localStorage.removeItem(draftKey);
+    setValues({});
+    setPreviewData(null);
+    setWarning(json.warning || '');
+    setSuccess(true);
+  }
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
-    for (const f of fields) {
+    const visibleFields = fields.filter((f) => isVisible(f, values));
+    for (const f of visibleFields) {
       if (f.required && !String(values[f.name] ?? '').trim()) {
         setError(`${f.label} wajib diisi.`);
         return;
@@ -90,19 +122,32 @@ export default function DynamicForm({ moduleId, fields }: Props) {
     }
     setLoading(true);
     try {
-      const requestId =
-        typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-      const res = await fetch(`/api/submit/${moduleId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId, values })
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Gagal menyimpan data.');
-      localStorage.removeItem(draftKey);
-      setValues({});
-      setWarning(json.warning || '');
-      setSuccess(true);
+      if (hasPreview) {
+        // Modul ini minta konfirmasi dulu — hitung preview (tanpa efek samping), submit sungguhan
+        // baru terjadi setelah user klik "Konfirmasi & Kirim" di layar preview.
+        const res = await fetch(`/api/preview/${moduleId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: visibleValuesNow() })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Gagal menghitung preview.');
+        setPreviewData({ fields: json.fields, raw: json.raw });
+      } else {
+        await doSubmit();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Gagal memproses.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onConfirmSend() {
+    setError('');
+    setLoading(true);
+    try {
+      await doSubmit();
     } catch (err: any) {
       setError(err.message || 'Gagal menyimpan data.');
     } finally {
@@ -122,9 +167,36 @@ export default function DynamicForm({ moduleId, fields }: Props) {
     );
   }
 
+  if (previewData) {
+    return (
+      <div className="card">
+        <h2>Preview Invoice</h2>
+        <table className="preview-table">
+          <tbody>
+            {previewData.fields.map((f) => (
+              <tr key={f.label}>
+                <td className="muted">{f.label}</td>
+                <td>
+                  <strong>{f.value}</strong>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {error && <div className="error">{error}</div>}
+        <button type="button" onClick={() => setPreviewData(null)} disabled={loading}>
+          Kembali
+        </button>{' '}
+        <button type="button" onClick={onConfirmSend} disabled={loading}>
+          {loading ? 'Mengirim...' : 'Konfirmasi & Kirim'}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <form className="card" onSubmit={onSubmit}>
-      {fields.map((f) => (
+      {fields.filter((f) => isVisible(f, values)).map((f) => (
         <div key={f.name}>
           <label htmlFor={f.name}>
             {f.label}
@@ -136,10 +208,17 @@ export default function DynamicForm({ moduleId, fields }: Props) {
       ))}
       {error && <div className="error">{error}</div>}
       <button type="submit" disabled={loading}>
-        {loading ? 'Menyimpan...' : 'Simpan'}
+        {loading ? (hasPreview ? 'Menghitung...' : 'Menyimpan...') : hasPreview ? 'Preview' : 'Simpan'}
       </button>
     </form>
   );
+}
+
+function isVisible(f: FieldDef, values: Record<string, string>): boolean {
+  if (!f.showIf) return true;
+  const val = values[f.showIf.field] ?? '';
+  const target = f.showIf.equals;
+  return Array.isArray(target) ? target.includes(val) : val === target;
 }
 
 function renderField(f: FieldDef, value: string, onChange: (v: string) => void, asyncOptions?: FieldOption[]) {
