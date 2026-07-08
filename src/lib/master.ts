@@ -320,6 +320,31 @@ export async function getListrikByKamar(): Promise<Record<string, number>> {
   return cached('listrik-by-kamar', fetchListrikByKamarUncached);
 }
 
+/**
+ * Tanggal Masuk per No Kamar — sumber sama dgn Listrik (DATABASE_PENGHUNI/DATA). Kolom OPSIONAL:
+ * kalau sheet belum punya kolom ini, kembalikan map kosong — caller (checkout-lookup) HARUS
+ * fallback ke instruksi manual, jangan pernah menebak tanggal.
+ */
+async function fetchTanggalMasukByKamarUncached(): Promise<Record<string, string>> {
+  const rows = await readTable(SHEETS.DATABASE_PENGHUNI, "'DATA'!A:Z");
+  if (rows.length === 0) return {};
+  const headers = Object.keys(rows[0]);
+  const hKamar = findHeaderOptional(headers, 'No Kamar', 'no. kamar', 'kamar');
+  const hMasuk = findHeaderOptional(headers, 'Tanggal Masuk', 'tgl masuk');
+  const map: Record<string, string> = {};
+  if (!hKamar || !hMasuk) return map;
+  for (const r of rows) {
+    const kamar = String(r[hKamar] ?? '').trim();
+    if (!kamar) continue;
+    map[kamar] = String(r[hMasuk] ?? '').trim();
+  }
+  return map;
+}
+
+export async function getTanggalMasukByKamar(): Promise<Record<string, string>> {
+  return cached('tanggal-masuk-by-kamar', fetchTanggalMasukByKamarUncached);
+}
+
 export interface InvoiceDpPenghuni {
   noKamar: string;
   nama: string;

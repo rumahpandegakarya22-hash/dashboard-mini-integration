@@ -7,11 +7,12 @@ interface Props {
   moduleId: string;
   fields: FieldDef[];
   hasPreview?: boolean;
+  autoFillTrigger?: string[];
 }
 
 type ChangeEl = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
 
-export default function DynamicForm({ moduleId, fields, hasPreview }: Props) {
+export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrigger }: Props) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [options, setOptions] = useState<Record<string, FieldOption[]>>({});
   const [masterRaw, setMasterRaw] = useState<Record<string, Record<string, unknown>[]>>({});
@@ -20,6 +21,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview }: Props) {
   const [success, setSuccess] = useState(false);
   const [warning, setWarning] = useState('');
   const [previewData, setPreviewData] = useState<PreviewResult | null>(null);
+  const [autoFillNote, setAutoFillNote] = useState('');
   const draftKey = `draft:${moduleId}`;
 
   function visibleValuesNow(): Record<string, string> {
@@ -64,6 +66,38 @@ export default function DynamicForm({ moduleId, fields, hasPreview }: Props) {
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId]);
+
+  // Auto-fill: kalau modul ini punya autoFillTrigger dan semua field pemicu sudah terisi, hitung
+  // field lain otomatis (mis. Tgl Masuk/Tunggakan di Checkout begitu Penghuni & Tanggal dipilih).
+  const autoFillKey = (autoFillTrigger || []).map((name) => values[name] ?? '').join('');
+  useEffect(() => {
+    if (!autoFillTrigger || autoFillTrigger.length === 0) return;
+    if (autoFillTrigger.some((name) => !String(values[name] ?? '').trim())) {
+      setAutoFillNote('');
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/autofill/${moduleId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: visibleValuesNow() })
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        if (cancelled || !res.ok) return;
+        setValues((prev) => {
+          const next = { ...prev, ...res.fields };
+          localStorage.setItem(draftKey, JSON.stringify(next));
+          return next;
+        });
+        setAutoFillNote(res.note || '');
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFillKey]);
 
   function update(name: string, val: string) {
     const next = { ...values, [name]: val };
@@ -206,6 +240,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview }: Props) {
           {f.helpText && <div className="muted">{f.helpText}</div>}
         </div>
       ))}
+      {autoFillNote && <div className="warn">{autoFillNote}</div>}
       {error && <div className="error">{error}</div>}
       <button type="submit" disabled={loading}>
         {loading ? (hasPreview ? 'Menghitung...' : 'Menyimpan...') : hasPreview ? 'Preview' : 'Simpan'}
@@ -240,11 +275,27 @@ function renderField(f: FieldDef, value: string, onChange: (v: string) => void, 
       return <input id={f.name} name={f.name} type="file" onChange={(e) => onChange(e.target.files?.[0]?.name || '')} />;
     case 'select':
     case 'select-async': {
-      const opts = f.type === 'select' ? f.options || [] : asyncOptions || [];
-      const waitingOnDependency = f.type === 'select-async' && !!f.dependsOn && opts.length === 0;
+      const isAsync = f.type === 'select-async';
+      const opts = isAsync ? asyncOptions || [] : f.options || [];
+      const waitingOnDependency = isAsync && !!f.dependsOn && (asyncOptions || []).length === 0;
+      const stillLoading = isAsync && !f.dependsOn && asyncOptions === undefined;
+      const noDataAvailable = isAsync && !f.dependsOn && Array.isArray(asyncOptions) && asyncOptions.length === 0;
+      const placeholder = stillLoading
+        ? 'Memuat...'
+        : waitingOnDependency
+          ? 'Pilih di atas dulu...'
+          : noDataAvailable
+            ? 'Tidak ada pilihan tersedia'
+            : 'Pilih...';
       return (
-        <select id={f.name} name={f.name} value={value} onChange={onInputChange} disabled={waitingOnDependency}>
-          <option value="">{waitingOnDependency ? 'Pilih di atas dulu...' : 'Pilih...'}</option>
+        <select
+          id={f.name}
+          name={f.name}
+          value={value}
+          onChange={onInputChange}
+          disabled={waitingOnDependency || stillLoading || noDataAvailable}
+        >
+          <option value="">{placeholder}</option>
           {opts.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}

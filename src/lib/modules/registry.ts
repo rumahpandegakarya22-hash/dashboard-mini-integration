@@ -10,6 +10,7 @@ export interface ModuleMeta {
   ready: boolean; // false = form belum di-build, menu menampilkan "segera"
   fields?: FieldDef[]; // diisi saat modul di-build; handler submit terkait ada di modules/handlers/
   hasPreview?: boolean; // true = sebelum submit, tampilkan preview (hitung via /api/preview/[id]) + minta konfirmasi
+  autoFillTrigger?: string[]; // field yg saat berubah & terisi semua, memicu POST /api/autofill/[id] utk isi field lain otomatis
 }
 
 export const MODULES: ModuleMeta[] = [
@@ -123,7 +124,8 @@ export const MODULES: ModuleMeta[] = [
       { name: 'pajak', label: 'Pajak (Rp)', type: 'number', required: false, helpText: 'Kosongkan/0 jika tidak ada pajak.' },
       { name: 'diskon', label: 'Diskon (Rp)', type: 'number', required: false, helpText: 'Kosongkan/0 jika tidak ada diskon.' },
       // --- Field internal mini app (bukan bagian Invoice Generator) — buat pencatatan ledger ---
-      { name: 'nominal', label: 'Nominal', type: 'number', required: true, helpText: 'Nominal yang dicatat di Log Input Transaksi.' },
+      // Nominal TIDAK lagi input manual — otomatis = Grand Total hasil preview (kriteria harga sheet
+      // Invoice Generator), lihat previewPembayaranSewa & submitPembayaranSewa.
       {
         name: 'akunKasBank',
         label: 'Akun Kas/Bank Tujuan',
@@ -171,6 +173,7 @@ export const MODULES: ModuleMeta[] = [
     title: 'Checkout',
     icon: '🚪',
     ready: true,
+    autoFillTrigger: ['penghuni', 'tanggalCheckout'],
     fields: [
       { name: 'tanggalCheckout', label: 'Tanggal Checkout', type: 'date', required: true, defaultToday: true },
       {
@@ -180,9 +183,16 @@ export const MODULES: ModuleMeta[] = [
         required: true,
         master: 'tenants',
         masterValue: 'label',
-        masterLabel: 'label'
+        masterLabel: 'label',
+        helpText: 'Tgl Masuk & Tunggakan di bawah terisi otomatis begitu Penghuni dipilih — cek ulang sebelum kirim.'
       },
-      { name: 'tglMasuk', label: 'Tgl Masuk (penghuni ini)', type: 'date', required: false },
+      {
+        name: 'tglMasuk',
+        label: 'Tgl Masuk (penghuni ini)',
+        type: 'date',
+        required: false,
+        helpText: 'Otomatis dari Database Penghuni kalau tersedia. Kosong = belum ada datanya, isi manual.'
+      },
       {
         name: 'adaTunggakan',
         label: 'Tunggakan?',
@@ -191,7 +201,8 @@ export const MODULES: ModuleMeta[] = [
         options: [
           { value: 'Tidak', label: 'Tidak' },
           { value: 'Ya', label: 'Ya' }
-        ]
+        ],
+        helpText: 'Otomatis dari riwayat pembayaran (Input Sewa Dimuka) vs Tanggal Checkout. Sesuaikan manual kalau perlu.'
       },
       { name: 'nominalTunggakan', label: 'Nominal Tunggakan (jika Ya)', type: 'number', required: false },
       { name: 'pengembalianDeposit', label: 'Pengembalian Deposit (Rp)', type: 'number', required: false },
@@ -284,10 +295,11 @@ export const MODULES: ModuleMeta[] = [
       {
         name: 'sumber',
         label: 'Sumber',
-        type: 'text',
+        type: 'select-async',
         required: true,
-        placeholder: 'KTD-x — Nama, atau "Lainnya"',
-        helpText: 'Isi format "KTD-x — Nama" jika dari penghuni, atau "Lainnya" jika bukan.'
+        master: 'tenants',
+        masterValue: 'label',
+        masterLabel: 'label'
       },
       {
         name: 'kategoriFeedback',

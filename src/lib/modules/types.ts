@@ -51,3 +51,17 @@ export interface PreviewResult {
 
 /** Kontrak handler preview — dipanggil sebelum submit sungguhan untuk modul dgn hasPreview:true. */
 export type PreviewHandler = (values: Record<string, unknown>, ctx: SubmitContext) => Promise<PreviewResult>;
+
+/**
+ * Hasil auto-fill: field yg dihitung/diambil otomatis (mis. Tgl Masuk, Tunggakan) berdasarkan
+ * field lain yg sudah diisi (mis. Penghuni). `fields` di-merge ke form (overwrite nilai lama —
+ * benar, karena kalau penghuni berganti, nilai lama milik penghuni sebelumnya sudah tidak relevan).
+ * `note` = penjelasan/langkah manual ditampilkan ke admin kalau sebagian tidak bisa dihitung.
+ */
+export interface AutoFillResult {
+  fields: Record<string, string>;
+  note?: string;
+}
+
+/** Kontrak handler auto-fill — dipanggil saat field ModuleMeta.autoFillTrigger berubah & terisi semua. */
+export type AutoFillHandler = (values: Record<string, unknown>, ctx: SubmitContext) => Promise<AutoFillResult>;

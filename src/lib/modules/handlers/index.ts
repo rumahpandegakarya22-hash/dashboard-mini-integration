@@ -1,4 +1,4 @@
-import type { SubmitHandler, PreviewHandler } from '../types';
+import type { SubmitHandler, PreviewHandler, AutoFillHandler } from '../types';
 import { submitPenghuniBaru } from './penghuni-baru';
 import { submitPengeluaran } from './pengeluaran';
 import { submitPembayaranSewa } from './pembayaran-sewa';
@@ -9,6 +9,7 @@ import { submitPerbaikanKorektif } from './perbaikan-korektif';
 import { submitInspeksiFasilitas } from './inspeksi-fasilitas';
 import { submitPindahKamar } from './pindah-kamar';
 import { submitCheckout } from './checkout';
+import { autoFillCheckout } from './checkout-lookup';
 import { submitFeedback } from './feedback';
 import { submitInspeksiKebersihan } from './inspeksi-kebersihan';
 import { submitLeads } from './leads';
@@ -44,4 +45,9 @@ export const HANDLERS: Record<string, SubmitHandler> = {
 /** Handler preview (hitung tanpa efek samping) — cuma modul dgn ModuleMeta.hasPreview:true perlu entry di sini. */
 export const PREVIEW_HANDLERS: Record<string, PreviewHandler> = {
   'pembayaran-sewa': previewPembayaranSewa
+};
+
+/** Handler auto-fill (hitung tanpa efek samping) — cuma modul dgn ModuleMeta.autoFillTrigger perlu entry di sini. */
+export const AUTOFILL_HANDLERS: Record<string, AutoFillHandler> = {
+  checkout: autoFillCheckout
 };

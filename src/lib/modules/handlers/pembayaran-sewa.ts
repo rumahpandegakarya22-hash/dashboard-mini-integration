@@ -1,8 +1,7 @@
 import { appendRow, assertHeaders, readTable } from '../../sheets';
 import { withLock } from '../../redis';
 import { SHEETS } from '@/config/spreadsheets';
-import { parseDateISO, parseRupiah, required } from '../../validate';
-import { getRoomFresh, getTenantByLabel } from '../../master';
+import { parseDateISO, required } from '../../validate';
 import { previewPembayaranSewa } from './pembayaran-sewa-preview';
 import type { SubmitHandler } from '../types';
 
@@ -28,11 +27,17 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
   const jenisPembayaran = required(values.jenisPembayaran, 'Jenis Pembayaran');
   if (jenisPembayaran !== 'DP' && jenisPembayaran !== 'Sewa') throw new Error('Jenis Pembayaran tidak valid.');
   const tanggalBayar = parseDateISO(String(values.tanggalBayar ?? ''));
-  const nominal = parseRupiah(values.nominal as string | number);
   // Lama Sewa cuma relevan utk jenis Sewa (field disembunyikan showIf utk DP) — DP dicatat 1 bulan di ledger.
   const jumlahBulan = jenisPembayaran === 'Sewa' ? parseInt(String(values.jumlahBulan ?? ''), 10) : 1;
   if (jenisPembayaran === 'Sewa' && (!jumlahBulan || jumlahBulan < 1)) throw new Error('Lama Sewa tidak valid.');
   const akunKasBank = required(values.akunKasBank, 'Akun Kas/Bank');
+
+  // Nominal TIDAK lagi diketik manual — otomatis = Grand Total dari kriteria harga di sheet Invoice
+  // Generator (sama persis dgn yg sudah dilihat admin di layar Preview sebelum konfirmasi). Dihitung
+  // SEKALI di sini dan dipakai ulang di bawah utk payload Apps Script — hindari hitung dua kali/beda.
+  const preview = await previewPembayaranSewa(values, ctx);
+  const raw = preview.raw as Record<string, any>;
+  const nominal = Math.round(raw.grandTotal);
 
   return withLock(`penghuni:${penghuni}`, 15, async () => {
     await assertHeaders(SHEETS.LOG_INPUT_TRANSAKSI, HEADER_RANGE, EXPECTED_HEADERS);
@@ -54,19 +59,6 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
       }
     }
 
-    // Warning (bukan blokir) jika nominal beda dari harga kamar × jumlah bulan.
-    let warning: string | undefined;
-    const tenant = await getTenantByLabel(penghuni);
-    if (tenant?.kamar) {
-      const room = await getRoomFresh(tenant.kamar);
-      if (room && room.hargaBulan > 0) {
-        const expected = room.hargaBulan * jumlahBulan;
-        if (Math.abs(expected - nominal) > 1) {
-          warning = `Nominal (Rp${nominal.toLocaleString('id-ID')}) berbeda dari harga kamar × jumlah bulan (Rp${expected.toLocaleString('id-ID')}). Periksa kembali.`;
-        }
-      }
-    }
-
     const nominalPerBulan = Math.round(nominal / jumlahBulan);
     const row = await appendRow(SHEETS.LOG_INPUT_TRANSAKSI, "'Input Sewa Dimuka'!A:F", [
       tanggalBayar,
@@ -78,15 +70,13 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
     ]);
 
     // Trigger Apps Script invoice — best-effort, gagal tidak membatalkan pencatatan pembayaran (fallback PRD §6 Modul 2).
-    // Hitung ulang via previewPembayaranSewa (source-of-truth SAMA dgn tombol Preview di form) —
-    // supaya payload yg dikirim ke Apps Script konsisten dgn yg ditampilkan ke user sebelum submit.
+    // Pakai `raw` yg SAMA dgn perhitungan nominal di atas (bukan hitung ulang) — payload yg dikirim ke
+    // Apps Script konsisten persis dgn yg ditampilkan ke user sebelum submit.
     const scriptUrl = APPS_SCRIPT_URL[jenisPembayaran];
     const token = process.env.APPS_SCRIPT_TOKEN;
     let invoiceStatus = 'Belum dipicu (URL/token Apps Script belum diisi di env) — generate manual di Generator Tagihan.';
     if (scriptUrl && token) {
       try {
-        const preview = await previewPembayaranSewa(values, ctx);
-        const raw = preview.raw as Record<string, any>;
         const input =
           jenisPembayaran === 'Sewa'
             ? {
@@ -127,8 +117,7 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
     return {
       target: 'Log Input Transaksi → Input Sewa Dimuka',
       row,
-      data: { penghuni, jenisPembayaran, tanggalBayar, nominal, jumlahBulan, akunKasBank, invoiceStatus },
-      warning
+      data: { penghuni, jenisPembayaran, tanggalBayar, nominal, jumlahBulan, akunKasBank, invoiceStatus }
     };
   });
 };
