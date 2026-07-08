@@ -2,23 +2,50 @@ import { createAppendHandler } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, required } from '../../validate';
 
-// Sheet BARU "Log Konten" di Log Marketing (belum ada, dibuat saat setup — PRD §6 Modul 8).
-const EXPECTED_HEADERS = ['Tanggal', 'Platform', 'Jenis Konten', 'Judul/Tema', 'Link', 'Status', 'PIC'];
+// Sheet "Log Konten" di Log Marketing. Header DIKONFIRMASI dari sheet asli yang dibuat user (8 Jul) —
+// lebih lengkap dari rancangan PRD awal: termasuk kolom performa (Likes/Komentar/Share-Saves/Reach)
+// yang biasanya diisi belakangan setelah konten tayang. 13 kolom A:M.
+const EXPECTED_HEADERS = [
+  'Tanggal Post',
+  'Platform',
+  'Tipe Konten',
+  'Judul/Caption (singkat)',
+  'Visual',
+  'Link Post',
+  'Jam Tayang',
+  'Status',
+  'Likes',
+  'Komentar',
+  'Share/Saves',
+  'Reach',
+  'Catatan'
+];
+
+function num(v: unknown): number {
+  const n = parseInt(String(v ?? '0').replace(/[^0-9]/g, ''), 10);
+  return Number.isFinite(n) ? n : 0;
+}
 
 export const submitKonten = createAppendHandler({
   spreadsheetId: SHEETS.LOG_MARKETING,
-  range: "'Log Konten'!A:G",
-  headerRange: "'Log Konten'!A1:G1",
+  range: "'Log Konten'!A:M",
+  headerRange: "'Log Konten'!A1:M1",
   expectedHeaders: EXPECTED_HEADERS,
   target: 'Log Marketing → Log Konten',
   buildRow: (values) => {
-    const tanggal = parseDateISO(String(values.tanggal ?? ''));
+    const tanggalPost = parseDateISO(String(values.tanggalPost ?? ''));
     const platform = required(values.platform, 'Platform');
-    const jenisKonten = required(values.jenisKonten, 'Jenis Konten');
-    const judulTema = required(values.judulTema, 'Judul/Tema');
-    const link = String(values.link ?? '').trim();
+    const tipeKonten = required(values.jenisKonten, 'Tipe Konten');
+    const judulCaption = required(values.judulCaption, 'Judul/Caption');
+    const visual = String(values.visual ?? '').trim();
+    const linkPost = String(values.linkPost ?? '').trim();
+    const jamTayang = String(values.jamTayang ?? '').trim();
     const status = required(values.status, 'Status');
-    const pic = required(values.pic, 'PIC');
-    return [tanggal, platform, jenisKonten, judulTema, link, status, pic];
+    const likes = num(values.likes);
+    const komentar = num(values.komentar);
+    const shareSaves = num(values.shareSaves);
+    const reach = num(values.reach);
+    const catatan = String(values.catatan ?? '').trim();
+    return [tanggalPost, platform, tipeKonten, judulCaption, visual, linkPost, jamTayang, status, likes, komentar, shareSaves, reach, catatan];
   }
 });

@@ -317,17 +317,44 @@ export const MODULES: ModuleMeta[] = [
     ready: true,
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
+      { name: 'namaLeads', label: 'Nama Leads', type: 'text', required: true, placeholder: 'Nama calon penyewa' },
+      { name: 'noHp', label: 'No. HP / WA', type: 'text', required: true, placeholder: '081234567890' },
       {
-        name: 'kanal',
-        label: 'Kanal',
+        name: 'sumberLeads',
+        label: 'Sumber Leads',
         type: 'select-async',
         required: true,
         master: 'setting:LOG_MARKETING:SETTING:Kanal Leads'
       },
-      { name: 'jumlahLeads', label: 'Jumlah Leads', type: 'number', required: true },
-      { name: 'leadsRespon', label: 'Leads Respon', type: 'number', required: false },
-      { name: 'leadsSurvey', label: 'Leads Survey', type: 'number', required: false },
-      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
+      { name: 'platform', label: 'Platform', type: 'text', required: false, placeholder: 'Story IG, Teman penghuni, dll' },
+      {
+        name: 'jenisKamarDicari',
+        label: 'Jenis Kamar Dicari',
+        type: 'text',
+        required: false,
+        placeholder: 'Classic, Comfy',
+        helpText: 'Pisahkan dengan koma jika lebih dari satu. Kategori: Eco/Classic/Comfy/Lantai 1/Lantai 2.'
+      },
+      { name: 'budget', label: 'Budget (Rp)', type: 'number', required: false },
+      { name: 'checkinRencana', label: 'Check-in Rencana', type: 'date', required: false },
+      {
+        name: 'statusLeads',
+        label: 'Status Leads',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'Baru', label: 'Baru' },
+          { value: 'Follow-up', label: 'Follow-up' },
+          { value: 'Survey', label: 'Survey' },
+          { value: 'Negosiasi', label: 'Negosiasi' },
+          { value: 'Booking', label: 'Booking' },
+          { value: 'Tidak Jadi', label: 'Tidak Jadi' },
+          { value: 'Tidak Respons', label: 'Tidak Respons' }
+        ]
+      },
+      { name: 'tindakLanjut', label: 'Tindak Lanjut', type: 'textarea', required: false },
+      { name: 'picCs', label: 'PIC / CS', type: 'text', required: false, placeholder: 'Admin' },
+      { name: 'waktuFollowUp', label: 'Waktu Follow-up', type: 'date', required: false }
     ]
   },
   {
@@ -336,17 +363,26 @@ export const MODULES: ModuleMeta[] = [
     icon: '🎨',
     ready: true,
     fields: [
-      { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
+      { name: 'tanggalPost', label: 'Tanggal Post', type: 'date', required: true, defaultToday: true },
       { name: 'platform', label: 'Platform', type: 'select-async', required: true, master: 'setting:LOG_MARKETING:SETTING:Platform' },
       {
         name: 'jenisKonten',
-        label: 'Jenis Konten',
+        label: 'Tipe Konten',
         type: 'select-async',
         required: true,
         master: 'setting:LOG_MARKETING:SETTING:Jenis Konten'
       },
-      { name: 'judulTema', label: 'Judul/Tema', type: 'text', required: true },
-      { name: 'link', label: 'Link', type: 'text', required: false },
+      { name: 'judulCaption', label: 'Judul/Caption (singkat)', type: 'text', required: true },
+      {
+        name: 'visual',
+        label: 'Visual',
+        type: 'text',
+        required: false,
+        placeholder: 'Foto K-03, Video tour K-04',
+        helpText: 'Nama/referensi file visual — upload file belum didukung.'
+      },
+      { name: 'linkPost', label: 'Link Post', type: 'text', required: false },
+      { name: 'jamTayang', label: 'Jam Tayang', type: 'time', required: false },
       {
         name: 'status',
         label: 'Status',
@@ -354,7 +390,11 @@ export const MODULES: ModuleMeta[] = [
         required: true,
         master: 'setting:LOG_MARKETING:SETTING:Status Konten'
       },
-      { name: 'pic', label: 'PIC', type: 'select-async', required: true, master: 'setting:LOG_MARKETING:SETTING:PIC' }
+      { name: 'likes', label: 'Likes', type: 'number', required: false, helpText: 'Diisi belakangan setelah konten tayang.' },
+      { name: 'komentar', label: 'Komentar', type: 'number', required: false },
+      { name: 'shareSaves', label: 'Share/Saves', type: 'number', required: false },
+      { name: 'reach', label: 'Reach', type: 'number', required: false },
+      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
     ]
   },
   {
@@ -365,17 +405,26 @@ export const MODULES: ModuleMeta[] = [
     fields: [
       { name: 'tanggalMulai', label: 'Tanggal Mulai', type: 'date', required: true, defaultToday: true },
       { name: 'tanggalSelesai', label: 'Tanggal Selesai', type: 'date', required: false },
-      { name: 'namaPromo', label: 'Nama Promo', type: 'text', required: true },
+      { name: 'namaPromosi', label: 'Nama Promosi', type: 'text', required: true },
       {
-        name: 'kanal',
-        label: 'Kanal',
+        name: 'platform',
+        label: 'Platform',
         type: 'select-async',
         required: true,
         master: 'setting:LOG_MARKETING:SETTING:Kanal Promosi'
       },
+      {
+        name: 'tipePromosi',
+        label: 'Tipe Promosi',
+        type: 'text',
+        required: false,
+        placeholder: 'Iklan Berbayar, Diskon Harga, Cashback'
+      },
       { name: 'budget', label: 'Budget (Rp)', type: 'number', required: false },
-      { name: 'target', label: 'Target', type: 'text', required: false },
-      { name: 'realisasi', label: 'Realisasi', type: 'text', required: false },
+      { name: 'spendAktual', label: 'Spend Aktual (Rp)', type: 'number', required: false, helpText: 'Diisi belakangan seiring promo berjalan.' },
+      { name: 'target', label: 'Target (Leads)', type: 'number', required: false },
+      { name: 'leadsAktual', label: 'Leads Aktual', type: 'number', required: false },
+      { name: 'bookingDariPromo', label: 'Booking dari Promo', type: 'number', required: false },
       {
         name: 'status',
         label: 'Status',
