@@ -6,7 +6,7 @@ import type { FieldDef } from './types';
 export interface ModuleMeta {
   id: string;
   title: string;
-  icon: string;
+  /** Ikon dirender dari peta lucide di src/components/module-icons.tsx (bukan emoji). */
   ready: boolean; // false = form belum di-build, menu menampilkan "segera"
   fields?: FieldDef[]; // diisi saat modul di-build; handler submit terkait ada di modules/handlers/
   hasPreview?: boolean; // true = sebelum submit, tampilkan preview (hitung via /api/preview/[id]) + minta konfirmasi
@@ -17,7 +17,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'penghuni-baru',
     title: 'Penghuni Baru',
-    icon: '🏠',
     ready: true,
     fields: [
       { name: 'tanggalBooking', label: 'Tanggal Booking', type: 'date', required: true, defaultToday: true },
@@ -62,7 +61,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'pembayaran-sewa',
     title: 'Pembayaran Sewa',
-    icon: '💳',
     ready: true,
     hasPreview: true,
     fields: [
@@ -140,7 +138,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'pindah-kamar',
     title: 'Pindah Kamar',
-    icon: '🔁',
     ready: true,
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
@@ -171,7 +168,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'checkout',
     title: 'Checkout',
-    icon: '🚪',
     ready: true,
     autoFillTrigger: ['penghuni', 'tanggalCheckout'],
     fields: [
@@ -223,7 +219,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'pengeluaran',
     title: 'Pencatatan Pengeluaran',
-    icon: '🧾',
     ready: true,
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
@@ -288,7 +283,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'feedback',
     title: 'Feedback',
-    icon: '💬',
     ready: true,
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
@@ -317,7 +311,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'survey',
     title: 'Log Survey',
-    icon: '🔍',
     ready: true,
     fields: [
       { name: 'tanggalSurvey', label: 'Tanggal Survey', type: 'date', required: true, defaultToday: true },
@@ -351,7 +344,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'leads',
     title: 'Log Leads Harian',
-    icon: '📈',
     ready: true,
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
@@ -398,7 +390,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'konten',
     title: 'Log Konten',
-    icon: '🎨',
     ready: true,
     fields: [
       { name: 'tanggalPost', label: 'Tanggal Post', type: 'date', required: true, defaultToday: true },
@@ -438,7 +429,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'promosi',
     title: 'Log Promosi',
-    icon: '📣',
     ready: true,
     fields: [
       { name: 'tanggalMulai', label: 'Tanggal Mulai', type: 'date', required: true, defaultToday: true },
@@ -475,7 +465,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'perawatan-preventif',
     title: 'Perawatan Preventif',
-    icon: '🛠️',
     ready: true,
     fields: [
       { name: 'tanggalJadwal', label: 'Tanggal Jadwal', type: 'date', required: true, defaultToday: true },
@@ -532,7 +521,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'perbaikan-korektif',
     title: 'Perbaikan Korektif',
-    icon: '🔧',
     ready: true,
     fields: [
       { name: 'tanggalKerusakan', label: 'Tanggal Kerusakan', type: 'date', required: true, defaultToday: true },
@@ -590,7 +578,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'inspeksi-kebersihan',
     title: 'Inspeksi Kebersihan',
-    icon: '🧹',
     ready: true,
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
@@ -616,7 +603,6 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'inspeksi-fasilitas',
     title: 'Inspeksi Fasilitas',
-    icon: '📋',
     ready: true,
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },

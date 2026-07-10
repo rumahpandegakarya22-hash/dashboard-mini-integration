@@ -1,6 +1,18 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  ChevronLeft,
+  CircleAlert,
+  House,
+  LoaderCircle,
+  Paperclip,
+  ReceiptText,
+  TriangleAlert,
+  WandSparkles
+} from 'lucide-react';
 import type { FieldDef, FieldOption, PreviewResult } from '@/lib/modules/types';
 
 interface Props {
@@ -11,6 +23,8 @@ interface Props {
 }
 
 type ChangeEl = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
+
+const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
 export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrigger }: Props) {
   const [values, setValues] = useState<Record<string, string>>({});
@@ -191,61 +205,171 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
 
   if (success) {
     return (
-      <div className="card">
-        <p className="success">Data berhasil disimpan.</p>
-        {warning && <div className="warn">{warning}</div>}
-        <button type="button" onClick={() => setSuccess(false)}>
+      <motion.div
+        className="card success-card"
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.25, ease: EASE }}
+      >
+        <SuccessCheck />
+        <h2>Data berhasil disimpan</h2>
+        {warning ? (
+          <div className="banner warn">
+            <TriangleAlert size={16} />
+            <span>{warning}</span>
+          </div>
+        ) : (
+          <p className="muted">Sudah masuk ke spreadsheet — silakan lanjut input berikutnya.</p>
+        )}
+        <button type="button" className="btn" onClick={() => setSuccess(false)}>
           Input Lagi
         </button>
-      </div>
+        <Link className="btn-plain" href="/">
+          <House size={16} />
+          Kembali ke Beranda
+        </Link>
+      </motion.div>
     );
   }
 
   if (previewData) {
     return (
-      <div className="card">
-        <h2>Preview Invoice</h2>
-        <table className="preview-table">
-          <tbody>
-            {previewData.fields.map((f) => (
-              <tr key={f.label}>
-                <td className="muted">{f.label}</td>
-                <td>
-                  <strong>{f.value}</strong>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {error && <div className="error">{error}</div>}
-        <button type="button" onClick={() => setPreviewData(null)} disabled={loading}>
-          Kembali
-        </button>{' '}
-        <button type="button" onClick={onConfirmSend} disabled={loading}>
-          {loading ? 'Mengirim...' : 'Konfirmasi & Kirim'}
-        </button>
-      </div>
+      <motion.div
+        className="card"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: EASE }}
+      >
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ReceiptText size={18} />
+          Preview Invoice
+        </h2>
+        <p className="muted" style={{ marginTop: 4 }}>
+          Cek dulu — data dikirim setelah kamu konfirmasi.
+        </p>
+        <dl className="receipt">
+          {previewData.fields.map((f) => (
+            <div className="receipt-row" key={f.label}>
+              <dt className="receipt-label">{f.label}</dt>
+              <dd className="receipt-value">{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+        {error && (
+          <div className="banner error" role="alert">
+            <CircleAlert size={16} />
+            <span>{error}</span>
+          </div>
+        )}
+        <div className="btn-row">
+          <button type="button" className="btn secondary" onClick={() => setPreviewData(null)} disabled={loading}>
+            <ChevronLeft size={18} />
+            Kembali
+          </button>
+          <button type="button" className="btn" onClick={onConfirmSend} disabled={loading}>
+            {loading && <LoaderCircle size={18} className="spin" />}
+            {loading ? 'Mengirim...' : 'Konfirmasi & Kirim'}
+          </button>
+        </div>
+      </motion.div>
     );
   }
 
   return (
-    <form className="card" onSubmit={onSubmit}>
-      {fields.filter((f) => isVisible(f, values)).map((f) => (
-        <div key={f.name}>
-          <label htmlFor={f.name}>
-            {f.label}
-            {f.required && ' *'}
-          </label>
-          {renderField(f, values[f.name] ?? '', (v) => update(f.name, v), optionsFor(f))}
-          {f.helpText && <div className="muted">{f.helpText}</div>}
+    <form className="card" onSubmit={onSubmit} noValidate>
+      {fields.map((f) => {
+        const visible = isVisible(f, values);
+        const body = (
+          <>
+            <label htmlFor={f.name}>
+              {f.label}
+              {f.required && (
+                <span className="req" aria-hidden>
+                  {' '}
+                  *
+                </span>
+              )}
+            </label>
+            {renderField(f, values[f.name] ?? '', (v) => update(f.name, v), optionsFor(f))}
+            {f.helpText && <p className="help">{f.helpText}</p>}
+          </>
+        );
+
+        // Field kondisional (showIf) masuk/keluar dengan animasi tinggi + fade.
+        if (f.showIf) {
+          return (
+            <AnimatePresence key={f.name} initial={false}>
+              {visible && (
+                <motion.div
+                  className="field"
+                  style={{ overflow: 'hidden' }}
+                  initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+                  animate={{ height: 'auto', opacity: 1, marginBottom: 16 }}
+                  exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.22, ease: EASE }}
+                >
+                  {body}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          );
+        }
+
+        return visible ? (
+          <div className="field" key={f.name}>
+            {body}
+          </div>
+        ) : null;
+      })}
+
+      {autoFillNote && (
+        <div className="banner info">
+          <WandSparkles size={16} />
+          <span>{autoFillNote}</span>
         </div>
-      ))}
-      {autoFillNote && <div className="warn">{autoFillNote}</div>}
-      {error && <div className="error">{error}</div>}
-      <button type="submit" disabled={loading}>
-        {loading ? (hasPreview ? 'Menghitung...' : 'Menyimpan...') : hasPreview ? 'Preview' : 'Simpan'}
+      )}
+      {error && (
+        <div className="banner error" role="alert">
+          <CircleAlert size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <button type="submit" className="btn" disabled={loading} style={{ marginTop: 20 }}>
+        {loading && <LoaderCircle size={18} className="spin" />}
+        {loading ? (hasPreview ? 'Menghitung...' : 'Menyimpan...') : hasPreview ? 'Lihat Preview' : 'Simpan'}
       </button>
     </form>
+  );
+}
+
+/** Lingkaran + centang yang digambar (stroke draw) saat data tersimpan. */
+function SuccessCheck() {
+  return (
+    <svg width="76" height="76" viewBox="0 0 76 76" fill="none" aria-hidden>
+      <circle cx="38" cy="38" r="34" fill="var(--brand-tint)" />
+      <motion.circle
+        cx="38"
+        cy="38"
+        r="34"
+        stroke="var(--brand)"
+        strokeWidth="3"
+        strokeLinecap="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.45, ease: EASE }}
+      />
+      <motion.path
+        d="M24 39.5 L34 49 L52 28"
+        stroke="var(--brand)"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.35, delay: 0.2, ease: EASE }}
+      />
+    </svg>
   );
 }
 
@@ -264,7 +388,15 @@ function renderField(f: FieldDef, value: string, onChange: (v: string) => void, 
       return <textarea id={f.name} name={f.name} value={value} onChange={onInputChange} placeholder={f.placeholder} />;
     case 'number':
       return (
-        <input id={f.name} name={f.name} type="number" value={value} onChange={onInputChange} placeholder={f.placeholder} />
+        <input
+          id={f.name}
+          name={f.name}
+          type="number"
+          inputMode="decimal"
+          value={value}
+          onChange={onInputChange}
+          placeholder={f.placeholder}
+        />
       );
     case 'date':
       return <input id={f.name} name={f.name} type="date" value={value} onChange={onInputChange} />;
@@ -272,7 +404,13 @@ function renderField(f: FieldDef, value: string, onChange: (v: string) => void, 
       return <input id={f.name} name={f.name} type="time" value={value} onChange={onInputChange} />;
     case 'file':
       // Upload aktual ke Drive dibangun Tahap 4 (/api/upload); untuk sekarang hanya menampung nama file.
-      return <input id={f.name} name={f.name} type="file" onChange={(e) => onChange(e.target.files?.[0]?.name || '')} />;
+      return (
+        <label className={value ? 'file-btn filled' : 'file-btn'} htmlFor={f.name}>
+          <Paperclip size={18} />
+          <span>{value || 'Pilih file (jpg/png/pdf, maks 10 MB)'}</span>
+          <input id={f.name} name={f.name} type="file" onChange={(e) => onChange(e.target.files?.[0]?.name || '')} />
+        </label>
+      );
     case 'select':
     case 'select-async': {
       const isAsync = f.type === 'select-async';

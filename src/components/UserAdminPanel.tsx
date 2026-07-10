@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { CircleAlert, LoaderCircle, RotateCcw, UserRoundCheck, UserRoundX } from 'lucide-react';
 import { ROLE_LABEL, type Role } from '@/lib/roles';
 
 interface UserRow {
@@ -60,97 +61,153 @@ export default function UserAdminPanel({ currentUsername }: { currentUsername: s
     }
   }
 
-  if (loading) return <p className="muted">Memuat...</p>;
+  if (loading) {
+    return (
+      <div className="card" aria-busy="true" aria-label="Memuat daftar user">
+        <div className="skeleton" style={{ height: 20, width: '45%' }} />
+        <div className="skeleton" style={{ height: 52, marginTop: 14 }} />
+        <div className="skeleton" style={{ height: 52, marginTop: 10 }} />
+        <div className="skeleton" style={{ height: 52, marginTop: 10 }} />
+      </div>
+    );
+  }
 
   const pending = users.filter((u) => u.status === 'pending');
   const active = users.filter((u) => u.status === 'active');
   const disabled = users.filter((u) => u.status === 'disabled');
 
+  const initialOf = (name: string) => (name.trim()[0] || '?').toUpperCase();
+
   return (
     <div>
-      {error && <div className="error">{error}</div>}
+      {error && (
+        <div className="banner error" role="alert" style={{ marginBottom: 12 }}>
+          <CircleAlert size={16} />
+          <span>{error}</span>
+        </div>
+      )}
 
-      <div className="card">
-        <h2>Menunggu Persetujuan ({pending.length})</h2>
-        {pending.length === 0 && <p className="muted">Tidak ada user menunggu persetujuan.</p>}
+      <div className="card" style={{ marginBottom: 12 }}>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          Menunggu Persetujuan <span className="count-badge">{pending.length}</span>
+        </h2>
+        {pending.length === 0 && (
+          <p className="muted" style={{ marginTop: 8 }}>
+            Tidak ada user menunggu persetujuan.
+          </p>
+        )}
         {pending.map((u) => (
-          <div key={u.username} style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 10 }}>
-            <div>
-              <strong>{u.name}</strong> — <span className="muted">{u.email}</span>
+          <div key={u.username} className="user-row">
+            <span className="avatar" aria-hidden>
+              {initialOf(u.name)}
+            </span>
+            <div className="user-meta">
+              <div className="user-name">{u.name}</div>
+              <div className="user-sub">{u.email}</div>
             </div>
-            <label htmlFor={`role-${u.username}`}>Role</label>
-            <select
-              id={`role-${u.username}`}
-              value={pendingRole[u.username] || ''}
-              onChange={(e) => setPendingRole((prev) => ({ ...prev, [u.username]: e.target.value as Role }))}
-            >
-              <option value="">Pilih role...</option>
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABEL[r]}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              disabled={!pendingRole[u.username] || busy === u.username}
-              onClick={() => callAction('approve', { username: u.username, role: pendingRole[u.username] }, u.username)}
-            >
-              {busy === u.username ? 'Memproses...' : 'Approve'}
-            </button>
+            <div className="user-actions">
+              <label htmlFor={`role-${u.username}`} className="sr-only">
+                Role untuk {u.name}
+              </label>
+              <select
+                id={`role-${u.username}`}
+                value={pendingRole[u.username] || ''}
+                onChange={(e) => setPendingRole((prev) => ({ ...prev, [u.username]: e.target.value as Role }))}
+              >
+                <option value="">Pilih role...</option>
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_LABEL[r]}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn compact"
+                disabled={!pendingRole[u.username] || busy === u.username}
+                onClick={() => callAction('approve', { username: u.username, role: pendingRole[u.username] }, u.username)}
+              >
+                {busy === u.username ? <LoaderCircle size={16} className="spin" /> : <UserRoundCheck size={16} />}
+                Approve
+              </button>
+            </div>
           </div>
         ))}
       </div>
 
-      <div className="card">
-        <h2>User Aktif ({active.length})</h2>
+      <div className="card" style={{ marginBottom: 12 }}>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          User Aktif <span className="count-badge">{active.length}</span>
+        </h2>
         {active.map((u) => (
-          <div key={u.username} style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 10 }}>
-            <div>
-              <strong>{u.name}</strong> — <span className="muted">{u.username}</span>
-              {u.username === currentUsername && <span className="muted"> (kamu)</span>}
+          <div key={u.username} className="user-row">
+            <span className="avatar" aria-hidden>
+              {initialOf(u.name)}
+            </span>
+            <div className="user-meta">
+              <div className="user-name">
+                {u.name}
+                {u.username === currentUsername && <span className="muted"> (kamu)</span>}
+              </div>
+              <div className="user-sub">{u.username}</div>
             </div>
-            <select
-              value={u.role || ''}
-              onChange={(e) => callAction('role', { username: u.username, role: e.target.value }, u.username)}
-              disabled={busy === u.username}
-            >
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABEL[r]}
-                </option>
-              ))}
-            </select>
-            {u.username !== currentUsername && (
-              <button
-                type="button"
-                className="btn-link"
+            <div className="user-actions">
+              <label htmlFor={`role-active-${u.username}`} className="sr-only">
+                Role {u.name}
+              </label>
+              <select
+                id={`role-active-${u.username}`}
+                value={u.role || ''}
+                onChange={(e) => callAction('role', { username: u.username, role: e.target.value }, u.username)}
                 disabled={busy === u.username}
-                onClick={() => callAction('deactivate', { username: u.username }, u.username)}
               >
-                Nonaktifkan
-              </button>
-            )}
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_LABEL[r]}
+                  </option>
+                ))}
+              </select>
+              {u.username !== currentUsername && (
+                <button
+                  type="button"
+                  className="btn-plain danger"
+                  disabled={busy === u.username}
+                  onClick={() => callAction('deactivate', { username: u.username }, u.username)}
+                >
+                  {busy === u.username ? <LoaderCircle size={16} className="spin" /> : <UserRoundX size={16} />}
+                  Nonaktifkan
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
 
       {disabled.length > 0 && (
         <div className="card">
-          <h2>Dinonaktifkan ({disabled.length})</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            Dinonaktifkan <span className="count-badge">{disabled.length}</span>
+          </h2>
           {disabled.map((u) => (
-            <div key={u.username} style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 10 }}>
-              <div>
-                <strong>{u.name}</strong> — <span className="muted">{u.username}</span>
+            <div key={u.username} className="user-row">
+              <span className="avatar" aria-hidden style={{ opacity: 0.55 }}>
+                {initialOf(u.name)}
+              </span>
+              <div className="user-meta">
+                <div className="user-name">{u.name}</div>
+                <div className="user-sub">{u.username}</div>
               </div>
-              <button
-                type="button"
-                className="btn-link"
-                disabled={busy === u.username}
-                onClick={() => callAction('reactivate', { username: u.username }, u.username)}
-              >
-                Aktifkan lagi
-              </button>
+              <div className="user-actions">
+                <button
+                  type="button"
+                  className="btn-plain"
+                  disabled={busy === u.username}
+                  onClick={() => callAction('reactivate', { username: u.username }, u.username)}
+                >
+                  {busy === u.username ? <LoaderCircle size={16} className="spin" /> : <RotateCcw size={16} />}
+                  Aktifkan lagi
+                </button>
+              </div>
             </div>
           ))}
         </div>
