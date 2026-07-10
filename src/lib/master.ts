@@ -209,6 +209,54 @@ export async function getKasList(): Promise<string[]> {
   });
 }
 
+/** Nilai Tipe Akun — harus sama persis dgn opsi dropdown `tipeAkun` modul Pengeluaran di registry. */
+const TIPE_AKUN_OPTIONS = [
+  'Aset',
+  'Kontra Aset',
+  'Liabilitas',
+  'Ekuitas',
+  'Kontra Ekuitas',
+  'Pendapatan',
+  'Beban',
+  'Beban Non-Operasional'
+];
+
+export interface SumberDana {
+  tipe: string; // nilai tipeAkun yang memunculkan opsi ini (difilter client via dependsOn/filterBy)
+  id: string; // nama akun — ditulis apa adanya ke kolom Akun Kredit sheet Transaksi
+  label: string;
+}
+
+/**
+ * Opsi "Dibayar Dari" (= Akun Kredit) per Tipe Akun — revisi user 10 Jul 2026:
+ * - Beban: kas/bank (tunai) ATAU akun "Stok ..." — pemakaian bahan penunjang operasional dari stok
+ *   dijurnal Dr Beban X / Cr Stok X, bukan kredit kas.
+ * - Beban Non-Operasional (isinya 4 akun Beban Penyusutan): HANYA Akumulasi Penyusutan (Kontra Aset).
+ *   Jurnal penyusutan standar PSAK: Dr Beban Penyusutan / Cr Akumulasi Penyusutan — kas sengaja
+ *   TIDAK ditawarkan supaya tidak bisa salah jurnal.
+ * - Tipe lain: kas/bank (perilaku lama).
+ */
+export async function getSumberDana(): Promise<SumberDana[]> {
+  const [kas, accounts] = await Promise.all([getKasList(), getAccounts()]);
+  const rows: SumberDana[] = [];
+  const pushKas = (tipe: string) => kas.forEach((k) => rows.push({ tipe, id: k, label: k }));
+  for (const tipe of TIPE_AKUN_OPTIONS) {
+    if (tipe === 'Beban Non-Operasional') {
+      accounts
+        .filter((a) => a.tipe === 'Kontra Aset')
+        .forEach((a) => rows.push({ tipe, id: a.nama, label: a.nama }));
+    } else if (tipe === 'Beban') {
+      pushKas(tipe);
+      accounts
+        .filter((a) => a.tipe === 'Aset' && /^stok\b/i.test(a.nama))
+        .forEach((a) => rows.push({ tipe, id: a.nama, label: a.nama }));
+    } else {
+      pushKas(tipe);
+    }
+  }
+  return rows;
+}
+
 /** Nilai dropdown generik dari kolom `column` pada sheet SETTING suatu file (dipakai per modul di Tahap 3+). */
 export async function getSettingList(spreadsheetId: string, sheetName: string, column: string): Promise<string[]> {
   return cached(`setting:${spreadsheetId}:${sheetName}:${column}`, async () => {
@@ -393,6 +441,8 @@ export async function getMasterData(type: string): Promise<unknown> {
       return getActiveTenants();
     case 'kaslist':
       return (await getKasList()).map((v) => ({ id: v, label: v }));
+    case 'sumber-dana':
+      return getSumberDana();
     case 'status-booking':
       return getStatusBookingOptions();
     case 'sumber-leads':

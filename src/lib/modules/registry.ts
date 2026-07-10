@@ -237,7 +237,7 @@ export const MODULES: ModuleMeta[] = [
           { value: 'Beban', label: 'Beban' },
           { value: 'Beban Non-Operasional', label: 'Beban Non-Operasional' }
         ],
-        helpText: 'Untuk pengeluaran biasanya "Beban" atau "Beban Non-Operasional".'
+        helpText: 'Beban = operasional (tunai atau pemakaian stok); Beban Non-Operasional = penyusutan.'
       },
       {
         name: 'akunDebit',
@@ -256,9 +256,13 @@ export const MODULES: ModuleMeta[] = [
         label: 'Dibayar Dari',
         type: 'select-async',
         required: true,
-        master: 'kaslist',
+        master: 'sumber-dana',
         masterValue: 'id',
-        masterLabel: 'label'
+        masterLabel: 'label',
+        dependsOn: 'tipeAkun',
+        filterBy: 'tipe',
+        helpText:
+          'Tunai → pilih kas/bank. Pemakaian bahan dari stok → pilih akun Stok-nya. Penyusutan → pilih Akumulasi Penyusutan.'
       },
       { name: 'nominal', label: 'Nominal', type: 'number', required: true },
       {
