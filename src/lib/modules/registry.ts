@@ -1,4 +1,4 @@
-// Registry 12 modul. Definisi field & target sheet dilengkapi di Tahap 2-5.
+// Registry 14 modul. Definisi field & target sheet dilengkapi di Tahap 2-5.
 // id harus konsisten dengan MODULE_ACCESS di lib/roles.ts
 
 import type { FieldDef } from './types';
@@ -605,6 +605,42 @@ export const MODULES: ModuleMeta[] = [
     ]
   },
   {
+    id: 'daily-task',
+    title: 'Daily Task',
+    ready: true,
+    fields: [
+      { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
+      {
+        name: 'divisi',
+        label: 'Divisi',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'Administrasi', label: 'Administrasi' },
+          { value: 'Sales', label: 'Sales' },
+          { value: 'Marketing', label: 'Marketing' },
+          { value: 'Maintenance', label: 'Maintenance' },
+          { value: 'Inspeksi', label: 'Inspeksi' }
+        ]
+      },
+      { name: 'namaTask', label: 'Nama Task', type: 'text', required: true, placeholder: 'Contoh: Follow-up leads WA' },
+      { name: 'deskripsi', label: 'Deskripsi', type: 'textarea', required: false },
+      {
+        name: 'status',
+        label: 'Status',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'Belum Dikerjakan', label: 'Belum Dikerjakan' },
+          { value: 'Sedang Dikerjakan', label: 'Sedang Dikerjakan' },
+          { value: 'Selesai', label: 'Selesai' }
+        ]
+      },
+      { name: 'pic', label: 'PIC', type: 'text', required: true, placeholder: 'Nama petugas' },
+      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
+    ]
+  },
+  {
     id: 'inspeksi-fasilitas',
     title: 'Inspeksi Fasilitas',
     ready: true,
@@ -638,6 +674,54 @@ export const MODULES: ModuleMeta[] = [
         type: 'select-async',
         required: true,
         master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:PIC'
+      },
+      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
+    ]
+  },
+  {
+    id: 'maintenance-wo',
+    title: 'Maintenance Work Order',
+    ready: true,
+    fields: [
+      { name: 'tanggalWo', label: 'Tanggal WO', type: 'date', required: true, defaultToday: true },
+      {
+        name: 'petugasInspeksi',
+        label: 'Petugas Inspeksi',
+        type: 'select-async',
+        required: true,
+        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:PIC'
+      },
+      { name: 'lokasiItem', label: 'Lokasi/Item', type: 'text', required: true, placeholder: 'Contoh: Kamar 3 — AC' },
+      {
+        name: 'kategori',
+        label: 'Kategori',
+        type: 'select-async',
+        required: true,
+        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:kategori korektif'
+      },
+      { name: 'deskripsi', label: 'Deskripsi Pekerjaan', type: 'textarea', required: true },
+      {
+        name: 'prioritas',
+        label: 'Prioritas',
+        type: 'select-async',
+        required: true,
+        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Prioritas'
+      },
+      {
+        name: 'ditugaskanKe',
+        label: 'Ditugaskan Ke',
+        type: 'select-async',
+        required: true,
+        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:PIC',
+        helpText: 'PIC maintenance yang akan mengerjakan work order ini.'
+      },
+      { name: 'targetSelesai', label: 'Target Selesai', type: 'date', required: false },
+      {
+        name: 'status',
+        label: 'Status',
+        type: 'select-async',
+        required: true,
+        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Status'
       },
       { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
     ]

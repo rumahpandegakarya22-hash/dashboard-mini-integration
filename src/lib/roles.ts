@@ -32,7 +32,9 @@ export const MODULE_ACCESS: Record<string, Role[]> = {
   'perawatan-preventif': ['staff_maintenance'],
   'perbaikan-korektif': ['staff_maintenance'],
   'inspeksi-kebersihan': ['staff_inspeksi'],
-  'inspeksi-fasilitas': ['staff_inspeksi']
+  'inspeksi-fasilitas': ['staff_inspeksi'],
+  'maintenance-wo': ['staff_inspeksi'],
+  'daily-task': ['staff_admin', 'staff_sales', 'staff_marketing', 'staff_maintenance', 'staff_inspeksi']
 };
 
 export function canAccess(role: Role, moduleId: string): boolean {

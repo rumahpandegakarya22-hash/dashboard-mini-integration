@@ -15,7 +15,8 @@ export const SHEETS = {
   INVOICE_DP: '1iX_5LtIpTBwnwB4-krUe_GlvIfef9MtqWfadDsosnzo',
   AUDIT_LOG: process.env.SHEET_ID_AUDIT_LOG || '',
   PINDAH_KAMAR: process.env.SHEET_ID_PINDAH_KAMAR || '',
-  CHECKOUT: process.env.SHEET_ID_CHECKOUT || ''
+  CHECKOUT: process.env.SHEET_ID_CHECKOUT || '',
+  DAILY_TASK: process.env.SHEET_ID_DAILY_TASK || '' // spreadsheet daily task per divisi — belum dibuat user; kosong = modul menolak submit dgn pesan jelas
 } as const;
 
 // Spreadsheet yang TIDAK BOLEH ditulis app (berformula / dikelola sistem lain)

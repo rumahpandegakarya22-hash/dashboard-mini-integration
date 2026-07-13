@@ -8,38 +8,41 @@
 :root {
   color-scheme: light;
 
-  /* Warna inti (OKLCH) — hijau brand kost dipertahankan (≈ #0f6b4f) */
-  --bg: oklch(96.5% 0.006 165);
-  --surface: oklch(100% 0 0);
-  --surface-2: oklch(94.5% 0.009 165);
-  --ink: oklch(22% 0.015 170);
-  --ink-2: oklch(45% 0.02 168);
-  --brand: oklch(47% 0.09 164);
-  --brand-strong: oklch(40% 0.09 164);
-  --brand-fill: oklch(47% 0.09 164);
-  --on-brand: oklch(100% 0 0);
-  --brand-tint: oklch(94% 0.028 164);
-  --brand-tint-2: oklch(90% 0.045 164);
-  --danger: oklch(48% 0.18 27);
-  --danger-tint: oklch(95% 0.03 27);
-  --warn-ink: oklch(42% 0.1 75);
-  --warn-tint: oklch(94.5% 0.05 85);
-  --border: oklch(89% 0.01 165);
-  --hairline: oklch(0% 0 0 / 8%);
-  --card-hairline: oklch(0% 0 0 / 5%);
+  /* Warna inti dengan komposisi 60-30-10 sesuai kriteria pengguna:
+     - Primer (60%): #F8F6F2 (Bg), #3A3635 (Teks)
+     - Sekunder (30%): #F2D5CF (Pembatas/Pemisah Lembut), #8E8B87 (Teks Sekunder/Pembatas Medium)
+     - Tersier/Aksen (10%): #C92D31 (CTA Utama, Poin Penting), #CF7B72 (CTA Lembut) */
+  --bg: #F8F6F2;
+  --surface: #ffffff;
+  --surface-2: #E8DFD5;
+  --ink: #3A3635;
+  --ink-2: #8E8B87;
+  --brand: #C92D31;
+  --brand-strong: #A92225;
+  --brand-fill: #C92D31;
+  --on-brand: #ffffff;
+  --brand-tint: #FCEAE8;
+  --brand-tint-2: #F2D5CF;
+  --danger: #C92D31;
+  --danger-tint: #FCEAE8;
+  --warn-ink: #A36B00;
+  --warn-tint: #FCF4E5;
+  --border: #F2D5CF;
+  --hairline: rgba(142, 139, 135, 0.2);
+  --card-hairline: rgba(242, 213, 207, 0.3);
 
   /* Material kaca (chrome saja) */
-  --glass-bg: rgba(250, 252, 251, 0.7);
+  --glass-bg: rgba(248, 246, 242, 0.7);
   --glass-border: rgba(255, 255, 255, 0.55);
   --glass-blur: blur(22px) saturate(1.8);
-  --glass-shadow: 0 10px 34px oklch(20% 0.02 170 / 14%), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  --glass-shadow: 0 10px 34px rgba(58, 54, 53, 0.12), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
 
   /* Latar ambient — memberi sesuatu untuk dibiaskan si kaca */
-  --ambient-a: oklch(90% 0.05 170 / 55%);
-  --ambient-b: oklch(92% 0.03 210 / 45%);
+  --ambient-a: rgba(242, 213, 207, 0.45);
+  --ambient-b: rgba(232, 223, 213, 0.35);
 
   /* Elevation konten (solid) */
-  --shadow-card: 0 1px 2px oklch(0% 0 0 / 4%), 0 4px 16px oklch(20% 0.02 170 / 6%);
+  --shadow-card: 0 1px 2px rgba(58, 54, 53, 0.04), 0 4px 16px rgba(58, 54, 53, 0.06);
 
   /* Bentuk */
   --r-sm: 10px;
@@ -60,42 +63,43 @@
   --z-sheet: 50;
   --z-toast: 60;
 
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%235b6763' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%233A3635' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    --bg: oklch(15% 0.01 170);
-    --surface: oklch(21% 0.012 170);
-    --surface-2: oklch(26.5% 0.012 170);
-    --ink: oklch(95% 0.005 170);
-    --ink-2: oklch(73% 0.015 168);
-    --brand: oklch(74% 0.11 163);
-    --brand-strong: oklch(80% 0.11 163);
-    --brand-fill: oklch(52% 0.095 164);
-    --on-brand: oklch(99% 0 0);
-    --brand-tint: oklch(30% 0.045 164);
-    --brand-tint-2: oklch(35% 0.06 164);
-    --danger: oklch(72% 0.16 24);
-    --danger-tint: oklch(28% 0.06 27);
-    --warn-ink: oklch(82% 0.11 85);
-    --warn-tint: oklch(29% 0.05 85);
-    --border: oklch(31% 0.012 170);
-    --hairline: oklch(100% 0 0 / 9%);
-    --card-hairline: oklch(100% 0 0 / 7%);
+    /* Mode Gelap disesuaikan secara harmonis berdasarkan palet warm-cream/crimson */
+    --bg: #1F1D1C;
+    --surface: #282625;
+    --surface-2: #312E2D;
+    --ink: #F8F6F2;
+    --ink-2: #8E8B87;
+    --brand: #CF7B72;
+    --brand-strong: #E59288;
+    --brand-fill: #CF7B72;
+    --on-brand: #1F1D1C;
+    --brand-tint: rgba(207, 123, 114, 0.15);
+    --brand-tint-2: rgba(242, 213, 207, 0.12);
+    --danger: #CF7B72;
+    --danger-tint: rgba(207, 123, 114, 0.12);
+    --warn-ink: #E5B35C;
+    --warn-tint: rgba(229, 179, 92, 0.1);
+    --border: #3A3635;
+    --hairline: rgba(255, 255, 255, 0.08);
+    --card-hairline: rgba(255, 255, 255, 0.05);
 
-    --glass-bg: rgba(19, 23, 21, 0.62);
+    --glass-bg: rgba(31, 29, 28, 0.72);
     --glass-border: rgba(255, 255, 255, 0.09);
-    --glass-shadow: 0 10px 34px oklch(0% 0 0 / 45%), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
 
-    --ambient-a: oklch(32% 0.06 170 / 45%);
-    --ambient-b: oklch(28% 0.04 220 / 38%);
+    --ambient-a: rgba(207, 123, 114, 0.12);
+    --ambient-b: rgba(142, 139, 135, 0.08);
 
-    --shadow-card: 0 1px 2px oklch(0% 0 0 / 25%), 0 6px 20px oklch(0% 0 0 / 25%);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.25), 0 6px 20px rgba(0, 0, 0, 0.25);
 
-    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23a9b5b0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23F8F6F2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 }
 
@@ -379,7 +383,7 @@ svg {
 }
 
 .side-item:hover {
-  background: oklch(50% 0.02 170 / 10%);
+  background: oklch(50% 0.02 32 / 10%);
 }
 
 .side-item.active {
@@ -499,7 +503,7 @@ svg {
 
 .module-card:hover {
   border-color: var(--brand-tint-2);
-  box-shadow: 0 2px 4px oklch(0% 0 0 / 5%), 0 8px 24px oklch(20% 0.02 170 / 9%);
+  box-shadow: 0 2px 4px oklch(0% 0 0 / 5%), 0 8px 24px oklch(20% 0.02 32 / 9%);
 }
 
 .module-card-title {
