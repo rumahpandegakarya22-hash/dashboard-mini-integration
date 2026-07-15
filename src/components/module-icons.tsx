@@ -8,6 +8,7 @@ import {
   ClipboardList,
   DoorOpen,
   FileCog,
+  FileUp,
   Hammer,
   LayoutGrid,
   ListTodo,
@@ -37,8 +38,10 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   'perbaikan-korektif': Hammer,
   'inspeksi-kebersihan': Sparkles,
   'inspeksi-fasilitas': ClipboardCheck,
-  'maintenance-wo': FileCog,
-  'daily-task': ListTodo
+  'wo-inspeksi': FileCog,
+  'wo-cleaning': FileCog,
+  'daily-task': ListTodo,
+  'upload-docs': FileUp
 };
 
 export function moduleIcon(id: string): LucideIcon {
@@ -47,7 +50,7 @@ export function moduleIcon(id: string): LucideIcon {
 
 /** Kelompok modul per divisi — urutan tampil di sidebar & beranda. */
 export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
-  { label: 'Umum', ids: ['daily-task'] },
+  { label: 'Umum', ids: ['daily-task', 'upload-docs'] },
   {
     label: 'Administrasi',
     ids: ['penghuni-baru', 'pembayaran-sewa', 'pindah-kamar', 'checkout', 'pengeluaran', 'feedback']
@@ -55,5 +58,6 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Sales', ids: ['survey'] },
   { label: 'Marketing', ids: ['leads', 'konten', 'promosi'] },
   { label: 'Maintenance', ids: ['perawatan-preventif', 'perbaikan-korektif'] },
-  { label: 'Inspeksi', ids: ['inspeksi-kebersihan', 'inspeksi-fasilitas', 'maintenance-wo'] }
+  { label: 'Inspeksi', ids: ['inspeksi-kebersihan', 'inspeksi-fasilitas', 'wo-inspeksi'] },
+  { label: 'Cleaning', ids: ['wo-cleaning'] }
 ];

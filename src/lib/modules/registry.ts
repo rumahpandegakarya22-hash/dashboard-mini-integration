@@ -139,6 +139,9 @@ export const MODULES: ModuleMeta[] = [
     id: 'pindah-kamar',
     title: 'Pindah Kamar',
     ready: true,
+    // Skema baru (Mini App Improvement §5): tulis ke Turso rooms_transfer +
+    // update penghuni + occupancy_history, dengan validasi kamar kosong /
+    // booking aktif / penghuni aktif di handler.
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
       {
@@ -146,23 +149,23 @@ export const MODULES: ModuleMeta[] = [
         label: 'Penghuni',
         type: 'select-async',
         required: true,
-        master: 'tenants',
-        masterValue: 'label',
+        master: 'penghuni-turso',
+        masterValue: 'id',
         masterLabel: 'label',
-        helpText: 'Kamar Lama otomatis terdeteksi dari data penghuni ini.'
+        helpText: 'Kamar lama otomatis terdeteksi dari data penghuni ini.'
       },
       {
         name: 'kamarBaru',
         label: 'Kamar Baru',
         type: 'select-async',
         required: true,
-        master: 'rooms-available',
+        master: 'kamar-kosong-turso',
         masterValue: 'id',
-        masterLabel: 'label'
+        masterLabel: 'label',
+        helpText: 'Hanya kamar kosong tanpa booking aktif yang muncul di sini.'
       },
       { name: 'alasan', label: 'Alasan', type: 'textarea', required: true },
-      { name: 'efektifMulai', label: 'Efektif Mulai', type: 'date', required: false },
-      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
+      { name: 'notes', label: 'Catatan', type: 'textarea', required: false }
     ]
   },
   {
@@ -608,36 +611,39 @@ export const MODULES: ModuleMeta[] = [
     id: 'daily-task',
     title: 'Daily Task',
     ready: true,
+    // Format mengikuti tabel Turso daily_tasks (Mini App Improvement §1):
+    // Tanggal, Task, PIC, Divisi, Deadline, Status — push ke database Turso.
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
+      { name: 'task', label: 'Task', type: 'text', required: true, placeholder: 'Contoh: Follow-up leads WA' },
+      { name: 'pic', label: 'PIC', type: 'text', required: true, placeholder: 'Nama petugas' },
       {
         name: 'divisi',
         label: 'Divisi',
         type: 'select',
         required: true,
         options: [
-          { value: 'Administrasi', label: 'Administrasi' },
-          { value: 'Sales', label: 'Sales' },
-          { value: 'Marketing', label: 'Marketing' },
+          { value: 'Admin', label: 'Admin' },
+          { value: 'Cleaning', label: 'Cleaning' },
+          { value: 'Finance', label: 'Finance' },
+          { value: 'Inspeksi', label: 'Inspeksi' },
           { value: 'Maintenance', label: 'Maintenance' },
-          { value: 'Inspeksi', label: 'Inspeksi' }
+          { value: 'Marketing', label: 'Marketing' },
+          { value: 'Sales', label: 'Sales' }
         ]
       },
-      { name: 'namaTask', label: 'Nama Task', type: 'text', required: true, placeholder: 'Contoh: Follow-up leads WA' },
-      { name: 'deskripsi', label: 'Deskripsi', type: 'textarea', required: false },
+      { name: 'deadline', label: 'Deadline', type: 'date', required: true },
       {
         name: 'status',
         label: 'Status',
         type: 'select',
         required: true,
         options: [
-          { value: 'Belum Dikerjakan', label: 'Belum Dikerjakan' },
-          { value: 'Sedang Dikerjakan', label: 'Sedang Dikerjakan' },
-          { value: 'Selesai', label: 'Selesai' }
+          { value: 'Pending', label: 'Pending' },
+          { value: 'In Progress', label: 'In Progress' },
+          { value: 'Complete', label: 'Complete' }
         ]
-      },
-      { name: 'pic', label: 'PIC', type: 'text', required: true, placeholder: 'Nama petugas' },
-      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
+      }
     ]
   },
   {
@@ -679,51 +685,90 @@ export const MODULES: ModuleMeta[] = [
     ]
   },
   {
-    id: 'maintenance-wo',
-    title: 'Maintenance Work Order',
+    id: 'upload-docs',
+    title: 'Upload Dokumen',
     ready: true,
+    // Mini App Improvement §3: file (pdf/word/png/jpeg, maks 2 MB) → Google Drive
+    // internal via /api/upload → URL disimpan di Turso tabel dokumen.
     fields: [
-      { name: 'tanggalWo', label: 'Tanggal WO', type: 'date', required: true, defaultToday: true },
+      { name: 'judul', label: 'Judul Dokumen', type: 'text', required: true, placeholder: 'Contoh: SOP Kebersihan Kamar' },
       {
-        name: 'petugasInspeksi',
-        label: 'Petugas Inspeksi',
-        type: 'select-async',
+        name: 'divisi',
+        label: 'Divisi',
+        type: 'select',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:PIC'
-      },
-      { name: 'lokasiItem', label: 'Lokasi/Item', type: 'text', required: true, placeholder: 'Contoh: Kamar 3 — AC' },
-      {
-        name: 'kategori',
-        label: 'Kategori',
-        type: 'select-async',
-        required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:kategori korektif'
-      },
-      { name: 'deskripsi', label: 'Deskripsi Pekerjaan', type: 'textarea', required: true },
-      {
-        name: 'prioritas',
-        label: 'Prioritas',
-        type: 'select-async',
-        required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Prioritas'
+        options: [
+          { value: 'Admin', label: 'Admin' },
+          { value: 'Cleaning', label: 'Cleaning' },
+          { value: 'Finance', label: 'Finance' },
+          { value: 'Inspeksi', label: 'Inspeksi' },
+          { value: 'Maintenance', label: 'Maintenance' },
+          { value: 'Marketing', label: 'Marketing' },
+          { value: 'Sales', label: 'Sales' }
+        ]
       },
       {
-        name: 'ditugaskanKe',
-        label: 'Ditugaskan Ke',
-        type: 'select-async',
+        name: 'file',
+        label: 'File',
+        type: 'file',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:PIC',
-        helpText: 'PIC maintenance yang akan mengerjakan work order ini.'
-      },
-      { name: 'targetSelesai', label: 'Target Selesai', type: 'date', required: false },
-      {
-        name: 'status',
-        label: 'Status',
-        type: 'select-async',
-        required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Status'
-      },
-      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
+        uploadKind: 'dokumen',
+        accept: 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg',
+        maxSizeMb: 2,
+        placeholder: 'Pilih file (pdf/word/png/jpeg, maks 2 MB)'
+      }
     ]
-  }
+  },
+  ...makeWorkOrderModules()
 ];
+
+/**
+ * Modul Input Work Order divisi Inspeksi & Cleaning (Mini App Improvement §2).
+ * Data masuk tabel Turso work_orders → muncul di joblist divisi tujuan.
+ * Bukti foto diunggah ke Drive via /api/upload (value = URL Drive).
+ */
+function makeWorkOrderModules(): ModuleMeta[] {
+  const KATEGORI = [
+    'Elektrikal dan Elektronik',
+    'Sanitasi dan Plumbing',
+    'Sipil dan Bangunan',
+    'Furniture dan Interior',
+    'Fasum dan Keamanan',
+    'Kebersihan'
+  ].map((v) => ({ value: v, label: v }));
+  const PRIORITAS = ['Tinggi', 'Sedang', 'Rendah', 'Darurat'].map((v) => ({ value: v, label: v }));
+
+  const fieldsFor = (tujuan: string[]): FieldDef[] => [
+    { name: 'tanggalInput', label: 'Tanggal Input', type: 'date', required: true, defaultToday: true },
+    { name: 'petugas', label: 'Petugas', type: 'text', required: true, placeholder: 'Nama petugas pelapor' },
+    { name: 'lokasiItem', label: 'Lokasi/Item', type: 'text', required: true, placeholder: 'Contoh: Kamar 3 — AC' },
+    { name: 'kategori', label: 'Kategori', type: 'select', required: true, options: KATEGORI },
+    { name: 'deskripsi', label: 'Deskripsi', type: 'textarea', required: true },
+    { name: 'prioritas', label: 'Prioritas', type: 'select', required: true, options: PRIORITAS },
+    {
+      name: 'tujuanDivisi',
+      label: 'Tujuan Divisi',
+      type: 'select',
+      required: true,
+      options: tujuan.map((v) => ({ value: v, label: v })),
+      helpText: 'Work order akan muncul di joblist divisi ini.'
+    },
+    { name: 'targetDeadline', label: 'Target Deadline', type: 'date', required: true },
+    { name: 'catatan', label: 'Catatan', type: 'textarea', required: false },
+    {
+      name: 'buktiFoto',
+      label: 'Bukti Foto',
+      type: 'file',
+      required: false,
+      uploadKind: 'work-order',
+      accept: 'image/jpeg,image/png',
+      maxSizeMb: 2,
+      placeholder: 'Pilih foto (jpg/png, maks 2 MB)'
+    }
+  ];
+
+  return [
+    { id: 'wo-inspeksi', title: 'Input Work Order', ready: true, fields: fieldsFor(['Cleaning', 'Maintenance']) },
+    { id: 'wo-cleaning', title: 'Input Work Order', ready: true, fields: fieldsFor(['Maintenance', 'Inspeksi']) }
+  ];
+}

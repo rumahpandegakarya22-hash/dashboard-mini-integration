@@ -16,7 +16,8 @@ import { submitLeads } from './leads';
 import { submitKonten } from './konten';
 import { submitPromosi } from './promosi';
 import { submitDailyTask } from './daily-task';
-import { submitMaintenanceWo } from './maintenance-wo';
+import { submitWoInspeksi, submitWoCleaning } from './work-order';
+import { submitUploadDocs } from './upload-docs';
 
 /**
  * Handler konkret per modul, ditambahkan modul-per-modul (Tahap 3: penghuni-baru,
@@ -43,7 +44,9 @@ export const HANDLERS: Record<string, SubmitHandler> = {
   konten: submitKonten,
   promosi: submitPromosi,
   'daily-task': submitDailyTask,
-  'maintenance-wo': submitMaintenanceWo
+  'wo-inspeksi': submitWoInspeksi,
+  'wo-cleaning': submitWoCleaning,
+  'upload-docs': submitUploadDocs
 };
 
 /** Handler preview (hitung tanpa efek samping) — cuma modul dgn ModuleMeta.hasPreview:true perlu entry di sini. */

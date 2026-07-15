@@ -380,6 +380,66 @@ function isVisible(f: FieldDef, values: Record<string, string>): boolean {
   return Array.isArray(target) ? target.includes(val) : val === target;
 }
 
+/**
+ * Field upload: file dipilih → langsung diunggah ke /api/upload (Drive via
+ * service account) → value field = URL Drive (disimpan ke database saat submit).
+ */
+function FileField({ f, value, onChange }: { f: FieldDef; value: string; onChange: (v: string) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const maxMb = f.maxSizeMb ?? 2;
+
+  async function handleFile(file: File | undefined) {
+    if (!file) return;
+    setUploadError('');
+    if (file.size > maxMb * 1024 * 1024) {
+      setUploadError(`Ukuran file melebihi ${maxMb} MB.`);
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('kind', f.uploadKind || '');
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Upload gagal.');
+      setFileName(file.name);
+      onChange(json.url || '');
+    } catch (e: any) {
+      setUploadError(e.message || 'Upload gagal.');
+      onChange('');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <>
+      <label className={value ? 'file-btn filled' : 'file-btn'} htmlFor={f.name}>
+        {uploading ? <LoaderCircle size={18} className="spin" /> : <Paperclip size={18} />}
+        <span>
+          {uploading
+            ? 'Mengunggah...'
+            : value
+              ? `${fileName || 'File terunggah'} ✓`
+              : f.placeholder || `Pilih file (maks ${maxMb} MB)`}
+        </span>
+        <input
+          id={f.name}
+          name={f.name}
+          type="file"
+          accept={f.accept}
+          disabled={uploading}
+          onChange={(e) => handleFile(e.target.files?.[0])}
+        />
+      </label>
+      {uploadError && <p className="error" style={{ marginTop: 6 }}>{uploadError}</p>}
+    </>
+  );
+}
+
 function renderField(f: FieldDef, value: string, onChange: (v: string) => void, asyncOptions?: FieldOption[]) {
   const onInputChange = (e: ChangeEl) => onChange(e.target.value);
 
@@ -403,14 +463,7 @@ function renderField(f: FieldDef, value: string, onChange: (v: string) => void, 
     case 'time':
       return <input id={f.name} name={f.name} type="time" value={value} onChange={onInputChange} />;
     case 'file':
-      // Upload aktual ke Drive dibangun Tahap 4 (/api/upload); untuk sekarang hanya menampung nama file.
-      return (
-        <label className={value ? 'file-btn filled' : 'file-btn'} htmlFor={f.name}>
-          <Paperclip size={18} />
-          <span>{value || 'Pilih file (jpg/png/pdf, maks 10 MB)'}</span>
-          <input id={f.name} name={f.name} type="file" onChange={(e) => onChange(e.target.files?.[0]?.name || '')} />
-        </label>
-      );
+      return <FileField f={f} value={value} onChange={onChange} />;
     case 'select':
     case 'select-async': {
       const isAsync = f.type === 'select-async';

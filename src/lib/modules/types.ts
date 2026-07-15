@@ -23,6 +23,9 @@ export interface FieldDef {
   filterBy?: string; // properti objek master dicocokkan dgn nilai field dependsOn (mis. "tipe")
   showIf?: { field: string; equals: string | string[] }; // tampilkan field ini hanya jika field lain bernilai tertentu
   // (mis. { field: 'jenisPembayaran', equals: 'Sewa' }). Field yg disembunyikan tidak divalidasi/dikirim.
+  uploadKind?: string; // type=file: kunci folder Drive tujuan di /api/upload (mis. 'work-order'); value field = URL Drive hasil upload
+  accept?: string; // type=file: atribut accept input (mis. 'image/jpeg,image/png')
+  maxSizeMb?: number; // type=file: batas ukuran (default 2 MB)
 }
 
 export interface SubmitContext {

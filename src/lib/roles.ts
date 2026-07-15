@@ -5,7 +5,9 @@ export type Role =
   | 'staff_sales'
   | 'staff_marketing'
   | 'staff_maintenance'
-  | 'staff_inspeksi';
+  | 'staff_inspeksi'
+  | 'staff_cleaning'
+  | 'staff_finance';
 
 export const ROLE_LABEL: Record<Role, string> = {
   owner: 'Owner',
@@ -14,7 +16,9 @@ export const ROLE_LABEL: Record<Role, string> = {
   staff_sales: 'Staff Sales',
   staff_marketing: 'Staff Marketing',
   staff_maintenance: 'Staff Maintenance',
-  staff_inspeksi: 'Staff Inspeksi'
+  staff_inspeksi: 'Staff Inspeksi',
+  staff_cleaning: 'Staff Cleaning',
+  staff_finance: 'Staff Finance'
 };
 
 /** Modul yang boleh diakses tiap role (owner & pengawas: semua). */
@@ -33,11 +37,40 @@ export const MODULE_ACCESS: Record<string, Role[]> = {
   'perbaikan-korektif': ['staff_maintenance'],
   'inspeksi-kebersihan': ['staff_inspeksi'],
   'inspeksi-fasilitas': ['staff_inspeksi'],
-  'maintenance-wo': ['staff_inspeksi'],
-  'daily-task': ['staff_admin', 'staff_sales', 'staff_marketing', 'staff_maintenance', 'staff_inspeksi']
+  'wo-inspeksi': ['staff_inspeksi'],
+  'wo-cleaning': ['staff_cleaning'],
+  'daily-task': [
+    'staff_admin',
+    'staff_sales',
+    'staff_marketing',
+    'staff_maintenance',
+    'staff_inspeksi',
+    'staff_cleaning',
+    'staff_finance'
+  ],
+  'upload-docs': [
+    'staff_admin',
+    'staff_sales',
+    'staff_marketing',
+    'staff_maintenance',
+    'staff_inspeksi',
+    'staff_cleaning',
+    'staff_finance'
+  ]
 };
 
 export function canAccess(role: Role, moduleId: string): boolean {
   if (role === 'owner' || role === 'pengawas') return true;
   return (MODULE_ACCESS[moduleId] || []).includes(role);
 }
+
+/** Divisi (nilai di DB Turso) tiap role staff — dipakai joblist/notif work order. */
+export const ROLE_DIVISI: Partial<Record<Role, string>> = {
+  staff_admin: 'Admin',
+  staff_sales: 'Sales',
+  staff_marketing: 'Marketing',
+  staff_maintenance: 'Maintenance',
+  staff_inspeksi: 'Inspeksi',
+  staff_cleaning: 'Cleaning',
+  staff_finance: 'Finance'
+};

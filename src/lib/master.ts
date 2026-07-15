@@ -427,6 +427,37 @@ export async function getInvoiceDpMaster(): Promise<InvoiceDpPenghuni[]> {
   return cached('invoice-dp', fetchInvoiceDpMasterUncached);
 }
 
+// ---- Master dari Turso (Mini App Improvement §5 — pindah kamar berbasis database) ----
+
+/** Penghuni aktif dari Turso. id efektif = "ID Penghuni" bila terisi, fallback kamar_id (PK). */
+async function getPenghuniTurso(): Promise<{ id: string; label: string }[]> {
+  const { turso } = await import('./turso');
+  const res = await turso().execute(
+    `SELECT COALESCE("ID Penghuni", kamar_id) id, nama_lengkap, no_kamar
+     FROM penghuni WHERE COALESCE(no_kamar, '') != '' ORDER BY nama_lengkap`
+  );
+  return res.rows.map((r) => ({ id: String(r.id), label: `${r.nama_lengkap} — Kamar ${r.no_kamar}` }));
+}
+
+/**
+ * Kamar layak jadi tujuan pindah: status bukan Terisi, tidak sedang ditempati
+ * penghuni mana pun, dan tanpa booking aktif (Konfirmasi/Check-in).
+ */
+async function getKamarKosongTurso(): Promise<{ id: string; label: string }[]> {
+  const { turso } = await import('./turso');
+  const res = await turso().execute(
+    `SELECT k.no_kamar, k.tipe_kamar, k.harga_bulan FROM kamar k
+     WHERE LOWER(COALESCE(k.status,'')) != 'terisi'
+       AND NOT EXISTS (SELECT 1 FROM penghuni p WHERE CAST(p.no_kamar AS TEXT) = CAST(k.no_kamar AS TEXT))
+       AND NOT EXISTS (SELECT 1 FROM booking b WHERE b.kamar_no = k.no_kamar AND b.status_booking IN ('Konfirmasi','Check-in'))
+     ORDER BY k.no_kamar`
+  );
+  return res.rows.map((r) => ({
+    id: String(r.no_kamar),
+    label: `${r.no_kamar} — ${r.tipe_kamar ?? ''} · Rp${Number(r.harga_bulan ?? 0).toLocaleString('id-ID')}/bln`
+  }));
+}
+
 /** Dispatcher dipakai API /api/master/[type]. */
 export async function getMasterData(type: string): Promise<unknown> {
   if (type.startsWith('setting:')) return getGenericSettingOptions(type);
@@ -435,6 +466,10 @@ export async function getMasterData(type: string): Promise<unknown> {
       return getRooms();
     case 'rooms-available':
       return getAvailableRooms();
+    case 'penghuni-turso':
+      return cached('penghuni-turso', getPenghuniTurso);
+    case 'kamar-kosong-turso':
+      return cached('kamar-kosong-turso', getKamarKosongTurso);
     case 'accounts':
       return getAccounts();
     case 'tenants':

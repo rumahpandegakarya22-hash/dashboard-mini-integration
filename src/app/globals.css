@@ -962,6 +962,51 @@ input[type='file'] {
   border: 0;
 }
 
+/* ============ Joblist work order ============ */
+
+.joblist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.joblist-table th,
+.joblist-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: top;
+}
+
+.joblist-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  position: sticky;
+  top: 0;
+}
+
+.joblist-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.prio-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.prio-badge.hot {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
 /* ============ Utilitas & kompat lama ============ */
 
 .muted {

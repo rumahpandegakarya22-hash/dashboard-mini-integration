@@ -1,79 +1,92 @@
-import { appendRow, assertHeaders } from '../../sheets';
+import { turso } from '../../turso';
 import { withLock } from '../../redis';
-import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, required } from '../../validate';
-import { getRoomFresh, getTenantByLabel, updateRoomStatus } from '../../master';
 import type { SubmitHandler } from '../types';
 
-// Sheet BARU "Log Pindah Kamar" (dibuat manual saat setup, ID via env SHEET_ID_PINDAH_KAMAR).
-// Karena sheet ini baru, header di bawah adalah KONTRAK yang didefinisikan app — user harus
-// membuat kolomnya persis begini saat setup (bukan tebakan dari sheet eksisting).
-const HEADER_RANGE = "'Log Pindah Kamar'!A1:K1";
-const EXPECTED_HEADERS = [
-  'Tanggal',
-  'Penghuni',
-  'Kamar Lama',
-  'Kamar Baru',
-  'Harga Lama',
-  'Harga Baru',
-  'Alasan',
-  'Efektif Mulai',
-  'Catatan',
-  'Diinput Oleh',
-  'Timestamp'
-];
-
+/**
+ * Pindah Kamar berbasis database Turso (Mini App Improvement §5):
+ *   1. Validasi: penghuni masih aktif; kamar baru ada, tidak Terisi, tidak
+ *      ditempati penghuni lain, dan tanpa booking aktif (Konfirmasi/Check-in).
+ *   2. INSERT rooms_transfer (histori perpindahan).
+ *   3. UPDATE penghuni.no_kamar berdasarkan ID unik penghuni
+ *      ("ID Penghuni", fallback kamar_id utk data lama yang ID-nya kosong).
+ *   4. UPSERT occupancy_history (PK id_penghuni → satu baris posisi terkini).
+ * Langkah 2-4 dijalankan atomik via batch; lock per-kamar cegah race ganda.
+ */
 export const submitPindahKamar: SubmitHandler = async (values, ctx) => {
   const tanggal = parseDateISO(String(values.tanggal ?? ''));
-  const penghuni = required(values.penghuni, 'Penghuni'); // format baku "KTD-x — Nama"
+  const idPenghuni = required(values.penghuni, 'Penghuni');
   const kamarBaru = required(values.kamarBaru, 'Kamar Baru');
   const alasan = required(values.alasan, 'Alasan');
-  const efektifMulai = values.efektifMulai ? parseDateISO(String(values.efektifMulai)) : tanggal;
-  const catatan = String(values.catatan ?? '').trim();
-  if (!SHEETS.PINDAH_KAMAR) {
-    throw new Error('Spreadsheet Log Pindah Kamar belum dibuat/diisi (SHEET_ID_PINDAH_KAMAR di .env.local).');
-  }
+  const notes = String(values.notes ?? '').trim();
+
+  const db = turso();
 
   return withLock(`kamar:${kamarBaru}`, 15, async () => {
-    const tenant = await getTenantByLabel(penghuni);
-    if (!tenant?.kamar) throw new Error(`Kamar lama tidak terdeteksi untuk penghuni "${penghuni}".`);
-    const kamarLama = tenant.kamar;
-    if (kamarBaru === kamarLama) throw new Error('Kamar Baru harus berbeda dari Kamar Lama.');
+    // Penghuni masih aktif? (ada di tabel penghuni & masih menempati kamar)
+    const p = await db.execute({
+      sql: `SELECT COALESCE("ID Penghuni", kamar_id) id, nama_lengkap, no_kamar
+            FROM penghuni WHERE COALESCE("ID Penghuni", kamar_id) = ?`,
+      args: [idPenghuni]
+    });
+    if (p.rows.length === 0) throw new Error('Penghuni tidak ditemukan / sudah tidak aktif.');
+    const nama = String(p.rows[0].nama_lengkap ?? '');
+    const kamarLama = String(p.rows[0].no_kamar ?? '');
+    if (!kamarLama) throw new Error(`Penghuni "${nama}" tidak tercatat menempati kamar mana pun (tidak aktif).`);
+    if (kamarLama === kamarBaru) throw new Error('Kamar baru sama dengan kamar lama.');
 
-    const roomBaru = await getRoomFresh(kamarBaru);
-    if (!roomBaru) throw new Error(`Kamar ${kamarBaru} tidak ditemukan di master.`);
-    if (roomBaru.status.toLowerCase() === 'terisi') {
-      throw new Error(`Kamar ${kamarBaru} sudah terisi. Pilih kamar lain.`);
+    // Kamar baru harus ada & kosong.
+    const k = await db.execute({ sql: 'SELECT status FROM kamar WHERE CAST(no_kamar AS TEXT) = ?', args: [kamarBaru] });
+    if (k.rows.length === 0) throw new Error(`Kamar ${kamarBaru} tidak ditemukan.`);
+    if (String(k.rows[0].status ?? '').toLowerCase() === 'terisi') {
+      throw new Error(`Kamar ${kamarBaru} berstatus Terisi — pilih kamar lain.`);
     }
-    const roomLama = await getRoomFresh(kamarLama);
+    const occupied = await db.execute({
+      sql: 'SELECT nama_lengkap FROM penghuni WHERE CAST(no_kamar AS TEXT) = ? LIMIT 1',
+      args: [kamarBaru]
+    });
+    if (occupied.rows.length > 0) {
+      throw new Error(`Kamar ${kamarBaru} masih ditempati ${occupied.rows[0].nama_lengkap}.`);
+    }
 
-    await assertHeaders(SHEETS.PINDAH_KAMAR, HEADER_RANGE, EXPECTED_HEADERS);
-    const row = await appendRow(SHEETS.PINDAH_KAMAR, "'Log Pindah Kamar'!A:K", [
-      tanggal,
-      penghuni,
-      kamarLama,
-      kamarBaru,
-      roomLama?.hargaBulan ?? '',
-      roomBaru.hargaBulan,
-      alasan,
-      efektifMulai,
-      catatan,
-      ctx.user.name,
-      new Date().toISOString()
-    ]);
+    // Tidak ada booking aktif di kamar baru.
+    const b = await db.execute({
+      sql: `SELECT no_booking FROM booking WHERE CAST(kamar_no AS TEXT) = ? AND status_booking IN ('Konfirmasi','Check-in') LIMIT 1`,
+      args: [kamarBaru]
+    });
+    if (b.rows.length > 0) {
+      throw new Error(`Kamar ${kamarBaru} punya booking aktif (${b.rows[0].no_booking}) — batalkan dulu atau pilih kamar lain.`);
+    }
 
-    await updateRoomStatus(kamarBaru, 'Terisi');
-    await updateRoomStatus(kamarLama, 'Kosong');
+    // Tulis atomik: histori transfer + update penghuni + occupancy terkini.
+    const idTransfer = `RT-${tanggal.replace(/-/g, '')}-${ctx.requestId.slice(0, 8)}`;
+    await db.batch(
+      [
+        {
+          sql: `INSERT INTO rooms_transfer (id_rooms_transfer, id_penghuni, no_kamar_lama, no_kamar_baru, tanggal, alasan, notes, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [idTransfer, idPenghuni, kamarLama, kamarBaru, tanggal, alasan, notes, ctx.user.username]
+        },
+        {
+          sql: `UPDATE penghuni SET no_kamar = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE COALESCE("ID Penghuni", kamar_id) = ?`,
+          args: [kamarBaru, idPenghuni]
+        },
+        {
+          sql: `INSERT INTO occupancy_history (id_penghuni, nama, no_kamar, tanggal_mulai)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(id_penghuni) DO UPDATE SET no_kamar = excluded.no_kamar, tanggal_mulai = excluded.tanggal_mulai`,
+          args: [idPenghuni, nama, kamarBaru, tanggal]
+        }
+      ],
+      'write'
+    );
 
-    const selisih = roomLama ? roomBaru.hargaBulan - roomLama.hargaBulan : 0;
     return {
-      target: 'Log Pindah Kamar',
-      row,
-      data: { tanggal, penghuni, kamarLama, kamarBaru, alasan, efektifMulai, catatan },
+      target: `Turso → rooms_transfer (${idTransfer})`,
+      data: { ...values, idTransfer, kamarLama, nama },
       warning:
-        selisih !== 0
-          ? `Selisih harga: Rp${selisih.toLocaleString('id-ID')}/bln. Sesuaikan tagihan berikutnya di Modul Pembayaran Sewa.`
-          : undefined
+        'Status kamar di tabel kamar TIDAK diubah otomatis (dikelola dashboard) — pastikan status kamar lama/baru diperbarui bila perlu.'
     };
   });
 };
