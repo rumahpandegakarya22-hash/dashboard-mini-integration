@@ -3,6 +3,7 @@ import { withLock } from '../../redis';
 import { SHEETS } from '@/config/spreadsheets';
 import { normalizePhone, normalizeRoomId, parseDateISO, parseRupiah, required } from '../../validate';
 import { getActiveTenants, getRoomFresh } from '../../master';
+import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 
 // Kolom B:M sheet "Log Booking" (Log Sales). Kolom A (No. Booking) & H (Tgl Keluar Est.) = FORMULA,
@@ -41,7 +42,7 @@ function tryNormalizePhone(v: string): string | null {
   }
 }
 
-export const submitPenghuniBaru: SubmitHandler = async (values) => {
+export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
   const tanggalBooking = parseDateISO(String(values.tanggalBooking ?? ''));
   const namaPenyewa = required(values.namaPenyewa, 'Nama Penyewa');
   if (namaPenyewa.length < 3) throw new Error('Nama Penyewa minimal 3 karakter.');
@@ -100,10 +101,13 @@ export const submitPenghuniBaru: SubmitHandler = async (values) => {
       catatan
     ]);
 
+    const warning = await saveLampiran(values, ctx, `Penghuni Baru — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin');
+
     return {
       target: 'Log Sales → Log Booking',
       row,
-      data: { tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, hargaDisepakati, statusBooking, sumberLeads, catatan }
+      data: { tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, hargaDisepakati, statusBooking, sumberLeads, catatan },
+      warning
     };
   });
 };

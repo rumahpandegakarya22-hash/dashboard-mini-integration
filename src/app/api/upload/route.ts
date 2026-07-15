@@ -24,8 +24,10 @@ const ALLOWED_MIME: Record<string, string> = {
 /** kind → env folder Drive. Folder baru cukup ditambah di env tanpa ubah kode. */
 const KIND_FOLDERS: Record<string, string | undefined> = {
   'work-order': process.env.DRIVE_FOLDER_WORK_ORDER || process.env.DRIVE_FOLDER_MAINTENANCE,
-  'dokumen': process.env.DRIVE_FOLDER_DOKUMEN,
+  'maintenance': process.env.DRIVE_FOLDER_MAINTENANCE,
   'penghuni': process.env.DRIVE_FOLDER_PENGHUNI,
+  'pembayaran': process.env.DRIVE_FOLDER_PEMBAYARAN,
+  'nota': process.env.DRIVE_FOLDER_NOTA,
   'feedback': process.env.DRIVE_FOLDER_FEEDBACK
 };
 

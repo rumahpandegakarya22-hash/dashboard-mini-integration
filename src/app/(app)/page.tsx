@@ -2,6 +2,7 @@ import { getSessionUser } from '@/lib/auth';
 import { canAccess, ROLE_LABEL } from '@/lib/roles';
 import { MODULES } from '@/lib/modules/registry';
 import { getJoblist, joblistDivisi } from '@/lib/joblist';
+import HomeGreeting from '@/components/HomeGreeting';
 import HomeMenu from '@/components/HomeMenu';
 import Joblist from '@/components/Joblist';
 
@@ -21,10 +22,12 @@ export default async function HomePage() {
     console.error('[joblist] gagal membaca work_orders:', e);
   }
 
+  // Improvement v1.1 §3: tabel joblist di paling atas, grid menu modul di bawahnya.
   return (
     <>
-      <HomeMenu userName={user.name} roleLabel={ROLE_LABEL[user.role]} isOwner={user.role === 'owner'} modules={visible} />
+      <HomeGreeting userName={user.name} roleLabel={ROLE_LABEL[user.role]} />
       <Joblist rows={joblistRows} divisi={divisi} />
+      <HomeMenu isOwner={user.role === 'owner'} modules={visible} />
     </>
   );
 }

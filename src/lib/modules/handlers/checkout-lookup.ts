@@ -1,6 +1,5 @@
-import { readTable } from '../../sheets';
-import { SHEETS } from '@/config/spreadsheets';
-import { getTenantByLabel, getRoomFresh, getTanggalMasukByKamar } from '../../master';
+import { getTenantByLabel, getTanggalMasukByKamar } from '../../master';
+import { turso } from '../../turso';
 import type { AutoFillHandler } from '../types';
 
 export interface CheckoutDefaults {
@@ -23,21 +22,18 @@ function toISODateFlexible(raw: string): string | null {
   return null;
 }
 
-function addMonthsLocal(iso: string, n: number): Date {
-  const d = new Date(`${iso}T00:00:00`);
-  const day = d.getDate();
-  d.setMonth(d.getMonth() + n);
-  if (d.getDate() < day) d.setDate(0); // jaga akhir bulan
-  return d;
-}
+/** Status payment yang dihitung sebagai tunggakan (belum lunas). */
+const STATUS_TUNGGAKAN = ['Pending', 'Partial', 'Overdue'];
 
 /**
- * Hitung default Checkout dari data yg SUDAH ADA (Database Penghuni + Input Sewa Dimuka) — TIDAK
- * pernah menebak. Kalau sumber data belum lengkap (kolom Tanggal Masuk belum ada, atau tidak ada
- * riwayat pembayaran), `note` berisi langkah konkret yg harus dilakukan, dan field terkait
- * dikembalikan kosong supaya admin sadar harus isi manual (bukan diam-diam salah).
+ * Hitung default Checkout dari data yg SUDAH ADA — TIDAK pernah menebak.
+ * Tunggakan (Improvement v1.1 §2): dari tabel Turso `payment` (database kost-tiga-dara,
+ * bersama Dashboard) berdasarkan ID unik penghuni (`Tenant.id` = "KTD-x" = payment.id_penghuni).
+ * Invoice berstatus belum lunas (Pending/Partial/Overdue) dijumlahkan jadi Nominal Tunggakan.
+ * Kalau sumber data belum lengkap, `note` berisi langkah konkret dan field dikembalikan kosong
+ * supaya admin sadar harus isi manual (bukan diam-diam salah).
  */
-export async function computeCheckoutDefaults(penghuniLabel: string, tanggalCheckoutISO: string): Promise<CheckoutDefaults> {
+export async function computeCheckoutDefaults(penghuniLabel: string, _tanggalCheckoutISO: string): Promise<CheckoutDefaults> {
   const tenant = await getTenantByLabel(penghuniLabel);
   if (!tenant) {
     return { tglMasuk: '', adaTunggakan: '', nominalTunggakan: 0, note: `Penghuni "${penghuniLabel}" tidak ditemukan di Database Penghuni.` };
@@ -55,46 +51,28 @@ export async function computeCheckoutDefaults(penghuniLabel: string, tanggalChec
     );
   }
 
-  // --- Tunggakan: bandingkan "sudah dibayar sampai kapan" (dari Input Sewa Dimuka) vs Tanggal Checkout ---
-  const rows = await readTable(SHEETS.LOG_INPUT_TRANSAKSI, "'Input Sewa Dimuka'!A:F");
-  const payments = rows.filter((r) => (r['Unit / Penyewa'] || '').trim() === penghuniLabel);
-
+  // --- Tunggakan: total invoice belum lunas di tabel payment untuk ID penghuni ini ---
   let adaTunggakan: 'Ya' | 'Tidak' | '' = '';
   let nominalTunggakan = 0;
-
-  if (payments.length === 0) {
-    notes.push(
-      'Tidak ada riwayat pembayaran (Input Sewa Dimuka) untuk penghuni ini — Tunggakan tidak bisa dihitung otomatis. Cek manual, atau lengkapi dulu pencatatan pembayaran sebelumnya lewat modul Pembayaran Sewa.'
-    );
-  } else {
-    let paidThrough: Date | null = null;
-    let lastRate = 0;
-    for (const r of payments) {
-      const mulaiISO = toISODateFlexible((r['Tanggal Mulai'] || '').trim());
-      const bulan = parseInt(r['Jumlah Bulan'] || '0', 10);
-      const nomPerBulan = parseInt(String(r['Nominal per Bulan'] || '0').replace(/[^0-9]/g, ''), 10) || 0;
-      if (!mulaiISO || !bulan) continue;
-      const end = addMonthsLocal(mulaiISO, bulan);
-      if (!paidThrough || end.getTime() > paidThrough.getTime()) {
-        paidThrough = end;
-        lastRate = nomPerBulan;
-      }
-    }
-    if (!paidThrough) {
-      notes.push('Riwayat pembayaran ditemukan tapi tanggalnya tidak terbaca — cek manual kolom "Tanggal Mulai" di Input Sewa Dimuka.');
+  try {
+    const res = await turso().execute({
+      sql: 'SELECT status, amount FROM payment WHERE id_penghuni = ?',
+      args: [tenant.id]
+    });
+    if (res.rows.length === 0) {
+      notes.push(
+        `Tidak ada riwayat pembayaran di database untuk ${tenant.id} — Tunggakan tidak bisa dihitung otomatis, cek manual.`
+      );
     } else {
-      const checkoutDate = new Date(`${tanggalCheckoutISO}T00:00:00`);
-      if (checkoutDate.getTime() > paidThrough.getTime()) {
-        adaTunggakan = 'Ya';
-        const diffDays = Math.ceil((checkoutDate.getTime() - paidThrough.getTime()) / 86400000);
-        const monthsOverdue = Math.max(1, Math.ceil(diffDays / 30));
-        const rate = lastRate || (await getRoomFresh(tenant.kamar))?.hargaBulan || 0;
-        nominalTunggakan = monthsOverdue * rate;
-        if (!rate) notes.push('Ada indikasi tunggakan tapi tarif/bulan tidak diketahui — nominal di bawah kemungkinan 0, isi manual.');
-      } else {
-        adaTunggakan = 'Tidak';
-      }
+      const outstanding = res.rows
+        .filter((r) => STATUS_TUNGGAKAN.includes(String(r.status)))
+        .reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
+      adaTunggakan = outstanding > 0 ? 'Ya' : 'Tidak';
+      nominalTunggakan = Math.round(outstanding);
     }
+  } catch (e: any) {
+    console.error('[checkout-lookup] gagal baca tabel payment:', e?.message);
+    notes.push('Gagal membaca riwayat pembayaran dari database — Tunggakan harus dicek manual.');
   }
 
   return { tglMasuk: tglMasuk || '', adaTunggakan, nominalTunggakan, note: notes.join(' ') };

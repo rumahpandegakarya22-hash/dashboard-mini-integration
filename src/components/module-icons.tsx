@@ -8,7 +8,6 @@ import {
   ClipboardList,
   DoorOpen,
   FileCog,
-  FileUp,
   Hammer,
   LayoutGrid,
   ListTodo,
@@ -40,8 +39,7 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   'inspeksi-fasilitas': ClipboardCheck,
   'wo-inspeksi': FileCog,
   'wo-cleaning': FileCog,
-  'daily-task': ListTodo,
-  'upload-docs': FileUp
+  'daily-task': ListTodo
 };
 
 export function moduleIcon(id: string): LucideIcon {
@@ -50,7 +48,7 @@ export function moduleIcon(id: string): LucideIcon {
 
 /** Kelompok modul per divisi — urutan tampil di sidebar & beranda. */
 export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
-  { label: 'Umum', ids: ['daily-task', 'upload-docs'] },
+  { label: 'Umum', ids: ['daily-task'] },
   {
     label: 'Administrasi',
     ids: ['penghuni-baru', 'pembayaran-sewa', 'pindah-kamar', 'checkout', 'pengeluaran', 'feedback']

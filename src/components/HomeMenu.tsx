@@ -1,29 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users } from 'lucide-react';
 import { DIVISION_GROUPS, moduleIcon } from './module-icons';
 import type { NavModule } from './AppShell';
 
 interface Props {
-  userName: string;
-  roleLabel: string;
   isOwner: boolean;
   modules: NavModule[];
 }
 
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
-export default function HomeMenu({ userName, roleLabel, isOwner, modules }: Props) {
-  // Sapaan mengikuti jam perangkat user — dihitung setelah mount agar SSR (jam server) tidak bentrok.
-  const [greeting, setGreeting] = useState('Halo');
-  useEffect(() => {
-    const h = new Date().getHours();
-    setGreeting(h < 10 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam');
-  }, []);
-
+export default function HomeMenu({ isOwner, modules }: Props) {
   const groups = DIVISION_GROUPS.map((g) => ({
     label: g.label,
     items: g.ids.map((id) => modules.find((m) => m.id === id)).filter((m): m is NavModule => !!m)
@@ -54,17 +44,6 @@ export default function HomeMenu({ userName, roleLabel, isOwner, modules }: Prop
 
   return (
     <>
-      <header className="page-head">
-        <div>
-          <h1>
-            {greeting}, {userName}
-          </h1>
-          <p className="page-head-sub">
-            {roleLabel} · pilih modul untuk mulai input
-          </p>
-        </div>
-      </header>
-
       {modules.length === 0 && !isOwner && (
         <div className="card">
           <p className="muted">Tidak ada modul untuk role ini. Hubungi Owner jika ini tidak sesuai.</p>

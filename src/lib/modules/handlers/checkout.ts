@@ -3,6 +3,7 @@ import { withLock } from '../../redis';
 import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, parseRupiah, required } from '../../validate';
 import { getTenantByLabel, updateRoomStatus } from '../../master';
+import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 
 // Sheet BARU "Log Checkout" (dibuat manual saat setup, ID via env SHEET_ID_CHECKOUT). Header di
@@ -61,11 +62,15 @@ export const submitCheckout: SubmitHandler = async (values, ctx) => {
 
     await updateRoomStatus(kamar, 'Kosong');
 
+    const lampiranWarning = await saveLampiran(values, ctx, `Checkout — ${penghuni} (${tanggalCheckout})`, 'Admin');
+    const tunggakanWarning =
+      adaTunggakan === 'Ya' ? `Penghuni masih punya tunggakan Rp${nominalTunggakan.toLocaleString('id-ID')}.` : undefined;
+
     return {
       target: 'Log Checkout',
       row,
       data: { tanggalCheckout, penghuni, kamar, tglMasuk, adaTunggakan, nominalTunggakan, pengembalianDeposit, kondisiKamar },
-      warning: adaTunggakan === 'Ya' ? `Penghuni masih punya tunggakan Rp${nominalTunggakan.toLocaleString('id-ID')}.` : undefined
+      warning: [tunggakanWarning, lampiranWarning].filter(Boolean).join(' ') || undefined
     };
   });
 };

@@ -3,6 +3,7 @@ import { withLock } from '../../redis';
 import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, required } from '../../validate';
 import { previewPembayaranSewa } from './pembayaran-sewa-preview';
+import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 
 // Kolom A:F sheet "Input Sewa Dimuka" (Log Input Transaksi). Jurnal digenerate Apps Script "Kost Tools"
@@ -114,10 +115,13 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
       }
     }
 
+    const warning = await saveLampiran(values, ctx, `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${tanggalBayar})`, 'Admin');
+
     return {
       target: 'Log Input Transaksi → Input Sewa Dimuka',
       row,
-      data: { penghuni, jenisPembayaran, tanggalBayar, nominal, jumlahBulan, akunKasBank, invoiceStatus }
+      data: { penghuni, jenisPembayaran, tanggalBayar, nominal, jumlahBulan, akunKasBank, invoiceStatus },
+      warning
     };
   });
 };

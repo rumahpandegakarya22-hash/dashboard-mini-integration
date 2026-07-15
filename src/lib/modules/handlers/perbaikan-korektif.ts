@@ -27,6 +27,7 @@ export const submitPerbaikanKorektif = createAppendHandler({
   headerRange: "'Log Perbaikan Korektif'!E1:R1",
   expectedHeaders: EXPECTED_HEADERS,
   target: 'Log Laporan Inspeksi Perawatan Perbaikan → Log Perbaikan Korektif',
+  lampiran: { judul: (v) => `Perbaikan Korektif — ${String(v.lokasiItem ?? '')}`, role: 'Maintenance' },
   buildRow: (values) => {
     const tanggalKerusakan = parseDateISO(String(values.tanggalKerusakan ?? ''));
     const tanggalLapor = parseDateISO(String(values.tanggalLapor ?? ''));

@@ -55,7 +55,17 @@ export const MODULES: ModuleMeta[] = [
       },
       { name: 'statusBooking', label: 'Status Booking', type: 'select-async', required: true, master: 'status-booking' },
       { name: 'sumberLeads', label: 'Sumber Leads', type: 'select-async', required: true, master: 'sumber-leads' },
-      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
+      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false },
+      {
+        name: 'lampiran',
+        label: 'Foto/Dokumen (KTP dsb., opsional)',
+        type: 'file',
+        required: false,
+        uploadKind: 'penghuni',
+        accept: 'application/pdf,image/png,image/jpeg',
+        maxSizeMb: 2,
+        placeholder: 'Pilih foto/pdf (maks 2 MB)'
+      }
     ]
   },
   {
@@ -70,8 +80,8 @@ export const MODULES: ModuleMeta[] = [
         type: 'select-async',
         required: true,
         master: 'tenants',
-        masterValue: 'label',
-        masterLabel: 'label'
+        masterValue: 'label', // value tetap "KTD-x — Nama" (format baku handler/preview)
+        masterLabel: 'nama' // tampilan dropdown cukup nama saja (Improvement v1.1 §5)
       },
       {
         name: 'jenisPembayaran',
@@ -132,6 +142,16 @@ export const MODULES: ModuleMeta[] = [
         master: 'kaslist',
         masterValue: 'id',
         masterLabel: 'label'
+      },
+      {
+        name: 'lampiran',
+        label: 'Bukti Pembayaran (foto/pdf, opsional)',
+        type: 'file',
+        required: false,
+        uploadKind: 'pembayaran',
+        accept: 'application/pdf,image/png,image/jpeg',
+        maxSizeMb: 2,
+        placeholder: 'Pilih foto/pdf (maks 2 MB)'
       }
     ]
   },
@@ -201,7 +221,8 @@ export const MODULES: ModuleMeta[] = [
           { value: 'Tidak', label: 'Tidak' },
           { value: 'Ya', label: 'Ya' }
         ],
-        helpText: 'Otomatis dari riwayat pembayaran (Input Sewa Dimuka) vs Tanggal Checkout. Sesuaikan manual kalau perlu.'
+        helpText:
+          'Otomatis dari riwayat pembayaran di database (tabel payment) — invoice belum lunas dihitung tunggakan. Sesuaikan manual kalau perlu.'
       },
       { name: 'nominalTunggakan', label: 'Nominal Tunggakan (jika Ya)', type: 'number', required: false },
       { name: 'pengembalianDeposit', label: 'Pengembalian Deposit (Rp)', type: 'number', required: false },
@@ -216,7 +237,17 @@ export const MODULES: ModuleMeta[] = [
           { value: 'Rusak', label: 'Rusak' }
         ]
       },
-      { name: 'catatanKerusakan', label: 'Catatan Kerusakan', type: 'textarea', required: false }
+      { name: 'catatanKerusakan', label: 'Catatan Kerusakan', type: 'textarea', required: false },
+      {
+        name: 'lampiran',
+        label: 'Foto/Dokumen (kondisi kamar dsb., opsional)',
+        type: 'file',
+        required: false,
+        uploadKind: 'penghuni',
+        accept: 'application/pdf,image/png,image/jpeg',
+        maxSizeMb: 2,
+        placeholder: 'Pilih foto/pdf (maks 2 MB)'
+      }
     ]
   },
   {
@@ -284,6 +315,16 @@ export const MODULES: ModuleMeta[] = [
           { value: 'Operasional', label: 'Operasional' },
           { value: 'Non-operasional', label: 'Non-operasional' }
         ]
+      },
+      {
+        name: 'lampiran',
+        label: 'Nota/Bukti (foto/pdf, opsional)',
+        type: 'file',
+        required: false,
+        uploadKind: 'nota',
+        accept: 'application/pdf,image/png,image/jpeg',
+        maxSizeMb: 2,
+        placeholder: 'Pilih foto/pdf (maks 2 MB)'
       }
     ]
   },
@@ -291,6 +332,9 @@ export const MODULES: ModuleMeta[] = [
     id: 'feedback',
     title: 'Feedback',
     ready: true,
+    // Improvement v1.1 §7: data masuk database Turso — Kategori "Komplain" → tabel
+    // tenant_complain, selain itu (Saran/Kritik) → tabel feedback. Kedua tabel punya
+    // CHECK constraint kolom category, makanya kategoriTerkait pilihan tetap di bawah.
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
       {
@@ -307,12 +351,21 @@ export const MODULES: ModuleMeta[] = [
         label: 'Kategori Feedback',
         type: 'select-async',
         required: true,
-        master: 'setting:LOGBOOK_FEEDBACK:SETTING:Kategori'
+        master: 'setting:LOGBOOK_FEEDBACK:SETTING:Kategori',
+        helpText: 'Komplain dicatat sebagai keluhan penghuni (tenant complain); Saran/Kritik masuk log feedback.'
+      },
+      {
+        name: 'kategoriTerkait',
+        label: 'Terkait',
+        type: 'select',
+        required: true,
+        // HARUS sama persis dgn CHECK(category) di tabel feedback & tenant_complain
+        options: ['Internet', 'Listrik', 'Air', 'AC', 'kebersihan', 'Keamanan', 'Fasilitas', 'Pelayanan', 'Lainnya'].map(
+          (v) => ({ value: v, label: v === 'kebersihan' ? 'Kebersihan' : v })
+        )
       },
       { name: 'isi', label: 'Isi', type: 'textarea', required: true },
-      { name: 'tindakLanjut', label: 'Tindak Lanjut', type: 'textarea', required: false },
-      { name: 'status', label: 'Status', type: 'select-async', required: true, master: 'setting:LOGBOOK_FEEDBACK:SETTING:Status' },
-      { name: 'pic', label: 'PIC', type: 'select-async', required: true, master: 'setting:LOGBOOK_FEEDBACK:SETTING:PIC' }
+      { name: 'status', label: 'Status', type: 'select-async', required: true, master: 'setting:LOGBOOK_FEEDBACK:SETTING:Status' }
     ]
   },
   {
@@ -522,7 +575,17 @@ export const MODULES: ModuleMeta[] = [
         required: true,
         master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Status'
       },
-      { name: 'catatan', label: 'Catatan/Dokumentasi', type: 'textarea', required: false }
+      { name: 'catatan', label: 'Catatan/Dokumentasi', type: 'textarea', required: false },
+      {
+        name: 'lampiran',
+        label: 'Foto/Dokumen (opsional)',
+        type: 'file',
+        required: false,
+        uploadKind: 'maintenance',
+        accept: 'application/pdf,image/png,image/jpeg',
+        maxSizeMb: 2,
+        placeholder: 'Pilih foto/pdf (maks 2 MB)'
+      }
     ]
   },
   {
@@ -579,7 +642,17 @@ export const MODULES: ModuleMeta[] = [
         required: true,
         master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Status'
       },
-      { name: 'catatan', label: 'Catatan/Dokumentasi', type: 'textarea', required: false }
+      { name: 'catatan', label: 'Catatan/Dokumentasi', type: 'textarea', required: false },
+      {
+        name: 'lampiran',
+        label: 'Foto/Dokumen (opsional)',
+        type: 'file',
+        required: false,
+        uploadKind: 'maintenance',
+        accept: 'application/pdf,image/png,image/jpeg',
+        maxSizeMb: 2,
+        placeholder: 'Pilih foto/pdf (maks 2 MB)'
+      }
     ]
   },
   {
@@ -609,13 +682,13 @@ export const MODULES: ModuleMeta[] = [
   },
   {
     id: 'daily-task',
-    title: 'Daily Task',
+    title: 'Tugas Harian', // istilah Indonesia (Improvement v1.1 §8); id tetap 'daily-task' (URL/roles/handler)
     ready: true,
     // Format mengikuti tabel Turso daily_tasks (Mini App Improvement §1):
     // Tanggal, Task, PIC, Divisi, Deadline, Status — push ke database Turso.
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
-      { name: 'task', label: 'Task', type: 'text', required: true, placeholder: 'Contoh: Follow-up leads WA' },
+      { name: 'task', label: 'Tugas', type: 'text', required: true, placeholder: 'Contoh: Follow-up leads WA' },
       { name: 'pic', label: 'PIC', type: 'text', required: true, placeholder: 'Nama petugas' },
       {
         name: 'divisi',
@@ -684,41 +757,8 @@ export const MODULES: ModuleMeta[] = [
       { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
     ]
   },
-  {
-    id: 'upload-docs',
-    title: 'Upload Dokumen',
-    ready: true,
-    // Mini App Improvement §3: file (pdf/word/png/jpeg, maks 2 MB) → Google Drive
-    // internal via /api/upload → URL disimpan di Turso tabel dokumen.
-    fields: [
-      { name: 'judul', label: 'Judul Dokumen', type: 'text', required: true, placeholder: 'Contoh: SOP Kebersihan Kamar' },
-      {
-        name: 'divisi',
-        label: 'Divisi',
-        type: 'select',
-        required: true,
-        options: [
-          { value: 'Admin', label: 'Admin' },
-          { value: 'Cleaning', label: 'Cleaning' },
-          { value: 'Finance', label: 'Finance' },
-          { value: 'Inspeksi', label: 'Inspeksi' },
-          { value: 'Maintenance', label: 'Maintenance' },
-          { value: 'Marketing', label: 'Marketing' },
-          { value: 'Sales', label: 'Sales' }
-        ]
-      },
-      {
-        name: 'file',
-        label: 'File',
-        type: 'file',
-        required: true,
-        uploadKind: 'dokumen',
-        accept: 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg',
-        maxSizeMb: 2,
-        placeholder: 'Pilih file (pdf/word/png/jpeg, maks 2 MB)'
-      }
-    ]
-  },
+  // Modul "Upload Dokumen" dihapus (Improvement v1.1 §4) — tabel Turso `dokumen` tetap
+  // dipakai sebagai tempat metadata lampiran modul-modul lain (lihat helpers saveLampiran).
   ...makeWorkOrderModules()
 ];
 

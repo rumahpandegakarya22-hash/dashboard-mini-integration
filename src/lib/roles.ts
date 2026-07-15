@@ -47,15 +47,6 @@ export const MODULE_ACCESS: Record<string, Role[]> = {
     'staff_inspeksi',
     'staff_cleaning',
     'staff_finance'
-  ],
-  'upload-docs': [
-    'staff_admin',
-    'staff_sales',
-    'staff_marketing',
-    'staff_maintenance',
-    'staff_inspeksi',
-    'staff_cleaning',
-    'staff_finance'
   ]
 };
 

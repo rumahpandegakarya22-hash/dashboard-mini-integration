@@ -1,0 +1,24 @@
+Mini App Improvement v1.1
+
+=====================RULES=======================================
+1. kerjakan bertahap dan memperhatikan limit, jangan dilanjut Ketika token tidak memadai
+2. Lakukan Planning dengan detail dan baik
+3.Pilihkan Opsi terbaik, No Ask User Question
+4. Berikan kesimpulan task yang dikerjakan dengan to the point. 
+5. Sudah tidak ada permasalahan seperti di sesi lain
+=================================================================
+
+1. Tambahakan field unggah foto/docs (pdf) pada:
+	a. Penghuni Baru 
+	b.Pembayaran Sewa
+	c. Checkout
+	d. Pencatatan pengeluaran 
+	e. Perwatan Korektif
+	f. Perawatan Preventif
+2. Riwayat Pembayaran (perhitungan Tunggakan) di menu Checkout dihitung dari data table payment di database turso kost-tiga-dara berdasarkan ID Unique Penghuni. Field Tunggakan dan Nominal Tunggakan akan automated calculated. 
+3. Tabel joblist seharusnya diletakkan di paling atas (menu ada di Bawah table) 
+4. hilangkan fitur Upload Dokumen 
+5. Field Nama Penghuni di Pembayaran Sewa cukup tampilkan Nama, jangan ada ID Kamar. 
+6.  Pemakaian Stok dan Pencatatan keuangan 
+7. Feedback, Jika Field Kategori berisi complain-data masuk ek table tenant_complain, selain itu masuk ke table feedback 
+8. Ganti Daily task menjadi istilah Bahasa Indonesia yang sepadan artinya. 
