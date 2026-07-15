@@ -27,3 +27,14 @@ export async function claimRequestId(requestId: string): Promise<boolean> {
   const ok = await redis.set(nsKey(`req:${requestId}`), '1', { nx: true, ex: 86400 });
   return !!ok;
 }
+
+/**
+ * Rate limit sederhana (fixed window) — dipakai endpoint TOTP agar kode 6 digit
+ * tidak bisa di-brute-force. true = masih boleh; false = kelewat batas.
+ */
+export async function rateLimitOk(key: string, max: number, windowSec: number): Promise<boolean> {
+  const k = nsKey(`rl:${key}`);
+  const n = await redis.incr(k);
+  if (n === 1) await redis.expire(k, windowSec);
+  return n <= max;
+}

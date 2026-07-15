@@ -1,34 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, maybeRefresh, COOKIE_NAME } from '@/lib/auth';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/google', '/pending'];
+// Gerbang kasar: hanya memastikan ADA sesi Clerk. Gating halus (status
+// pending/disabled, role, step-up 2FA) dilakukan di (app)/layout.tsx dan
+// getSessionUser() per API route — butuh Backend API, bukan urusan proxy.
+const isPublicRoute = createRouteMatcher(['/login(.*)', '/sign-up(.*)', '/api/webhooks/clerk']);
 
-export async function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p)) || pathname.startsWith('/_next')) {
-    return NextResponse.next();
-  }
+export const proxy = clerkMiddleware(async (auth, req) => {
+  if (isPublicRoute(req)) return NextResponse.next();
 
-  const token = req.cookies.get(COOKIE_NAME)?.value;
-  const user = token ? await verifyToken(token) : null;
-
-  if (!user) {
-    if (pathname.startsWith('/api/')) {
+  const { userId } = await auth();
+  if (!userId) {
+    if (req.nextUrl.pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Belum login.' }, { status: 401 });
     }
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
-
-  // Sliding session 72 jam
-  const res = NextResponse.next();
-  const fresh = token ? await maybeRefresh(token) : null;
-  if (fresh) {
-    res.cookies.set(COOKIE_NAME, fresh, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 72 * 3600, path: '/' });
-  }
-  return res;
-}
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/).*)']

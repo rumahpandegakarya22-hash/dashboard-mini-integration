@@ -1,13 +1,24 @@
-import { SignJWT, jwtVerify } from 'jose';
-import bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
-import { redis, nsKey } from './redis';
-import type { Role } from './roles';
+// Auth berbasis Clerk (login username/password + Google/Apple + lupa password
+// ditangani Clerk — server ini tidak pernah melihat password), mengikuti pola
+// "Dashboard Figma" (instance Clerk SAMA):
+//   - Role & status approval Mini App hidup di Clerk publicMetadata dengan
+//     namespace sendiri (miniappRole/miniappStatus) — TIDAK menyentuh
+//     role/status milik dashboard (publicMetadata.role/status) di instance yang sama.
+//   - Status default (metadata belum ada) = 'pending' → akun baru wajib
+//     di-approve Owner dulu, webhook user.created opsional.
+//   - 2FA TOTP KUSTOM (Google Authenticator, bukan MFA Clerk): secret di
+//     privateMetadata (totpSecret/totpEnabled — key SAMA dgn dashboard, jadi
+//     satu kali scan QR berlaku utk kedua app). Sesi Clerk yang valid saja
+//     belum cukup bila 2FA aktif — wajib cookie step-up (lihat bawah).
 
-const SECRET = () => new TextEncoder().encode(process.env.JWT_SECRET!);
-const SESSION_HOURS = 72; // auto logout setelah 3 hari tidak digunakan (sliding)
+import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
+import type { User } from '@clerk/nextjs/server';
+import { SignJWT, jwtVerify } from 'jose';
+import { cookies } from 'next/headers';
+import { ROLE_LABEL, type Role } from './roles';
 
 export interface SessionUser {
+  id: string; // Clerk userId — dipakai panel admin & metadata ops
   username: string;
   name: string;
   role: Role;
@@ -15,149 +26,175 @@ export interface SessionUser {
 
 export type UserStatus = 'pending' | 'active' | 'disabled';
 
-export interface StoredUser {
-  passwordHash?: string; // kosong utk user yang daftar via Google (belum tentu punya password)
-  name: string;
-  role: Role | null; // null selama status masih 'pending'
-  status: UserStatus;
-  authProvider: 'password' | 'google';
-  email?: string;
-  googleId?: string;
-  createdAt: string;
-  /** @deprecated field lama sebelum ada `status` — dipakai hanya utk baca data seed lama. */
-  active?: boolean;
+/** Status auth lengkap utk gating halaman: login Clerk → approval → step-up 2FA. */
+export interface AuthState {
+  signedIn: boolean;
+  status: UserStatus | null; // null = belum login
+  /** true = akun aktif dgn 2FA aktif tapi sesi ini belum verifikasi TOTP (arahkan ke /2fa). */
+  needsTotp: boolean;
+  totpEnrolled: boolean;
+  user: SessionUser | null; // terisi hanya jika status active + punya role valid
 }
 
-/** Normalisasi record lama (seed sebelum ada `status`) ke bentuk baru, tanpa perlu migrasi data. */
-function normalizeStoredUser(u: StoredUser): StoredUser {
-  if (u.status) return u;
-  return { ...u, status: u.active === false ? 'disabled' : 'active', authProvider: u.authProvider || 'password' };
+// ---- pembacaan metadata (namespace Mini App) ----
+
+function metaRole(u: User): Role | null {
+  const r = (u.publicMetadata as Record<string, unknown>)?.miniappRole;
+  return typeof r === 'string' && r in ROLE_LABEL ? (r as Role) : null;
 }
 
-export async function getStoredUser(username: string): Promise<StoredUser | null> {
-  const u = await redis.get<StoredUser>(nsKey(`user:${username.toLowerCase()}`));
-  return u ? normalizeStoredUser(u) : null;
+function metaStatus(u: User): UserStatus {
+  const s = (u.publicMetadata as Record<string, unknown>)?.miniappStatus;
+  return s === 'active' || s === 'disabled' ? s : 'pending';
 }
 
-async function saveStoredUser(username: string, u: StoredUser): Promise<void> {
-  await redis.set(nsKey(`user:${username.toLowerCase()}`), u);
+function displayName(u: User): string {
+  return [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username || primaryEmail(u) || u.id;
 }
 
-export async function verifyCredentials(username: string, password: string): Promise<SessionUser | null> {
-  const u = await getStoredUser(username);
-  if (!u || u.status !== 'active' || !u.passwordHash || !u.role) return null;
-  const ok = await bcrypt.compare(password, u.passwordHash);
-  if (!ok) return null;
-  return { username: username.toLowerCase(), name: u.name, role: u.role };
+function primaryEmail(u: User): string {
+  return u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress || u.emailAddresses[0]?.emailAddress || '';
 }
 
-export async function createToken(user: SessionUser): Promise<string> {
-  return new SignJWT({ ...user })
+function toSessionUser(u: User, role: Role): SessionUser {
+  return { id: u.id, username: u.username || primaryEmail(u) || u.id, name: displayName(u), role };
+}
+
+// ---- cookie step-up 2FA: bukti "sesi Clerk INI sudah lolos verifikasi TOTP".
+// Ditandatangani (jose/HS256) + terikat sessionId Clerk spesifik, supaya tidak
+// bisa dipakai ulang di sesi lain (login ulang = wajib TOTP lagi). ----
+
+export const STEPUP_COOKIE = 'miniapp_2fa';
+const STEPUP_HOURS = 12;
+
+function stepupSecret(): Uint8Array {
+  const s = process.env.TOTP_STEPUP_SECRET || process.env.JWT_SECRET;
+  if (!s) throw new Error('TOTP_STEPUP_SECRET belum di-set.');
+  return new TextEncoder().encode(s);
+}
+
+/** Panggil HANYA dari Route Handler (cookies().set tidak boleh di Server Component). */
+export async function issueStepupCookie(sessionId: string): Promise<void> {
+  const token = await new SignJWT({ sid: sessionId, purpose: '2fa' })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_HOURS}h`)
-    .sign(SECRET());
+    .setExpirationTime(`${STEPUP_HOURS}h`)
+    .sign(stepupSecret());
+  (await cookies()).set(STEPUP_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: STEPUP_HOURS * 3600,
+    path: '/'
+  });
 }
 
-export async function verifyToken(token: string): Promise<SessionUser | null> {
+async function hasValidStepup(sessionId: string): Promise<boolean> {
+  const token = (await cookies()).get(STEPUP_COOKIE)?.value;
+  if (!token) return false;
   try {
-    const { payload } = await jwtVerify(token, SECRET());
-    return { username: String(payload.username), name: String(payload.name), role: payload.role as Role };
+    const { payload } = await jwtVerify(token, stepupSecret());
+    return payload.purpose === '2fa' && payload.sid === sessionId;
   } catch {
-    return null;
+    return false;
   }
 }
 
-/** Sliding session: terbitkan token baru jika sisa umur < 48 jam. */
-export async function maybeRefresh(token: string): Promise<string | null> {
-  try {
-    const { payload } = await jwtVerify(token, SECRET());
-    const remainSec = (payload.exp || 0) - Math.floor(Date.now() / 1000);
-    if (remainSec < 48 * 3600) {
-      return createToken({
-        username: String(payload.username),
-        name: String(payload.name),
-        role: payload.role as Role
-      });
-    }
-    return null;
-  } catch {
-    return null;
-  }
+// ---- gerbang utama ----
+
+export async function getAuthState(): Promise<AuthState> {
+  const { userId, sessionId } = await auth();
+  if (!userId || !sessionId) return { signedIn: false, status: null, needsTotp: false, totpEnrolled: false, user: null };
+
+  const cu = await currentUser();
+  if (!cu) return { signedIn: false, status: null, needsTotp: false, totpEnrolled: false, user: null };
+
+  const status = metaStatus(cu);
+  const role = metaRole(cu);
+  const totpEnrolled = !!(cu.privateMetadata as Record<string, unknown>)?.totpEnabled;
+  const active = status === 'active' && !!role;
+  const needsTotp = active && totpEnrolled && !(await hasValidStepup(sessionId));
+
+  return {
+    signedIn: true,
+    status,
+    needsTotp,
+    totpEnrolled,
+    user: active ? toSessionUser(cu, role!) : null
+  };
 }
-
-export const COOKIE_NAME = 'miniapp_session';
-
-/** User dari session cookie saat ini. Dipakai di API route handlers (proxy.ts sudah menjamin token valid). */
-export async function getSessionUser(): Promise<SessionUser | null> {
-  const token = (await cookies()).get(COOKIE_NAME)?.value;
-  return token ? verifyToken(token) : null;
-}
-
-// ---- Self-registration via Google + approval Owner ----
 
 /**
- * Cari user Google berdasar email; kalau belum ada, buat baru berstatus 'pending'.
- * Username disamakan dengan email (lowercased) — akun Google tidak butuh index terpisah.
+ * User terautentikasi PENUH (login Clerk + status active + role + lolos step-up
+ * 2FA bila aktif). Dipakai semua API route bisnis — kontrak sama dgn versi lama.
  */
-export async function findOrCreateGoogleUser(params: {
-  email: string;
+export async function getSessionUser(): Promise<SessionUser | null> {
+  const s = await getAuthState();
+  return s.needsTotp ? null : s.user;
+}
+
+/**
+ * Sesi Clerk valid + akun berstatus active, TANPA syarat step-up 2FA — khusus
+ * endpoint TOTP itu sendiri (setup/enable/verify), karena di titik itu step-up
+ * memang belum ada. Return juga objek User Clerk (utk baca privateMetadata).
+ */
+export async function getClerkSessionUser(): Promise<{ user: User; sessionId: string } | null> {
+  const { userId, sessionId } = await auth();
+  if (!userId || !sessionId) return null;
+  const cu = await currentUser();
+  if (!cu || metaStatus(cu) !== 'active') return null;
+  return { user: cu, sessionId };
+}
+
+// ---- kelola user (panel admin Owner) — via Clerk Backend API ----
+
+export interface AdminUserRow {
+  id: string;
+  username: string;
   name: string;
-  googleId: string;
-}): Promise<{ username: string; user: StoredUser; isNew: boolean }> {
-  const username = params.email.toLowerCase();
-  const existing = await getStoredUser(username);
-  if (existing) return { username, user: existing, isNew: false };
-
-  const user: StoredUser = {
-    name: params.name,
-    role: null,
-    status: 'pending',
-    authProvider: 'google',
-    email: params.email,
-    googleId: params.googleId,
-    createdAt: new Date().toISOString()
-  };
-  await saveStoredUser(username, user);
-  return { username, user, isNew: true };
+  role: Role | null;
+  status: UserStatus;
+  authProvider: string;
+  email?: string;
+  createdAt: string;
 }
 
-/** Daftar semua user (dipakai halaman admin Owner). Upstash KEYS aman utk skala kost (puluhan user). */
-export async function listAllUsers(): Promise<{ username: string; user: StoredUser }[]> {
-  const keys = await redis.keys(nsKey('user:*'));
-  if (keys.length === 0) return [];
-  const values = await Promise.all(keys.map((k) => redis.get<StoredUser>(k)));
-  return keys
-    .map((k, i) => ({ username: k.slice(nsKey('user:').length), user: values[i] }))
-    .filter((x): x is { username: string; user: StoredUser } => !!x.user)
-    .map((x) => ({ username: x.username, user: normalizeStoredUser(x.user) }));
+export async function listAllUsers(): Promise<AdminUserRow[]> {
+  const client = await clerkClient();
+  const { data } = await client.users.getUserList({ limit: 200, orderBy: '-created_at' });
+  return data.map((u) => ({
+    id: u.id,
+    username: u.username || primaryEmail(u) || u.id,
+    name: displayName(u),
+    role: metaRole(u),
+    status: metaStatus(u),
+    authProvider: u.externalAccounts[0]?.provider?.replace(/^oauth_/, '') || (u.passwordEnabled ? 'password' : '-'),
+    email: primaryEmail(u) || undefined,
+    createdAt: new Date(u.createdAt).toISOString()
+  }));
 }
 
-/** Owner approve user pending: set status aktif + tetapkan role. */
-export async function approveUser(username: string, role: Role): Promise<void> {
-  const u = await getStoredUser(username);
-  if (!u) throw new Error(`User "${username}" tidak ditemukan.`);
-  await saveStoredUser(username, { ...u, status: 'active', role });
+/** Merge per-key oleh Clerk — miniappRole/miniappStatus tidak menimpa metadata milik dashboard. */
+async function patchMiniappMetadata(userId: string, patch: { miniappRole?: Role; miniappStatus?: UserStatus }): Promise<void> {
+  const client = await clerkClient();
+  await client.users.updateUserMetadata(userId, { publicMetadata: patch });
 }
 
-/** Owner ubah role user aktif. */
-export async function setUserRole(username: string, role: Role): Promise<void> {
-  const u = await getStoredUser(username);
-  if (!u) throw new Error(`User "${username}" tidak ditemukan.`);
-  await saveStoredUser(username, { ...u, role });
+export async function approveUser(userId: string, role: Role): Promise<void> {
+  await patchMiniappMetadata(userId, { miniappRole: role, miniappStatus: 'active' });
 }
 
-/** Owner nonaktifkan user. */
-export async function deactivateUser(username: string): Promise<void> {
-  const u = await getStoredUser(username);
-  if (!u) throw new Error(`User "${username}" tidak ditemukan.`);
-  await saveStoredUser(username, { ...u, status: 'disabled' });
+export async function setUserRole(userId: string, role: Role): Promise<void> {
+  await patchMiniappMetadata(userId, { miniappRole: role });
 }
 
-/** Owner aktifkan kembali user yang dinonaktifkan. */
-export async function reactivateUser(username: string): Promise<void> {
-  const u = await getStoredUser(username);
-  if (!u) throw new Error(`User "${username}" tidak ditemukan.`);
-  if (!u.role) throw new Error(`User "${username}" belum punya role — approve dulu, bukan aktifkan.`);
-  await saveStoredUser(username, { ...u, status: 'active' });
+export async function deactivateUser(userId: string): Promise<void> {
+  await patchMiniappMetadata(userId, { miniappStatus: 'disabled' });
+}
+
+export async function reactivateUser(userId: string): Promise<void> {
+  const client = await clerkClient();
+  const u = await client.users.getUser(userId);
+  if (!metaRole(u)) throw new Error('User belum punya role Mini App — approve dulu, bukan aktifkan.');
+  await patchMiniappMetadata(userId, { miniappStatus: 'active' });
 }

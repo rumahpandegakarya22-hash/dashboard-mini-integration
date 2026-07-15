@@ -6,9 +6,10 @@
 // Konten selalu di permukaan solid — kaca hanya untuk chrome ini.
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { ChevronLeft, House, LoaderCircle, LogOut, Users } from 'lucide-react';
+import { useClerk } from '@clerk/nextjs';
+import { ChevronLeft, House, LoaderCircle, LogOut, ShieldCheck, Users } from 'lucide-react';
 import { DIVISION_GROUPS, moduleIcon } from './module-icons';
 
 export interface NavModule {
@@ -26,13 +27,20 @@ interface Props {
 
 export default function AppShell({ userName, roleLabel, isOwner, modules, children }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
+  const { signOut } = useClerk();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const isHome = pathname === '/';
   const isAdmin = pathname.startsWith('/admin');
+  const isAccount = pathname.startsWith('/account');
   const activeModule = modules.find((m) => pathname === `/m/${m.id}`);
-  const topTitle = isHome ? 'Kost Tiga Dara' : isAdmin ? 'Kelola User' : activeModule?.title ?? 'Kost Tiga Dara';
+  const topTitle = isHome
+    ? 'Kost Tiga Dara'
+    : isAdmin
+      ? 'Kelola User'
+      : isAccount
+        ? 'Keamanan Akun'
+        : activeModule?.title ?? 'Kost Tiga Dara';
   const initial = (userName.trim()[0] || '?').toUpperCase();
 
   const groups = DIVISION_GROUPS.map((g) => ({
@@ -43,8 +51,7 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
   async function logout() {
     setLoggingOut(true);
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.replace('/login');
+      await signOut({ redirectUrl: '/login' });
     } finally {
       setLoggingOut(false);
     }
@@ -107,6 +114,10 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
               <div className="side-user-role">{roleLabel}</div>
             </div>
           </div>
+          <Link href="/account" className={isAccount ? 'side-item active' : 'side-item'}>
+            <ShieldCheck size={18} />
+            Keamanan Akun
+          </Link>
           <button type="button" className="side-item" onClick={logout} disabled={loggingOut}>
             {loggingOut ? <LoaderCircle size={18} className="spin" /> : <LogOut size={18} />}
             Keluar
@@ -147,6 +158,10 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
               Admin
             </Link>
           )}
+          <Link href="/account" className={isAccount ? 'dock-item active' : 'dock-item'}>
+            <ShieldCheck size={20} />
+            Akun
+          </Link>
           <button type="button" className="dock-item" onClick={logout} disabled={loggingOut}>
             {loggingOut ? <LoaderCircle size={20} className="spin" /> : <LogOut size={20} />}
             Keluar

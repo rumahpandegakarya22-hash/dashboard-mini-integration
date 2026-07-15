@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { SignOutButton } from '@clerk/nextjs';
 import { Hourglass } from 'lucide-react';
 
 export default function PendingPage() {
@@ -10,13 +10,14 @@ export default function PendingPage() {
         </span>
         <h2>Menunggu Persetujuan</h2>
         <p className="muted">
-          Akun kamu sudah terdaftar lewat Google, tapi belum diaktifkan. Hubungi Owner untuk approve akun &amp;
-          menentukan role kamu. Setelah disetujui, login lagi dengan tombol &quot;Daftar / Masuk dengan Google&quot; di
-          halaman login.
+          Akun kamu sudah terdaftar tapi belum diaktifkan untuk Mini App. Hubungi Owner untuk approve akun &amp;
+          menentukan role kamu. Setelah disetujui, login lagi dan kamu langsung bisa masuk.
         </p>
-        <Link href="/login" className="btn" style={{ marginTop: 6 }}>
-          Kembali ke Login
-        </Link>
+        <SignOutButton redirectUrl="/login">
+          <button type="button" className="btn" style={{ marginTop: 6 }}>
+            Keluar
+          </button>
+        </SignOutButton>
       </div>
     </div>
   );

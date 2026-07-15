@@ -5,18 +5,19 @@ import { CircleAlert, LoaderCircle, RotateCcw, UserRoundCheck, UserRoundX } from
 import { ROLE_LABEL, type Role } from '@/lib/roles';
 
 interface UserRow {
+  id: string; // Clerk userId — kunci semua aksi
   username: string;
   name: string;
   role: Role | null;
   status: 'pending' | 'active' | 'disabled';
-  authProvider: 'password' | 'google';
+  authProvider: string;
   email?: string;
   createdAt: string;
 }
 
 const ROLES = Object.keys(ROLE_LABEL) as Role[];
 
-export default function UserAdminPanel({ currentUsername }: { currentUsername: string }) {
+export default function UserAdminPanel({ currentUserId }: { currentUserId: string }) {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -97,7 +98,7 @@ export default function UserAdminPanel({ currentUsername }: { currentUsername: s
           </p>
         )}
         {pending.map((u) => (
-          <div key={u.username} className="user-row">
+          <div key={u.id} className="user-row">
             <span className="avatar" aria-hidden>
               {initialOf(u.name)}
             </span>
@@ -106,13 +107,13 @@ export default function UserAdminPanel({ currentUsername }: { currentUsername: s
               <div className="user-sub">{u.email}</div>
             </div>
             <div className="user-actions">
-              <label htmlFor={`role-${u.username}`} className="sr-only">
+              <label htmlFor={`role-${u.id}`} className="sr-only">
                 Role untuk {u.name}
               </label>
               <select
-                id={`role-${u.username}`}
-                value={pendingRole[u.username] || ''}
-                onChange={(e) => setPendingRole((prev) => ({ ...prev, [u.username]: e.target.value as Role }))}
+                id={`role-${u.id}`}
+                value={pendingRole[u.id] || ''}
+                onChange={(e) => setPendingRole((prev) => ({ ...prev, [u.id]: e.target.value as Role }))}
               >
                 <option value="">Pilih role...</option>
                 {ROLES.map((r) => (
@@ -124,10 +125,10 @@ export default function UserAdminPanel({ currentUsername }: { currentUsername: s
               <button
                 type="button"
                 className="btn compact"
-                disabled={!pendingRole[u.username] || busy === u.username}
-                onClick={() => callAction('approve', { username: u.username, role: pendingRole[u.username] }, u.username)}
+                disabled={!pendingRole[u.id] || busy === u.id}
+                onClick={() => callAction('approve', { id: u.id, role: pendingRole[u.id] }, u.id)}
               >
-                {busy === u.username ? <LoaderCircle size={16} className="spin" /> : <UserRoundCheck size={16} />}
+                {busy === u.id ? <LoaderCircle size={16} className="spin" /> : <UserRoundCheck size={16} />}
                 Approve
               </button>
             </div>
@@ -140,26 +141,26 @@ export default function UserAdminPanel({ currentUsername }: { currentUsername: s
           User Aktif <span className="count-badge">{active.length}</span>
         </h2>
         {active.map((u) => (
-          <div key={u.username} className="user-row">
+          <div key={u.id} className="user-row">
             <span className="avatar" aria-hidden>
               {initialOf(u.name)}
             </span>
             <div className="user-meta">
               <div className="user-name">
                 {u.name}
-                {u.username === currentUsername && <span className="muted"> (kamu)</span>}
+                {u.id === currentUserId && <span className="muted"> (kamu)</span>}
               </div>
               <div className="user-sub">{u.username}</div>
             </div>
             <div className="user-actions">
-              <label htmlFor={`role-active-${u.username}`} className="sr-only">
+              <label htmlFor={`role-active-${u.id}`} className="sr-only">
                 Role {u.name}
               </label>
               <select
-                id={`role-active-${u.username}`}
+                id={`role-active-${u.id}`}
                 value={u.role || ''}
-                onChange={(e) => callAction('role', { username: u.username, role: e.target.value }, u.username)}
-                disabled={busy === u.username}
+                onChange={(e) => callAction('role', { id: u.id, role: e.target.value }, u.id)}
+                disabled={busy === u.id}
               >
                 {ROLES.map((r) => (
                   <option key={r} value={r}>
@@ -167,14 +168,14 @@ export default function UserAdminPanel({ currentUsername }: { currentUsername: s
                   </option>
                 ))}
               </select>
-              {u.username !== currentUsername && (
+              {u.id !== currentUserId && (
                 <button
                   type="button"
                   className="btn-plain danger"
-                  disabled={busy === u.username}
-                  onClick={() => callAction('deactivate', { username: u.username }, u.username)}
+                  disabled={busy === u.id}
+                  onClick={() => callAction('deactivate', { id: u.id }, u.id)}
                 >
-                  {busy === u.username ? <LoaderCircle size={16} className="spin" /> : <UserRoundX size={16} />}
+                  {busy === u.id ? <LoaderCircle size={16} className="spin" /> : <UserRoundX size={16} />}
                   Nonaktifkan
                 </button>
               )}
@@ -189,7 +190,7 @@ export default function UserAdminPanel({ currentUsername }: { currentUsername: s
             Dinonaktifkan <span className="count-badge">{disabled.length}</span>
           </h2>
           {disabled.map((u) => (
-            <div key={u.username} className="user-row">
+            <div key={u.id} className="user-row">
               <span className="avatar" aria-hidden style={{ opacity: 0.55 }}>
                 {initialOf(u.name)}
               </span>
@@ -201,10 +202,10 @@ export default function UserAdminPanel({ currentUsername }: { currentUsername: s
                 <button
                   type="button"
                   className="btn-plain"
-                  disabled={busy === u.username}
-                  onClick={() => callAction('reactivate', { username: u.username }, u.username)}
+                  disabled={busy === u.id}
+                  onClick={() => callAction('reactivate', { id: u.id }, u.id)}
                 >
-                  {busy === u.username ? <LoaderCircle size={16} className="spin" /> : <RotateCcw size={16} />}
+                  {busy === u.id ? <LoaderCircle size={16} className="spin" /> : <RotateCcw size={16} />}
                   Aktifkan lagi
                 </button>
               </div>

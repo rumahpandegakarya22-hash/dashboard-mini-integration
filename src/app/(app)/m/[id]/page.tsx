@@ -1,8 +1,7 @@
-import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronLeft, ShieldAlert, Hourglass } from 'lucide-react';
-import { verifyToken, COOKIE_NAME } from '@/lib/auth';
+import { getSessionUser } from '@/lib/auth';
 import { canAccess } from '@/lib/roles';
 import { MODULES } from '@/lib/modules/registry';
 import { moduleIcon } from '@/components/module-icons';
@@ -10,9 +9,8 @@ import DynamicForm from '@/components/DynamicForm';
 
 export default async function ModulePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const token = (await cookies()).get(COOKIE_NAME)?.value;
-  const user = token ? await verifyToken(token) : null;
-  if (!user) return null; // proxy.ts sudah redirect
+  const user = await getSessionUser();
+  if (!user) return null; // (app)/layout sudah redirect
 
   const mod = MODULES.find((m) => m.id === id);
   if (!mod) notFound();

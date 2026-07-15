@@ -6,15 +6,6 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Belum login.' }, { status: 401 });
   if (user.role !== 'owner') return NextResponse.json({ error: 'Hanya Owner yang bisa mengelola user.' }, { status: 403 });
 
-  const users = await listAllUsers();
-  const data = users.map(({ username, user: u }) => ({
-    username,
-    name: u.name,
-    role: u.role,
-    status: u.status,
-    authProvider: u.authProvider,
-    email: u.email,
-    createdAt: u.createdAt
-  }));
+  const data = await listAllUsers();
   return NextResponse.json({ ok: true, data });
 }
