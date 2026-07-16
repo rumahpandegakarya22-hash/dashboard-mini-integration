@@ -1,10 +1,11 @@
 import { appendRow, assertHeaders, readTable } from '../../sheets';
 import { withLock } from '../../redis';
+import { turso } from '../../turso';
 import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, required } from '../../validate';
 import { previewPembayaranSewa } from './pembayaran-sewa-preview';
-import { saveLampiran } from './helpers';
-import type { SubmitHandler } from '../types';
+import { saveLampiran, resolveOccupancyId } from './helpers';
+import type { SubmitContext, SubmitHandler } from '../types';
 
 // Kolom A:F sheet "Input Sewa Dimuka" (Log Input Transaksi). Jurnal digenerate Apps Script "Kost Tools"
 // dari sheet ini — TIDAK menulis langsung ke sheet Transaksi (PRD §6/§8 Modul 2). Header DIKONFIRMASI
@@ -21,6 +22,90 @@ function addMonths(iso: string, months: number): Date {
   const d = new Date(`${iso}T00:00:00`);
   d.setMonth(d.getMonth() + months);
   return d;
+}
+
+/**
+ * Catat invoice + payment ke Turso — invoice_dp/invoice_sewa dipilih dari jenisPembayaran,
+ * `payment` di-link ke baris itu via invoice_dp_id/invoice_sewa_id (bukan cuma id_penghuni).
+ * Pakai `raw` yang SAMA dgn perhitungan Sheets/Apps Script di atas (bukan hitung ulang).
+ * Best-effort: Sheets + email invoice tetap sumber utama & sudah tercatat sebelum ini dipanggil;
+ * gagal di sini jadi warning, TIDAK membatalkan pencatatan pembayaran yang sudah sukses.
+ */
+async function saveInvoiceAndPaymentTurso(
+  raw: Record<string, any>,
+  jenisPembayaran: 'DP' | 'Sewa',
+  tanggalBayar: string,
+  akunKasBank: string,
+  nominal: number,
+  ctx: SubmitContext
+): Promise<string | undefined> {
+  try {
+    const occupancyId = await resolveOccupancyId(String(raw.noKamar));
+    if (!occupancyId) {
+      return `Kamar ${raw.noKamar} tidak ditemukan sebagai penghuni aktif di occupancy_history — invoice/payment TIDAK dicatat ke database, cek manual.`;
+    }
+
+    const tx = await turso().transaction('write');
+    try {
+      const invoiceRes =
+        jenisPembayaran === 'Sewa'
+          ? await tx.execute({
+              sql: `INSERT INTO invoice_sewa
+                    (no_inv, id_penghuni, nama, email, tanggal_pembayaran, periode_awal, periode_akhir, no_kamar,
+                     jumlah_bulan, jumlah_denda, harga_sewa, tambahan_listrik, denda, total_sewa, total_listrik,
+                     total_denda, diskon, pajak, subtotal, grand_total, tipe_kamar, checked)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)`,
+              args: [
+                raw.noInv, occupancyId, raw.nama, raw.email || null, tanggalBayar, raw.periodeAwal, raw.periodeAkhir,
+                String(raw.noKamar), raw.lamaSewa, raw.jumlahDenda, raw.sewaPerBulan, raw.listrikPerBulan,
+                raw.dendaPerUnit, raw.totalSewa, raw.totalListrik, raw.totalDenda, raw.diskon, raw.pajak,
+                raw.subtotal, raw.grandTotal, raw.tipe
+              ]
+            })
+          : await tx.execute({
+              sql: `INSERT INTO invoice_dp
+                    (no_inv, id_penghuni, nama, email, tanggal_pembayaran, no_kamar, tipe_kamar, jumlah,
+                     harga_kamar, subtotal, pajak, diskon, grand_total, checked)
+                    VALUES (?,?,?,?,?,?,?,1,?,?,?,?,?,0)`,
+              args: [
+                raw.noInv, occupancyId, raw.nama, raw.email || null, tanggalBayar, String(raw.noKamar), raw.tipe,
+                raw.hargaKamar, raw.subtotal, raw.pajak, raw.diskon, raw.grandTotal
+              ]
+            });
+      const invoiceId = invoiceRes.lastInsertRowid;
+
+      const idPayment = `PAY-${tanggalBayar.replace(/-/g, '')}-${ctx.requestId.slice(0, 8)}`;
+      const billingPeriod = jenisPembayaran === 'Sewa' ? `${raw.periodeAwal} s.d. ${raw.periodeAkhir}` : 'DP';
+
+      await tx.execute({
+        sql: `INSERT INTO payment
+              (id_payment, id_penghuni, invoice_dp_id, invoice_sewa_id, no_invoice, billing_period, amount, payment_date, status, notes)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?)`,
+        args: [
+          idPayment,
+          occupancyId,
+          jenisPembayaran === 'DP' ? invoiceId : null,
+          jenisPembayaran === 'Sewa' ? invoiceId : null,
+          raw.noInv,
+          billingPeriod,
+          nominal,
+          tanggalBayar,
+          // payment_method TIDAK diisi: akunKasBank ("BCA"/"Cash"/"GoPay" dst) beda taksonomi dari
+          // CHECK constraint payment.payment_method ('Transfer'/'Qris'/'Cash') — dicatat di notes saja
+          // drpd dipaksa map yang berisiko salah kategori.
+          `Akun kas/bank: ${akunKasBank}`
+        ]
+      });
+
+      await tx.commit();
+      return undefined;
+    } finally {
+      tx.close();
+    }
+  } catch (e: any) {
+    console.error('[pembayaran-sewa] gagal simpan invoice/payment ke Turso:', e?.message);
+    return `Pembayaran tercatat di ledger, tapi gagal disimpan ke database invoice/payment — cek manual: ${e?.message || 'unknown error'}`;
+  }
 }
 
 export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
@@ -115,13 +200,14 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
       }
     }
 
-    const warning = await saveLampiran(values, ctx, `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${tanggalBayar})`, 'Admin');
+    const lampiranWarning = await saveLampiran(values, ctx, `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${tanggalBayar})`, 'Admin');
+    const tursoWarning = await saveInvoiceAndPaymentTurso(raw, jenisPembayaran, tanggalBayar, akunKasBank, nominal, ctx);
 
     return {
       target: 'Log Input Transaksi → Input Sewa Dimuka',
       row,
       data: { penghuni, jenisPembayaran, tanggalBayar, nominal, jumlahBulan, akunKasBank, invoiceStatus },
-      warning
+      warning: [lampiranWarning, tursoWarning].filter(Boolean).join(' ') || undefined
     };
   });
 };

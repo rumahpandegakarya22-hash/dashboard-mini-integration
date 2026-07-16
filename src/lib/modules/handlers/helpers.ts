@@ -40,6 +40,22 @@ export async function saveLampiran(
   }
 }
 
+/**
+ * Resolve id_penghuni Turso (format 'KTD-YYMM-NNN', dari occupancy_history) dari nomor kamar.
+ * SENGAJA TIDAK pakai Tenant.id (format 'KTD-x' dari sheet Database Penghuni) — dua ID itu
+ * namespace berbeda dan TIDAK saling cocok (lihat "Skema Turso - Invoice DP dan Sewa.sql").
+ * Tabel `payment`/`invoice_dp`/`invoice_sewa` FK ke occupancy_history, jadi query harus pakai id dari situ.
+ */
+export async function resolveOccupancyId(kamar: string): Promise<string | null> {
+  const res = await turso().execute({
+    sql: `SELECT id_penghuni FROM occupancy_history
+          WHERE no_kamar = ? AND status = 'Check-in' AND tanggal_selesasi IS NULL
+          ORDER BY tanggal_mulai DESC LIMIT 1`,
+    args: [kamar]
+  });
+  return res.rows.length > 0 ? String(res.rows[0].id_penghuni) : null;
+}
+
 /** Factory handler untuk modul append-only sederhana (tanpa lock resource / cross-check khusus). */
 export function createAppendHandler(cfg: AppendConfig): SubmitHandler {
   return async (values, ctx) => {

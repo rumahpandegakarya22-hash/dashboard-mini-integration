@@ -1,5 +1,6 @@
 import { getTenantByLabel, getTanggalMasukByKamar } from '../../master';
 import { turso } from '../../turso';
+import { resolveOccupancyId } from './helpers';
 import type { AutoFillHandler } from '../types';
 
 export interface CheckoutDefaults {
@@ -28,7 +29,8 @@ const STATUS_TUNGGAKAN = ['Pending', 'Partial', 'Overdue'];
 /**
  * Hitung default Checkout dari data yg SUDAH ADA — TIDAK pernah menebak.
  * Tunggakan (Improvement v1.1 §2): dari tabel Turso `payment` (database kost-tiga-dara,
- * bersama Dashboard) berdasarkan ID unik penghuni (`Tenant.id` = "KTD-x" = payment.id_penghuni).
+ * bersama Dashboard) berdasarkan id_penghuni occupancy_history (resolve via resolveOccupancyId,
+ * BUKAN Tenant.id sheet — lihat komentar di atas).
  * Invoice berstatus belum lunas (Pending/Partial/Overdue) dijumlahkan jadi Nominal Tunggakan.
  * Kalau sumber data belum lengkap, `note` berisi langkah konkret dan field dikembalikan kosong
  * supaya admin sadar harus isi manual (bukan diam-diam salah).
@@ -55,20 +57,27 @@ export async function computeCheckoutDefaults(penghuniLabel: string, _tanggalChe
   let adaTunggakan: 'Ya' | 'Tidak' | '' = '';
   let nominalTunggakan = 0;
   try {
-    const res = await turso().execute({
-      sql: 'SELECT status, amount FROM payment WHERE id_penghuni = ?',
-      args: [tenant.id]
-    });
-    if (res.rows.length === 0) {
+    const occupancyId = await resolveOccupancyId(tenant.kamar);
+    if (!occupancyId) {
       notes.push(
-        `Tidak ada riwayat pembayaran di database untuk ${tenant.id} — Tunggakan tidak bisa dihitung otomatis, cek manual.`
+        `Kamar ${tenant.kamar} tidak ditemukan sebagai penghuni aktif di occupancy_history — Tunggakan tidak bisa dihitung otomatis, cek manual.`
       );
     } else {
-      const outstanding = res.rows
-        .filter((r) => STATUS_TUNGGAKAN.includes(String(r.status)))
-        .reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
-      adaTunggakan = outstanding > 0 ? 'Ya' : 'Tidak';
-      nominalTunggakan = Math.round(outstanding);
+      const res = await turso().execute({
+        sql: 'SELECT status, amount FROM payment WHERE id_penghuni = ?',
+        args: [occupancyId]
+      });
+      if (res.rows.length === 0) {
+        notes.push(
+          `Tidak ada riwayat pembayaran di database untuk ${occupancyId} — Tunggakan tidak bisa dihitung otomatis, cek manual.`
+        );
+      } else {
+        const outstanding = res.rows
+          .filter((r) => STATUS_TUNGGAKAN.includes(String(r.status)))
+          .reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
+        adaTunggakan = outstanding > 0 ? 'Ya' : 'Tidak';
+        nominalTunggakan = Math.round(outstanding);
+      }
     }
   } catch (e: any) {
     console.error('[checkout-lookup] gagal baca tabel payment:', e?.message);
