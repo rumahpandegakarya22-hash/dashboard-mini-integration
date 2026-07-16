@@ -23,19 +23,16 @@ function toISODateFlexible(raw: string): string | null {
   return null;
 }
 
-/** Status payment yang dihitung sebagai tunggakan (belum lunas). */
-const STATUS_TUNGGAKAN = ['Pending', 'Partial', 'Overdue'];
-
 /**
  * Hitung default Checkout dari data yg SUDAH ADA — TIDAK pernah menebak.
- * Tunggakan (Improvement v1.1 §2): dari tabel Turso `payment` (database kost-tiga-dara,
- * bersama Dashboard) berdasarkan id_penghuni occupancy_history (resolve via resolveOccupancyId,
- * BUKAN Tenant.id sheet — lihat komentar di atas).
- * Invoice berstatus belum lunas (Pending/Partial/Overdue) dijumlahkan jadi Nominal Tunggakan.
+ * Tunggakan: berbasis waktu — MAX(periode_akhir) di tabel `payment` (id_penghuni dari
+ * occupancy_history via resolveOccupancyId, BUKAN Tenant.id sheet) dibanding tanggal checkout
+ * yang dipilih admin di device (fleksibel zona waktu, bukan clock server). Aman ('Tidak')
+ * kalau periode_akhir masih lebih besar. Status dropdown payment TIDAK dipakai lagi.
  * Kalau sumber data belum lengkap, `note` berisi langkah konkret dan field dikembalikan kosong
  * supaya admin sadar harus isi manual (bukan diam-diam salah).
  */
-export async function computeCheckoutDefaults(penghuniLabel: string, _tanggalCheckoutISO: string): Promise<CheckoutDefaults> {
+export async function computeCheckoutDefaults(penghuniLabel: string, tanggalCheckoutISO: string): Promise<CheckoutDefaults> {
   const tenant = await getTenantByLabel(penghuniLabel);
   if (!tenant) {
     return { tglMasuk: '', adaTunggakan: '', nominalTunggakan: 0, note: `Penghuni "${penghuniLabel}" tidak ditemukan di Database Penghuni.` };
@@ -53,9 +50,10 @@ export async function computeCheckoutDefaults(penghuniLabel: string, _tanggalChe
     );
   }
 
-  // --- Tunggakan: total invoice belum lunas di tabel payment untuk ID penghuni ini ---
+  // --- Tunggakan: berbasis waktu — MAX(periode_akhir) payment sewa vs tanggal checkout dari
+  // device admin (bukan clock server UTC). Aman kalau lunas-sampai masih > tanggal checkout. ---
   let adaTunggakan: 'Ya' | 'Tidak' | '' = '';
-  let nominalTunggakan = 0;
+  const nominalTunggakan = 0; // tidak bisa dihitung dari aturan waktu — admin isi manual saat 'Ya'
   try {
     const occupancyId = await resolveOccupancyId(tenant.kamar);
     if (!occupancyId) {
@@ -64,19 +62,19 @@ export async function computeCheckoutDefaults(penghuniLabel: string, _tanggalChe
       );
     } else {
       const res = await turso().execute({
-        sql: 'SELECT status, amount FROM payment WHERE id_penghuni = ?',
+        sql: 'SELECT MAX(periode_akhir) mx FROM payment WHERE id_penghuni = ? AND periode_akhir IS NOT NULL',
         args: [occupancyId]
       });
-      if (res.rows.length === 0) {
+      const lunasSampai = res.rows[0]?.mx ? String(res.rows[0].mx) : null;
+      if (!lunasSampai) {
         notes.push(
-          `Tidak ada riwayat pembayaran di database untuk ${occupancyId} — Tunggakan tidak bisa dihitung otomatis, cek manual.`
+          `Tidak ada riwayat pembayaran sewa (periode) di database untuk ${occupancyId} — Tunggakan tidak bisa dihitung otomatis, cek manual.`
         );
+      } else if (lunasSampai > tanggalCheckoutISO) {
+        adaTunggakan = 'Tidak'; // lunas s.d. tanggal setelah checkout
       } else {
-        const outstanding = res.rows
-          .filter((r) => STATUS_TUNGGAKAN.includes(String(r.status)))
-          .reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
-        adaTunggakan = outstanding > 0 ? 'Ya' : 'Tidak';
-        nominalTunggakan = Math.round(outstanding);
+        adaTunggakan = 'Ya';
+        notes.push(`Sewa lunas s.d. ${lunasSampai} (sudah lewat) — isi Nominal Tunggakan manual.`);
       }
     }
   } catch (e: any) {
