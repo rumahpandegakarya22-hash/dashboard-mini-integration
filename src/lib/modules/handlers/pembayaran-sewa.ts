@@ -5,7 +5,7 @@ import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, required } from '../../validate';
 import { previewPembayaranSewa } from './pembayaran-sewa-preview';
 import { saveLampiran, resolveOccupancyId } from './helpers';
-import type { SubmitContext, SubmitHandler } from '../types';
+import type { SubmitHandler } from '../types';
 
 // Kolom A:F sheet "Input Sewa Dimuka" (Log Input Transaksi). Jurnal digenerate Apps Script "Kost Tools"
 // dari sheet ini — TIDAK menulis langsung ke sheet Transaksi (PRD §6/§8 Modul 2). Header DIKONFIRMASI
@@ -27,6 +27,8 @@ function addMonths(iso: string, months: number): Date {
 /**
  * Catat invoice + payment ke Turso — invoice_dp/invoice_sewa dipilih dari jenisPembayaran,
  * `payment` di-link ke baris itu via invoice_dp_id/invoice_sewa_id (bukan cuma id_penghuni).
+ * `payment.id_payment` = no_inv invoice-nya langsung (dipakai jg sbg "No Invoice" tampilan) —
+ * TIDAK generate kode PAY-xxx sendiri.
  * Pakai `raw` yang SAMA dgn perhitungan Sheets/Apps Script di atas (bukan hitung ulang).
  * Best-effort: Sheets + email invoice tetap sumber utama & sudah tercatat sebelum ini dipanggil;
  * gagal di sini jadi warning, TIDAK membatalkan pencatatan pembayaran yang sudah sukses.
@@ -36,8 +38,7 @@ async function saveInvoiceAndPaymentTurso(
   jenisPembayaran: 'DP' | 'Sewa',
   tanggalBayar: string,
   akunKasBank: string,
-  nominal: number,
-  ctx: SubmitContext
+  nominal: number
 ): Promise<string | undefined> {
   try {
     const occupancyId = await resolveOccupancyId(String(raw.noKamar));
@@ -74,20 +75,21 @@ async function saveInvoiceAndPaymentTurso(
             });
       const invoiceId = invoiceRes.lastInsertRowid;
 
-      const idPayment = `PAY-${tanggalBayar.replace(/-/g, '')}-${ctx.requestId.slice(0, 8)}`;
-      const billingPeriod = jenisPembayaran === 'Sewa' ? `${raw.periodeAwal} s.d. ${raw.periodeAkhir}` : 'DP';
+      // periode_awal/periode_akhir Sewa dari invoice; DP cuma 1 tanggal (periode_akhir NULL).
+      const periodeAwal = jenisPembayaran === 'Sewa' ? raw.periodeAwal : tanggalBayar;
+      const periodeAkhir = jenisPembayaran === 'Sewa' ? raw.periodeAkhir : null;
 
       await tx.execute({
         sql: `INSERT INTO payment
-              (id_payment, id_penghuni, invoice_dp_id, invoice_sewa_id, no_invoice, billing_period, amount, payment_date, status, notes)
+              (id_payment, id_penghuni, invoice_dp_id, invoice_sewa_id, periode_awal, periode_akhir, amount, payment_date, status, notes)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?)`,
         args: [
-          idPayment,
+          raw.noInv,
           occupancyId,
           jenisPembayaran === 'DP' ? invoiceId : null,
           jenisPembayaran === 'Sewa' ? invoiceId : null,
-          raw.noInv,
-          billingPeriod,
+          periodeAwal,
+          periodeAkhir,
           nominal,
           tanggalBayar,
           // payment_method TIDAK diisi: akunKasBank ("BCA"/"Cash"/"GoPay" dst) beda taksonomi dari
@@ -104,7 +106,7 @@ async function saveInvoiceAndPaymentTurso(
     }
   } catch (e: any) {
     console.error('[pembayaran-sewa] gagal simpan invoice/payment ke Turso:', e?.message);
-    return `Pembayaran tercatat di ledger, tapi gagal disimpan ke database invoice/payment — cek manual: ${e?.message || 'unknown error'}`;
+    return `Pembayaran tercatat di ledger, tapi gagal disimpan ke database invoice/payment — cek manual (kemungkinan No. Invoice "${raw.noInv}" sudah pernah dicatat sebelumnya): ${e?.message || 'unknown error'}`;
   }
 }
 
@@ -201,7 +203,7 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
     }
 
     const lampiranWarning = await saveLampiran(values, ctx, `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${tanggalBayar})`, 'Admin');
-    const tursoWarning = await saveInvoiceAndPaymentTurso(raw, jenisPembayaran, tanggalBayar, akunKasBank, nominal, ctx);
+    const tursoWarning = await saveInvoiceAndPaymentTurso(raw, jenisPembayaran, tanggalBayar, akunKasBank, nominal);
 
     return {
       target: 'Log Input Transaksi → Input Sewa Dimuka',
