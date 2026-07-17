@@ -73,6 +73,9 @@ export const MODULES: ModuleMeta[] = [
     title: 'Pembayaran Sewa',
     ready: true,
     hasPreview: true,
+    // Improvement v1.2 §1: begitu Penghuni + Jenis terisi, Periode Awal Sewa diisi otomatis
+    // dari MAX(periode_akhir) payment di Turso (tanggal bayar ≠ tanggal awal sewa).
+    autoFillTrigger: ['penghuni', 'jenisPembayaran'],
     fields: [
       {
         name: 'penghuni',
@@ -111,7 +114,9 @@ export const MODULES: ModuleMeta[] = [
         label: 'Periode Awal Sewa',
         type: 'date',
         required: true,
-        showIf: { field: 'jenisPembayaran', equals: 'Sewa' }
+        showIf: { field: 'jenisPembayaran', equals: 'Sewa' },
+        helpText:
+          'Terisi otomatis dari tanggal habis sewa terakhir di database — BUKAN tanggal pembayaran. Sesuaikan manual kalau perlu.'
       },
       {
         name: 'biayaDendaPerUnit',

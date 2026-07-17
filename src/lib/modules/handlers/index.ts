@@ -1,7 +1,7 @@
 import type { SubmitHandler, PreviewHandler, AutoFillHandler } from '../types';
 import { submitPenghuniBaru } from './penghuni-baru';
 import { submitPengeluaran } from './pengeluaran';
-import { submitPembayaranSewa } from './pembayaran-sewa';
+import { submitPembayaranSewa, autoFillPembayaranSewa } from './pembayaran-sewa';
 import { previewPembayaranSewa } from './pembayaran-sewa-preview';
 import { submitSurvey } from './survey';
 import { submitPerawatanPreventif } from './perawatan-preventif';
@@ -54,5 +54,6 @@ export const PREVIEW_HANDLERS: Record<string, PreviewHandler> = {
 
 /** Handler auto-fill (hitung tanpa efek samping) — cuma modul dgn ModuleMeta.autoFillTrigger perlu entry di sini. */
 export const AUTOFILL_HANDLERS: Record<string, AutoFillHandler> = {
-  checkout: autoFillCheckout
+  checkout: autoFillCheckout,
+  'pembayaran-sewa': autoFillPembayaranSewa
 };

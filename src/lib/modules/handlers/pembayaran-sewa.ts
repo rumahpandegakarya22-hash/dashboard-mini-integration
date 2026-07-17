@@ -2,10 +2,11 @@ import { appendRow, assertHeaders, readTable } from '../../sheets';
 import { withLock } from '../../redis';
 import { turso } from '../../turso';
 import { SHEETS } from '@/config/spreadsheets';
+import { getTenantByLabel } from '../../master';
 import { parseDateISO, required } from '../../validate';
 import { previewPembayaranSewa } from './pembayaran-sewa-preview';
 import { saveLampiran, resolveOccupancyId } from './helpers';
-import type { SubmitHandler } from '../types';
+import type { AutoFillHandler, SubmitHandler } from '../types';
 
 // Kolom A:F sheet "Input Sewa Dimuka" (Log Input Transaksi). Jurnal digenerate Apps Script "Kost Tools"
 // dari sheet ini — TIDAK menulis langsung ke sheet Transaksi (PRD §6/§8 Modul 2). Header DIKONFIRMASI
@@ -109,6 +110,49 @@ async function saveInvoiceAndPaymentTurso(
     return `Pembayaran tercatat di ledger, tapi gagal disimpan ke database invoice/payment — cek manual (kemungkinan No. Invoice "${raw.noInv}" sudah pernah dicatat sebelumnya): ${e?.message || 'unknown error'}`;
   }
 }
+
+/**
+ * Auto-fill Periode Awal Sewa (Improvement v1.2 §1): tanggal pembayaran ≠ tanggal awal sewa —
+ * periode baru mulai saat periode terakhir habis. Ambil MAX(periode_akhir) payment penghuni ini
+ * dari Turso (id_penghuni via occupancy_history, aturan sama dgn tunggakan checkout) → tampilkan
+ * otomatis di field periodeAwalSewa; admin tetap bisa koreksi manual.
+ */
+export const autoFillPembayaranSewa: AutoFillHandler = async (values) => {
+  const penghuni = String(values.penghuni ?? '').trim();
+  const jenis = String(values.jenisPembayaran ?? '').trim();
+  if (!penghuni || jenis !== 'Sewa') return { fields: {} as Record<string, string> }; // DP tidak punya field periode
+
+  const tenant = await getTenantByLabel(penghuni);
+  if (!tenant) return { fields: {} as Record<string, string>, note: `Penghuni "${penghuni}" tidak ditemukan di Database Penghuni.` };
+
+  try {
+    const occupancyId = await resolveOccupancyId(tenant.kamar);
+    if (!occupancyId) {
+      return {
+        fields: {} as Record<string, string>,
+        note: `Kamar ${tenant.kamar} tidak ditemukan sebagai penghuni aktif di occupancy_history — isi Periode Awal Sewa manual.`
+      };
+    }
+    const res = await turso().execute({
+      sql: 'SELECT MAX(periode_akhir) mx FROM payment WHERE id_penghuni = ? AND periode_akhir IS NOT NULL',
+      args: [occupancyId]
+    });
+    const lunasSampai = res.rows[0]?.mx ? String(res.rows[0].mx) : null;
+    if (!lunasSampai) {
+      return {
+        fields: {} as Record<string, string>,
+        note: `Belum ada riwayat periode sewa di database untuk ${occupancyId} — isi Periode Awal Sewa manual (mis. tanggal masuk).`
+      };
+    }
+    return {
+      fields: { periodeAwalSewa: lunasSampai },
+      note: `Periode Awal Sewa diisi otomatis: sewa terakhir habis ${lunasSampai}. Cek ulang sebelum kirim.`
+    };
+  } catch (e: any) {
+    console.error('[pembayaran-sewa] gagal baca periode terakhir:', e?.message);
+    return { fields: {} as Record<string, string>, note: 'Gagal membaca riwayat sewa dari database — isi Periode Awal Sewa manual.' };
+  }
+};
 
 export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
   const penghuni = required(values.penghuni, 'Penghuni'); // format baku "KTD-x — Nama"
