@@ -97,13 +97,14 @@ export default function EditPanel({ moduleId, fields }: { moduleId: string; fiel
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8 }}>
             {entries.map((e) => (
               <li key={e.ref} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <span style={{ fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {/* .btn global width:100% — di daftar ini tombol harus auto supaya label kebaca */}
+                <span style={{ fontSize: '0.875rem', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {e.label}
                 </span>
                 <button
                   type="button"
                   className="btn secondary"
-                  style={{ minHeight: 36, padding: '6px 14px', fontSize: '0.875rem', flex: 'none' }}
+                  style={{ width: 'auto', minHeight: 36, padding: '6px 14px', fontSize: '0.875rem', flex: 'none' }}
                   onClick={() => setSelected(e)}
                 >
                   Edit

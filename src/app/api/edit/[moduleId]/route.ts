@@ -47,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
   const start = Date.now();
   const requestId = String(body?.requestId || `edit-${Date.now()}`);
   try {
-    await saveEntry(moduleId, ref, values);
+    const warning = await saveEntry(moduleId, ref, values);
     await writeAudit({
       requestId,
       user: g.user!,
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
       durationSec: (Date.now() - start) / 1000,
       status: 'sukses'
     });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, warning });
   } catch (e: any) {
     await writeAudit({
       requestId,

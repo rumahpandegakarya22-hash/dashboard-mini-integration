@@ -36,10 +36,16 @@ export async function appendRow(spreadsheetId: string, range: string, values: (s
   return m ? parseInt(m[1], 10) : -1;
 }
 
-/** Update sel/range spesifik (dipakai mis. update status kamar, Generator Tagihan). */
+/** Update sel/range spesifik (dipakai mis. update status kamar, Generator Tagihan, fitur Edit Data). */
 export async function updateRange(spreadsheetId: string, range: string, values: (string | number | null)[][]): Promise<void> {
   if (READ_ONLY_SHEETS.includes(spreadsheetId)) {
     throw new Error('Spreadsheet ini read-only untuk app.');
+  }
+  for (const row of values) {
+    for (const v of row) {
+      // Aturan sama dgn appendRow: input user tidak boleh jadi formula.
+      if (typeof v === 'string' && v.trim().startsWith('=')) throw new Error('Input tidak boleh diawali "=".');
+    }
   }
   await withRetry(() =>
     sheetsClient().spreadsheets.values.update({
