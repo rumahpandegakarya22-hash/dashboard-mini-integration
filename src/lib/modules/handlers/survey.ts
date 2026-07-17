@@ -1,4 +1,4 @@
-import { createAppendHandler } from './helpers';
+import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
 import { normalizePhone, parseDateISO, required } from '../../validate';
 
@@ -19,7 +19,7 @@ const EXPECTED_HEADERS = [
   'Tanggal FU'
 ];
 
-export const submitSurvey = createAppendHandler({
+export const surveyAppendCfg: AppendConfig = {
   spreadsheetId: SHEETS.LOG_SALES,
   range: "'Log Survey'!A:M",
   headerRange: "'Log Survey'!A1:M1",
@@ -55,4 +55,6 @@ export const submitSurvey = createAppendHandler({
       tanggalFu
     ];
   }
-});
+};
+
+export const submitSurvey = createAppendHandler(surveyAppendCfg);

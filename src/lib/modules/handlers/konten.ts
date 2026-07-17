@@ -1,4 +1,4 @@
-import { createAppendHandler } from './helpers';
+import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, required } from '../../validate';
 
@@ -26,7 +26,7 @@ function num(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export const submitKonten = createAppendHandler({
+export const kontenAppendCfg: AppendConfig = {
   spreadsheetId: SHEETS.LOG_MARKETING,
   range: "'Log Konten'!A:M",
   headerRange: "'Log Konten'!A1:M1",
@@ -48,4 +48,6 @@ export const submitKonten = createAppendHandler({
     const catatan = String(values.catatan ?? '').trim();
     return [tanggalPost, platform, tipeKonten, judulCaption, visual, linkPost, jamTayang, status, likes, komentar, shareSaves, reach, catatan];
   }
-});
+};
+
+export const submitKonten = createAppendHandler(kontenAppendCfg);

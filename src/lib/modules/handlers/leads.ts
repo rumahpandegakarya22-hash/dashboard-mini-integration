@@ -1,4 +1,4 @@
-import { createAppendHandler } from './helpers';
+import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, parseRupiah, normalizePhone, required } from '../../validate';
 
@@ -20,7 +20,7 @@ const EXPECTED_HEADERS = [
   'Waktu Follow-up'
 ];
 
-export const submitLeads = createAppendHandler({
+export const leadsAppendCfg: AppendConfig = {
   spreadsheetId: SHEETS.LOG_MARKETING,
   range: "'Log Leads Harian'!A:L",
   headerRange: "'Log Leads Harian'!A1:L1",
@@ -54,4 +54,6 @@ export const submitLeads = createAppendHandler({
       waktuFollowUp
     ];
   }
-});
+};
+
+export const submitLeads = createAppendHandler(leadsAppendCfg);

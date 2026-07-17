@@ -20,13 +20,18 @@ interface Props {
   fields: FieldDef[];
   hasPreview?: boolean;
   autoFillTrigger?: string[];
+  /** Mode edit (fitur Edit Data): form terisi nilai entri lama, submit menimpa entri via /api/edit. */
+  editRef?: string;
+  initialValues?: Record<string, string>;
+  onEditDone?: () => void;
 }
 
 type ChangeEl = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
 
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
-export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrigger }: Props) {
+export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrigger, editRef, initialValues, onEditDone }: Props) {
+  const isEdit = !!editRef;
   const [values, setValues] = useState<Record<string, string>>({});
   const [options, setOptions] = useState<Record<string, FieldOption[]>>({});
   const [masterRaw, setMasterRaw] = useState<Record<string, Record<string, unknown>[]>>({});
@@ -46,7 +51,12 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
   }
 
   // Muat draft tersimpan (koneksi lapangan buruk → data tidak hilang, PRD §10) + default tanggal hari ini.
+  // Mode edit: nilai awal dari entri yang dipilih — TANPA draft localStorage (jangan menimpa draft form input).
   useEffect(() => {
+    if (isEdit) {
+      setValues({ ...(initialValues ?? {}) });
+      return;
+    }
     const draft = localStorage.getItem(draftKey);
     const initial: Record<string, string> = draft ? JSON.parse(draft) : {};
     for (const f of fields) {
@@ -56,7 +66,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
     }
     setValues(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moduleId]);
+  }, [moduleId, editRef]);
 
   // Ambil opsi dropdown dari master data untuk field select-async.
   useEffect(() => {
@@ -101,7 +111,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
         if (cancelled || !res.ok) return;
         setValues((prev) => {
           const next = { ...prev, ...res.fields };
-          localStorage.setItem(draftKey, JSON.stringify(next));
+          if (!isEdit) localStorage.setItem(draftKey, JSON.stringify(next));
           return next;
         });
         setAutoFillNote(res.note || '');
@@ -125,7 +135,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
       if (f.showIf?.field === name && !isVisible(f, next)) next[f.name] = '';
     }
     setValues(next);
-    localStorage.setItem(draftKey, JSON.stringify(next));
+    if (!isEdit) localStorage.setItem(draftKey, JSON.stringify(next));
   }
 
   // Hitung opsi field select-async yang bergantung pada field lain (mis. Nama Akun bergantung Tipe Akun).
@@ -144,15 +154,22 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
   async function doSubmit() {
     const requestId =
       typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-    const res = await fetch(`/api/submit/${moduleId}`, {
+    // Mode edit: timpa entri lama via /api/edit (bukan tambah baris baru via /api/submit).
+    const url = isEdit ? `/api/edit/${moduleId}` : `/api/submit/${moduleId}`;
+    const body = isEdit
+      ? { requestId, ref: editRef, values: visibleValuesNow() }
+      : { requestId, values: visibleValuesNow() };
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requestId, values: visibleValuesNow() })
+      body: JSON.stringify(body)
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Gagal menyimpan data.');
-    localStorage.removeItem(draftKey);
-    setValues({});
+    if (!isEdit) {
+      localStorage.removeItem(draftKey);
+      setValues({});
+    }
     setPreviewData(null);
     setWarning(json.warning || '');
     setSuccess(true);
@@ -212,22 +229,30 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
         transition={{ duration: 0.25, ease: EASE }}
       >
         <SuccessCheck />
-        <h2>Data berhasil disimpan</h2>
+        <h2>{isEdit ? 'Perubahan tersimpan' : 'Data berhasil disimpan'}</h2>
         {warning ? (
           <div className="banner warn">
             <TriangleAlert size={16} />
             <span>{warning}</span>
           </div>
         ) : (
-          <p className="muted">Sudah masuk ke spreadsheet — silakan lanjut input berikutnya.</p>
+          <p className="muted">{isEdit ? 'Entri lama sudah ditimpa dengan nilai baru.' : 'Sudah masuk ke spreadsheet — silakan lanjut input berikutnya.'}</p>
         )}
-        <button type="button" className="btn" onClick={() => setSuccess(false)}>
-          Input Lagi
-        </button>
-        <Link className="btn-plain" href="/">
-          <House size={16} />
-          Kembali ke Beranda
-        </Link>
+        {isEdit ? (
+          <button type="button" className="btn" onClick={() => onEditDone?.()}>
+            Selesai
+          </button>
+        ) : (
+          <>
+            <button type="button" className="btn" onClick={() => setSuccess(false)}>
+              Input Lagi
+            </button>
+            <Link className="btn-plain" href="/">
+              <House size={16} />
+              Kembali ke Beranda
+            </Link>
+          </>
+        )}
       </motion.div>
     );
   }
@@ -337,7 +362,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
 
       <button type="submit" className="btn" disabled={loading} style={{ marginTop: 20 }}>
         {loading && <LoaderCircle size={18} className="spin" />}
-        {loading ? (hasPreview ? 'Menghitung...' : 'Menyimpan...') : hasPreview ? 'Lihat Preview' : 'Simpan'}
+        {loading ? (hasPreview ? 'Menghitung...' : 'Menyimpan...') : hasPreview ? 'Lihat Preview' : isEdit ? 'Simpan Perubahan' : 'Simpan'}
       </button>
     </form>
   );

@@ -1,4 +1,4 @@
-import { createAppendHandler } from './helpers';
+import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, parseRupiah, required } from '../../validate';
 
@@ -26,7 +26,7 @@ function num(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export const submitPromosi = createAppendHandler({
+export const promosiAppendCfg: AppendConfig = {
   spreadsheetId: SHEETS.LOG_MARKETING,
   range: "'Log Promosi'!A:L",
   headerRange: "'Log Promosi'!A1:L1",
@@ -59,4 +59,6 @@ export const submitPromosi = createAppendHandler({
       status
     ];
   }
-});
+};
+
+export const submitPromosi = createAppendHandler(promosiAppendCfg);

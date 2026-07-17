@@ -4,8 +4,10 @@ import { ChevronLeft, ShieldAlert, Hourglass } from 'lucide-react';
 import { getSessionUser } from '@/lib/auth';
 import { canAccess } from '@/lib/roles';
 import { MODULES } from '@/lib/modules/registry';
+import { isEditable } from '@/lib/modules/edit';
 import { moduleIcon } from '@/components/module-icons';
 import DynamicForm from '@/components/DynamicForm';
+import EditPanel from '@/components/EditPanel';
 
 export default async function ModulePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -46,7 +48,10 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
       </header>
 
       {mod.ready && mod.fields ? (
-        <DynamicForm moduleId={mod.id} fields={mod.fields} hasPreview={mod.hasPreview} autoFillTrigger={mod.autoFillTrigger} />
+        <>
+          <DynamicForm moduleId={mod.id} fields={mod.fields} hasPreview={mod.hasPreview} autoFillTrigger={mod.autoFillTrigger} />
+          {isEditable(mod.id) && <EditPanel moduleId={mod.id} fields={mod.fields} />}
+        </>
       ) : (
         <div className="card success-card">
           <span className="icon-tile lg warn" aria-hidden>

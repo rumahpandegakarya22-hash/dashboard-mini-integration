@@ -1,4 +1,4 @@
-import { createAppendHandler } from './helpers';
+import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, required } from '../../validate';
 
@@ -14,7 +14,7 @@ const EXPECTED_HEADERS = [
   'Catatan'
 ];
 
-export const submitInspeksiFasilitas = createAppendHandler({
+export const inspeksiFasilitasAppendCfg: AppendConfig = {
   spreadsheetId: SHEETS.LOG_INSPEKSI_PERAWATAN,
   range: "'Log Inspeksi Harian'!B:H",
   headerRange: "'Log Inspeksi Harian'!B1:H1",
@@ -30,4 +30,6 @@ export const submitInspeksiFasilitas = createAppendHandler({
     const catatan = String(values.catatan ?? '').trim();
     return [tanggal, areaFasilitas, kondisiDitemukan, kategori, tindakLanjutPerlu, petugas, catatan];
   }
-});
+};
+
+export const submitInspeksiFasilitas = createAppendHandler(inspeksiFasilitasAppendCfg);

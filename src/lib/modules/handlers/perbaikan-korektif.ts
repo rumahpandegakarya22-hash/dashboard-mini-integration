@@ -1,4 +1,4 @@
-import { createAppendHandler } from './helpers';
+import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, parseRupiah, required } from '../../validate';
 
@@ -21,7 +21,7 @@ const EXPECTED_HEADERS = [
   'Catatan/Dokumentasi'
 ];
 
-export const submitPerbaikanKorektif = createAppendHandler({
+export const perbaikanKorektifAppendCfg: AppendConfig = {
   spreadsheetId: SHEETS.LOG_INSPEKSI_PERAWATAN,
   range: "'Log Perbaikan Korektif'!E:R",
   headerRange: "'Log Perbaikan Korektif'!E1:R1",
@@ -60,4 +60,6 @@ export const submitPerbaikanKorektif = createAppendHandler({
       catatan
     ];
   }
-});
+};
+
+export const submitPerbaikanKorektif = createAppendHandler(perbaikanKorektifAppendCfg);

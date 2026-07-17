@@ -1,5 +1,6 @@
 import { getTenantByLabel, getTanggalMasukByKamar } from '../../master';
 import { turso } from '../../turso';
+import { toISODateFlexible } from '../../validate';
 import { resolveOccupancyId } from './helpers';
 import type { AutoFillHandler } from '../types';
 
@@ -8,19 +9,6 @@ export interface CheckoutDefaults {
   adaTunggakan: 'Ya' | 'Tidak' | ''; // '' = tidak bisa dihitung (tidak ada riwayat pembayaran)
   nominalTunggakan: number;
   note: string; // penjelasan/langkah manual, '' kalau semua lengkap
-}
-
-/** Terima 'yyyy-mm-dd', 'd/m/yyyy', atau format tanggal umum lain dari Sheets → ISO, null kalau gagal. */
-function toISODateFlexible(raw: string): string | null {
-  const s = String(raw ?? '').trim();
-  if (!s) return null;
-  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
-  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-  const d = new Date(s);
-  if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  return null;
 }
 
 /**

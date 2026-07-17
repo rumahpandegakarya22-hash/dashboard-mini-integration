@@ -1,4 +1,4 @@
-import { createAppendHandler } from './helpers';
+import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, parseRupiah, required } from '../../validate';
 
@@ -22,7 +22,7 @@ const EXPECTED_HEADERS = [
   'Catatan/Dokumentasi'
 ];
 
-export const submitPerawatanPreventif = createAppendHandler({
+export const perawatanPreventifAppendCfg: AppendConfig = {
   spreadsheetId: SHEETS.LOG_INSPEKSI_PERAWATAN,
   range: "'Log Perawatan Preventif'!D:P",
   headerRange: "'Log Perawatan Preventif'!D1:P1",
@@ -59,4 +59,6 @@ export const submitPerawatanPreventif = createAppendHandler({
       catatan
     ];
   }
-});
+};
+
+export const submitPerawatanPreventif = createAppendHandler(perawatanPreventifAppendCfg);
