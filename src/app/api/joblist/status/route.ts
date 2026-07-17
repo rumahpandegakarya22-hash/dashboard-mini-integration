@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import { updateWoStatus } from '@/lib/joblist';
 
-/** Ubah status work order dari tabel joblist (divisi tujuan / owner / pengawas). */
+/** Ubah status work order dari tabel Work Order / List Job (khusus staf divisi tujuan). */
 export async function POST(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: 'Belum login.' }, { status: 401 });
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: 'id tidak valid.' }, { status: 400 });
 
   try {
-    const ok = await updateWoStatus(id, status, user.role);
+    const ok = await updateWoStatus(id, status, user.role, user.name);
     if (!ok) {
       return NextResponse.json({ error: 'Work order tidak ditemukan atau bukan untuk divisi kamu.' }, { status: 403 });
     }
