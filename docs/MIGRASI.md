@@ -21,7 +21,7 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 | 1 | Fondasi struktur | ⚠️ Gerbang otomatis lulus; user mengizinkan lanjut, **UAT alur belum dijalankan** |
 | 2 | Port data layer Dashboard | ✅ Gerbang lulus — golden test diff kosong (lihat `golden-report.md`) |
 | 3 | Port API & auth terpadu | ✅ Gerbang lulus — uji kontrak identik utk 5 role |
-| 4 | Port UI Dashboard | ⬜ Belum |
+| 4 | Port UI Dashboard | 🔄 **Berjalan** — langkah 1/6 selesai (tema); lihat 4.x |
 | 5 | Penyatuan lintas app | ⬜ Belum |
 | 6 | Hardening, cutover & pembersihan | ⬜ Belum |
 
@@ -458,6 +458,86 @@ dokumen Drive" — uji itu tidak akan bisa dilakukan tanpa ID folder tersebut.
   memulihkan paritas dengan `res.clearCookie(TOTP_COOKIE)` server.js lama yang
   tidak ada di implementasi Mini App. Respons juga menyertakan `tfaEnabled: false`
   seperti Express lama.
+
+---
+
+## Fase 4 — Port UI Dashboard (BERJALAN)
+
+Fase terbesar (§9: 3–5 hari). Dikerjakan berlapis dari fondasi ke atas.
+
+| Langkah §9 Fase 4 | Status |
+|---|---|
+| 1. `theme-dashboard.css` + pemetaan tema light ke `data-theme` | ✅ Selesai & terverifikasi |
+| 2. `ui/Table`+`Pagination`, `charts/*`, `StatCard`, `Badge`, `ThemeToggle` | ⬜ Belum |
+| 3. `DashboardShell` (sidebar/topbar/period filter) | ⬜ Belum |
+| 4. Halaman per role (5 overview → `[view]` → `akun`) | ⬜ Belum |
+| 5. Layar `(auth)` final | ⬜ Belum |
+| 6. Gerbang: checklist visual berdampingan | ⬜ Belum |
+
+### 4.1 Port `styles.css` → `theme-dashboard.css`
+
+Ditransformasi **mekanis lewat skrip** (bukan diketik ulang), hanya SELECTOR
+yang diubah; nol nilai deklarasi disentuh (R8). Skrip melacak kedalaman kurung
+agar `@keyframes` dan at-rule tidak ikut ter-prefix.
+
+Pemetaan: `:root`/`body`/`html` → `[data-app='dashboard']`;
+`body.theme-light X` → `:root[data-theme='light'] [data-app='dashboard'] X`;
+`body:not(.theme-light) X` → `:root:not([data-theme='light']) …`;
+`body[data-role="owner"]` → `[data-app='dashboard'][data-role="owner"]`
+(wrapper route group kini membawa `data-role`).
+
+**Tiga bug transformasi ditemukan & diperbaiki sebelum hasil dipakai** — semuanya
+menghasilkan CSS yang diam-diam tidak berfungsi, bukan error yang terlihat:
+
+1. `@media` ikut ter-prefix (`[data-app='dashboard'] @media …`) ketika didahului
+   komentar → deteksi at-rule harus dijalankan SETELAH komentar dipisah.
+2. Daftar selector multi-baris hanya baris terakhirnya yang termapping → pemisah
+   `prefix` tidak boleh memotong pada newline terakhir.
+3. `body.theme-light .role-tab` menjadi `[data-app='dashboard'].role-tab`
+   (menempel, bukan keturunan) → penentu keturunan-vs-menempel adalah ADANYA
+   SPASI DI SUMBER, bukan karakter pertama setelah trim.
+
+Verifikasi hasil akhir: deklarasi 1317→1317, token 52→52, `@keyframes` 3→3,
+kurung seimbang 404/404, 0 selector tak ter-scope, 0 at-rule ter-prefix,
+0 `.theme-light` tersisa.
+
+### 4.2 Bukti isolasi dua tema (diukur di DOM, bukan diasumsikan)
+
+Wrapper dashboard disisipkan berdampingan dengan wrapper ops di halaman yang sama:
+
+| | Dashboard | Ops |
+|---|---|---|
+| `--bg` | `#0b0c11` | `#1f1d1c` |
+| `--brand` | `#8affc4` (mint) | `#cf7b72` |
+| `--r-sm` | `14px` | `10px` |
+| `--glass-blur` | `10px` (panjang) | `blur(22px) saturate(1.8)` (filter) |
+| `--owner-brand` | `#c92d31` | — |
+
+**Kebocoran: nol di ketiga arah** — tidak ada token tema di `:root`, token
+dashboard tidak terbaca dari wrapper ops, token ops tidak terbaca dari wrapper
+dashboard. Kelas komponen ikut aktif (`.card` → `border-radius: 22px` = `--r-card`).
+
+Catatan: `--glass-blur` terbaca `10px`, bukan `30px` dari blok token pertama.
+Ini **benar** — `styles.css` sumber punya blok `:root` kedua (baris 973,
+"material pass, menang cascade") yang menimpanya. Cascade ter-port setia.
+
+**Token bernama sama tetapi berbeda semantik** (`--glass-blur` panjang vs filter,
+`--r-sm` 14px vs 10px) aman karena ter-scope terpisah, tetapi berarti cita-cita
+§4.1 "satu kontrak nama token" belum tercapai penuh. Tidak diseragamkan karena
+akan mengubah nilai visual (dilarang R8) — dicatat sebagai utang desain.
+
+### 4.3 Penyimpangan: font Inter lewat `next/font`
+
+`index.html` lama memuat Inter dari CDN Google Fonts. Di app terpadu dipakai
+`next/font/google` (self-hosted). Tipografi yang ter-render identik (Inter,
+bobot 400/500/600/700); yang berubah hanya cara pengambilannya.
+
+Alasan: menghilangkan permintaan lintas-origin membuat CSP Fase 5 (R7) tidak
+perlu melubangi `fonts.googleapis.com`/`fonts.gstatic.com`, sekaligus menghapus
+satu titik gagal eksternal. Karena `next/font` menghasilkan nama family
+ter-generate, literal `"Inter"` di `--font` dijembatani lewat
+`styles/dashboard-font.css` dengan rantai fallback yang sama persis.
+Berkas terpisah karena `theme-dashboard.css` dihasilkan ulang oleh skrip port.
 
 ---
 

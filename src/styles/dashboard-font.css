@@ -1,0 +1,25 @@
+/* ============================================================
+   Jembatan font Dashboard.
+
+   styles.css lama merujuk font lewat nama literal `"Inter"` yang dimuat dari
+   CDN Google Fonts di index.html. Di app terpadu, Inter dimuat lewat
+   `next/font/google` (self-hosted, tanpa request pihak ketiga) yang menghasilkan
+   nama family ter-generate, sehingga literal "Inter" tidak akan cocok.
+
+   Berkas ini memetakan token `--font` milik dashboard ke variabel dari
+   next/font, dengan RANTAI FALLBACK YANG SAMA PERSIS seperti sumber. Tipografi
+   yang ter-render identik; yang berubah hanya cara font diambil.
+
+   Alasan tidak mempertahankan <link> Google Fonts: menghilangkan permintaan
+   lintas-origin membuat CSP Fase 5 (R7) tidak perlu melubangi fonts.googleapis.com
+   dan fonts.gstatic.com, sekaligus menghapus satu titik gagal eksternal.
+
+   Terpisah dari theme-dashboard.css karena berkas itu DIHASILKAN ULANG oleh
+   skrip port — apa pun yang ditambahkan di sana akan tertimpa.
+   ============================================================ */
+
+[data-app='dashboard'] {
+  --font:
+    var(--font-inter), 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
+}

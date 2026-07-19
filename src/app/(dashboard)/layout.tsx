@@ -15,5 +15,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (s.needsTotp) redirect('/2fa');
   if (!s.dashboardUser) redirect('/pending'); // pending / disabled / belum punya role dashboard
 
-  return <div data-app="dashboard">{children}</div>;
+  // `data-role` di wrapper: styles.css lama memakai body[data-role="owner"]
+  // untuk aksen palet Owner; selector itu dipetakan ke wrapper ini saat port.
+  return (
+    <div data-app="dashboard" data-role={s.dashboardUser.role}>
+      {children}
+    </div>
+  );
 }
