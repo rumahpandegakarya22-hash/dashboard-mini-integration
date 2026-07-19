@@ -109,6 +109,7 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                     {readOnly && <th>PIC</th>}
                     <th>Deadline</th>
                     <th>Foto</th>
+                    {(readOnly || divisi === 'Admin') && <th>Biaya</th>}
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -137,6 +138,28 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                           '-'
                         )}
                       </td>
+                      {/* Biaya maintenance (WO tujuan Admin): Admin klik "Catat Pengeluaran" → form pengeluaran
+                          ter-prefill; setelah submit, WO otomatis Complete (handler pengeluaran). */}
+                      {(readOnly || divisi === 'Admin') && (
+                        <td>
+                          {r.nominal && r.nominal > 0 ? (
+                            <>
+                              Rp{r.nominal.toLocaleString('id-ID')}
+                              {r.refTiket && <div className="muted" style={{ fontSize: '0.75rem' }}>{r.refTiket}</div>}
+                              {divisi === 'Admin' && (
+                                <a
+                                  href={`/m/pengeluaran?woId=${r.id}&tanggal=${encodeURIComponent(r.tanggalInput)}&tipeAkun=Beban&nominal=${r.nominal}&kategori=Operasional&keterangan=${encodeURIComponent(`${r.deskripsi} — ${r.lokasiItem}${r.refTiket ? ` (${r.refTiket})` : ''}`)}`}
+                                  style={{ display: 'inline-block', marginTop: 4, fontWeight: 600 }}
+                                >
+                                  Catat Pengeluaran →
+                                </a>
+                              )}
+                            </>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )}
                       {/* Owner/pengawas: read-only (logbook) + siapa penyelesainya. Staf: dropdown — In Progress memindahkan ke List Job. */}
                       <td>{readOnly ? `${r.status}${r.completedBy ? ` — ${r.completedBy}` : ''}` : statusSelect(r)}</td>
                     </tr>

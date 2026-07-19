@@ -1,7 +1,18 @@
 // Registry 14 modul. Definisi field & target sheet dilengkapi di Tahap 2-5.
 // id harus konsisten dengan MODULE_ACCESS di lib/roles.ts
 
-import type { FieldDef } from './types';
+import type { FieldDef, FieldOption } from './types';
+
+// Opsi statis modul maintenance (Turso-only, arahan 2026-07-19): nilai diambil dari
+// sheet SETTING LOG_INSPEKSI_PERAWATAN saat migrasi — sheet tidak dibaca lagi saat runtime.
+const opsi = (vals: string[]): FieldOption[] => vals.map((v) => ({ value: v, label: v }));
+const OPSI_JENIS_PERAWATAN = opsi(['Pembersihan Berkala', 'Pengecekan Rutin', 'Pelumasan', 'Penggantian Komponen', 'Kalibrasi', 'Lainnya']);
+const OPSI_KATEGORI_MAINTENANCE = opsi(['Elektrikal dan Elektronik', 'Sanitasi dan Plumbing', 'Sipil dan Bangunan', 'Furniture dan Interior', 'Fasum dan Keamanan']);
+const OPSI_PENYEBAB = opsi(['Wear and Tear', 'Human Eror']);
+const OPSI_PRIORITAS = opsi(['Tinggi', 'Sedang', 'Rendah', 'Darurat']);
+const OPSI_PIC = opsi(['A', 'B', 'C']);
+const OPSI_STATUS_MAINTENANCE = opsi(['Selesai', 'Proses', 'Tertunda', 'Menunggu Vendor']);
+const OPSI_SUMBER_LAPORAN_KOREKTIF = opsi(['Inspeksi Rutin', 'Laporan Penghuni', 'Laporan Staf', 'Lainnya']);
 
 export interface ModuleMeta {
   id: string;
@@ -538,47 +549,47 @@ export const MODULES: ModuleMeta[] = [
       {
         name: 'jenisPerawatan',
         label: 'Jenis Perawatan',
-        type: 'select-async',
+        type: 'select',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Jenis Perawatan'
+        options: OPSI_JENIS_PERAWATAN
       },
       {
         name: 'kategori',
         label: 'Kategori',
-        type: 'select-async',
+        type: 'select',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Kategori Preventif'
+        options: OPSI_KATEGORI_MAINTENANCE
       },
       {
         name: 'penyebab',
         label: 'Penyebab',
-        type: 'select-async',
+        type: 'select',
         required: false,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Penyebab'
+        options: OPSI_PENYEBAB
       },
       { name: 'deskripsi', label: 'Deskripsi Pekerjaan', type: 'textarea', required: true },
       {
         name: 'prioritas',
         label: 'Prioritas',
-        type: 'select-async',
+        type: 'select',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Prioritas'
+        options: OPSI_PRIORITAS
       },
       {
         name: 'pelaksana',
         label: 'Pelaksana',
-        type: 'select-async',
+        type: 'select',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:PIC'
+        options: OPSI_PIC
       },
       { name: 'vendor', label: 'Vendor', type: 'text', required: false },
       { name: 'biaya', label: 'Biaya (Rp)', type: 'number', required: false },
       {
         name: 'status',
         label: 'Status',
-        type: 'select-async',
+        type: 'select',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Status'
+        options: OPSI_STATUS_MAINTENANCE
       },
       { name: 'catatan', label: 'Catatan/Dokumentasi', type: 'textarea', required: false },
       {
@@ -604,48 +615,48 @@ export const MODULES: ModuleMeta[] = [
       {
         name: 'sumberLaporan',
         label: 'Sumber Laporan',
-        type: 'select-async',
+        type: 'select',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Sumber Laporan Korektif'
+        options: OPSI_SUMBER_LAPORAN_KOREKTIF
       },
       { name: 'lokasiItem', label: 'Lokasi/Item Rusak', type: 'text', required: true },
       {
         name: 'kategori',
         label: 'Kategori',
-        type: 'select-async',
+        type: 'select',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:kategori korektif'
+        options: OPSI_KATEGORI_MAINTENANCE
       },
       {
         name: 'penyebab',
         label: 'Penyebab',
-        type: 'select-async',
+        type: 'select',
         required: false,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Penyebab'
+        options: OPSI_PENYEBAB
       },
       { name: 'deskripsi', label: 'Deskripsi Kerusakan', type: 'textarea', required: true },
       {
         name: 'prioritas',
         label: 'Prioritas',
-        type: 'select-async',
+        type: 'select',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Prioritas'
+        options: OPSI_PRIORITAS
       },
       {
         name: 'pelaksana',
         label: 'Pelaksana',
-        type: 'select-async',
+        type: 'select',
         required: false,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:PIC'
+        options: OPSI_PIC
       },
       { name: 'vendor', label: 'Vendor', type: 'text', required: false },
       { name: 'biaya', label: 'Biaya (Rp)', type: 'number', required: false },
       {
         name: 'status',
         label: 'Status',
-        type: 'select-async',
+        type: 'select',
         required: true,
-        master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:Status'
+        options: OPSI_STATUS_MAINTENANCE
       },
       { name: 'catatan', label: 'Catatan/Dokumentasi', type: 'textarea', required: false },
       {
@@ -658,6 +669,40 @@ export const MODULES: ModuleMeta[] = [
         maxSizeMb: 2,
         placeholder: 'Pilih foto/pdf (maks 2 MB)'
       }
+    ]
+  },
+  {
+    id: 'pemakaian-stok-maintenance',
+    title: 'Pemakaian Stok — Maintenance',
+    ready: true,
+    fields: [
+      {
+        name: 'material',
+        label: 'Bahan',
+        type: 'select-async',
+        required: true,
+        master: 'inventory-materials:Perawatan Kamar',
+        helpText: 'Daftar & sisa stok live dari app Inventory Stock'
+      },
+      { name: 'jumlah', label: 'Jumlah Dipakai', type: 'number', required: true, placeholder: 'mis. 2' },
+      { name: 'catatan', label: 'Catatan (lokasi/keperluan)', type: 'textarea', required: false, placeholder: 'mis. ganti keran kamar 12' }
+    ]
+  },
+  {
+    id: 'pemakaian-stok-cleaning',
+    title: 'Pemakaian Stok — Cleaning',
+    ready: true,
+    fields: [
+      {
+        name: 'material',
+        label: 'Bahan',
+        type: 'select-async',
+        required: true,
+        master: 'inventory-materials:Kebersihan',
+        helpText: 'Daftar & sisa stok live dari app Inventory Stock'
+      },
+      { name: 'jumlah', label: 'Jumlah Dipakai', type: 'number', required: true, placeholder: 'mis. 1' },
+      { name: 'catatan', label: 'Catatan (lokasi/keperluan)', type: 'textarea', required: false, placeholder: 'mis. pel lantai 2' }
     ]
   },
   {

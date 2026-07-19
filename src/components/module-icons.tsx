@@ -13,6 +13,7 @@ import {
   ListTodo,
   Megaphone,
   MessagesSquare,
+  PackageMinus,
   ReceiptText,
   Sparkles,
   TrendingUp,
@@ -39,6 +40,8 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   'inspeksi-fasilitas': ClipboardCheck,
   'wo-inspeksi': FileCog,
   'wo-cleaning': FileCog,
+  'pemakaian-stok-cleaning': PackageMinus,
+  'pemakaian-stok-maintenance': PackageMinus,
   'daily-task': ListTodo
 };
 
@@ -55,7 +58,7 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
   },
   { label: 'Sales', ids: ['survey'] },
   { label: 'Marketing', ids: ['leads', 'konten', 'promosi'] },
-  { label: 'Maintenance', ids: ['perawatan-preventif', 'perbaikan-korektif'] },
+  { label: 'Maintenance', ids: ['perawatan-preventif', 'perbaikan-korektif', 'pemakaian-stok-maintenance'] },
   { label: 'Inspeksi', ids: ['inspeksi-kebersihan', 'inspeksi-fasilitas', 'wo-inspeksi'] },
-  { label: 'Cleaning', ids: ['wo-cleaning'] }
+  { label: 'Cleaning', ids: ['wo-cleaning', 'pemakaian-stok-cleaning'] }
 ];

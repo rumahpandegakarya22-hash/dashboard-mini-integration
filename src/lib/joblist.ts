@@ -25,6 +25,8 @@ export interface WorkOrderRow {
   pic: string | null; // staf yang mengambil pekerjaan (diisi otomatis saat status → In Progress)
   completedBy: string | null; // staf yang menyelesaikan (diisi saat → Complete, kosong lagi kalau dibuka ulang)
   status: string;
+  nominal: number | null; // biaya maintenance (WO tujuan Admin) — dikonversi Admin jadi pengeluaran
+  refTiket: string | null; // id_tiket maintenance asal (audit trail)
 }
 
 /** Divisi joblist utk role ini; null = lihat semua (owner/pengawas). */
@@ -35,7 +37,8 @@ export function joblistDivisi(role: Role): string | null {
 
 export async function getJoblist(divisi: string | null): Promise<WorkOrderRow[]> {
   const base = `SELECT id, tanggal_input, petugas, divisi_asal, lokasi_item, kategori, deskripsi,
-                       prioritas, tujuan_divisi, target_deadline, catatan, bukti_foto_url, pic, completed_by, status
+                       prioritas, tujuan_divisi, target_deadline, catatan, bukti_foto_url, pic, completed_by, status,
+                       nominal, ref_tiket
                 FROM work_orders`;
   const order = `ORDER BY CASE status WHEN 'Pending' THEN 0 WHEN 'In Progress' THEN 1 ELSE 2 END,
                           CASE prioritas WHEN 'Darurat' THEN 0 WHEN 'Tinggi' THEN 1 WHEN 'Sedang' THEN 2 ELSE 3 END,
@@ -60,7 +63,9 @@ export async function getJoblist(divisi: string | null): Promise<WorkOrderRow[]>
     buktiFotoUrl: r.bukti_foto_url == null ? null : String(r.bukti_foto_url),
     pic: r.pic == null ? null : String(r.pic),
     completedBy: r.completed_by == null ? null : String(r.completed_by),
-    status: String(r.status ?? '')
+    status: String(r.status ?? ''),
+    nominal: r.nominal == null ? null : Number(r.nominal),
+    refTiket: r.ref_tiket == null ? null : String(r.ref_tiket)
   }));
 }
 

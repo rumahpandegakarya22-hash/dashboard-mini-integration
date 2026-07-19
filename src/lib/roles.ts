@@ -39,6 +39,8 @@ export const MODULE_ACCESS: Record<string, Role[]> = {
   'inspeksi-fasilitas': ['staff_inspeksi'],
   'wo-inspeksi': ['staff_inspeksi'],
   'wo-cleaning': ['staff_cleaning'],
+  'pemakaian-stok-cleaning': ['staff_cleaning'],
+  'pemakaian-stok-maintenance': ['staff_maintenance'],
   'daily-task': [
     'staff_admin',
     'staff_sales',

@@ -46,6 +46,11 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
   function visibleValuesNow(): Record<string, string> {
     const visibleFields = fields.filter((f) => isVisible(f, values));
     const out: Record<string, string> = {};
+    // Passthrough: key prefill URL yang bukan field form (mis. woId dari link joblist Admin)
+    // tetap ikut terkirim supaya handler bisa memakainya.
+    for (const k of Object.keys(initialValues ?? {})) {
+      if (!fields.some((f) => f.name === k) && values[k]) out[k] = values[k];
+    }
     for (const f of visibleFields) out[f.name] = values[f.name] ?? '';
     return out;
   }
@@ -59,6 +64,8 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
     }
     const draft = localStorage.getItem(draftKey);
     const initial: Record<string, string> = draft ? JSON.parse(draft) : {};
+    // Prefill dari URL (mis. link "Catat Pengeluaran" joblist Admin) menimpa draft.
+    Object.assign(initial, initialValues ?? {});
     for (const f of fields) {
       if (f.type === 'date' && f.defaultToday && !initial[f.name]) {
         initial[f.name] = new Date().toISOString().slice(0, 10);

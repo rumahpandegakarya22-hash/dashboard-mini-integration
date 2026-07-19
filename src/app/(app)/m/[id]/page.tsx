@@ -9,8 +9,20 @@ import { moduleIcon } from '@/components/module-icons';
 import DynamicForm from '@/components/DynamicForm';
 import EditPanel from '@/components/EditPanel';
 
-export default async function ModulePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ModulePage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
+  // Prefill form via query string (mis. link "Catat Pengeluaran" dari joblist Admin).
+  // Nilai string tunggal saja; field ekstra (woId) ikut terkirim ke handler lewat pipeline submit.
+  const sp = await searchParams;
+  const initialValues = Object.fromEntries(
+    Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === 'string' && e[1] !== '')
+  );
   const user = await getSessionUser();
   if (!user) return null; // (app)/layout sudah redirect
 
@@ -49,7 +61,13 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
 
       {mod.ready && mod.fields ? (
         <>
-          <DynamicForm moduleId={mod.id} fields={mod.fields} hasPreview={mod.hasPreview} autoFillTrigger={mod.autoFillTrigger} />
+          <DynamicForm
+            moduleId={mod.id}
+            fields={mod.fields}
+            hasPreview={mod.hasPreview}
+            autoFillTrigger={mod.autoFillTrigger}
+            initialValues={Object.keys(initialValues).length > 0 ? initialValues : undefined}
+          />
           {isEditable(mod.id) && <EditPanel moduleId={mod.id} fields={mod.fields} />}
         </>
       ) : (

@@ -1,4 +1,6 @@
 import { redis, nsKey } from './redis';
+import { turso } from './turso';
+import { fetchMaterials } from './inventory';
 import { readRange, readTable, readTableWithRowNum, updateRange } from './sheets';
 import { SHEETS } from '@/config/spreadsheets';
 import { normalizeRoomId } from './validate';
@@ -128,26 +130,23 @@ export interface Account {
 }
 
 /**
- * Daftar Akun (125 akun) dari Log Input Transaksi. Kode & Saldo Normal OPSIONAL —
- * tabel yang dikonfirmasi user (8 Jul) cuma berisi Nama + Tipe, jadi jangan hard-fail
- * kalau kolom Kode ternyata tidak ada.
+ * Daftar Akun (Turso-only, arahan 2026-07-19): dari tabel `coa` (122 akun, diverifikasi live) —
+ * bukan lagi sheet "Daftar Akun". Shape Account dipertahankan agar dropdown & sumber-dana tak berubah.
  */
 export async function getAccounts(): Promise<Account[]> {
   return cached('accounts', async () => {
-    const rows = await readTable(SHEETS.LOG_INPUT_TRANSAKSI, "'Daftar Akun'!A:Z");
-    if (rows.length === 0) return [];
-    const headers = Object.keys(rows[0]);
-    const hKode = findHeaderOptional(headers, 'Kode', 'kode');
-    const hNama = findHeader(headers, 'Nama', 'nama');
-    const hTipe = findHeader(headers, 'Tipe', 'tipe');
-    const hSaldo = findHeaderOptional(headers, 'Saldo Normal', 'saldo normal', 'saldo');
-    return rows
-      .filter((r) => String(r[hNama] ?? '').trim() !== '')
-      .map((r) => {
-        const kode = hKode ? r[hKode] || '' : '';
-        const nama = r[hNama] || '';
-        return { kode, nama, tipe: r[hTipe] || '', saldoNormal: hSaldo ? r[hSaldo] || '' : '', label: kode ? `${kode} — ${nama}` : nama };
-      });
+    const res = await turso().execute('SELECT kode, nama_akun, tipe_akun, saldo_normal FROM coa ORDER BY kode');
+    return res.rows.map((r) => {
+      const kode = String(r.kode ?? '');
+      const nama = String(r.nama_akun ?? '');
+      return {
+        kode,
+        nama,
+        tipe: String(r.tipe_akun ?? ''),
+        saldoNormal: String(r.saldo_normal ?? ''),
+        label: kode ? `${kode} — ${nama}` : nama
+      };
+    });
   });
 }
 
@@ -196,16 +195,13 @@ export async function getTenantByLabel(label: string): Promise<Tenant | undefine
 }
 
 /**
- * Daftar Kas/Bank (KasList) dari Log Input Transaksi → Pengaturan.
- * ⚠️ Sheet ini BUKAN tabel dgn header baris 1 (dikonfirmasi live 8 Jul) — "Pengaturan" adalah sheet
- * key-value (Nama Usaha/Tahun/Bulan dsb di kolom A-B), dan KasList adalah daftar nilai di KOLOM D
- * mulai baris 3 (D2 cuma label "Daftar Akun Kas/Bank (KasList):"). Makanya baca langsung, bukan lewat
- * readTable/findHeader seperti sheet master lain.
+ * Daftar Kas/Bank (Turso-only, arahan 2026-07-19): akun coa dengan grup_laporan 'Kas & Bank'
+ * (live: Uang Kas, Aset Bank, Rekening Ops, Rekening Profit) — bukan lagi sheet "Pengaturan".
  */
 export async function getKasList(): Promise<string[]> {
   return cached('kaslist', async () => {
-    const rows = await readRange(SHEETS.LOG_INPUT_TRANSAKSI, "'Pengaturan'!D3:D30");
-    return Array.from(new Set(rows.map((r) => String(r[0] ?? '').trim()).filter(Boolean)));
+    const res = await turso().execute("SELECT nama_akun FROM coa WHERE grup_laporan = 'Kas & Bank' ORDER BY kode");
+    return res.rows.map((r) => String(r.nama_akun ?? '').trim()).filter(Boolean);
   });
 }
 
@@ -460,6 +456,12 @@ async function getKamarKosongTurso(): Promise<{ id: string; label: string }[]> {
 
 /** Dispatcher dipakai API /api/master/[type]. */
 export async function getMasterData(type: string): Promise<unknown> {
+  // Dropdown bahan dari app Inventory Stock: "inventory-materials:<kategori>" (mis. Kebersihan).
+  if (type.startsWith('inventory-materials:')) {
+    const category = type.slice('inventory-materials:'.length);
+    const mats = await fetchMaterials(category);
+    return mats.map((m) => ({ id: String(m.id), label: `${m.name} (stok: ${m.currentStock} ${m.unit})` }));
+  }
   if (type.startsWith('setting:')) return getGenericSettingOptions(type);
   switch (type) {
     case 'rooms':

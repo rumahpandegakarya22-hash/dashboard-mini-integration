@@ -1,50 +1,16 @@
-import { appendRow, assertHeaders } from '../../sheets';
-import { SHEETS } from '@/config/spreadsheets';
 import { parseDateISO, parseRupiah, required } from '../../validate';
 import { turso } from '../../turso';
 import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 
-// Kolom A:F sheet "Transaksi" (Log Input Transaksi). Kolom G+ berformula, tidak ditulis (PRD §6 Modul 5).
-// Header berikut TEBAKAN dari PRD, belum diverifikasi — assertHeaders menolak submit dgn pesan jelas jika beda.
-const HEADER_RANGE = "'Transaksi'!A1:F1";
-const EXPECTED_HEADERS = ['Tanggal', 'Akun Debit', 'Akun Kredit', 'Nominal', 'Keterangan', 'Kategori'];
-
 /**
- * Improvement v1.1 §6 (Pemakaian Stok & Pencatatan Keuangan): selain ke sheet, jurnal juga
- * dicatat ke tabel Turso `jurnal_transaksi` (ledger Dashboard) — kode akun dicari di `coa`
- * by nama. Best-effort: sheet adalah pencatatan utama, gagal tulis DB → warning, bukan batal.
+ * Pengeluaran — Turso-only (arahan 2026-07-19): jurnal_transaksi adalah pencatatan PRIMER
+ * (gagal tulis = submit gagal, bukan warning). Sheet Log Input Transaksi tidak ditulis lagi.
+ * Kode akun dicari di `coa` by nama (dropdown akunDebit/dibayarDari memang berisi nama akun).
+ *
+ * Konversi joblist Admin (biaya maintenance): kalau form dibuka dari link "Catat Pengeluaran"
+ * di joblist, values.woId terisi → setelah jurnal sukses, WO ditandai Complete (best-effort).
  */
-async function catatJurnalTurso(
-  tanggal: string,
-  akunDebit: string,
-  akunKredit: string,
-  nominal: number,
-  keterangan: string,
-  kategori: string
-): Promise<string | undefined> {
-  try {
-    const db = turso();
-    const kode = async (nama: string) => {
-      const r = await db.execute({ sql: 'SELECT kode FROM coa WHERE nama_akun = ?', args: [nama] });
-      return r.rows[0]?.kode ?? null;
-    };
-    const [kodeDebit, kodeKredit] = [await kode(akunDebit), await kode(akunKredit)];
-    if (kodeDebit === null || kodeKredit === null) {
-      const missing = [kodeDebit === null ? akunDebit : null, kodeKredit === null ? akunKredit : null].filter(Boolean);
-      return `Tercatat di sheet, tapi TIDAK masuk database keuangan: akun "${missing.join('", "')}" tidak ditemukan di COA.`;
-    }
-    await db.execute({
-      sql: 'INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori) VALUES (?, ?, ?, ?, ?, ?)',
-      args: [tanggal, kodeDebit, kodeKredit, nominal, keterangan, kategori]
-    });
-    return undefined;
-  } catch (e: any) {
-    console.error('[pengeluaran] gagal tulis jurnal_transaksi:', e?.message);
-    return 'Tercatat di sheet, tapi gagal masuk database keuangan (jurnal_transaksi) — cek koneksi database.';
-  }
-}
-
 export const submitPengeluaran: SubmitHandler = async (values, ctx) => {
   const tanggal = parseDateISO(String(values.tanggal ?? ''));
   const akunDebit = required(values.akunDebit, 'Kategori Pengeluaran');
@@ -53,23 +19,44 @@ export const submitPengeluaran: SubmitHandler = async (values, ctx) => {
   const keterangan = required(values.keterangan, 'Keterangan');
   const kategori = required(values.kategori, 'Kategori');
 
-  await assertHeaders(SHEETS.LOG_INPUT_TRANSAKSI, HEADER_RANGE, EXPECTED_HEADERS);
-  const row = await appendRow(SHEETS.LOG_INPUT_TRANSAKSI, "'Transaksi'!A:F", [
-    tanggal,
-    akunDebit,
-    akunKredit,
-    nominal,
-    keterangan,
-    kategori
-  ]);
+  const db = turso();
+  const kode = async (nama: string) => {
+    const r = await db.execute({ sql: 'SELECT kode FROM coa WHERE nama_akun = ?', args: [nama] });
+    return r.rows[0]?.kode ?? null;
+  };
+  const [kodeDebit, kodeKredit] = [await kode(akunDebit), await kode(akunKredit)];
+  if (kodeDebit === null || kodeKredit === null) {
+    const missing = [kodeDebit === null ? akunDebit : null, kodeKredit === null ? akunKredit : null].filter(Boolean);
+    throw new Error(`Akun "${missing.join('", "')}" tidak ditemukan di COA — pengeluaran TIDAK dicatat.`);
+  }
+  const res = await db.execute({
+    sql: 'INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori) VALUES (?, ?, ?, ?, ?, ?)',
+    args: [tanggal, kodeDebit, kodeKredit, nominal, keterangan, kategori]
+  });
 
-  const jurnalWarning = await catatJurnalTurso(tanggal, akunDebit, akunKredit, nominal, keterangan, kategori);
+  // Konversi dari joblist Admin: tandai WO selesai. Best-effort — jurnal sudah tercatat.
+  let woWarning: string | undefined;
+  const woId = Number(values.woId ?? 0);
+  if (woId > 0) {
+    try {
+      const upd = await db.execute({
+        sql: `UPDATE work_orders SET status = 'Complete', completed_by = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ? AND tujuan_divisi = 'Admin' AND status != 'Complete'`,
+        args: [ctx.user.username, woId]
+      });
+      if (upd.rowsAffected === 0) woWarning = `Pengeluaran tercatat, tapi joblist #${woId} tidak ditemukan / sudah Complete.`;
+    } catch (e: unknown) {
+      console.error('[pengeluaran] gagal update work_orders:', (e as Error)?.message);
+      woWarning = `Pengeluaran tercatat, tapi status joblist #${woId} gagal diupdate — tandai manual.`;
+    }
+  }
+
   const lampiranWarning = await saveLampiran(values, ctx, `Nota Pengeluaran — ${keterangan} (${tanggal})`, 'Admin');
 
   return {
-    target: 'Log Input Transaksi → Transaksi',
-    row,
+    target: 'Turso → jurnal_transaksi',
+    row: Number(res.lastInsertRowid ?? -1),
     data: { tanggal, akunDebit, akunKredit, nominal, keterangan, kategori },
-    warning: [jurnalWarning, lampiranWarning].filter(Boolean).join(' ') || undefined
+    warning: [woWarning, lampiranWarning].filter(Boolean).join(' ') || undefined
   };
 };

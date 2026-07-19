@@ -23,8 +23,7 @@ import { surveyAppendCfg } from './handlers/survey';
 import { leadsAppendCfg } from './handlers/leads';
 import { kontenAppendCfg } from './handlers/konten';
 import { promosiAppendCfg } from './handlers/promosi';
-import { perawatanPreventifAppendCfg } from './handlers/perawatan-preventif';
-import { perbaikanKorektifAppendCfg } from './handlers/perbaikan-korektif';
+import { KODE_KATEGORI } from './handlers/maintenance';
 import { inspeksiFasilitasAppendCfg } from './handlers/inspeksi-fasilitas';
 import { SHEETS } from '@/config/spreadsheets';
 
@@ -145,6 +144,132 @@ function workOrderEdit(divisiAsal: 'Inspeksi' | 'Cleaning'): CustomEditCfg {
   };
 }
 
+// ---- Turso: Maintenance (Perawatan Preventif & Perbaikan Korektif) ----
+// Catatan pemetaan PM (sesuai isi data live, bukan nama kolom):
+// sumber_laporan = fasilitas/item, lokasi_item = jenis perawatan.
+
+const perawatanPreventifEdit: CustomEditCfg = {
+  kind: 'custom',
+  list: async () => {
+    const res = await turso().execute(
+      `SELECT id_tiket, tanggal_lapor, tanggal_selesai, sumber_laporan, lokasi_item, kategori, penyebab,
+              deskripsi_kerusakan, prioritas, pelaksana, vendor, biaya, status, catatan_dokumentasi
+       FROM maintenance_pm ORDER BY no_urut DESC LIMIT ${LIST_LIMIT}`
+    );
+    return res.rows.map((r) => ({
+      ref: String(r.id_tiket),
+      label: `${r.id_tiket} · ${r.tanggal_lapor} · ${r.sumber_laporan} (${r.status})`,
+      values: {
+        tanggalJadwal: String(r.tanggal_lapor ?? ''),
+        tanggalSelesai: String(r.tanggal_selesai ?? ''),
+        fasilitasItem: String(r.sumber_laporan ?? ''),
+        jenisPerawatan: String(r.lokasi_item ?? ''),
+        kategori: String(r.kategori ?? ''),
+        penyebab: String(r.penyebab ?? ''),
+        deskripsi: String(r.deskripsi_kerusakan ?? ''),
+        prioritas: String(r.prioritas ?? ''),
+        pelaksana: String(r.pelaksana ?? ''),
+        vendor: String(r.vendor ?? ''),
+        biaya: String(r.biaya ?? ''),
+        status: String(r.status ?? ''),
+        catatan: String(r.catatan_dokumentasi ?? '')
+      }
+    }));
+  },
+  save: async (ref, values) => {
+    const kategori = required(values.kategori, 'Kategori');
+    const kode = KODE_KATEGORI[kategori];
+    if (!kode) throw new Error(`Kategori tidak valid: "${kategori}".`);
+    const res = await turso().execute({
+      sql: `UPDATE maintenance_pm SET tanggal_lapor = ?, tanggal_selesai = ?, sumber_laporan = ?, lokasi_item = ?,
+                   kategori = ?, kode = ?, penyebab = ?, deskripsi_kerusakan = ?, prioritas = ?, pelaksana = ?,
+                   vendor = ?, biaya = ?, status = ?, catatan_dokumentasi = ?
+            WHERE id_tiket = ?`,
+      args: [
+        parseDateISO(String(values.tanggalJadwal ?? '')),
+        values.tanggalSelesai ? parseDateISO(String(values.tanggalSelesai)) : null,
+        required(values.fasilitasItem, 'Fasilitas/Item'),
+        required(values.jenisPerawatan, 'Jenis Perawatan'),
+        kategori,
+        kode,
+        String(values.penyebab ?? '').trim() || null,
+        required(values.deskripsi, 'Deskripsi Pekerjaan'),
+        required(values.prioritas, 'Prioritas'),
+        required(values.pelaksana, 'Pelaksana'),
+        String(values.vendor ?? '').trim() || null,
+        values.biaya ? parseRupiah(values.biaya as string | number) : null,
+        required(values.status, 'Status'),
+        String(values.catatan ?? '').trim() || null,
+        ref
+      ]
+    });
+    if (res.rowsAffected === 0) throw new Error('Tiket tidak ditemukan (mungkin sudah dihapus).');
+    return 'Catatan: kalau Biaya diubah dan joblist Admin sudah terlanjur dibuat, nominal di joblist TIDAK ikut berubah — koordinasikan dengan Admin.';
+  }
+};
+
+const perbaikanKorektifEdit: CustomEditCfg = {
+  kind: 'custom',
+  list: async () => {
+    const res = await turso().execute(
+      `SELECT id_tiket, tanggal_kerusakan, tanggal_lapor, tanggal_selesai, sumber_laporan, lokasi_item, kategori,
+              penyebab, deskripsi_kerusakan, prioritas, pelaksana, vendor, biaya, status, catatan_dokumentasi
+       FROM maintenance_cm ORDER BY no_urut DESC LIMIT ${LIST_LIMIT}`
+    );
+    return res.rows.map((r) => ({
+      ref: String(r.id_tiket),
+      label: `${r.id_tiket} · ${r.tanggal_kerusakan} · ${r.lokasi_item} (${r.status})`,
+      values: {
+        tanggalKerusakan: String(r.tanggal_kerusakan ?? ''),
+        tanggalLapor: String(r.tanggal_lapor ?? ''),
+        tanggalSelesai: String(r.tanggal_selesai ?? ''),
+        sumberLaporan: String(r.sumber_laporan ?? ''),
+        lokasiItem: String(r.lokasi_item ?? ''),
+        kategori: String(r.kategori ?? ''),
+        penyebab: String(r.penyebab ?? ''),
+        deskripsi: String(r.deskripsi_kerusakan ?? ''),
+        prioritas: String(r.prioritas ?? ''),
+        pelaksana: String(r.pelaksana ?? ''),
+        vendor: String(r.vendor ?? ''),
+        biaya: String(r.biaya ?? ''),
+        status: String(r.status ?? ''),
+        catatan: String(r.catatan_dokumentasi ?? '')
+      }
+    }));
+  },
+  save: async (ref, values) => {
+    const kategori = required(values.kategori, 'Kategori');
+    const kode = KODE_KATEGORI[kategori];
+    if (!kode) throw new Error(`Kategori tidak valid: "${kategori}".`);
+    const res = await turso().execute({
+      sql: `UPDATE maintenance_cm SET tanggal_kerusakan = ?, tanggal_lapor = ?, tanggal_selesai = ?, sumber_laporan = ?,
+                   lokasi_item = ?, kategori = ?, kode = ?, penyebab = ?, deskripsi_kerusakan = ?, prioritas = ?,
+                   pelaksana = ?, vendor = ?, biaya = ?, status = ?, catatan_dokumentasi = ?
+            WHERE id_tiket = ?`,
+      args: [
+        parseDateISO(String(values.tanggalKerusakan ?? '')),
+        parseDateISO(String(values.tanggalLapor ?? '')),
+        values.tanggalSelesai ? parseDateISO(String(values.tanggalSelesai)) : null,
+        required(values.sumberLaporan, 'Sumber Laporan'),
+        required(values.lokasiItem, 'Lokasi/Item Rusak'),
+        kategori,
+        kode,
+        String(values.penyebab ?? '').trim() || null,
+        required(values.deskripsi, 'Deskripsi Kerusakan'),
+        required(values.prioritas, 'Prioritas'),
+        String(values.pelaksana ?? '').trim() || null,
+        String(values.vendor ?? '').trim() || null,
+        values.biaya ? parseRupiah(values.biaya as string | number) : null,
+        required(values.status, 'Status'),
+        String(values.catatan ?? '').trim() || null,
+        ref
+      ]
+    });
+    if (res.rowsAffected === 0) throw new Error('Tiket tidak ditemukan (mungkin sudah dihapus).');
+    return 'Catatan: kalau Biaya diubah dan joblist Admin sudah terlanjur dibuat, nominal di joblist TIDAK ikut berubah — koordinasikan dengan Admin.';
+  }
+};
+
 // ---- Sheet custom: Penghuni Baru (Log Booking B:M) ----
 // Kolom H (Tgl Keluar Est.) = formula & K (Alasan Cancel) diisi manual di sheet →
 // dua-duanya null saat edit (dilewati API, tidak tertimpa). Validasi kamar-terisi &
@@ -261,46 +386,56 @@ const checkoutEdit: CustomEditCfg = {
 // tipeAkun tidak tersimpan di sheet (cuma pengarah dropdown) → di-infer balik dari
 // nama akun debit via master Daftar Akun supaya dropdown dependen langsung hidup.
 
+// Turso-only (arahan 2026-07-19): edit langsung ke jurnal_transaksi (ref = id), bukan sheet.
 const pengeluaranEdit: CustomEditCfg = {
   kind: 'custom',
   list: async () => {
-    const [rows, accounts] = await Promise.all([
-      readTableWithRowNum(SHEETS.LOG_INPUT_TRANSAKSI, "'Transaksi'!A:F"),
-      getAccounts()
-    ]);
-    const tipeByNama: Record<string, string> = {};
-    for (const a of accounts) tipeByNama[a.nama] = a.tipe;
-    return rows
-      .slice(-LIST_LIMIT)
-      .reverse()
-      .map(({ row, data }) => {
-        const d = (k: string) => String(data[k] ?? '').trim();
-        const akunDebit = d('Akun Debit');
-        const values = {
-          tanggal: toISODateFlexible(d('Tanggal')) ?? '',
-          tipeAkun: tipeByNama[akunDebit] ?? '',
-          akunDebit,
-          dibayarDari: d('Akun Kredit'),
-          nominal: d('Nominal').replace(/[^0-9]/g, ''),
-          keterangan: d('Keterangan'),
-          kategori: d('Kategori')
-        };
-        return { ref: String(row), label: `Baris ${row} · ${values.tanggal} · ${values.keterangan} · Rp${values.nominal}`, values };
-      });
+    const res = await turso().execute(
+      `SELECT j.id, j.tanggal, j.nominal, j.keterangan, j.kategori,
+              d.nama_akun AS debit_nama, d.tipe_akun AS debit_tipe, k.nama_akun AS kredit_nama
+       FROM jurnal_transaksi j
+       LEFT JOIN coa d ON d.kode = j.akun_debit_kode
+       LEFT JOIN coa k ON k.kode = j.akun_kredit_kode
+       ORDER BY j.id DESC LIMIT ${LIST_LIMIT}`
+    );
+    return res.rows.map((r) => ({
+      ref: String(r.id),
+      label: `#${r.id} · ${r.tanggal} · ${r.keterangan} · Rp${r.nominal}`,
+      values: {
+        tanggal: String(r.tanggal ?? ''),
+        tipeAkun: String(r.debit_tipe ?? ''),
+        akunDebit: String(r.debit_nama ?? ''),
+        dibayarDari: String(r.kredit_nama ?? ''),
+        nominal: String(r.nominal ?? ''),
+        keterangan: String(r.keterangan ?? ''),
+        kategori: String(r.kategori ?? '')
+      }
+    }));
   },
   save: async (ref, values) => {
-    const rowNum = parseInt(ref, 10);
-    if (!Number.isInteger(rowNum) || rowNum < 2) throw new Error('Referensi baris tidak valid.');
     const tanggal = parseDateISO(String(values.tanggal ?? ''));
     const akunDebit = required(values.akunDebit, 'Kategori Pengeluaran');
     const akunKredit = required(values.dibayarDari, 'Dibayar Dari');
     const nominal = parseRupiah(values.nominal as string | number);
     const keterangan = required(values.keterangan, 'Keterangan');
     const kategori = required(values.kategori, 'Kategori');
-    await updateRange(SHEETS.LOG_INPUT_TRANSAKSI, `'Transaksi'!A${rowNum}:F${rowNum}`, [
-      [tanggal, akunDebit, akunKredit, nominal, keterangan, kategori]
-    ]);
-    return 'Jurnal di database keuangan (jurnal_transaksi) TIDAK ikut berubah — kalau nominal/akun diganti, koreksi juga lewat Dashboard.';
+    const db = turso();
+    const kode = async (nama: string) => {
+      const r = await db.execute({ sql: 'SELECT kode FROM coa WHERE nama_akun = ?', args: [nama] });
+      return r.rows[0]?.kode ?? null;
+    };
+    const [kodeDebit, kodeKredit] = [await kode(akunDebit), await kode(akunKredit)];
+    if (kodeDebit === null || kodeKredit === null) {
+      const missing = [kodeDebit === null ? akunDebit : null, kodeKredit === null ? akunKredit : null].filter(Boolean);
+      throw new Error(`Akun "${missing.join('", "')}" tidak ditemukan di COA.`);
+    }
+    const res = await db.execute({
+      sql: `UPDATE jurnal_transaksi SET tanggal = ?, akun_debit_kode = ?, akun_kredit_kode = ?,
+                   nominal = ?, keterangan = ?, kategori = ?
+            WHERE id = ?`,
+      args: [tanggal, kodeDebit, kodeKredit, nominal, keterangan, kategori, Number(ref)]
+    });
+    if (res.rowsAffected === 0) throw new Error('Transaksi tidak ditemukan (mungkin sudah dihapus).');
   }
 };
 
@@ -425,18 +560,8 @@ export const EDIT_CONFIGS: Record<string, EditCfg> = {
     editFields: ['tanggalMulai', 'tanggalSelesai', 'namaPromosi', 'platform', 'tipePromosi', 'budget', 'spendAktual', 'target', 'leadsAktual', 'bookingDariPromo', null /* ROI: formula */, 'status'],
     labelFields: ['tanggalMulai', 'namaPromosi', 'status']
   },
-  'perawatan-preventif': {
-    kind: 'sheet',
-    append: perawatanPreventifAppendCfg,
-    editFields: ['tanggalJadwal', 'tanggalSelesai', 'fasilitasItem', 'jenisPerawatan', 'kategori', 'penyebab', 'deskripsi', 'prioritas', 'pelaksana', 'vendor', 'biaya', 'status', 'catatan'],
-    labelFields: ['tanggalJadwal', 'fasilitasItem', 'status']
-  },
-  'perbaikan-korektif': {
-    kind: 'sheet',
-    append: perbaikanKorektifAppendCfg,
-    editFields: ['tanggalKerusakan', 'tanggalLapor', 'tanggalSelesai', 'sumberLaporan', 'lokasiItem', 'kategori', 'penyebab', 'deskripsi', 'prioritas', 'pelaksana', 'vendor', 'biaya', 'status', 'catatan'],
-    labelFields: ['tanggalKerusakan', 'lokasiItem', 'status']
-  },
+  'perawatan-preventif': perawatanPreventifEdit,
+  'perbaikan-korektif': perbaikanKorektifEdit,
   'inspeksi-fasilitas': {
     kind: 'sheet',
     append: inspeksiFasilitasAppendCfg,

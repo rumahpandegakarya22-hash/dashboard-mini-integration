@@ -4,8 +4,7 @@ import { submitPengeluaran } from './pengeluaran';
 import { submitPembayaranSewa, autoFillPembayaranSewa } from './pembayaran-sewa';
 import { previewPembayaranSewa } from './pembayaran-sewa-preview';
 import { submitSurvey } from './survey';
-import { submitPerawatanPreventif } from './perawatan-preventif';
-import { submitPerbaikanKorektif } from './perbaikan-korektif';
+import { submitPerawatanPreventif, submitPerbaikanKorektif } from './maintenance';
 import { submitInspeksiFasilitas } from './inspeksi-fasilitas';
 import { submitPindahKamar } from './pindah-kamar';
 import { submitCheckout } from './checkout';
@@ -17,6 +16,7 @@ import { submitKonten } from './konten';
 import { submitPromosi } from './promosi';
 import { submitDailyTask } from './daily-task';
 import { submitWoInspeksi, submitWoCleaning } from './work-order';
+import { submitPemakaianStokCleaning, submitPemakaianStokMaintenance } from './pemakaian-stok';
 
 /**
  * Handler konkret per modul, ditambahkan modul-per-modul (Tahap 3: penghuni-baru,
@@ -44,7 +44,9 @@ export const HANDLERS: Record<string, SubmitHandler> = {
   promosi: submitPromosi,
   'daily-task': submitDailyTask,
   'wo-inspeksi': submitWoInspeksi,
-  'wo-cleaning': submitWoCleaning
+  'wo-cleaning': submitWoCleaning,
+  'pemakaian-stok-cleaning': submitPemakaianStokCleaning,
+  'pemakaian-stok-maintenance': submitPemakaianStokMaintenance
 };
 
 /** Handler preview (hitung tanpa efek samping) — cuma modul dgn ModuleMeta.hasPreview:true perlu entry di sini. */
