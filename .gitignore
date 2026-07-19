@@ -4,3 +4,9 @@ node_modules/
 .env*.local
 *.tsbuildinfo
 next-env.d.ts
+
+# Bukti golden test Fase 2 — berisi PII penghuni NYATA (nama, no HP, email,
+# kontak darurat pihak ketiga). Disimpan lokal sebagai bukti kerja, TIDAK
+# pernah di-commit. Bukti yang di-commit adalah hash-nya di docs/golden-report.md.
+docs/golden-*.json
+docs/formulas-dump.json

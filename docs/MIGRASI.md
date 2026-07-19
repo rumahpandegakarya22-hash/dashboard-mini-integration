@@ -18,8 +18,8 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 | Fase | Judul | Status |
 |---|---|---|
 | 0 | Persiapan | ✅ Lulus (disetujui user 20 Juli 2026) |
-| 1 | Fondasi struktur | ⚠️ Selesai; gerbang otomatis lulus, **menunggu UAT alur user** |
-| 2 | Port data layer Dashboard | ⬜ Belum |
+| 1 | Fondasi struktur | ⚠️ Gerbang otomatis lulus; user mengizinkan lanjut, **UAT alur belum dijalankan** |
+| 2 | Port data layer Dashboard | ✅ Gerbang lulus — golden test diff kosong (lihat `golden-report.md`) |
 | 3 | Port API & auth terpadu | ⬜ Belum |
 | 4 | Port UI Dashboard | ⬜ Belum |
 | 5 | Penyatuan lintas app | ⬜ Belum |
@@ -281,6 +281,70 @@ Lulus otomatis:
 Termasuk di dalamnya smoke test **R5** (`googleapis` 140 → 173) pada panggilan
 Sheets/Drive nyata: naik versi sudah dilakukan & build hijau, tetapi pemanggilan
 runtime belum teruji.
+
+---
+
+## Fase 2 — Port data layer Dashboard
+
+### 2.1 Yang di-port
+
+| Sumber (repo lama) | Target | Metode |
+|---|---|---|
+| `server/compute.js` (267 baris) | `src/lib/dashboard/compute.ts` | verbatim + tipe; `FORMULA_CONFIG` & tanda [VERIFIED]/[LOOKUP]/[PENDING] utuh |
+| `server/sheet-map.js` (172 baris) | `src/lib/dashboard/sheet-map.ts` | konversi **mekanis**; 172 pasangan (kolom,header) & 15 judul tab diverifikasi identik |
+| `server/turso-source.js` + bagian baca `server/turso.js` | `src/lib/dashboard/source.ts` | verbatim; klien libSQL dipakai ulang dari `lib/core/turso.ts` |
+| `SHEET_ACCESS` / `PII_COLS` (`server.js`) | `src/config/dashboard-access.ts` | regex verbatim |
+| `filterSheetsForRole` / `filterTablesForRole` | `src/lib/dashboard/rls.ts` | verbatim, termasuk perilaku tepi |
+| `server/inventory.js` | `src/lib/dashboard/inventory.ts` | verbatim |
+| `server/{recompute-turso,seed-occupancy-history,bootstrap-owner,dump-formulas}.js` | `scripts/*.ts` (via `tsx`) | port; lihat penyimpangan 2.3 |
+
+`scripts/recompute-turso.ts` mengimpor `lib/dashboard/compute.ts` yang **sama**
+dengan runtime → duplikasi formula on-read vs on-write yang dulu dijaga manual
+kini hilang (§3).
+
+### 2.2 Gerbang: golden test — LULUS
+
+Ringkas: ketiga perbandingan **byte-identical menurut SHA-256**. Rancangan uji,
+tabel hash, kontrol negatif, dan temuan lengkap ada di **`docs/golden-report.md`**.
+
+Yang perlu diketahui di luar "lulus":
+
+- **File golden TIDAK di-commit** (masuk `.gitignore`). Isinya PII nyata 29
+  penghuni termasuk kontak darurat pihak ketiga; menaruhnya di git = PII permanen
+  di riwayat, ikut ke setiap clone dan ke GitHub bila di-push. Maksud §11.3
+  (bukti paritas) dipenuhi lewat hash SHA-256 di `golden-report.md` — lebih kuat
+  sebagai bukti dan nol PII. **Ini penyimpangan sadar dari §11.3.**
+- **R5 terselesaikan secara empiris untuk permukaan baca**: lama memakai
+  `@libsql/client` **0.14.0**, baru **0.17.4**, keluaran identik byte-per-byte.
+  Permukaan Sheets/Drive (`googleapis` 140→173) masih menunggu UAT.
+- **Drift data lama di Turso ditemukan** (3 sel, a.l. `er_persen = 2196428571`
+  yang jelas rusak). Skrip lama melaporkan 3 sel yang sama → bukan regresi.
+  **Tidak diperbaiki** karena §11.2.1 dan karena 2 di antaranya menyangkut akhir
+  kontrak penghuni. Butuh keputusan user sebelum `recompute-turso.ts --commit`.
+
+### 2.3 Penyimpangan dari rencana — dengan alasan
+
+**(a) File golden tidak di-commit** — lihat 2.2 di atas.
+
+**(b) `scripts/dump-formulas.ts` memakai jalur autentikasi berbeda.** Versi lama
+memakai `data/service-account.json` atau `GOOGLE_SERVICE_ACCOUNT_JSON`; kedua
+env itu dibuang saat deduplikasi Fase 0 karena tidak dipakai app. Skrip diadaptasi
+memakai `lib/core/google.ts` (`GOOGLE_SERVICE_ACCOUNT_EMAIL` + `GOOGLE_PRIVATE_KEY`)
+yang memang kredensial aktif. Tanpa adaptasi ini skrip tidak akan bisa jalan.
+Output pindah `data/` → `docs/`.
+
+**(c) `scripts/bootstrap-owner.ts` memakai `@clerk/nextjs/server`,** bukan
+`@clerk/express` (tidak ikut ke app terpadu). **Perlu perhatian di Fase 3:** skrip
+ini memanggil `updateUserMetadata` dengan `publicMetadata: { role, status }` —
+hanya namespace Dashboard. Di app terpadu ada namespace kedua
+(`miniappRole`/`miniappStatus`) di objek `publicMetadata` yang sama. Perlu
+diverifikasi apakah Clerk **menimpa seluruh** `publicMetadata` atau menggabung
+per-key; bila menimpa, skrip ini akan menghapus akses Ops pengguna. Belum diuji.
+
+**(d) `lib/dashboard/inventory.ts` vs `lib/inventory.ts`** — dua modul berbeda
+dengan nama mirip sengaja dibiarkan: yang di `dashboard/` membaca **database**
+Inventory Stock untuk pelaporan; yang di `lib/` memanggil **REST API** app
+Inventory untuk modul pemakaian-stok Ops. Keduanya dipakai, bukan duplikat.
 
 ---
 
