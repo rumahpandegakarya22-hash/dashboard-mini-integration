@@ -1,4 +1,4 @@
-Mini App Improvement v1.2
+Mini App Improvement v1.3
 
 =====================RULES=======================================
 1. kerjakan bertahap dan memperhatikan limit, jangan dilanjut Ketika token tidak memadai
@@ -6,6 +6,80 @@ Mini App Improvement v1.2
 3.Pilihkan Opsi terbaik, No Ask User Question
 4. Berikan kesimpulan task yang dikerjakan dengan to the point. 
 5. Sudah tidak ada permasalahan seperti di sesi lain
+6.Gunakan Skills:
+	/ponytail [Ultra]
+	/using-superpowers
+	/caveman
 =================================================================
 
-1. Tambahkan field Tanggal periode Sewa. hanya ada Tanggal pembayaran, tanggal pembayaran tidak sama dengan tanggal awal sewa! Ambil Tanggal Sewa terakhir dari database turso, lalu tampilkan otomatis di field tanggal periode sewa!. 
+============================SESI INI UNTUK PENGECEKAN SISTEM SOURCE CODE========================================
+
+--Beri tahu jika Web App (Mini App atau Dashboard) masih mengambil data diluar dari database turso!--
+
+Validasi lah apakah system source code seperti ini: 
+
+**Alur Leads sampai Check in**
+
+flowchart TD
+    A([Leads Baru]) --> B{Pilih Survey?}
+
+    B -- Ya --> B1[Proses Survey Kost]
+    B -- Tidak --> C{Lanjut Booking?}
+    B1 --> C
+
+    C -- Tidak --> C1([Cancel / Selesai])
+    C -- Ya --> D[Pilih Metode Pembayaran:\nDP atau Bayar Penuh]
+
+    D --> E[Menunggu Konfirmasi Pembayaran]
+    E -->|"status booking: pending"| F[(Tabel Booking)]
+
+    E --> G{Pembayaran Terkonfirmasi?}
+    G -- Belum --> E
+    G -- Ya --> H["status booking: konfirmasi"]
+    H --> F
+
+    H --> I{Status: Check-in?}
+    I -- Belum --> H
+    I -- Ya --> J[(Tabel Active Tenant)]
+    I -- Ya --> K[(Tabel Occupancy History)]
+
+**Booking** (Module: Penghuni baru)
+1. Biaya booking sebesar 50% dari Harga kamar. Harga kamar diambil dari table kamar kolom Harga_bulan. FK: id_kamar. biaya kamar digunakan untuk di  table invoice_dp. 
+2. Harga kamar disepakati tidak dapat dinego, harus sesuai dengan poin 1. 
+3. Generate id_penghuni jika status booking sudah Checkin dan data masuk ke table active tenant dan occupancy history.
+
+Potensi masalah: 
+	1. Jika saat ini kamar terisi, tapi bulan depan kosong. tidak ada pilihan kamar untuk calon penghuni baru. Solusi? apkah system booking bisa dibuat tanpa pilih kamar (jika hanya satu kamar akan kosong di bulan depan) atau ada solusi lain yang lebih cerdas? 
+
+
+**Survey**
+1. Jika status survey menjadi Tertarik- Lanjut atau Booking ditempat, akan degenerate id_booking sesuai format. Data masuk ke table booking. Status awal jika belum terkonfirmasi pembayaran adalah pending. jika sudah bayar, status konfirmasi. 
+
+
+**invoice DP/sewa**
+1. Pastikan Harga dasar kamar sesuai dengan id_penghuni, No kamar, dan durasi sewa. Harga kamar di sewa bergantung pada variable durasi sewa dan tipe kamar. 
+2. Untuk penghuni yang belum memiliki Riwayat pembayaran, bisa memilih lama sewa. Untuk yang sudah ada Riwayat, ambil lama sewa sesuai transaksi terakhir. Akan tetapi, tetap bisa dipilih manual 
+3. Tampilkan Riwayat pelanggaran dalam table simple di modul pembayaran sewa, untuk judgement pemberian denda. (table akan menyusul). Pastikan ada field jumlah pelanggaran berapa kali dan nominal denda! 
+4. bukti pembayaran disimpan kemana? 
+
+**Checkout**
+1. Upload Dokumen disimpan dimana? 
+
+
+**Pencatatan Penegluaran**
+----untuk module akuntansi, ingatkan saya nanti, perlu saya validasi ulang hasil pekerjaanmu! laporkan bagaimana kamu merancang system input pembayaran (pembayaran Sewa) dan input pengeluaran (pencatatan penegluaran) secara menyeluruh dan detail beserta banyak studi kasus berdasarkan data yang sudah ada !---------
+
+------------------------------------Ganti model ke Fable 5 Max [Force]-------------------------------------------
+---------Bagian Keamanan Web App----------
+1. bagimana kamu mernacang system keamanan untuk WebApp ini? Apa yang kamu pertimbangkan dan buktinya? 
+2. Audit keamanan Web App, dari mana saja celah untuk di hack, sertakan buktinya. 
+---------------------------------------------------------------------------------------------------------
+
+
+**Rencana tambahan fitur** ---Plan mode----
+1. Input Maintenance (preventif/Korektif) yang membutuhkan biaya akan langsung terhubung dengan module pencatatan pengeluaran. tidak langsung masuk database, tapi munculkan di table baru (joblist divisi Admin) untuk memasukkan pengeluaran maintenance. Buatkan logika konversi antara struktur data perawatan untuk dikonversi menjadi format pencatatan pengeluaran. 
+2. Menambahkan module pencatatan pemakaian bahan jika mengambil dari stok untuk divisi: cleaning dan maintenance. sudah ada web app sendiri untuk inventory stock, tapi ingin aku hubungkan dengan Mini App. Analisis system web App Inventory stock (E:\Stock Inventory Kost) dan rencanakan untuk integrasi. 
+3. Rencanakan integrasi tiga Web App: Dashboard (D:\Dashboard Figma), Mini App operational dan inventory stock!
+	Fungsi: 
+		Dahsboard: Monitoring (Owner dan staff)
+ 		Mini App dan Inventory Stock (Input administrasi operasional (mainly) bagi staff, owner hanya autorisasi awal dan monitoring detail)
