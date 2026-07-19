@@ -3,13 +3,16 @@ import { getSessionUser } from '@/lib/auth';
 import { canAccess } from '@/lib/roles';
 import { MODULES } from '@/lib/modules/registry';
 import { HANDLERS } from '@/lib/modules/handlers';
-import { claimRequestId, redis, nsKey } from '@/lib/redis';
+import { claimRequestId, rateLimitOk, redis, nsKey } from '@/lib/redis';
 import { writeAudit } from '@/lib/audit';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ moduleId: string }> }) {
   const { moduleId } = await params;
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: 'Belum login.' }, { status: 401 });
+  if (!(await rateLimitOk(`submit:${user.id}`, 30, 60))) {
+    return NextResponse.json({ error: 'Terlalu banyak permintaan. Tunggu sebentar.' }, { status: 429 });
+  }
   if (!canAccess(user.role, moduleId)) {
     return NextResponse.json({ error: 'Anda tidak punya akses ke modul ini.' }, { status: 403 });
   }
@@ -57,6 +60,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
       status: 'gagal',
       error: e?.message
     });
-    return NextResponse.json({ error: e?.message || 'Gagal menyimpan data.' }, { status: 400 });
+    console.error('[submit]', e);
+    // Pesan validasi handler (Error dgn pesan pendek) tetap ditampilkan ke user; sisanya digeneralkan.
+    const msg = e instanceof Error && e.message && e.message.length < 120 ? e.message : 'Terjadi kesalahan. Coba lagi.';
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 }

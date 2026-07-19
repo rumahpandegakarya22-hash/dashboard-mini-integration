@@ -78,6 +78,14 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
       throw new Error(`Kamar ${kamarId} sudah terisi. Pilih kamar lain.`);
     }
 
+    // Pita kewajaran harga: negosiasi normal boleh, tapi cegah salah ketik (harga nyaris 0 atau 10x lipat).
+    const listed = parseRupiah(String(room.hargaBulan));
+    if (listed > 0 && (hargaDisepakati < listed * 0.5 || hargaDisepakati > listed * 2)) {
+      throw new Error(
+        'Harga disepakati (Rp' + hargaDisepakati + ') terlalu jauh dari harga kamar (Rp' + listed + '). Perlu persetujuan Owner.'
+      );
+    }
+
     // No. HP unik terhadap penghuni aktif.
     const tenants = await getActiveTenants();
     if (tenants.some((t) => tryNormalizePhone(t.hp) === noHp)) {

@@ -15,7 +15,7 @@
 
 import { readTableWithRowNum, updateRange, assertHeaders } from '../sheets';
 import { turso, DIVISI_DB, TASK_STATUS } from '../turso';
-import { getAccounts, getActiveTenants, getTenantByLabel } from '../master';
+import { getAccounts, getActiveTenants, getTenantByLabel, getRoomFresh } from '../master';
 import { toISODateFlexible, parseDateISO, parseRupiah, normalizePhone, normalizeRoomId, required } from '../validate';
 import { MODULES } from './registry';
 import type { AppendConfig } from './handlers/helpers';
@@ -185,6 +185,16 @@ const penghuniBaruEdit: CustomEditCfg = {
     const durasi = parseInt(String(values.durasiBulan ?? ''), 10);
     if (![1, 2, 3, 6, 9, 12].includes(durasi)) throw new Error('Durasi tidak valid.');
     const harga = parseRupiah(values.hargaDisepakati as string | number);
+    // Pita kewajaran harga (sama dgn submit penghuni-baru): nego normal boleh, cegah
+    // salah ketik ekstrem (nyaris 0 atau 10x lipat). Dilewati jika kamar tak ditemukan
+    // di master (mis. booking lama yg kamarnya sudah berubah) — agar edit tetap bisa.
+    const room = await getRoomFresh(kamarId);
+    const listed = room ? parseRupiah(String(room.hargaBulan)) : 0;
+    if (listed > 0 && (harga < listed * 0.5 || harga > listed * 2)) {
+      throw new Error(
+        'Harga disepakati (Rp' + harga + ') terlalu jauh dari harga kamar (Rp' + listed + '). Perlu persetujuan Owner.'
+      );
+    }
     const statusBooking = required(values.statusBooking, 'Status Booking');
     const sumberLeads = required(values.sumberLeads, 'Sumber Leads');
     const catatan = String(values.catatan ?? '').trim();

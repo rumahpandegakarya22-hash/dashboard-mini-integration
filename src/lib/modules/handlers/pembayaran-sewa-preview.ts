@@ -76,6 +76,8 @@ export const previewPembayaranSewa: PreviewHandler = async (values) => {
     const totalDenda = dendaPerUnit * jumlahDenda;
     const subtotal = totalSewa + totalListrik + totalDenda;
     const grandTotal = subtotal - diskon + pajak;
+    if (diskon > subtotal) throw new Error('Diskon tidak boleh melebihi subtotal.');
+    if (grandTotal <= 0) throw new Error('Grand total tidak valid (harus lebih dari 0).');
     const noInv = `INV/${noKamar}/TDU/${tglBayarDate.getMonth() + 1}/${tglBayarDate.getFullYear()}`;
 
     const raw = {
@@ -120,6 +122,8 @@ export const previewPembayaranSewa: PreviewHandler = async (values) => {
   const dp = Math.round(p.hargaKamar / 2);
   const subtotal = dp;
   const grandTotal = subtotal - diskon + pajak;
+  if (diskon > subtotal) throw new Error('Diskon tidak boleh melebihi subtotal.');
+  if (grandTotal <= 0) throw new Error('Grand total tidak valid (harus lebih dari 0).');
   const noInv = `INV/${noKamar}/DPU/${tglBayarDate.getMonth() + 1}/${tglBayarDate.getFullYear()}`;
 
   const raw = {

@@ -58,12 +58,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Tipe file harus PDF, Word, PNG, atau JPEG.' }, { status: 400 });
   }
 
+  // Jangan percaya MIME dari client: verifikasi magic bytes utk tipe umum (JPEG/PNG/PDF).
+  // Word (doc/docx) tidak dicek di sini (docx = zip, doc = OLE) — cukup ekstensi & MIME.
+  const buf = Buffer.from(await file.arrayBuffer());
+  const sigOk =
+    (file.type === 'image/jpeg' && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) ||
+    (file.type === 'image/png' && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) ||
+    (file.type === 'application/pdf' && buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) ||
+    (file.type !== 'image/jpeg' && file.type !== 'image/png' && file.type !== 'application/pdf');
+  if (!sigOk) return NextResponse.json({ error: 'Tipe file tidak valid.' }, { status: 400 });
+
   const safeBase = (file.name.replace(/\.[^.]*$/, '') || 'file').replace(/[^\w\-. ]+/g, '_').slice(0, 80);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const name = `${stamp}_${user.username}_${safeBase}.${ext}`;
 
   try {
-    const buf = Buffer.from(await file.arrayBuffer());
     const res = await driveClient().files.create({
       requestBody: { name, parents: [folderId] },
       media: { mimeType: file.type, body: Readable.from(buf) },
@@ -72,7 +81,7 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ ok: true, url: res.data.webViewLink, fileId: res.data.id, fileName: file.name });
   } catch (e: any) {
-    console.error('[upload] gagal:', e?.message);
-    return NextResponse.json({ error: 'Upload ke Drive gagal: ' + (e?.message || '') }, { status: 500 });
+    console.error('[upload]', e);
+    return NextResponse.json({ error: 'Terjadi kesalahan. Coba lagi.' }, { status: 500 });
   }
 }
