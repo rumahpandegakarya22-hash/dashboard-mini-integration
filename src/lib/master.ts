@@ -1,9 +1,9 @@
-import { redis, nsKey } from './redis';
-import { turso } from './turso';
+import { redis, nsKey } from './core/redis';
+import { turso } from './core/turso';
 import { fetchMaterials } from './inventory';
-import { readRange, readTable, readTableWithRowNum, updateRange } from './sheets';
+import { readRange, readTable, readTableWithRowNum, updateRange } from './core/sheets';
 import { SHEETS } from '@/config/spreadsheets';
-import { normalizeRoomId } from './validate';
+import { normalizeRoomId } from './core/validate';
 
 const TTL_SEC = 300; // 5 menit, sesuai PRD §8.4
 
@@ -427,7 +427,7 @@ export async function getInvoiceDpMaster(): Promise<InvoiceDpPenghuni[]> {
 
 /** Penghuni aktif dari Turso. id efektif = "ID Penghuni" bila terisi, fallback kamar_id (PK). */
 async function getPenghuniTurso(): Promise<{ id: string; label: string }[]> {
-  const { turso } = await import('./turso');
+  const { turso } = await import('./core/turso');
   const res = await turso().execute(
     `SELECT COALESCE("ID Penghuni", kamar_id) id, nama_lengkap, no_kamar
      FROM penghuni WHERE COALESCE(no_kamar, '') != '' ORDER BY nama_lengkap`
@@ -440,7 +440,7 @@ async function getPenghuniTurso(): Promise<{ id: string; label: string }[]> {
  * penghuni mana pun, dan tanpa booking aktif (Konfirmasi/Check-in).
  */
 async function getKamarKosongTurso(): Promise<{ id: string; label: string }[]> {
-  const { turso } = await import('./turso');
+  const { turso } = await import('./core/turso');
   const res = await turso().execute(
     `SELECT k.no_kamar, k.tipe_kamar, k.harga_bulan FROM kamar k
      WHERE LOWER(COALESCE(k.status,'')) != 'terisi'

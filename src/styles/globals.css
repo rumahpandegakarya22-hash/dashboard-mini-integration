@@ -1,0 +1,92 @@
+/* ============================================================
+   globals.css — reset + token BERSAMA lintas app (dashboard & ops).
+   Nilai visual per-app TIDAK ada di sini; lihat theme-ops.css /
+   theme-dashboard.css yang di-scope lewat [data-app="..."].
+   Dipecah dari src/app/globals.css pada Fase 1 migrasi — nilai tidak diubah.
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --t-fast: 150ms;
+  --t-med: 220ms;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-chrome: 30;
+  --z-backdrop: 40;
+  --z-sheet: 50;
+  --z-toast: 60;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+  }
+}
+
+/* ============ Dasar ============ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+
+/* Tipografi & metrik dasar — bebas tema. Warna & latar per-app ada di theme-*.css */
+body {
+  min-height: 100dvh;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable', 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+  line-height: 1.25;
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.75rem; /* 28px display */
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 1.0625rem; /* 17px headline */
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+svg {
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import QRCode from 'qrcode';
-import { getClerkSessionUser } from '@/lib/auth';
-import { generateTotpSecret } from '@/lib/totp';
-import { rateLimitOk } from '@/lib/redis';
+import { getClerkSessionUser } from '@/lib/core/auth';
+import { generateTotpSecret } from '@/lib/core/totp';
+import { rateLimitOk } from '@/lib/core/redis';
 
 /** Mulai pendaftaran 2FA: buat secret baru (pending) + QR utk discan Google Authenticator. */
 export async function POST() {

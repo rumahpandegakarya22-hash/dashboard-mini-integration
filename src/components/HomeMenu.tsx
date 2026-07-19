@@ -55,7 +55,7 @@ export default function HomeMenu({ isOwner, modules }: Props) {
           {showLabels && <h2 className="section-title">{g.label}</h2>}
           <div className="module-grid">
             {g.items.map((m) => (
-              <ModuleCard key={m.id} id={m.id} title={m.title} href={`/m/${m.id}`} icon={moduleIcon(m.id)} />
+              <ModuleCard key={m.id} id={m.id} title={m.title} href={`/ops/m/${m.id}`} icon={moduleIcon(m.id)} />
             ))}
           </div>
         </section>
@@ -71,7 +71,7 @@ export default function HomeMenu({ isOwner, modules }: Props) {
               transition={{ duration: 0.25, delay: 0.3, ease: EASE }}
               whileTap={{ scale: 0.97 }}
             >
-              <Link href="/admin/users" className="module-card">
+              <Link href="/ops/admin/users" className="module-card">
                 <span className="icon-tile" aria-hidden>
                   <Users size={20} />
                 </span>

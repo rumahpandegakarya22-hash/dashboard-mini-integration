@@ -1,5 +1,5 @@
-import { appendRow, assertHeaders } from '../../sheets';
-import { turso } from '../../turso';
+import { appendRow, assertHeaders } from '../../core/sheets';
+import { turso } from '../../core/turso';
 import type { SubmitContext, SubmitHandler } from '../types';
 
 export interface AppendConfig {

@@ -26,7 +26,7 @@ export default function EditPanel({ moduleId, fields }: { moduleId: string; fiel
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/edit/${moduleId}`);
+      const res = await fetch(`/api/ops/edit/${moduleId}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Gagal memuat data.');
       setEntries(json.entries);

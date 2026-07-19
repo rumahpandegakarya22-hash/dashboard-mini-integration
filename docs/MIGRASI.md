@@ -17,8 +17,8 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 
 | Fase | Judul | Status |
 |---|---|---|
-| 0 | Persiapan | ⚠️ Langkah 1–3 selesai; **gerbang TERBLOKIR** — lihat §0.6 |
-| 1 | Fondasi struktur | ⬜ Belum |
+| 0 | Persiapan | ✅ Lulus (disetujui user 20 Juli 2026) |
+| 1 | Fondasi struktur | ⚠️ Selesai; gerbang otomatis lulus, **menunggu UAT alur user** |
 | 2 | Port data layer Dashboard | ⬜ Belum |
 | 3 | Port API & auth terpadu | ⬜ Belum |
 | 4 | Port UI Dashboard | ⬜ Belum |
@@ -183,6 +183,104 @@ Dashboard lama `D:\Dashboard Figma`).
 
 Sesi Claude Code untuk fase berikutnya sebaiknya dibuka di `D:\kost-tiga-dara`
 (atau tetap di G: dengan path absolut ke D: — keduanya jalan).
+
+---
+
+## Fase 1 — Fondasi struktur
+
+### 1.1 Pemindahan (semua lewat `git mv`, riwayat per-berkas terjaga)
+
+| Dari | Ke |
+|---|---|
+| `app/(app)/layout.tsx` | `app/(ops)/layout.tsx` (+ wrapper `data-app="ops"`) |
+| `app/(app)/{page,m,admin,account}` | `app/(ops)/ops/…` |
+| `app/{login,sign-up,2fa,pending}` | `app/(auth)/…` (URL tidak berubah — route group bukan segmen path) |
+| `app/api/{submit,preview,autofill,edit,master,joblist,upload,admin}` | `app/api/ops/…` |
+| `app/api/{totp,webhooks}` | tetap di akar — disatukan lintas app di Fase 3 |
+| `lib/{auth,roles,turso,google,redis,audit,totp,validate}.ts` | `lib/core/…` |
+| `app/globals.css` | `styles/globals.css` + `styles/theme-ops.css` |
+| — (baru) | `app/api/health/route.ts`, `app/page.tsx` (root router sementara) |
+
+28 rujukan path hardcoded diperbarui (fetch klien, `Link href`, perbandingan
+`usePathname`). Redirect ke `/` **sengaja tidak diubah** (2FA & layar auth) agar
+otomatis benar begitu root router Fase 3 mendispatch per akses.
+
+### 1.2 Penyimpangan dari rencana — dengan alasan
+
+**(a) `speakeasy` TIDAK dihapus** meski §9 Fase 1.3 mendaftarkannya bersama
+`express`, `cookie-parser`, `jsonwebtoken`, `express-rate-limit` sebagai
+"DIHAPUS". Verifikasi: `speakeasy` dipakai `lib/core/totp.ts` (generateSecret +
+totp.verify) — ini implementasi 2FA Mini App yang justru jadi basis unifikasi
+2FA di Fase 3. Menghapusnya akan mematikan 2FA kedua sisi. Yang benar dihapus
+hanya 4 paket Express milik Dashboard, dan keempatnya memang tidak pernah ada di
+`package.json` Mini App, jadi tidak ada aksi. Dugaan: daftar itu bermaksud
+"speakeasy milik Dashboard tidak perlu ditambahkan lagi karena sudah ada".
+
+**(b) `lib/sheets.ts` ikut pindah ke `lib/core/`** meski §3 tidak
+mendaftarkannya di `core`. Alasan: `lib/core/audit.ts` (yang §3 tempatkan di
+core) mengimpor `sheets.ts`. Membiarkan `sheets.ts` di `lib/` memaksa
+`lib/core` mengimpor ke atas — melanggar arah dependensi §7. `sheets.ts` juga
+memang infrastruktur murni (I/O Sheets + verifikasi kontrak header +
+anti formula-injection), selapis dengan `google.ts` yang sudah di core.
+Terverifikasi: `lib/core/` kini hanya mengimpor sesama isi `core/`.
+
+**(c) Wrapper `(auth)` sementara memakai `data-app="ops"`.** Layar auth hari ini
+adalah layar Mini App dan memakai kelas ops (blok "Login & sukses"). Tanpa
+wrapper, token tidak resolve dan tampilan rusak. Fase 4 langkah 5 menyatukan
+layar auth — wrapper ini diganti saat itu.
+
+**(d) `color-scheme` tetap di `:root`,** tidak ikut di-scope. Properti ini
+memengaruhi scrollbar & kontrol native seluruh halaman, jadi tidak bisa hidup di
+`div` pembungkus tanpa mengubah tampilan. Perlu ditinjau ulang di Fase 4 saat
+dashboard (dark-first) berdampingan dengan ops (light-first).
+
+**(e) `name` di `package.json`**: `miniapp-kost` → `kost-tiga-dara`.
+
+### 1.3 Pemecahan CSS — metode & bukti
+
+`globals.css` (1.034 baris) dipecah **secara mekanis lewat skrip**, bukan
+diketik ulang, supaya nol risiko salah transkripsi nilai. Skrip memverifikasi
+batas baris dan gagal keras bila file tidak sesuai asumsi.
+
+- `styles/globals.css` (93 baris): reset, tipografi/metrik dasar, `prefers-reduced-motion`,
+  dan token yang benar-benar app-agnostic (z-scale + skala motion, sesuai §4).
+- `styles/theme-ops.css` (963 baris): seluruh token warna/material/bentuk di-scope
+  ke `[data-app='ops']`, override dark di-rescope ke
+  `:root:not([data-theme='light']) [data-app='ops']`, plus seluruh kelas komponen.
+- Latar & `color` app dipindah dari `body` ke wrapper `[data-app='ops']` — ini
+  yang memungkinkan dashboard memakai latar gelapnya sendiri tanpa saling timpa.
+
+Bukti pemecahan tidak menghilangkan apa pun:
+
+| Uji | Hasil |
+|---|---|
+| Jumlah deklarasi CSS | 563 → 564 (+1 = `min-height:100dvh` sengaja ada di `body` global **dan** wrapper ops) |
+| Nama token hilang | **0** |
+| Token tema resolve di wrapper (dark) | `--bg #1f1d1c`, `--ink #f8f6f2`, `--brand #cf7b72` ✅ |
+| Token tema resolve di wrapper (light, `data-theme='light'`) | `--bg #F8F6F2`, `--ink #3A3635`, `--brand #C92D31` — **identik palet asli** ✅ |
+| Token bersama di `:root` | `--z-toast 60`, `--t-fast .15s`, `--ease-out` ✅ |
+| **Kebocoran** `--bg`/`--brand` di `:root` & `body` | **kosong** ✅ — sifat inti yang membuat tema dashboard nanti tidak bentrok |
+| Wrapper mewarnai latar ambient | ya (radial-gradient ter-render) ✅ |
+
+### 1.4 Status gerbang Fase 1
+
+Lulus otomatis:
+
+| Uji | Hasil |
+|---|---|
+| `npm run typecheck` | exit 0 |
+| `npm run build` | exit 0 — 28 route, struktur `/ops` & `/api/ops` sesuai §3 |
+| Redirect 308 `/m/:id`, `/admin/users`, `/account` | 308 ke `/ops/...` ✅ |
+| Gating `/ops`, `/ops/account` tanpa sesi | 307 → `/login` ✅ |
+| `/api/health` publik | 200 tanpa sesi ✅ |
+| Arah dependensi §7 (`lib/core` mandiri; `lib/` tidak impor `app/`/`components/`) | ✅ |
+| Error konsol di layar publik | tidak ada |
+
+**Belum bisa diverifikasi tanpa user** — butuh kredensial nyata, jadi masuk UAT
+§11.4: alur login → beranda → satu submit modul → joblist → admin users → 2FA.
+Termasuk di dalamnya smoke test **R5** (`googleapis` 140 → 173) pada panggilan
+Sheets/Drive nyata: naik versi sudah dilakukan & build hijau, tetapi pemanggilan
+runtime belum teruji.
 
 ---
 

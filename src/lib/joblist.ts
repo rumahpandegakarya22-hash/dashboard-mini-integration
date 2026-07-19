@@ -6,8 +6,8 @@
 // set "Complete" → hilang dari kedua tabel staf. Owner/pengawas hanya melihat
 // (logbook, semua status) — ubah status khusus staf divisi tujuan.
 
-import { turso, TASK_STATUS } from './turso';
-import { ROLE_DIVISI, type Role } from './roles';
+import { turso, TASK_STATUS } from './core/turso';
+import { ROLE_DIVISI, type Role } from './core/roles';
 
 export interface WorkOrderRow {
   id: number;

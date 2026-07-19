@@ -32,7 +32,7 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
     setBusy(id);
     setError('');
     try {
-      const res = await fetch('/api/joblist/status', {
+      const res = await fetch('/api/ops/joblist/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status })
@@ -148,7 +148,7 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                               {r.refTiket && <div className="muted" style={{ fontSize: '0.75rem' }}>{r.refTiket}</div>}
                               {divisi === 'Admin' && (
                                 <a
-                                  href={`/m/pengeluaran?woId=${r.id}&tanggal=${encodeURIComponent(r.tanggalInput)}&tipeAkun=Beban&nominal=${r.nominal}&kategori=Operasional&keterangan=${encodeURIComponent(`${r.deskripsi} — ${r.lokasiItem}${r.refTiket ? ` (${r.refTiket})` : ''}`)}`}
+                                  href={`/ops/m/pengeluaran?woId=${r.id}&tanggal=${encodeURIComponent(r.tanggalInput)}&tipeAkun=Beban&nominal=${r.nominal}&kategori=Operasional&keterangan=${encodeURIComponent(`${r.deskripsi} — ${r.lokasiItem}${r.refTiket ? ` (${r.refTiket})` : ''}`)}`}
                                   style={{ display: 'inline-block', marginTop: 4, fontWeight: 600 }}
                                 >
                                   Catat Pengeluaran →

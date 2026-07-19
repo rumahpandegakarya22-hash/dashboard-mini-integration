@@ -1,4 +1,5 @@
-import './globals.css';
+import '@/styles/globals.css';
+import '@/styles/theme-ops.css';
 import type { Metadata, Viewport } from 'next';
 import { ClerkProvider } from '@clerk/nextjs';
 import Providers from '@/components/Providers';

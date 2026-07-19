@@ -1,5 +1,5 @@
-import { turso } from '../../turso';
-import { parseDateISO, parseRupiah, required } from '../../validate';
+import { turso } from '../../core/turso';
+import { parseDateISO, parseRupiah, required } from '../../core/validate';
 import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 

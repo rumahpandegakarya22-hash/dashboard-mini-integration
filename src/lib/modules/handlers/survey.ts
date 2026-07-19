@@ -1,6 +1,6 @@
 import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
-import { normalizePhone, parseDateISO, required } from '../../validate';
+import { normalizePhone, parseDateISO, required } from '../../core/validate';
 
 // Kolom A:M sheet "Log Survey" (Log Sales). Header DIKONFIRMASI live 8 Jul (bukan tebakan lagi).
 const EXPECTED_HEADERS = [

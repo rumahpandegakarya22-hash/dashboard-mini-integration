@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { getClerkSessionUser, issueStepupCookie } from '@/lib/auth';
-import { verifyTotpCode } from '@/lib/totp';
-import { rateLimitOk } from '@/lib/redis';
+import { getClerkSessionUser, issueStepupCookie } from '@/lib/core/auth';
+import { verifyTotpCode } from '@/lib/core/totp';
+import { rateLimitOk } from '@/lib/core/redis';
 
 /** Konfirmasi pendaftaran 2FA: verifikasi kode dari pending secret → aktifkan. */
 export async function POST(req: NextRequest) {

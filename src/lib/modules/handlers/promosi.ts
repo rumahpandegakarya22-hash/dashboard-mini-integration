@@ -1,6 +1,6 @@
 import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
-import { parseDateISO, parseRupiah, required } from '../../validate';
+import { parseDateISO, parseRupiah, required } from '../../core/validate';
 
 // Sheet "Log Promosi" di Log Marketing. Header DIKONFIRMASI dari sheet asli yang dibuat user (8 Jul) —
 // lebih lengkap dari rancangan PRD awal. 12 kolom A:L; kolom K (ROI %) adalah FORMULA

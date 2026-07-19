@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { getSessionUser, getClerkSessionUser } from '@/lib/auth';
-import { verifyTotpCode } from '@/lib/totp';
-import { rateLimitOk } from '@/lib/redis';
+import { getSessionUser, getClerkSessionUser } from '@/lib/core/auth';
+import { verifyTotpCode } from '@/lib/core/totp';
+import { rateLimitOk } from '@/lib/core/redis';
 
 /** Matikan 2FA: wajib auth PENUH (termasuk step-up) + kode TOTP valid sekali lagi. */
 export async function POST(req: NextRequest) {

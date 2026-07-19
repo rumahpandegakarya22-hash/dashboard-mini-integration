@@ -1,6 +1,6 @@
 import { createAppendHandler } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
-import { parseDateISO, required } from '../../validate';
+import { parseDateISO, required } from '../../core/validate';
 
 // Sheet aktual bernama "Sheet1" (BUKAN "Logbook" seperti tebakan awal), judul internal "LOGBOOK
 // KEBERSIHAN". Header DIKONFIRMASI dari sheet asli (dibuat user, 8 Jul): cuma 4 kolom generik

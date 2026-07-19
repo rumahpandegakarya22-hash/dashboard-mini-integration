@@ -1,6 +1,6 @@
 import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
-import { parseDateISO, parseRupiah, normalizePhone, required } from '../../validate';
+import { parseDateISO, parseRupiah, normalizePhone, required } from '../../core/validate';
 
 // Sheet "Log Leads Harian" di Log Marketing. Header DIKONFIRMASI dari sheet asli yang dibuat user
 // (8 Jul) — BUKAN lagi rancangan agregat-harian PRD awal (Tanggal/Kanal/Jumlah Leads/dst). Struktur

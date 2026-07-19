@@ -1,6 +1,6 @@
 import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
-import { parseDateISO, required } from '../../validate';
+import { parseDateISO, required } from '../../core/validate';
 
 // Sheet "Log Konten" di Log Marketing. Header DIKONFIRMASI dari sheet asli yang dibuat user (8 Jul) —
 // lebih lengkap dari rancangan PRD awal: termasuk kolom performa (Likes/Komentar/Share-Saves/Reach)

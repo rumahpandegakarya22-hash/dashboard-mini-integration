@@ -80,7 +80,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
     fields
       .filter((f): f is FieldDef & { master: string } => f.type === 'select-async' && !!f.master)
       .forEach((f) => {
-        fetch(`/api/master/${encodeURIComponent(f.master)}`)
+        fetch(`/api/ops/master/${encodeURIComponent(f.master)}`)
           .then((r) => r.json())
           .then((res) => {
             if (!res.ok) return;
@@ -108,7 +108,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
       return;
     }
     let cancelled = false;
-    fetch(`/api/autofill/${moduleId}`, {
+    fetch(`/api/ops/autofill/${moduleId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: visibleValuesNow() })
@@ -162,7 +162,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
     const requestId =
       typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
     // Mode edit: timpa entri lama via /api/edit (bukan tambah baris baru via /api/submit).
-    const url = isEdit ? `/api/edit/${moduleId}` : `/api/submit/${moduleId}`;
+    const url = isEdit ? `/api/ops/edit/${moduleId}` : `/api/ops/submit/${moduleId}`;
     const body = isEdit
       ? { requestId, ref: editRef, values: visibleValuesNow() }
       : { requestId, values: visibleValuesNow() };
@@ -197,7 +197,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
       if (hasPreview) {
         // Modul ini minta konfirmasi dulu — hitung preview (tanpa efek samping), submit sungguhan
         // baru terjadi setelah user klik "Konfirmasi & Kirim" di layar preview.
-        const res = await fetch(`/api/preview/${moduleId}`, {
+        const res = await fetch(`/api/ops/preview/${moduleId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ values: visibleValuesNow() })
@@ -254,7 +254,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
             <button type="button" className="btn" onClick={() => setSuccess(false)}>
               Input Lagi
             </button>
-            <Link className="btn-plain" href="/">
+            <Link className="btn-plain" href="/ops">
               <House size={16} />
               Kembali ke Beranda
             </Link>
@@ -434,7 +434,7 @@ function FileField({ f, value, onChange }: { f: FieldDef; value: string; onChang
       const fd = new FormData();
       fd.append('file', file);
       fd.append('kind', f.uploadKind || '');
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const res = await fetch('/api/ops/upload', { method: 'POST', body: fd });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Upload gagal.');
       setFileName(file.name);

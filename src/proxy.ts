@@ -2,9 +2,15 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
 // Gerbang kasar: hanya memastikan ADA sesi Clerk. Gating halus (status
-// pending/disabled, role, step-up 2FA) dilakukan di (app)/layout.tsx dan
-// getSessionUser() per API route — butuh Backend API, bukan urusan proxy.
-const isPublicRoute = createRouteMatcher(['/login(.*)', '/sign-up(.*)', '/api/webhooks/clerk']);
+// pending/disabled, role, step-up 2FA) dilakukan di layout tiap route group
+// ((ops)/layout.tsx, nanti (dashboard)/layout.tsx) dan getSessionUser() per
+// API route — butuh Backend API, bukan urusan proxy.
+const isPublicRoute = createRouteMatcher([
+  '/login(.*)',
+  '/sign-up(.*)',
+  '/api/webhooks/clerk',
+  '/api/health'
+]);
 
 export const proxy = clerkMiddleware(async (auth, req) => {
   if (isPublicRoute(req)) return NextResponse.next();

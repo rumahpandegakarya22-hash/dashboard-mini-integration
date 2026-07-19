@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getClerkSessionUser, issueStepupCookie } from '@/lib/auth';
-import { verifyTotpCode } from '@/lib/totp';
-import { rateLimitOk } from '@/lib/redis';
+import { getClerkSessionUser, issueStepupCookie } from '@/lib/core/auth';
+import { verifyTotpCode } from '@/lib/core/totp';
+import { rateLimitOk } from '@/lib/core/redis';
 
 /** Verifikasi TOTP saat login (step-up): kode benar → cookie step-up 12 jam utk sesi ini. */
 export async function POST(req: NextRequest) {

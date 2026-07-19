@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CircleAlert, LoaderCircle, RotateCcw, UserRoundCheck, UserRoundX } from 'lucide-react';
-import { ROLE_LABEL, type Role } from '@/lib/roles';
+import { ROLE_LABEL, type Role } from '@/lib/core/roles';
 
 interface UserRow {
   id: string; // Clerk userId — kunci semua aksi
@@ -28,7 +28,7 @@ export default function UserAdminPanel({ currentUserId }: { currentUserId: strin
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/admin/users');
+      const res = await fetch('/api/ops/admin/users');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Gagal memuat daftar user.');
       setUsers(json.data);
@@ -47,7 +47,7 @@ export default function UserAdminPanel({ currentUserId }: { currentUserId: strin
     setBusy(key);
     setError('');
     try {
-      const res = await fetch(`/api/admin/users/${path}`, {
+      const res = await fetch(`/api/ops/admin/users/${path}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)

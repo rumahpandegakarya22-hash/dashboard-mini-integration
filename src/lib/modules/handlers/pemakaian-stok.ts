@@ -1,5 +1,5 @@
 import { postUsage } from '../../inventory';
-import { required } from '../../validate';
+import { required } from '../../core/validate';
 import type { SubmitHandler } from '../types';
 
 /**

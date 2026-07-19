@@ -1,6 +1,6 @@
 import { createAppendHandler, type AppendConfig } from './helpers';
 import { SHEETS } from '@/config/spreadsheets';
-import { parseDateISO, required } from '../../validate';
+import { parseDateISO, required } from '../../core/validate';
 
 // Sheet "Log Inspeksi Harian". Kolom A (No) = formula (PRD §6 Modul 12).
 // ⚠️ Posisi kolom B:H TEBAKAN — belum diverifikasi ke sheet asli.

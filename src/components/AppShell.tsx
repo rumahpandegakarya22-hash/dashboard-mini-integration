@@ -30,10 +30,10 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
   const { signOut } = useClerk();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const isHome = pathname === '/';
-  const isAdmin = pathname.startsWith('/admin');
-  const isAccount = pathname.startsWith('/account');
-  const activeModule = modules.find((m) => pathname === `/m/${m.id}`);
+  const isHome = pathname === '/ops';
+  const isAdmin = pathname.startsWith('/ops/admin');
+  const isAccount = pathname.startsWith('/ops/account');
+  const activeModule = modules.find((m) => pathname === `/ops/m/${m.id}`);
   const topTitle = isHome
     ? 'Kost Tiga Dara'
     : isAdmin
@@ -72,7 +72,7 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
         </div>
 
         <nav aria-label="Navigasi utama">
-          <Link href="/" className={isHome ? 'side-item active' : 'side-item'}>
+          <Link href="/ops" className={isHome ? 'side-item active' : 'side-item'}>
             <House size={18} />
             Beranda
           </Link>
@@ -82,9 +82,9 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
               {groups.length > 1 && <div className="side-group-label">{g.label}</div>}
               {g.items.map((m) => {
                 const Icon = moduleIcon(m.id);
-                const active = pathname === `/m/${m.id}`;
+                const active = pathname === `/ops/m/${m.id}`;
                 return (
-                  <Link key={m.id} href={`/m/${m.id}`} className={active ? 'side-item active' : 'side-item'}>
+                  <Link key={m.id} href={`/ops/m/${m.id}`} className={active ? 'side-item active' : 'side-item'}>
                     <Icon size={18} />
                     {m.title}
                   </Link>
@@ -96,7 +96,7 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
           {isOwner && (
             <div>
               <div className="side-group-label">Admin</div>
-              <Link href="/admin/users" className={isAdmin ? 'side-item active' : 'side-item'}>
+              <Link href="/ops/admin/users" className={isAdmin ? 'side-item active' : 'side-item'}>
                 <Users size={18} />
                 Kelola User
               </Link>
@@ -114,7 +114,7 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
               <div className="side-user-role">{roleLabel}</div>
             </div>
           </div>
-          <Link href="/account" className={isAccount ? 'side-item active' : 'side-item'}>
+          <Link href="/ops/account" className={isAccount ? 'side-item active' : 'side-item'}>
             <ShieldCheck size={18} />
             Keamanan Akun
           </Link>
@@ -130,7 +130,7 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
         <header className="topbar-glass">
           <div className="topbar-slot">
             {!isHome && (
-              <Link href="/" className="back-btn">
+              <Link href="/ops" className="back-btn">
                 <ChevronLeft size={22} />
                 Beranda
               </Link>
@@ -148,17 +148,17 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
 
         {/* ---- Dock kaca (mobile) ---- */}
         <nav className="dock" aria-label="Navigasi bawah">
-          <Link href="/" className={isHome ? 'dock-item active' : 'dock-item'}>
+          <Link href="/ops" className={isHome ? 'dock-item active' : 'dock-item'}>
             <House size={20} />
             Beranda
           </Link>
           {isOwner && (
-            <Link href="/admin/users" className={isAdmin ? 'dock-item active' : 'dock-item'}>
+            <Link href="/ops/admin/users" className={isAdmin ? 'dock-item active' : 'dock-item'}>
               <Users size={20} />
               Admin
             </Link>
           )}
-          <Link href="/account" className={isAccount ? 'dock-item active' : 'dock-item'}>
+          <Link href="/ops/account" className={isAccount ? 'dock-item active' : 'dock-item'}>
             <ShieldCheck size={20} />
             Akun
           </Link>
