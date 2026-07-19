@@ -1,15 +1,26 @@
 import { redirect } from 'next/navigation';
+import { getAuthState } from '@/lib/core/auth';
 
 /**
- * Router akar.
+ * Router akar (§5.2). Mengarahkan sesuai akses yang dimiliki akun:
+ *   punya akses Dashboard  → /dashboard
+ *   hanya akses Ops        → /ops
+ *   belum di-approve / tanpa role di keduanya → /pending
+ *   2FA aktif tapi sesi belum step-up         → /2fa
  *
- * SEMENTARA (Fase 1): dashboard belum ada, jadi semua diarahkan ke /ops.
- * Fase 3 langkah 3 menggantikan ini dengan dispatch sesuai akses (§5.2):
- * punya akses dashboard → /dashboard; hanya ops → /ops; keduanya pending → /pending.
+ * Dashboard didahulukan bila punya keduanya: pemakai dua sisi umumnya Owner/
+ * Admin yang memulai harinya dari dashboard. Navigasi silang ke Ops disediakan
+ * di shell (Fase 5).
  *
- * Halaman ini sengaja tidak di dalam route group mana pun supaya tidak
- * mewarisi gating (ops) maupun tema (auth).
+ * Halaman ini sengaja di luar route group mana pun agar tidak mewarisi gating
+ * (ops) maupun tema (auth).
  */
-export default function RootPage() {
-  redirect('/ops');
+export default async function RootPage() {
+  const s = await getAuthState();
+
+  if (!s.signedIn) redirect('/login');
+  if (s.needsTotp) redirect('/2fa');
+  if (s.dashboardUser) redirect('/dashboard');
+  if (s.user) redirect('/ops');
+  redirect('/pending');
 }

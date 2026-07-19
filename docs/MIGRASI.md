@@ -20,7 +20,7 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 | 0 | Persiapan | ✅ Lulus (disetujui user 20 Juli 2026) |
 | 1 | Fondasi struktur | ⚠️ Gerbang otomatis lulus; user mengizinkan lanjut, **UAT alur belum dijalankan** |
 | 2 | Port data layer Dashboard | ✅ Gerbang lulus — golden test diff kosong (lihat `golden-report.md`) |
-| 3 | Port API & auth terpadu | ⬜ Belum |
+| 3 | Port API & auth terpadu | ✅ Gerbang lulus — uji kontrak identik utk 5 role |
 | 4 | Port UI Dashboard | ⬜ Belum |
 | 5 | Penyatuan lintas app | ⬜ Belum |
 | 6 | Hardening, cutover & pembersihan | ⬜ Belum |
@@ -345,6 +345,119 @@ per-key; bila menimpa, skrip ini akan menghapus akses Ops pengguna. Belum diuji.
 dengan nama mirip sengaja dibiarkan: yang di `dashboard/` membaca **database**
 Inventory Stock untuk pelaporan; yang di `lib/` memanggil **REST API** app
 Inventory untuk modul pemakaian-stok Ops. Keduanya dipakai, bukan duplikat.
+
+---
+
+## Fase 3 — Port API & auth terpadu
+
+### 3.1 Auth gabungan dua namespace
+
+`lib/core/auth.ts` diperluas **secara aditif** — seluruh field lama (`signedIn`,
+`status`, `needsTotp`, `totpEnrolled`, `user`) dipertahankan sehingga kode Ops
+tidak berubah sama sekali. Ditambahkan: `opsRole/opsStatus`,
+`dashboardRole/dashboardStatus`, `dashboardUser`, plus `getDashboardUser()`.
+
+**Klaim kunci yang diverifikasi, bukan diasumsikan:** koeksistensi dua namespace
+bergantung pada perilaku merge Clerk. Dokumentasi resmi mengonfirmasi
+`updateUserMetadata()` melakukan **deep merge** (kunci dihapus hanya dengan
+menyetel `null`); yang mengganti total adalah `replaceUserMetadata()`, yang tidak
+dipakai di mana pun.
+
+→ Ini **menutup risiko terbuka dari Fase 2 §2.3(c)**: `scripts/bootstrap-owner.ts`
+yang menulis `publicMetadata: { role, status }` **AMAN** — tidak akan menghapus
+`miniappRole`/`miniappStatus`.
+
+2FA kini menjaga kedua sisi: `needsTotp` menyala bila akun aktif di **salah satu**
+namespace, dan `getClerkSessionUser()` menerima aktif di salah satu sisi supaya
+pengguna dashboard-only bisa setup/verify/disable TOTP.
+
+### 3.2 Cookie step-up disatukan
+
+| | Lama Dashboard | Lama Ops | Sekarang |
+|---|---|---|---|
+| Nama | `ktd_2fa` | `miniapp_2fa` | **`ktd_2fa`** |
+| Tanda tangan | `jsonwebtoken` | `jose` HS256 | **`jose` HS256** |
+
+Nama lama Dashboard dipakai sesuai §5.2 (mayoritas pemakai 2FA ada di sana).
+Karena algoritma & payload mengikuti pola Mini App, cookie `ktd_2fa` lama terbitan
+`jsonwebtoken` **tidak akan lolos verifikasi** — jadi realitanya **kedua** kelompok
+pengguna verifikasi ulang sekali. Ini lebih luas dari perkiraan R4 (yang menduga
+hanya pengguna Ops terdampak). Dampak tetap sama: satu kali input 6 digit.
+Cookie `miniapp_2fa` usang dihapus otomatis saat step-up berhasil / 2FA dimatikan.
+
+### 3.3 Endpoint yang dibangun (§8.1)
+
+| Express lama | Baru | Catatan |
+|---|---|---|
+| `GET /api/me` | `GET /api/dashboard/me` | bentuk respons identik |
+| `GET /api/db` | `GET /api/dashboard/db` | RLS + envelope identik |
+| `GET /api/sheets` | `GET /api/dashboard/sheets` | idem |
+| `GET /api/inventory` | `GET /api/dashboard/inventory` | |
+| `POST /api/documents` | `POST /api/dashboard/documents` | lihat 3.5 |
+| `GET /api/users` | `GET /api/dashboard/users` | array datar, field identik |
+| `POST /api/users/{approve,disable}` | `POST /api/dashboard/users/{approve,disable}` | requireOwner + larangan menonaktifkan diri sendiri dipertahankan |
+| `POST /api/webhooks/clerk` | `POST /api/webhooks/clerk` | **disatukan**: set pending di KEDUA namespace |
+| `GET /api/config` | — | tidak di-port (§5.3) |
+
+`lib/dashboard/api-guard.ts` memadankan `requireAuth`/`requireOwner`/`dataLimiter`,
+dengan status code & teks pesan dipertahankan. Rate limit pindah ke Upstash
+(120 req/60 dtk per user) menggantikan `express-rate-limit` in-memory.
+
+### 3.4 Gerbang: uji kontrak — LULUS
+
+`npx tsx scripts/contract-check.ts` membandingkan envelope respons lama vs baru
+untuk kelima role, memakai snapshot RLS lama dari Fase 2 sebagai acuan:
+
+| Role | `/api/dashboard/db` | `/api/dashboard/sheets` |
+|---|---|---|
+| owner | ✅ identik (16 tabel) | ✅ identik (16 tab) |
+| admin | ✅ identik (6 tabel) | ✅ identik (7 tab) |
+| marketing | ✅ identik (7 tabel) | ✅ identik (8 tab) |
+| operasional | ✅ identik (6 tabel) | ✅ identik (7 tab) |
+| sales | ✅ identik (7 tabel) | ✅ identik (8 tab) |
+
+Uji HTTP langsung (tanpa sesi): ketujuh endpoint dashboard baru membalas **401**,
+`/api/health` **200**, dan `/`, `/dashboard`, `/ops`, `/pending` mengarah ke
+`/login`. Jalur ber-sesi nyata hanya bisa diuji lewat UAT §11.4.
+
+**Perbedaan kontrak yang diterima:** permintaan tanpa sesi ke `/api/dashboard/*`
+dicegat `proxy.ts` lebih dulu sehingga membalas `{"error":"Belum login."}`
+(bertitik) alih-alih `{"error":"Belum login"}` milik Express. Status code sama
+(401). Tidak diselaraskan karena satu pesan proxy melayani `/api/ops/*` juga,
+yang kontrak lamanya justru bertitik. Tidak ada klien yang mem-parsing teks ini.
+
+### 3.5 Temuan: fitur "buat dokumen Drive" sudah mati sebelum migrasi
+
+`POST /api/documents` lama membaca peta folder dari `data/drive-config.json`.
+**Berkas itu tidak ada di repo Dashboard**, sehingga endpoint SELALU membalas
+503 `{ setup: true }` — fiturnya tidak berfungsi di deployment yang berjalan.
+
+Port mempertahankan perilaku itu persis (503 bila belum dikonfigurasi), tetapi
+sumber konfigurasi dipindah dari berkas ke ENV (`src/config/drive-folders.ts`):
+filesystem Vercel read-only dan berkas di `data/` tidak ikut ter-deploy, jadi
+berkas bukan mekanisme yang bisa jalan di target.
+
+**Tindakan user bila fitur ini memang diinginkan:** isi
+`DRIVE_FOLDER_ROLE_{OWNER,ADMIN,MARKETING,OPERASIONAL,SALES}` dengan ID folder
+Drive yang sudah di-share ke `GOOGLE_SERVICE_ACCOUNT_EMAIL`. Selama kosong,
+perilakunya sama persis dengan sekarang. Gerbang Fase 4 §9 menyebut uji "buat
+dokumen Drive" — uji itu tidak akan bisa dilakukan tanpa ID folder tersebut.
+
+### 3.6 Penyimpangan lain
+
+- **`(dashboard)` placeholder dibuat lebih awal.** Router akar §5.2 mengarahkan
+  pemilik akses dashboard ke `/dashboard`; tanpa halaman itu hasilnya 404. Dibuat
+  layout ber-gating + halaman placeholder agar routing utuh & dapat diuji. UI
+  sesungguhnya tetap pekerjaan Fase 4.
+- **Fallback `JWT_SECRET` dihapus** dari `stepupSecret()` — env-nya sudah dibuang
+  di Fase 0 dan fallback-nya tidak pernah aktif. Menyelaraskan kode dengan env.
+- **Label TOTP** saat pendaftaran baru: `Kost Tiga Dara Mini App (...)` →
+  `Kost Tiga Dara (...)`, karena 2FA kini melayani kedua sisi. Hanya memengaruhi
+  entri authenticator yang didaftarkan setelah ini; secret lama tak tersentuh.
+- **`totp/disable` kini menghapus cookie step-up** (`ktd_2fa` + `miniapp_2fa`),
+  memulihkan paritas dengan `res.clearCookie(TOTP_COOKIE)` server.js lama yang
+  tidak ada di implementasi Mini App. Respons juga menyertakan `tfaEnabled: false`
+  seperti Express lama.
 
 ---
 

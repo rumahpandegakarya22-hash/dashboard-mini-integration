@@ -10,8 +10,9 @@ export default function PendingPage() {
         </span>
         <h2>Menunggu Persetujuan</h2>
         <p className="muted">
-          Akun kamu sudah terdaftar tapi belum diaktifkan untuk Mini App. Hubungi Owner untuk approve akun &amp;
-          menentukan role kamu. Setelah disetujui, login lagi dan kamu langsung bisa masuk.
+          Akun kamu sudah terdaftar tapi belum diaktifkan. Hubungi Owner untuk approve akun &amp; menentukan
+          role kamu — akses Dashboard dan Mini App Operasional diberikan terpisah, jadi sebutkan yang kamu
+          butuhkan. Setelah disetujui, login lagi dan kamu langsung bisa masuk.
         </p>
         <SignOutButton redirectUrl="/login">
           <button type="button" className="btn" style={{ marginTop: 6 }}>

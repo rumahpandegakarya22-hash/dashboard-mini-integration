@@ -16,6 +16,7 @@ import type { User } from '@clerk/nextjs/server';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { ROLE_LABEL, type Role } from './roles';
+import { DASHBOARD_ROLES, type DashboardRole } from '@/config/dashboard-access';
 
 export interface SessionUser {
   id: string; // Clerk userId — dipakai panel admin & metadata ops
@@ -24,16 +25,44 @@ export interface SessionUser {
   role: Role;
 }
 
+/** Padanan SessionUser untuk sisi Dashboard (5 role, namespace metadata sendiri). */
+export interface DashboardSessionUser {
+  id: string;
+  username: string;
+  name: string;
+  role: DashboardRole;
+}
+
 export type UserStatus = 'pending' | 'active' | 'disabled';
 
-/** Status auth lengkap utk gating halaman: login Clerk → approval → step-up 2FA. */
+/**
+ * Status auth gabungan utk gating halaman: login Clerk → approval → step-up 2FA.
+ *
+ * DUA namespace otorisasi hidup berdampingan di satu instance Clerk (§5.1):
+ *   - Dashboard : publicMetadata.role      / publicMetadata.status
+ *   - Ops       : publicMetadata.miniappRole / publicMetadata.miniappStatus
+ * Ini disengaja: Owner bisa memberi akses Ops tanpa akses Dashboard, dan
+ * sebaliknya. Menyatukan taksonomi role = keputusan bisnis, di luar scope migrasi.
+ *
+ * Aman karena Clerk `updateUserMetadata()` melakukan DEEP MERGE (terverifikasi
+ * dari dokumentasi resmi) — menulis satu namespace tidak menghapus namespace lain.
+ * Yang mengganti total adalah `replaceUserMetadata()`, yang TIDAK dipakai di sini.
+ */
 export interface AuthState {
   signedIn: boolean;
+  /** Status namespace OPS. Dipertahankan namanya demi kompatibilitas kode ops. */
   status: UserStatus | null; // null = belum login
-  /** true = akun aktif dgn 2FA aktif tapi sesi ini belum verifikasi TOTP (arahkan ke /2fa). */
+  /** true = akun aktif (di salah satu sisi) dgn 2FA aktif tapi sesi ini belum verifikasi TOTP. */
   needsTotp: boolean;
   totpEnrolled: boolean;
-  user: SessionUser | null; // terisi hanya jika status active + punya role valid
+  /** Terisi hanya jika miniappStatus active + punya miniappRole valid. */
+  user: SessionUser | null;
+  opsRole: Role | null;
+  opsStatus: UserStatus;
+  /** Terisi hanya jika status active + punya role dashboard valid. */
+  dashboardUser: DashboardSessionUser | null;
+  dashboardRole: DashboardRole | null;
+  dashboardStatus: UserStatus;
 }
 
 // ---- pembacaan metadata (namespace Mini App) ----
@@ -45,6 +74,21 @@ function metaRole(u: User): Role | null {
 
 function metaStatus(u: User): UserStatus {
   const s = (u.publicMetadata as Record<string, unknown>)?.miniappStatus;
+  return s === 'active' || s === 'disabled' ? s : 'pending';
+}
+
+// ---- pembacaan metadata (namespace Dashboard) ----
+// Kunci `role`/`status` tanpa prefix — persis seperti server.js Dashboard lama.
+
+function dashRole(u: User): DashboardRole | null {
+  const r = (u.publicMetadata as Record<string, unknown>)?.role;
+  return typeof r === 'string' && (DASHBOARD_ROLES as readonly string[]).includes(r)
+    ? (r as DashboardRole)
+    : null;
+}
+
+function dashStatus(u: User): UserStatus {
+  const s = (u.publicMetadata as Record<string, unknown>)?.status;
   return s === 'active' || s === 'disabled' ? s : 'pending';
 }
 
@@ -64,11 +108,25 @@ function toSessionUser(u: User, role: Role): SessionUser {
 // Ditandatangani (jose/HS256) + terikat sessionId Clerk spesifik, supaya tidak
 // bisa dipakai ulang di sesi lain (login ulang = wajib TOTP lagi). ----
 
-export const STEPUP_COOKIE = 'miniapp_2fa';
+/**
+ * Nama cookie step-up dipakai BERSAMA kedua sisi (§5.2). Sengaja memakai nama
+ * lama Dashboard (`ktd_2fa`), bukan `miniapp_2fa`: mayoritas pemakai 2FA hari
+ * ini ada di Dashboard, jadi sesi 2FA mereka tidak putus saat cutover.
+ * Konsekuensi yang diterima (R4): pengguna Ops verifikasi ulang sekali; cookie
+ * `miniapp_2fa` lama dibiarkan kedaluwarsa sendiri.
+ *
+ * Isi & algoritma tanda tangan TIDAK berubah dari implementasi Mini App (jose /
+ * HS256, terikat sessionId). Dashboard lama memakai `jsonwebtoken` dengan
+ * payload berbeda, jadi cookie lamanya tidak akan lolos verifikasi di sini —
+ * pengguna dashboard pun verifikasi ulang sekali saat cutover.
+ */
+export const STEPUP_COOKIE = 'ktd_2fa';
+/** Cookie step-up Mini App yang usang — dihapus saat verifikasi berhasil. */
+export const LEGACY_STEPUP_COOKIE = 'miniapp_2fa';
 const STEPUP_HOURS = 12;
 
 function stepupSecret(): Uint8Array {
-  const s = process.env.TOTP_STEPUP_SECRET || process.env.JWT_SECRET;
+  const s = process.env.TOTP_STEPUP_SECRET;
   if (!s) throw new Error('TOTP_STEPUP_SECRET belum di-set.');
   return new TextEncoder().encode(s);
 }
@@ -80,13 +138,16 @@ export async function issueStepupCookie(sessionId: string): Promise<void> {
     .setIssuedAt()
     .setExpirationTime(`${STEPUP_HOURS}h`)
     .sign(stepupSecret());
-  (await cookies()).set(STEPUP_COOKIE, token, {
+  const jar = await cookies();
+  jar.set(STEPUP_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     maxAge: STEPUP_HOURS * 3600,
     path: '/'
   });
+  // Bersihkan cookie step-up Mini App yang usang supaya tidak menumpuk.
+  if (jar.get(LEGACY_STEPUP_COOKIE)) jar.delete(LEGACY_STEPUP_COOKIE);
 }
 
 async function hasValidStepup(sessionId: string): Promise<boolean> {
@@ -102,26 +163,66 @@ async function hasValidStepup(sessionId: string): Promise<boolean> {
 
 // ---- gerbang utama ----
 
+const SIGNED_OUT: AuthState = {
+  signedIn: false,
+  status: null,
+  needsTotp: false,
+  totpEnrolled: false,
+  user: null,
+  opsRole: null,
+  opsStatus: 'pending',
+  dashboardUser: null,
+  dashboardRole: null,
+  dashboardStatus: 'pending'
+};
+
 export async function getAuthState(): Promise<AuthState> {
   const { userId, sessionId } = await auth();
-  if (!userId || !sessionId) return { signedIn: false, status: null, needsTotp: false, totpEnrolled: false, user: null };
+  if (!userId || !sessionId) return { ...SIGNED_OUT };
 
   const cu = await currentUser();
-  if (!cu) return { signedIn: false, status: null, needsTotp: false, totpEnrolled: false, user: null };
+  if (!cu) return { ...SIGNED_OUT };
 
-  const status = metaStatus(cu);
-  const role = metaRole(cu);
+  const opsStatus = metaStatus(cu);
+  const opsRole = metaRole(cu);
+  const dashboardStatus = dashStatus(cu);
+  const dashboardRole = dashRole(cu);
+
   const totpEnrolled = !!(cu.privateMetadata as Record<string, unknown>)?.totpEnabled;
-  const active = status === 'active' && !!role;
-  const needsTotp = active && totpEnrolled && !(await hasValidStepup(sessionId));
+  const opsActive = opsStatus === 'active' && !!opsRole;
+  const dashboardActive = dashboardStatus === 'active' && !!dashboardRole;
+
+  // 2FA menjaga KEDUA sisi: aktif di salah satu saja sudah cukup untuk diwajibkan.
+  const needsTotp = (opsActive || dashboardActive) && totpEnrolled && !(await hasValidStepup(sessionId));
 
   return {
     signedIn: true,
-    status,
+    status: opsStatus,
     needsTotp,
     totpEnrolled,
-    user: active ? toSessionUser(cu, role!) : null
+    user: opsActive ? toSessionUser(cu, opsRole!) : null,
+    opsRole,
+    opsStatus,
+    dashboardUser: dashboardActive
+      ? {
+          id: cu.id,
+          username: cu.username || primaryEmail(cu) || cu.id,
+          name: displayName(cu),
+          role: dashboardRole!
+        }
+      : null,
+    dashboardRole,
+    dashboardStatus
   };
+}
+
+/**
+ * User Dashboard terautentikasi PENUH (login + status active + role valid +
+ * lolos step-up 2FA bila aktif). Padanan `requireAuth` Express lama.
+ */
+export async function getDashboardUser(): Promise<DashboardSessionUser | null> {
+  const s = await getAuthState();
+  return s.needsTotp ? null : s.dashboardUser;
 }
 
 /**
@@ -142,7 +243,10 @@ export async function getClerkSessionUser(): Promise<{ user: User; sessionId: st
   const { userId, sessionId } = await auth();
   if (!userId || !sessionId) return null;
   const cu = await currentUser();
-  if (!cu || metaStatus(cu) !== 'active') return null;
+  if (!cu) return null;
+  // Aktif di SALAH SATU namespace sudah cukup: 2FA kini melayani kedua sisi,
+  // jadi pengguna dashboard-only pun harus bisa setup/verify TOTP.
+  if (metaStatus(cu) !== 'active' && dashStatus(cu) !== 'active') return null;
   return { user: cu, sessionId };
 }
 
@@ -197,4 +301,67 @@ export async function reactivateUser(userId: string): Promise<void> {
   const u = await client.users.getUser(userId);
   if (!metaRole(u)) throw new Error('User belum punya role Mini App — approve dulu, bukan aktifkan.');
   await patchMiniappMetadata(userId, { miniappStatus: 'active' });
+}
+
+// ---- kelola akun sisi DASHBOARD (padanan /api/users Express lama) ----------
+// Bentuk respons dipertahankan 1:1 dengan server.js agar kontrak API tidak
+// berubah (§8.1). Perhatikan: yang lama memakai `username` sbg identifier, bukan
+// Clerk userId — dipertahankan supaya klien lama tetap kompatibel.
+
+export interface DashboardAdminUserRow {
+  username: string;
+  name: string;
+  role: DashboardRole | null;
+  status: UserStatus;
+  tfaEnabled: boolean;
+  email: string | null;
+}
+
+/** Padanan `GET /api/users` — bentuk & urutan field identik server.js. */
+export async function listDashboardUsers(): Promise<DashboardAdminUserRow[]> {
+  const client = await clerkClient();
+  const list = await client.users.getUserList({ limit: 200, orderBy: '-created_at' });
+  return (list.data || []).map((u) => ({
+    username: u.username || u.id,
+    name:
+      ((u.unsafeMetadata as Record<string, unknown>)?.name as string) ||
+      [u.firstName, u.lastName].filter(Boolean).join(' ') ||
+      u.username ||
+      '',
+    role: dashRole(u),
+    status: dashStatus(u),
+    tfaEnabled: !!(u.privateMetadata as Record<string, unknown>)?.totpEnabled,
+    email: u.emailAddresses?.[0]?.emailAddress || null
+  }));
+}
+
+async function findByUsername(username: string): Promise<User | null> {
+  const client = await clerkClient();
+  const list = await client.users.getUserList({ username: [String(username || '')] });
+  return (list.data || [])[0] || null;
+}
+
+/** Padanan `POST /api/users/approve`. Deep-merge Clerk → namespace ops tidak tersentuh. */
+export async function approveDashboardUser(username: string, role: DashboardRole): Promise<'ok' | 'notfound'> {
+  const u = await findByUsername(username);
+  if (!u) return 'notfound';
+  const client = await clerkClient();
+  await client.users.updateUserMetadata(u.id, { publicMetadata: { role, status: 'active' } });
+  // Best-effort: bersihkan ban lama (dari versi sebelumnya sebelum banUser diketahui
+  // Pro-only). Akses tidak lagi bergantung pada ini, jadi kegagalan sengaja diabaikan.
+  try {
+    await client.users.unbanUser(u.id);
+  } catch {
+    /* abaikan — lihat komentar di atas */
+  }
+  return 'ok';
+}
+
+/** Padanan `POST /api/users/disable`. */
+export async function disableDashboardUser(username: string): Promise<'ok' | 'notfound'> {
+  const u = await findByUsername(username);
+  if (!u) return 'notfound';
+  const client = await clerkClient();
+  await client.users.updateUserMetadata(u.id, { publicMetadata: { status: 'disabled' } });
+  return 'ok';
 }

@@ -13,7 +13,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Terlalu banyak percobaan. Tunggu beberapa menit.' }, { status: 429 });
   }
 
-  const label = `Kost Tiga Dara Mini App (${sess.user.username || sess.user.id})`;
+  const label = `Kost Tiga Dara (${sess.user.username || sess.user.id})`;
   const secret = generateTotpSecret(label);
 
   const client = await clerkClient();

@@ -3,11 +3,17 @@ import { Webhook } from 'svix';
 import { clerkClient } from '@clerk/nextjs/server';
 
 /**
- * Webhook Clerk: akun baru (user.created) → tandai status Mini App "pending"
- * secara eksplisit. OPSIONAL — tanpa webhook pun akun tanpa miniappStatus
- * diperlakukan 'pending' oleh getAuthState (default aman). Endpoint terpisah
- * dari webhook dashboard: tambah endpoint baru di Clerk Dashboard → Webhooks
- * utk domain Mini App, lalu isi CLERK_WEBHOOK_SIGNING_SECRET dgn secret-nya.
+ * Webhook Clerk TERPADU (§5.2): akun baru (user.created) ditandai `pending` di
+ * KEDUA namespace sekaligus — `status` (Dashboard) dan `miniappStatus` (Ops).
+ * Menggantikan dua webhook terpisah milik Dashboard & Mini App.
+ *
+ * Tanpa webhook pun akun tanpa metadata sudah diperlakukan 'pending' oleh
+ * getAuthState (default aman); webhook membuatnya eksplisit dan terlihat di
+ * panel Kelola Akun.
+ *
+ * TINDAKAN USER saat cutover (§11.4): di Clerk Dashboard → Webhooks, arahkan
+ * SATU endpoint ke {DOMAIN}/api/webhooks/clerk dan hapus endpoint lama milik
+ * kedua app, lalu pastikan CLERK_WEBHOOK_SIGNING_SECRET cocok dgn endpoint itu.
  */
 export async function POST(req: NextRequest) {
   const secret = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
@@ -35,8 +41,15 @@ export async function POST(req: NextRequest) {
   if (evt.type === 'user.created') {
     try {
       const client = await clerkClient();
-      await client.users.updateUserMetadata(evt.data.id, { publicMetadata: { miniappStatus: 'pending' } });
-      console.log(`[clerk] akun baru "${evt.data.username || evt.data.id}" → miniappStatus pending, menunggu approval Owner.`);
+      // Satu panggilan, dua namespace. Clerk melakukan DEEP MERGE, jadi ini
+      // hanya menambah kunci — tidak menimpa metadata lain milik akun.
+      // `role: null` mengikuti perilaku webhook Dashboard lama (server.js).
+      await client.users.updateUserMetadata(evt.data.id, {
+        publicMetadata: { role: null, status: 'pending', miniappStatus: 'pending' }
+      });
+      console.log(
+        `[clerk] akun baru "${evt.data.username || evt.data.id}" → pending di Dashboard & Ops, menunggu approval Owner.`
+      );
     } catch (e) {
       console.error('[clerk] gagal set status pending:', e);
     }
