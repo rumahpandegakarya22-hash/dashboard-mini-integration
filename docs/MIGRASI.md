@@ -22,8 +22,8 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 | 2 | Port data layer Dashboard | ✅ Gerbang lulus — golden test diff kosong (lihat `golden-report.md`) |
 | 3 | Port API & auth terpadu | ✅ Gerbang lulus — uji kontrak identik utk 5 role |
 | 4 | Port UI Dashboard | ⚠️ Langkah 1–5 selesai; **gerbang §9 Fase 4.6 menunggu UAT visual user** |
-| 5 | Penyatuan lintas app | ⬜ Belum |
-| 6 | Hardening, cutover & pembersihan | ⬜ Belum |
+| 5 | Penyatuan lintas app | ✅ Gerbang lulus — matriks akses & build produksi hijau |
+| 6 | Hardening, cutover & pembersihan | ⚠️ Pembersihan repo selesai; **cutover & UAT menunggu user** (`CUTOVER.md`) |
 
 ---
 
@@ -911,6 +911,111 @@ Yang **BELUM** dan hanya bisa user:
 3. "Buat dokumen Drive" — **tetap mustahil** sampai `DRIVE_FOLDER_ROLE_*` diisi
    (temuan Fase 3: fitur ini sudah mati sebelum migrasi).
 4. Verifikasi tautan lupa password (lihat 4.12).
+
+## Fase 5 — Penyatuan lintas app
+
+### 5.1 Kelola Akun gabungan
+
+`UnifiedUserAdmin.tsx` melebur dua panel terpisah (`renderOwnerUsers` Dashboard
+dan `UserAdminPanel` Ops) jadi satu tabel dengan **dua kolom persetujuan**:
+akses Dashboard dan akses Ops, masing-masing dengan role & status sendiri.
+
+Dua kolom, bukan satu, karena §5.1 sengaja mempertahankan dua namespace: Owner
+bisa memberi akses Ops tanpa akses Dashboard dan sebaliknya. Menyatukannya jadi
+satu taksonomi adalah keputusan kebijakan bisnis, di luar scope migrasi.
+
+Kedua endpoint yang sudah ada dipakai apa adanya lalu digabung di klien
+berdasarkan `username` — **tidak** dibuat endpoint gabungan baru, supaya
+masing-masing sisi tetap satu-satunya otoritas atas namespace-nya. Akses parsial
+(Owner hanya di satu sisi) ditangani: kolom sisi lain menampilkan keterangan,
+bukan error yang menutup halaman.
+
+### 5.2 Navigasi silang
+
+Tautan "Mini App Ops" di sidebar dashboard dan "Dashboard" di AppShell ops —
+keduanya **hanya muncul bila akun benar-benar punya akses sisi lain**
+(`hasOpsAccess` / `hasDashboardAccess` diturunkan dari `AuthState`), supaya
+tidak menawarkan pintu yang terkunci.
+
+### 5.3 CSP final (R7) & audit
+
+CSP dipindah dari `vercel.json` ke `next.config.mjs headers()`. Perubahan
+terhadap CSP lama, masing-masing karena sumber eksternalnya memang hilang:
+
+| Perubahan | Alasan |
+|---|---|
+| **Hapus** `cdn.jsdelivr.net` dari `script-src` | app.js lama memuat SDK Clerk & pustaka QR dari CDN; kini paket npm ter-bundle |
+| **Hapus** `fonts.googleapis.com` / `fonts.gstatic.com` | Inter self-hosted lewat `next/font` |
+| **Tambah** `'unsafe-inline' 'unsafe-eval'` **hanya di dev** | HMR Next; tidak dipakai di produksi |
+| **Tambah** `https://*.clerk.com` | instance produksi Clerk memakai domain itu. Bila `CLERK_FRONTEND_API_ORIGIN` di-set, origin spesifik dipakai — lebih sempit daripada wildcard |
+| **Tambah** `blob:` pada `img-src` | QR 2FA dirender sebagai blob |
+| **Tetap** `'unsafe-inline'` pada `style-src` | React menyuntik style inline (stat-card, chart); sama seperti CSP lama |
+
+`frame-ancestors 'none'` + `X-Frame-Options: DENY` dipertahankan.
+
+Diverifikasi: header benar-benar terkirim, dan halaman login tetap ter-render
+penuh (Clerk ter-mount, tombol OAuth muncul) **tanpa satu pun pelanggaran CSP**
+di konsol — inti kekhawatiran R7 (CSP terlalu ketat → halaman blank).
+
+Audit §9 Fase 5.3: `express`, `cookie-parser`, `jsonwebtoken`,
+`express-rate-limit`, `dotenv` **tidak ada** di `package.json` dan **nol
+rujukan** di kode. Seluruh 27 kunci `.env.local` terpakai (4 di antaranya dibaca
+implisit oleh `@clerk/nextjs`).
+
+### 5.4 Gerbang — LULUS
+
+Logika keputusan navigasi diangkat jadi fungsi murni di `lib/core/routing.ts`
+(`resolveLanding`, `guardDashboard`, `guardOps`) yang dipakai **langsung** oleh
+`app/page.tsx` dan kedua layout — jadi uji di bawah menguji kode produksi, bukan
+salinan logika.
+
+`npx tsx scripts/access-matrix-check.ts` — **7 kombinasi lulus**:
+
+| kombinasi | akar | (dashboard) | (ops) |
+|---|---|---|---|
+| belum login | `/login` | `/login` | `/login` |
+| pending kedua sisi | `/pending` | `/pending` | `/pending` |
+| dashboard-only | `/dashboard` | boleh | `/pending` |
+| ops-only | `/ops` | `/pending` | boleh |
+| keduanya | `/dashboard` | boleh | boleh |
+| 2FA belum step-up | `/2fa` | `/2fa` | `/2fa` |
+| disabled kedua sisi | `/pending` | `/pending` | `/pending` |
+
+Build produksi: **exit 0**. Golden test & uji kontrak dijalankan **ulang** atas
+kode terkini — keduanya masih lulus, jadi Fase 4–5 tidak menimbulkan regresi
+pada lapisan data maupun API.
+
+---
+
+## Fase 6 — Hardening, cutover & pembersihan
+
+### 6.1 Pembersihan repo (selesai)
+
+Seluruh artefak §1.3 terverifikasi **tidak ada**: `graphify-out/`, 12 folder
+skill agen (`.cursor`, `.codex`, `.windsurf`, `.roo`, dst.), `desain.html`,
+`api/index.js`, `vercel.json`, `railway.json`, `render.yaml`, `Procfile`.
+`tsconfig.tsbuildinfo` dihapus (regenerasi otomatis, sudah gitignored).
+
+`apps-script/` dipindah ke `docs/apps-script/` sesuai §3 — referensi, bukan kode
+aplikasi; tidak ada rujukan kode ke sana.
+
+`README.md` ditulis ulang sebagai README **gabungan**: kedua sisi, setup
+Clerk/Turso/Sheets/Redis di satu tempat, daftar perintah verifikasi, peta
+struktur, dan catatan keamanan. Termasuk peringatan **repo wajib di drive NTFS**.
+
+### 6.2 Cutover — MENUNGGU USER
+
+Seluruh sisa Fase 6 adalah tindakan manusia (§11.4) dan dirinci di
+**`docs/CUTOVER.md`**: prasyarat, checklist UAT per role × halaman × tema,
+deploy preview, urutan cutover, pengumuman ke pengguna, dan rencana mundur.
+
+Poin yang wajib diumumkan sebelum cutover: **seluruh pengguna 2FA — Dashboard
+maupun Ops — akan diminta kode 6 digit sekali lagi.** Secret TOTP tidak berubah,
+jadi tidak perlu scan QR ulang.
+
+Rollback murah: migrasi ini tidak menyentuh data sama sekali (skema Turso,
+struktur Sheets, metadata Clerk tidak berubah), jadi cukup mengarahkan domain &
+webhook kembali ke sistem lama.
 
 ---
 

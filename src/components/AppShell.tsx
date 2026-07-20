@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
-import { ChevronLeft, House, LoaderCircle, LogOut, ShieldCheck, Users } from 'lucide-react';
+import { ChevronLeft, House, LoaderCircle, LogOut, ShieldCheck, Users, LayoutDashboard } from 'lucide-react';
 import { DIVISION_GROUPS, moduleIcon } from './module-icons';
 
 export interface NavModule {
@@ -21,11 +21,14 @@ interface Props {
   userName: string;
   roleLabel: string;
   isOwner: boolean;
+  /** true bila akun ini juga punya akses Dashboard — menampilkan tautan silang (§9 Fase 5.2). */
+  hasDashboardAccess?: boolean;
   modules: NavModule[];
   children: React.ReactNode;
 }
 
-export default function AppShell({ userName, roleLabel, isOwner, modules, children }: Props) {
+export default function AppShell({ userName, roleLabel, isOwner,
+  hasDashboardAccess, modules, children }: Props) {
   const pathname = usePathname();
   const { signOut } = useClerk();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -100,6 +103,18 @@ export default function AppShell({ userName, roleLabel, isOwner, modules, childr
                 <Users size={18} />
                 Kelola User
               </Link>
+            </div>
+          )}
+
+          {/* Navigasi silang (§9 Fase 5.2) — hanya bila akun ini punya akses
+              Dashboard, supaya tidak menawarkan pintu yang terkunci. */}
+          {hasDashboardAccess && (
+            <div>
+              <div className="side-group-label">Aplikasi Lain</div>
+              <a href="/dashboard" className="side-item">
+                <LayoutDashboard size={18} />
+                Dashboard
+              </a>
             </div>
           )}
         </nav>

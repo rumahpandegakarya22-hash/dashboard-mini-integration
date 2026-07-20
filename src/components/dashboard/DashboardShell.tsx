@@ -43,6 +43,8 @@ export interface DashboardShellProps {
   /** id view aktif — untuk menandai nav-link & breadcrumb. */
   view: string;
   crumb: string;
+  /** true bila akun ini juga punya akses Mini App Ops — menampilkan tautan silang. */
+  hasOpsAccess?: boolean;
   /** true bila view ini bergrup "dash" (menampilkan page-head). */
   isDash?: boolean;
   period: string;
@@ -57,6 +59,7 @@ export default function DashboardShell({
   tfaEnabled,
   view,
   crumb,
+  hasOpsAccess,
   isDash,
   period,
   from,
@@ -105,6 +108,20 @@ export default function DashboardShell({
           <div className="side-section__title">Pages</div>
           {pageItems.map(navItem)}
         </div>
+
+        {/* Navigasi silang (§9 Fase 5.2) — hanya muncul bila akun ini memang
+            punya akses sisi lain, supaya tidak menawarkan pintu yang terkunci. */}
+        {hasOpsAccess && (
+          <div className="side-section">
+            <div className="side-section__title">Aplikasi Lain</div>
+            <a className="nav-link" href="/ops">
+              <span className="caret">
+                <IconCaret />
+              </span>
+              Mini App Ops
+            </a>
+          </div>
+        )}
 
         <div className="side-user">
           <span className="avatar">{initials(userName || r.label)}</span>

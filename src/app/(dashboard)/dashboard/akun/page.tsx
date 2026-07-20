@@ -3,7 +3,7 @@ import { getAuthState } from '@/lib/core/auth';
 import { DEFAULT_PERIOD } from '@/config/dashboard-nav';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import TotpSettings from '@/components/TotpSettings';
-import DashboardUserAdmin from '@/components/dashboard/DashboardUserAdmin';
+import UnifiedUserAdmin from '@/components/dashboard/UnifiedUserAdmin';
 
 /**
  * Akun & Keamanan — PORT dari modal `openSecurityModal()` public/app.js
@@ -38,6 +38,7 @@ export default async function DashboardAkunPage({
       role={user.role}
       userName={user.name || user.username}
       tfaEnabled={s.totpEnrolled}
+      hasOpsAccess={!!s.user}
       view="akun"
       crumb="Akun & Keamanan"
       period={period}
@@ -58,7 +59,7 @@ export default async function DashboardAkunPage({
           <TotpSettings initialEnrolled={s.totpEnrolled} />
         </div>
 
-        {user.role === 'owner' && <DashboardUserAdmin />}
+        {user.role === 'owner' && <UnifiedUserAdmin />}
       </section>
     </DashboardShell>
   );

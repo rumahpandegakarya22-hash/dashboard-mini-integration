@@ -26,6 +26,7 @@ export default async function DashboardPage({
       role={user.role}
       userName={user.name || user.username}
       tfaEnabled={s.totpEnrolled}
+      hasOpsAccess={!!s.user}
       view="overview"
       crumb={page.crumb}
       isDash

@@ -1,30 +1,115 @@
-# Mini App Operasional Kost — Tiga Dara Putri UGM
+# Kost Tiga Dara — Dashboard & Mini App Operasional (terpadu)
 
-Aplikasi input operasional harian (PWA, mobile-first) di atas Google Spreadsheet.
-Referensi lengkap: `../PRD Mini App Operasional Kost v1.1.md`.
+Satu aplikasi Next.js 16 (App Router, TypeScript) yang melayani dua sisi:
 
-## Setup (sekali saja)
+| Prefix | Isi | Identitas visual |
+|---|---|---|
+| `/dashboard` | Dashboard analitik 5 role (owner, admin, marketing, operasional, sales) | dark "Liquid Glass", aksen mint, palet Owner crimson |
+| `/ops` | Mini App Operasional — input harian staf (PWA, mobile-first) | warm-cream / crimson, light-first |
+| `/login` `/sign-up` `/2fa` `/pending` | Layar auth bersama | mengikuti Ops |
 
-1. **Install:** `npm install` (butuh Node.js ≥ 18).
-2. **Google Cloud:** buat project → aktifkan Google Sheets API & Google Drive API → buat Service Account → download key JSON → salin `client_email` dan `private_key` ke `.env.local`.
-3. **Share akses:** share SEMUA spreadsheet (Log Sales, Log Input Transaksi, Generator Tagihan, Logbook Marketing/Feedback/Inspeksi, Log Laporan Inspeksi Perawatan Perbaikan) dan folder Drive upload ke email service account sebagai **Editor**. Database Penghuni cukup **Viewer** (app hanya membaca).
-4. **Spreadsheet baru:** buat 3 spreadsheet: `Audit Log Mini App` (sheet "Log"), `Log Pindah Kamar` (sheet "Log"), `Log Checkout` (sheet "Log") → isi ID-nya di `.env.local`. Header akan ditulis otomatis oleh app saat pertama dipakai (atau lihat PRD §6).
-5. **Upstash Redis:** buat database di upstash.com → salin REST URL & token ke `.env.local`.
-6. **Env:** `cp .env.example .env.local` lalu isi semua nilai.
-7. **Buat akun:** `node scripts/seed-user.mjs owner rahasia123 owner "Nama Owner"` (ulangi per staff).
-8. **Jalankan:** `npm run dev` → buka http://localhost:3000. Deploy: push ke GitHub → import di Vercel → set env vars yang sama.
+Keduanya berbagi satu instance Clerk, satu database Turso, dan satu secret TOTP —
+sehingga **satu login dan satu kali scan QR 2FA berlaku untuk keduanya**.
 
-## Catatan penting
+Hasil migrasi dari dua repo terpisah; log keputusan lengkap ada di
+[`docs/MIGRASI.md`](docs/MIGRASI.md) dan daftar penyimpangan di
+[`docs/PENYIMPANGAN.md`](docs/PENYIMPANGAN.md).
 
-- **Database Penghuni = read-only.** App tidak pernah menulis ke sana (sheet DATA berformula/IMPORTRANGE).
-- App menulis hanya ke kolom input; kolom formula di sheet tidak disentuh. Sebelum menulis, app memverifikasi header sheet (kontrak kolom) — jika struktur sheet diubah manual, penulisan ditolak.
-- Jurnal sewa dimuka tetap digenerate menu "Kost Tools" di spreadsheet (Apps Script eksisting); app hanya mengisi sheet "Input Sewa Dimuka".
-- Data cleansing pra-go-live: lihat PRD §13.
+---
+
+## Setup
+
+1. **Node.js ≥ 20** (Next 16). Repo ini **wajib berada di drive NTFS** — exFAT
+   tidak mendukung symlink/junction sehingga `next build` maupun `next dev`
+   gagal total di sana.
+2. `npm install`
+3. `cp .env.example .env.local` lalu isi. Kunci per subsistem dijelaskan di
+   dalam berkas contohnya.
+4. **Clerk:** buat app di clerk.com → salin API Keys. Aktifkan metode login yang
+   diinginkan (username/email + password, Google, Apple). Tambahkan webhook
+   `{DOMAIN}/api/webhooks/clerk` untuk event `user.created` → salin Signing
+   Secret. Tanpa webhook, akun baru tetap aman (default `pending`), hanya saja
+   statusnya tidak eksplisit.
+5. **Turso:** isi `TURSO_DATABASE_URL` & `TURSO_AUTH_TOKEN`.
+6. **Google:** buat Service Account, aktifkan Sheets & Drive API, share seluruh
+   spreadsheet dan folder Drive ke email service account (Editor; Database
+   Penghuni cukup Viewer).
+7. **Upstash Redis:** untuk lock, idempotensi, dan rate limit.
+8. `npm run dev` → http://localhost:3000
+
+Akun pertama: daftar lewat `/sign-up`, lalu jadikan Owner dengan
+`npx tsx scripts/bootstrap-owner.ts <username>`.
+
+---
+
+## Perintah
+
+| Perintah | Fungsi |
+|---|---|
+| `npm run dev` | server pengembangan |
+| `npm run build` | build produksi |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npx tsx scripts/golden-check.ts` | paritas data layer lama vs baru |
+| `npx tsx scripts/contract-check.ts` | paritas kontrak API per role |
+| `npx tsx scripts/access-matrix-check.ts` | matriks akses (dashboard/ops/keduanya/pending) |
+| `npx tsx scripts/css-coverage-check.ts` | kelas komponen vs CSS tema |
+| `npx tsx scripts/hydrate-check.ts` | cakupan hidrasi data dashboard |
+| `npx tsx scripts/recompute-turso.ts [--commit]` | hitung ulang kolom formula ke Turso |
+| `npx tsx scripts/dump-formulas.ts` | ekspor rumus asli spreadsheet (mengunci formula `[PENDING]`) |
+| `npx tsx scripts/seed-occupancy-history.ts [--commit]` | isi occupancy_history |
+
+---
 
 ## Struktur
 
-- `src/config/spreadsheets.ts` — ID semua spreadsheet.
-- `src/lib/` — auth (JWT+Redis), sheets/drive helper, validasi, audit, RBAC.
-- `src/lib/modules/` — registry & definisi 12 modul (form + handler).
-- `src/app/` — halaman (login, menu, form modul) & API routes.
-- `scripts/seed-user.mjs` — buat akun user.
+```
+src/
+├── proxy.ts              clerkMiddleware — gerbang sesi kasar
+├── config/               spreadsheets, akses & navigasi dashboard, palet, kolom
+├── styles/               globals + theme-ops + theme-dashboard (ter-scope [data-app])
+├── app/
+│   ├── (auth)/           login, sign-up, 2fa, pending
+│   ├── (dashboard)/      /dashboard/** — gating role dashboard
+│   ├── (ops)/            /ops/**       — gating role ops
+│   └── api/              health, webhooks, totp, dashboard/*, ops/*
+├── components/
+│   ├── ui/ charts/       primitif bersama (Table, Pagination, StatCard, chart SVG)
+│   ├── dashboard/        shell, overview per role, halaman data
+│   └── (akar)            komponen Ops (AppShell, DynamicForm, …)
+└── lib/
+    ├── core/             auth, roles, turso, google, sheets, redis, totp, audit
+    ├── dashboard/        compute, sheet-map, source, rls, views/
+    └── modules/          registry & handler modul Ops
+```
+
+Arah dependensi satu arah: `app/` → `components/` → `lib/dashboard` \| `lib/modules`
+→ `lib/core` → `config/`. `components/ui` & `components/charts` tidak boleh
+mengimpor dari `lib/`.
+
+---
+
+## Keamanan
+
+- **Auth** Clerk; server tidak pernah menyimpan atau melihat password.
+- **2FA TOTP kustom** (`speakeasy`) di atas sesi Clerk — MFA bawaan Clerk berbayar.
+  Secret di `privateMetadata`, cookie step-up `ktd_2fa` ditandatangani `jose`,
+  terikat `sessionId` sehingga tidak bisa dipakai ulang di sesi lain.
+- **Dua namespace otorisasi** di satu instance Clerk: `role`/`status` (Dashboard)
+  dan `miniappRole`/`miniappStatus` (Ops). Sengaja terpisah — akses satu sisi
+  tidak otomatis memberi akses sisi lain.
+- **RLS di server**: tab & kolom PII disaring per role, diterapkan **baik** di
+  Route Handler **maupun** di jalur render halaman.
+- **CSP & header keamanan** di `next.config.mjs`.
+- Rate limit lewat Upstash Redis.
+
+---
+
+## Catatan operasional
+
+- Database Penghuni bersifat **read-only** bagi app.
+- Sebelum menulis ke Sheets, app memverifikasi kontrak header; struktur sheet
+  yang diubah manual akan menolak penulisan.
+- Jurnal sewa dimuka tetap digenerate menu "Kost Tools" di spreadsheet
+  (Apps Script — lihat `docs/apps-script/`).
+- Empat formula bertanda `[PENDING]` di `lib/dashboard/compute.ts` belum
+  dikunci dari rumus asli spreadsheet; jalankan `scripts/dump-formulas.ts`.

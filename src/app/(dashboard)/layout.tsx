@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getAuthState } from '@/lib/core/auth';
+import { guardDashboard } from '@/lib/core/routing';
 
 /**
  * Layout route group Dashboard — gating namespace `role`/`status` (§5.2).
@@ -11,14 +12,13 @@ import { getAuthState } from '@/lib/core/auth';
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const s = await getAuthState();
-  if (!s.signedIn) redirect('/login');
-  if (s.needsTotp) redirect('/2fa');
-  if (!s.dashboardUser) redirect('/pending'); // pending / disabled / belum punya role dashboard
+  const gate = guardDashboard(s);
+  if (gate !== true) redirect(gate);
 
   // `data-role` di wrapper: styles.css lama memakai body[data-role="owner"]
   // untuk aksen palet Owner; selector itu dipetakan ke wrapper ini saat port.
   return (
-    <div data-app="dashboard" data-role={s.dashboardUser.role}>
+    <div data-app="dashboard" data-role={s.dashboardUser!.role}>
       {children}
     </div>
   );
