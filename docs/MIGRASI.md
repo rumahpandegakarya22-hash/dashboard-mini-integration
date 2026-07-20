@@ -21,7 +21,7 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 | 1 | Fondasi struktur | ⚠️ Gerbang otomatis lulus; user mengizinkan lanjut, **UAT alur belum dijalankan** |
 | 2 | Port data layer Dashboard | ✅ Gerbang lulus — golden test diff kosong (lihat `golden-report.md`) |
 | 3 | Port API & auth terpadu | ✅ Gerbang lulus — uji kontrak identik utk 5 role |
-| 4 | Port UI Dashboard | 🔄 **Berjalan** — langkah 1–3 dari 6 selesai; lihat 4.x |
+| 4 | Port UI Dashboard | 🔄 **Berjalan** — langkah 1–3 selesai; langkah 4 baru lapisan datanya; lihat 4.x |
 | 5 | Penyatuan lintas app | ⬜ Belum |
 | 6 | Hardening, cutover & pembersihan | ⬜ Belum |
 
