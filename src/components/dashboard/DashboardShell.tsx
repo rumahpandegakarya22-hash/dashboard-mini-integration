@@ -143,66 +143,78 @@ export default function DashboardShell({
         </div>
       </aside>
 
-      <header className="topbar">
-        <button className="topbar__icon menu-toggle" id="menuToggle" aria-label="Menu" onClick={() => setNavOpen((o) => !o)}>
-          <IconMenu />
-        </button>
-        <button
-          className="topbar__icon"
-          id="sidebarToggle"
-          aria-label="Sembunyikan sidebar"
-          title="Sembunyikan/Tampilkan sidebar"
-          onClick={() => setSidebarHidden((h) => !h)}
-        >
-          <IconSidebar />
-        </button>
-
-        <nav className="crumbs">
-          <span>Dashboards</span>
-          <span className="sep">/</span>
-          <span className="cur">{crumb}</span>
-        </nav>
-
-        <div className="topbar__right">
-          <label className="search">
-            <span>
-              <IconSearch />
-            </span>
-            <input type="text" id="globalSearch" placeholder="Search" />
-            <kbd>⌘ /</kbd>
-          </label>
-          <ThemeToggle />
+      {/*
+        BUG DITEMUKAN & DIPERBAIKI (lihat docs/PENYIMPANGAN.md G10): wrapper
+        `.main` ini sempat hilang dari port awal. Tanpa dia, `.topbar` &
+        `.content` jadi grid-item LANGSUNG milik `.app` (bukan anak `.main`),
+        dan grid 2-kolom `.app` (lihat theme-dashboard.css) menaruhnya lewat
+        auto-placement row-major: topbar di row1-col2, content di
+        row2-COL1 — persis di bawah sidebar, nyempil ke lebar kolom sidebar.
+        Verbatim struktur `render()` app.js: sidebar, lalu `.main` (berisi
+        topbar+content), lalu scrim — tiga anak `.app`, bukan empat/lima.
+      */}
+      <div className="main">
+        <header className="topbar">
+          <button className="topbar__icon menu-toggle" id="menuToggle" aria-label="Menu" onClick={() => setNavOpen((o) => !o)}>
+            <IconMenu />
+          </button>
           <button
             className="topbar__icon"
-            id="refreshBtn"
-            aria-label="Refresh"
-            title="Muat ulang data"
-            onClick={() => window.location.reload()}
+            id="sidebarToggle"
+            aria-label="Sembunyikan sidebar"
+            title="Sembunyikan/Tampilkan sidebar"
+            onClick={() => setSidebarHidden((h) => !h)}
           >
-            <IconRefresh />
+            <IconSidebar />
           </button>
-          <button className="topbar__icon topbar__bell" aria-label="Notifikasi" title="Notifikasi">
-            <IconBell />
-          </button>
-          <button className="topbar__icon" id="fullscreenBtn" aria-label="Layar penuh" title="Layar penuh">
-            <IconExpand />
-          </button>
-        </div>
-      </header>
 
-      <main className="content">
-        {isDash && (
-          <div className="page-head">
-            <div className="seg">
-              <button className="is-active">Overview</button>
-            </div>
-            <button className="seg-pill">
-              {period} <IconCaret />
+          <nav className="crumbs">
+            <span>Dashboards</span>
+            <span className="sep">/</span>
+            <span className="cur">{crumb}</span>
+          </nav>
+
+          <div className="topbar__right">
+            <label className="search">
+              <span>
+                <IconSearch />
+              </span>
+              <input type="text" id="globalSearch" placeholder="Search" />
+              <kbd>⌘ /</kbd>
+            </label>
+            <ThemeToggle />
+            <button
+              className="topbar__icon"
+              id="refreshBtn"
+              aria-label="Refresh"
+              title="Muat ulang data"
+              onClick={() => window.location.reload()}
+            >
+              <IconRefresh />
+            </button>
+            <button className="topbar__icon topbar__bell" aria-label="Notifikasi" title="Notifikasi">
+              <IconBell />
+            </button>
+            <button className="topbar__icon" id="fullscreenBtn" aria-label="Layar penuh" title="Layar penuh">
+              <IconExpand />
             </button>
           </div>
-        )}
-        {children}
-      </main>
+        </header>
+
+        <main className="content">
+          {isDash && (
+            <div className="page-head">
+              <div className="seg">
+                <button className="is-active">Overview</button>
+              </div>
+              <button className="seg-pill">
+                {period} <IconCaret />
+              </button>
+            </div>
+          )}
+          {children}
+        </main>
+      </div>
 
       {/* scrim drawer mobile — verbatim dari app.js */}
       <div id="scrim" className="scrim" onClick={() => setNavOpen(false)} />

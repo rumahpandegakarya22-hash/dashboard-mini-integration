@@ -109,6 +109,13 @@ uji otomatis tidak cukup.
 | G7 | **Hydration mismatch** dari skrip anti-kedip tema — menimpa setiap pengguna yang punya preferensi tersimpan | Uji render di browser |
 | G8 | Peringatan React soal tag `<script>` dalam komponen | idem |
 | G9 | **CSP produksi membuat SELURUH halaman blank** — `script-src` tanpa `'unsafe-inline'`/nonce memblokir 10 inline script hydration Next (`script-src-elem`). Dev lolos karena di sana `'unsafe-inline'` diizinkan untuk HMR, jadi bug hanya muncul di produksi | Uji `next start` mode produksi |
+| G10 | **Wrapper `.main` hilang dari `DashboardShell.tsx`** — `render()` app.js membungkus `.topbar`+`.content` dalam `<div class="main">` sebagai SATU grid-item; port awal saya menaruh keduanya sebagai sibling langsung `.sidebar`. Grid 2-kolom `.app` (auto-placement row-major, tanpa `grid-template-areas`) lalu menaruh `.content` di row2-kolom1 — persis di bawah sidebar, nyempil ke lebar 212px. **Ditemukan lewat UAT produksi user**, bukan lewat pengujian saya sendiri — celah nyata dalam verifikasi Fase 4: saya cek nama KELAS CSS (`css-coverage-check.ts`) tapi tidak pernah cek STRUKTUR NESTING terhadap `render()` asli | Dibandingkan ulang ke `app.js:1278-1288`; CSS `.main` (`display:flex;flex-direction:column`) ternyata SUDAH ter-port sempurna sejak awal — murni bug JSX, bukan CSS |
+
+G10 mengungkap batas nyata `scripts/css-coverage-check.ts`: alat itu memverifikasi
+setiap KELAS dipakai ada di CSS, tapi tidak memverifikasi STRUKTUR NESTING —
+elemen bisa punya kelas yang benar tapi di POSISI DOM yang salah, dan itu lolos
+semua uji otomatis (typecheck, build, cakupan kelas) karena ketiganya tidak
+memeriksa tata letak. Hanya lewat render sungguhan (browser) hal ini kelihatan.
 
 G9 adalah yang paling berbahaya: `npm run build` **exit 0**, dev server normal,
 seluruh gerbang otomatis hijau — tetapi aplikasi produksi tidak menampilkan apa
