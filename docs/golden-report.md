@@ -118,3 +118,50 @@ kebenarannya — hanya membuktikan lama & baru berperilaku sama.
 
 Untuk mengunci: jalankan `npx tsx scripts/dump-formulas.ts` (butuh akses service
 account ke spreadsheet sumber) lalu terjemahkan rumus aslinya ke `FORMULA_CONFIG`.
+
+---
+
+## Addendum 20 Juli 2026 — formula ROI Kotor dikunci dari dump spreadsheet
+
+Setelah cutover, `docs/formulas-dump.json` dibaca lewat `scripts/dump-formulas.ts`
+(diperbaiki: cap 6-baris yang sebelumnya memotong sheet `1_PARAMETER` sebelum
+baris yang dirujuk formula lain — sheet config/parameter kini diambil penuh).
+
+**Terkunci & diimplementasikan** — `roi_kotor` (tabel `promotion`), formula:
+`=IF(G="";"";IF(G=0;"";(J*'1_PARAMETER'!$B$3-G)/G)` — G=spend_aktual,
+J=booking_dr_promo, $B$3=Tarif Eco (850000, SAMA dgn `priceByTipe` yang sudah
+ada). Ditambahkan ke `FORMULA_COLUMNS.promotion` agar ikut ditulis balik oleh
+`recompute-turso.ts`.
+
+**Golden test dijalankan ulang current-vs-current** (snapshot lama diregenerasi
+terhadap Turso LIVE SEKARANG, bukan snapshot basi Fase 2 — supaya adil,
+mengisolasi murni beda kode dari drift data akibat pemakaian nyata pasca-cutover).
+Hasil: **hanya 3 sel berbeda, semuanya di `promotion.roi_kotor`**, nol dampak ke
+15 tabel lain.
+
+| Baris | roi_kotor lama (beku) | roi_kotor baru (hitung ulang) |
+|---|---|---|
+| Promo Tahun Baru | 43.125 | 4.31 |
+| Valentine Special | null | "" |
+| Promo Ramadan | null | "" |
+
+Nilai lama = beku dari ekspor CSV migrasi awal, dihitung dari `spend_aktual`/
+`booking_dr_promo` PADA SAAT ITU. Kedua kolom itu sudah berubah sejak
+(pemakaian Ops pasca-cutover), sehingga nilai beku tidak lagi cocok dengan data
+sekarang — inilah PERSIS alasan `compute.ts` menghitung ulang saat baca, sama
+seperti seluruh kolom formula lain yang sudah tervalidasi sejak Fase 2 (bukan
+kategori risiko baru).
+
+**Tetap PENDING (dump TIDAK bisa menjawab)**:
+- `slaTargetHari` — dump membuktikan bentuk tebakan (per-prioritas) SALAH;
+  rumus asli pakai SATU angka target flat (`'1_PARAMETER'!$B$9`). Tapi nilai
+  $B$9 sendiri tidak ikut tertangkap sebelum perbaikan cap baris — perlu
+  `dump-formulas.ts` dijalankan ULANG untuk menangkapnya. Tidak diubah tanpa
+  angka asli (mengganti satu tebakan dgn tebakan lain bukan perbaikan).
+- `jurnalKategoriDari` — dump membuktikan kolom "Kategori" di sheet Transaksi
+  TIDAK PUNYA FORMULA (isian manual). Tidak ada jawaban di spreadsheet sama
+  sekali, bukan sekadar belum sempat dicek.
+
+**Terkonfirmasi (naik status VERIFIED)**: `durasiMinimalSatuHari` — formula
+Preventif (`=IF(C2="";"";IF(C2=B2;1;C2-B2))`) matematis setara dgn `MAX(1,d)`
+yang sudah dipakai; tidak ada perubahan nilai.

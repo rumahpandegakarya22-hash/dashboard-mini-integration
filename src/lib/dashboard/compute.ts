@@ -76,21 +76,50 @@ export const FORMULA_CONFIG = {
     Pendapatan: 'Kredit'
   } as Record<string, string | undefined>,
 
-  /* [PENDING] Target SLA hari per prioritas (maintenance korektif/CM).
-     KONFIRMASI dari formula kolom SLA di sheet maintenance.
-     Catatan port: kunci `pending` sengaja dipertahankan di objek yang sama
-     dengan kunci prioritas — persis seperti sumber. */
+  /* [PENDING — MASIH, lihat docs/formulas-dump.json 20 Juli 2026] Target SLA
+     hari per prioritas (maintenance korektif/CM).
+
+     Dump formula spreadsheet MEMBUKTIKAN bentuk tebakan ini SALAH: rumus SLA
+     asli (baik Preventif maupun Korektif) TIDAK bercabang per prioritas sama
+     sekali — keduanya membandingkan durasi ke SATU angka target tunggal
+     ('1_PARAMETER'!$B$9):
+       Korektif : =IF(A2:A="";"";IF(Q2:Q<='1_PARAMETER'!$B$9;"OK";"BREACH"))
+       Preventif: =IF(B2:B="";"";IF(A2:A="Perbaikan";
+                    IF(P2:P<='1_PARAMETER'!$B$9;"OK";"BREACH");"-"))
+
+     TAPI nilai asli $B$9 tidak ikut tertangkap dump — sheet 1_PARAMETER
+     ternyata >6 baris sedangkan dump-formulas.ts lama memotong di baris ke-6
+     (sudah diperbaiki di skrip, lihat commit; perlu di-jalankan ULANG untuk
+     menangkap baris 7 & 9 yang sebenarnya).
+
+     Sesuai §11.2.1 "jangan menebak perbaikan formula PENDING": bentuk
+     per-prioritas TIDAK diubah jadi flat tanpa angka asli — mengganti satu
+     tebakan dengan tebakan lain (angka flat yang mana? 2, 3, atau 5?) bukan
+     perbaikan, cuma tebakan berbeda. Jalankan ulang dump-formulas.ts lalu baca
+     '1_PARAMETER'!$B$9 sebelum mengubah SHAPE ini. */
   slaTargetHari: { pending: true, Tinggi: 2, Sedang: 3, Rendah: 5 } as Record<string, any>,
 
-  /* [PENDING] Aturan durasi perbaikan (hari): MAX(1, selesai-lapor).
-     Konfirmasi dari sheet (bisa jadi NETWORKDAYS). */
+  /* [VERIFIED — dump formulas 20 Juli 2026] Aturan durasi perbaikan (hari).
+     Formula asli (Preventif, kolom "Durasi Perbaikan (Hari)"):
+       =IF(C2="";"";IF(C2=B2;1;C2-B2))
+     yaitu: sama hari → 1; beda hari → selisih apa adanya (TANPA floor eksplisit
+     tambahan). Ini SETARA dengan MAX(1, selisih) untuk semua data valid: kedua
+     tanggal berasal dari parseDate() yang membulatkan ke hari kalender, jadi
+     "C2=B2" (sama persis) HANYA terjadi saat selisih=0 — dan itu satu-satunya
+     kasus yang ditangani cabang "=1"; cabang lain (tanggal beda) matematis tak
+     mungkin menghasilkan 0. MAX(1,d) dipertahankan apa adanya, tidak diubah. */
   durasiMinimalSatuHari: true,
 
-  /* [PENDING] ROI promosi — bergantung kolom omzet yg tak ikut migrasi.
-     Tidak ditebak di sini. Isi rumusnya setelah dump-formulas. */
-  roi: { pending: true },
+  /* [PENDING] Sumber kategori arus kas jurnal: "kredit" atau "debit".
 
-  /* [PENDING] Sumber kategori arus kas jurnal: "kredit" atau "debit". */
+     Dump formula MEMBUKTIKAN ini benar-benar tidak bisa dikunci dari
+     spreadsheet: kolom "Kategori" di tab 3_KEUANGAN TIDAK PUNYA FORMULA sama
+     sekali (formulaByCol tidak menyebutkannya) — nilainya diisi MANUAL oleh
+     user per transaksi. Tidak ada rumus sumber yang menentukan "ambil dari
+     akun debit atau kredit" karena spreadsheet tidak pernah menurunkannya
+     secara algoritmik. Ini keputusan desain dashboard (bukan port dari
+     spreadsheet), jadi tebakan 'kredit' TETAP dipertahankan — bukan lagi
+     "belum sempat dicek", tapi "memang tidak ada jawaban di sumber". */
   jurnalKategoriDari: 'kredit'
 };
 
@@ -168,6 +197,19 @@ function computePromotion(r: DbRow): DbRow {
   const leads = num(r.leads_aktual);
   o.cpl = leads > 0 ? Math.round(num(r.spend_aktual) / leads) : 0;
   o.conv_lead_booking = leads > 0 ? round2(num(r.booking_dr_promo) / leads) : 0;
+
+  // [VERIFIED — dump formulas 20 Juli 2026] roi_kotor, kolom "ROI Kotor":
+  //   =IF(G2:G="";"";IF(G2:G=0;"";(J2:J*'1_PARAMETER'!$B$3-G2:G)/G2:G))
+  // G=spend_aktual, J=booking_dr_promo, $B$3="Tarif sewa Eco/bln" — angka yang
+  // SAMA dengan priceByTipe['Eco (Non AC)'].bulan di atas (dikonfirmasi dump,
+  // bukan kebetulan). Spreadsheet mengembalikan STRING KOSONG (bukan 0) saat
+  // spend blank/nol — dipertahankan apa adanya, beda dgn cpl/conv_lead_booking
+  // yang fallback ke 0. Tidak dikali 100 di sini (raw ratio); pemformatan %
+  // adalah urusan tampilan, bukan compute.
+  const spend = num(r.spend_aktual);
+  const hargaEco = FORMULA_CONFIG.priceByTipe['Eco (Non AC)']!.bulan;
+  o.roi_kotor = spend === 0 ? '' : round2((num(r.booking_dr_promo) * hargaEco - spend) / spend);
+
   return o;
 }
 
@@ -259,7 +301,7 @@ export const FORMULA_COLUMNS: Record<string, string[]> = {
   kamar: ['harga_bulan', 'harga_3bulan', 'harga_6bulan', 'harga_9bulan', 'harga_tahun'],
   booking: ['tgl_keluar_est'],
   content: ['engagement', 'er_persen'],
-  promotion: ['cpl', 'conv_lead_booking'],
+  promotion: ['cpl', 'conv_lead_booking', 'roi_kotor'],
   maintenance_cm: ['kode', 'durasi_perbaikan_hari', 'sla'],
   maintenance_pm: ['kode', 'durasi_perbaikan_hari', 'sla'],
   coa: ['saldo_normal'],

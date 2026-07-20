@@ -81,7 +81,13 @@ async function main() {
         }
       }
     });
-    dump[titles[i]] = { headers, formulaByCol, rawFormulas: rows.slice(0, 6) };
+    // BUG DITEMUKAN & DIPERBAIKI 20 Juli 2026: cap keras 6 baris memotong sheet
+    // config pendek (1_PARAMETER) sebelum baris yang justru dirujuk formula lain
+    // (mis. $B$7, $B$9) — nilainya jadi tidak pernah tertangkap dump. Sheet
+    // config/parameter (biasanya <30 baris) diambil PENUH; sheet data besar
+    // tetap dibatasi 6 baris supaya dump tidak membengkak tanpa guna.
+    const isConfigSheet = /PARAMETER|DAFTAR_AKUN/i.test(titles[i]);
+    dump[titles[i]] = { headers, formulaByCol, rawFormulas: isConfigSheet ? rows : rows.slice(0, 6) };
   });
 
   const outDir = path.join(process.cwd(), 'docs');
