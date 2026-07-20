@@ -153,7 +153,12 @@ export default function DashboardShell({
         Verbatim struktur `render()` app.js: sidebar, lalu `.main` (berisi
         topbar+content), lalu scrim — tiga anak `.app`, bukan empat/lima.
       */}
-      <div className="main">
+      <div className="main"
+        style={{
+            border: "5 px solid red",
+            background: "yellow"
+        }}
+        >
         <header className="topbar">
           <button className="topbar__icon menu-toggle" id="menuToggle" aria-label="Menu" onClick={() => setNavOpen((o) => !o)}>
             <IconMenu />
