@@ -21,7 +21,7 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 | 1 | Fondasi struktur | ⚠️ Gerbang otomatis lulus; user mengizinkan lanjut, **UAT alur belum dijalankan** |
 | 2 | Port data layer Dashboard | ✅ Gerbang lulus — golden test diff kosong (lihat `golden-report.md`) |
 | 3 | Port API & auth terpadu | ✅ Gerbang lulus — uji kontrak identik utk 5 role |
-| 4 | Port UI Dashboard | 🔄 **Berjalan** — langkah 1–3 selesai; langkah 4 tersisa halaman akun; lihat 4.x |
+| 4 | Port UI Dashboard | ⚠️ Langkah 1–5 selesai; **gerbang §9 Fase 4.6 menunggu UAT visual user** |
 | 5 | Penyatuan lintas app | ⬜ Belum |
 | 6 | Hardening, cutover & pembersihan | ⬜ Belum |
 
@@ -470,9 +470,9 @@ Fase terbesar (§9: 3–5 hari). Dikerjakan berlapis dari fondasi ke atas.
 | 1. `theme-dashboard.css` + pemetaan tema light ke `data-theme` | ✅ Selesai & terverifikasi |
 | 2. `ui/Table`+`Pagination`, `charts/*`, `StatCard`, `Badge`, `ThemeToggle` | ✅ Selesai & terverifikasi |
 | 3. `DashboardShell` (sidebar/topbar/period filter) | ✅ Selesai |
-| 4. Halaman per role (5 overview → `[view]` → `akun`) | 🔄 5 overview + halaman data selesai; halaman akun belum |
-| 5. Layar `(auth)` final | ⬜ Belum |
-| 6. Gerbang: checklist visual berdampingan | ⬜ Belum |
+| 4. Halaman per role (5 overview → `[view]` → `akun`) | ✅ Selesai |
+| 5. Layar `(auth)` final | ✅ Selesai |
+| 6. Gerbang: checklist visual berdampingan | ⚠️ Bagian otomatis lulus; **UAT visual user belum** |
 
 ### 4.1 Port `styles.css` → `theme-dashboard.css`
 
@@ -835,6 +835,82 @@ data pembayaran? Bila ya, tambahkan pola pada `SHEET_ACCESS.admin` di
 
 Catatan kecil: DB Inventory berisi 22 bahan tetapi **0 transaksi** — tabel
 "Mutasi Stok Terakhir" akan tampil kosong. Kondisi data, bukan bug.
+
+### 4.11 Halaman Akun & Keamanan (langkah 4, penutup)
+
+`/dashboard/akun` — port dari modal `openSecurityModal()` (`renderTfa` +
+`renderOwnerUsers`), ditambah `DashboardUserAdmin.tsx` yang memanggil endpoint
+Fase 3 (`/api/dashboard/users{,/approve,/disable}`).
+
+Penyimpangan:
+
+- **Modal → halaman ber-URL.** Di app.js ini modal dari ikon gembok; kini
+  `/dashboard/akun` supaya bisa di-bookmark, di-back, dan di-deep-link.
+- **`renderPassword()` TIDAK di-port.** Ganti password di app.js memanggil
+  `clerk.user.updatePassword()` sendiri. Di app terpadu, seluruh pengelolaan
+  password (ganti & lupa) ditangani komponen Clerk di layar auth — satu jalur,
+  bukan dua yang harus dijaga sinkron.
+- `TotpSettings` dipakai bersama sisi Ops: secret TOTP memang satu untuk kedua
+  app (§5.2), jadi mengaktifkan 2FA di sini berlaku juga di `/ops`.
+
+### 4.12 Layar auth final (langkah 5)
+
+Layar auth sudah memakai komponen Clerk (`<SignIn>`/`<SignUp>`) warisan Mini App,
+yang mencakup seluruh tuntutan §9 Fase 4.5. Terverifikasi ter-render di `/login`:
+**password**, **Google**, **Apple**, tautan **daftar**.
+
+**Belum terverifikasi:** tautan *lupa password* — Clerk menampilkannya pada
+langkah entri password, yang tidak dapat dicapai tanpa username asli. Fitur ini
+bawaan `<SignIn>` dan diatur di Clerk Dashboard, tetapi saya **tidak
+mengklaimnya berfungsi** tanpa melihat sendiri. Masuk daftar UAT.
+
+**KEPUTUSAN VISUAL yang perlu disadari:** layar auth memakai identitas **Ops**
+(warm-cream), bukan dark-glass Dashboard. Alasannya: §2.1 menetapkan layar auth
+disatukan sehingga hanya satu identitas bisa menang, dan §9 Fase 4.5 menetapkan
+basisnya "Mini App". Merancang tema auth ketiga = mengarang nilai visual baru,
+yang dilarang R8.
+
+→ **Konsekuensi untuk pengguna Dashboard: layar login mereka berubah** dari gelap
+menjadi terang. Kelas login lama (`.login-card`, `.login-role`, `.login-btn`)
+kini tidak terpakai. Ini perubahan tampilan yang disengaja — bila Owner ingin
+sebaliknya, keputusan itu harus diambil sadar sebelum cutover.
+
+### 4.13 Gerbang Fase 4 — bagian otomatis LULUS, UAT visual BELUM
+
+§9 Fase 4.6 menuntut checklist visual berdampingan (lama vs baru) per
+role × halaman × tema, plus uji fungsi interaktif. **Gerbang ini belum lulus** —
+sebagian besar isinya hanya bisa dikerjakan user.
+
+Yang **sudah** terbukti otomatis:
+
+| Uji | Hasil |
+|---|---|
+| `npm run typecheck` | exit 0 |
+| `npm run build` | exit 0 — 38 route |
+| Routing & gating tanpa sesi | `/`, `/dashboard`, `/dashboard/*`, `/ops`, `/pending` → `/login`; `/login`, `/sign-up`, `/api/health` → 200 |
+| Cakupan view | 35 kombinasi role × view semuanya punya isi |
+| RLS di jalur halaman | keuangan hanya sampai owner & admin |
+| Error konsol di layar publik | tidak ada |
+| Error server (dev log) | tidak ada |
+| **Cakupan kelas CSS** | 112 dari 116 kelas ada di `theme-dashboard.css` |
+
+Empat kelas yang "tidak ditemukan" (`sec-approve`, `sec-disable`, `sort-ind`,
+`spark`) ditelusuri: keempatnya juga **0 aturan di `styles.css` lama** — memang
+kelas tanpa gaya (hook event / penanda diisi teks). Port setia.
+
+Uji cakupan CSS ini sengaja dibuat (`scripts/css-coverage-check.ts`) karena dua
+kali selama Fase 4 saya mengarang nama kelas yang tidak ada di CSS
+(`.toolbar`/`.tbl-search`, lalu `.sidebar-hidden`) — kesalahan yang **tidak**
+tertangkap typecheck maupun build, hanya membuat elemen tampil tanpa gaya.
+
+Yang **BELUM** dan hanya bisa user:
+
+1. Perbandingan visual berdampingan lama vs baru, per role × halaman × tema.
+2. Uji interaktif di halaman dashboard: filter periode, paginasi, sort, tooltip
+   chart, approve akun — semuanya butuh sesi login yang tidak saya miliki.
+3. "Buat dokumen Drive" — **tetap mustahil** sampai `DRIVE_FOLDER_ROLE_*` diisi
+   (temuan Fase 3: fitur ini sudah mati sebelum migrasi).
+4. Verifikasi tautan lupa password (lihat 4.12).
 
 ---
 
