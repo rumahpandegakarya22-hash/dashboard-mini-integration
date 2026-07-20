@@ -1,0 +1,73 @@
+/* PORT VERBATIM dari `donut()` public/app.js (Fase 4).
+   Kaidah viz dipertahankan: butt-cap (tanpa cap bulat yang mendistorsi
+   proporsi) + celah keliling konstan 2px, bukan celah per-segmen. */
+
+export interface DonutSegment {
+  label?: string;
+  value: number;
+  color: string;
+  /** Nilai tampilan pengganti `value` di tooltip (mis. sudah diformat rupiah). */
+  disp?: string | number;
+}
+
+export interface DonutProps {
+  segments: DonutSegment[];
+  center?: { label: string; value: string | number };
+}
+
+export default function Donut({ segments, center }: DonutProps) {
+  const size = 160;
+  const r = 60;
+  const cx = size / 2;
+  const cy = size / 2;
+  const sw = 22;
+  const C = 2 * Math.PI * r;
+
+  const segs = (segments || []).filter((s) => Number(s.value) > 0);
+  const total = segs.reduce((s, x) => s + Number(x.value), 0) || 1;
+  const gap = segs.length > 1 ? 2 : 0;
+
+  let offset = 0;
+  const rings = segs.map((s, i) => {
+    const frac = Number(s.value) / total;
+    const len = frac * C;
+    const pct = Math.round(frac * 100);
+    const draw = Math.max(0.5, len - gap);
+    const node = (
+      <circle
+        key={i}
+        className="donut__seg"
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill="none"
+        stroke={s.color}
+        strokeWidth={sw}
+        strokeLinecap="butt"
+        strokeDasharray={`${draw} ${C - draw}`}
+        strokeDashoffset={-offset}
+        transform={`rotate(-90 ${cx} ${cy})`}
+        data-tip-label={s.label || ''}
+        data-tip-value={`${s.disp != null ? s.disp : s.value} · ${pct}%`}
+        data-tip-color={s.color}
+      />
+    );
+    offset += len;
+    return node;
+  });
+
+  return (
+    <div className="donut__chart">
+      <svg viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--rail)" strokeWidth={sw} opacity=".3" />
+        {rings}
+      </svg>
+      {center && (
+        <div className="donut__center">
+          <small>{center.label}</small>
+          <b>{center.value}</b>
+        </div>
+      )}
+    </div>
+  );
+}

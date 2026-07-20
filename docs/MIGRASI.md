@@ -468,7 +468,7 @@ Fase terbesar (§9: 3–5 hari). Dikerjakan berlapis dari fondasi ke atas.
 | Langkah §9 Fase 4 | Status |
 |---|---|
 | 1. `theme-dashboard.css` + pemetaan tema light ke `data-theme` | ✅ Selesai & terverifikasi |
-| 2. `ui/Table`+`Pagination`, `charts/*`, `StatCard`, `Badge`, `ThemeToggle` | ⬜ Belum |
+| 2. `ui/Table`+`Pagination`, `charts/*`, `StatCard`, `Badge`, `ThemeToggle` | ✅ Selesai & terverifikasi |
 | 3. `DashboardShell` (sidebar/topbar/period filter) | ⬜ Belum |
 | 4. Halaman per role (5 overview → `[view]` → `akun`) | ⬜ Belum |
 | 5. Layar `(auth)` final | ⬜ Belum |
@@ -538,6 +538,85 @@ satu titik gagal eksternal. Karena `next/font` menghasilkan nama family
 ter-generate, literal `"Inter"` di `--font` dijembatani lewat
 `styles/dashboard-font.css` dengan rantai fallback yang sama persis.
 Berkas terpisah karena `theme-dashboard.css` dihasilkan ulang oleh skrip port.
+
+### 4.4 Komponen bersama (langkah 2)
+
+Semua di-port 1:1 dari `app.js`, mempertahankan **geometri SVG, nama kelas, dan
+struktur markup** agar CSS hasil port berlaku tanpa perubahan.
+
+| Sumber `app.js` | Target |
+|---|---|
+| `sparkline()` | `components/charts/Sparkline.tsx` |
+| `donut()` | `components/charts/Donut.tsx` |
+| `barChart()` | `components/charts/Bars.tsx` |
+| `lineChart()` | `components/charts/AreaLine.tsx` |
+| `funnel()` | `components/charts/Funnel.tsx` |
+| `chartCard()` / `chartLegend()` / `emptyChart()` / `emptyCard()` | `components/charts/ChartCard.tsx` |
+| `setupChartTooltip()` | `components/charts/ChartTooltip.tsx` |
+| `table()` + `wireTable()` | `components/ui/Table.tsx` |
+| `repage()` | `components/ui/Pagination.tsx` |
+| `statCard()` / `statGrid()` / `glassify()` | `components/ui/StatCard.tsx` |
+| `<span class="status">` yang tersebar | `components/ui/Badge.tsx` |
+| toggle `#themeToggle` | `components/ui/ThemeToggle.tsx` |
+| util format & tanggal (`fmtNum`, `parseDate`, `periodRange`, dst) | `lib/dashboard/format.ts` |
+
+Perbedaan implementasi yang disengaja:
+
+- **`esc()` tidak ikut di-port.** React meng-escape teks otomatis; mempertahankan
+  `esc()` justru menghasilkan entitas ganda (`&amp;lt;`). `safeUrl()` TETAP
+  dipertahankan karena React tidak memblokir skema `javascript:` pada `href`.
+- **Tabel & paginasi jadi state React.** Versi lama menyaring/mengurutkan dengan
+  memindahkan node `<tr>` dan menyetel `display:none`; kini turunan state dan
+  hanya baris halaman aktif yang dirender. Perilaku yang tampak dipertahankan:
+  sort `localeCompare('id',{numeric:true})`, jendela maks 5 nomor halaman,
+  pilihan 10/20/30, teks "<n> data", empty-state yang menyebut periode.
+- **Tooltip tidak lagi memakai `innerHTML`.** Isi callout masuk sebagai teks
+  React, menutup jalur injeksi bila suatu saat ada label dari data pengguna.
+  Kelas & tampilan (`.chart-tip`, `.chart-tip__dot`, `.chart-tip__lab`) sama.
+- **`periodRange()`/`filterByPeriod()` menerima periode sebagai argumen**, tidak
+  lagi membaca state global `cur` (§2.3: period/from/to jadi searchParams).
+
+Kesalahan yang sempat terjadi & diperbaiki: toolbar tabel awalnya saya tulis
+dengan nama kelas karangan sendiri (`.toolbar`, `.tbl-search`) yang **tidak ada
+di CSS** — diganti mengikuti markup `toolbar()` asli (`.table-toolbar`,
+`.tool-btn`, `<label class="search">`). Tanpa perbaikan ini toolbar tampil polos.
+
+### 4.5 Verifikasi visual & interaksi (langkah 2)
+
+Diuji lewat halaman pratinjau sementara yang **sudah dihapus lagi** setelah
+pengecekan (tidak ikut ter-commit; entri publik sementara di `proxy.ts` juga
+sudah dicabut).
+
+Render & CSS mengenai komponen:
+
+| Yang diukur | Hasil |
+|---|---|
+| Elemen ter-render | 4 stat card · 3 segmen donut · 5 batang · 15 titik line · 4 poligon funnel |
+| `.card` border-radius | `22px` (= `--r-card`) |
+| `.card` backdrop-filter | `blur(10px) saturate(1.85)` — kaca aktif |
+| Latar & teks wrapper | `#0b0c11` / `#ededee` |
+| Font | Inter (next/font) aktif |
+| Paginasi | 10 dari 23 baris tampil, pager "23 data", 7 tombol |
+
+Interaksi:
+
+- **Tooltip chart**: hover segmen donut → `"Eco (Non AC) 12 · 41%"`, mengikuti
+  kursor, hilang saat mouseout. Persentase dihitung benar.
+- **Toggle tema**: `#0b0c11` → `rgb(219,227,242)` → kembali gelap, tersimpan di
+  `localStorage['ktd-theme']`. Ini membuktikan pemetaan
+  `body.theme-light` → `:root[data-theme='light']` berfungsi.
+
+**Dua bug ditemukan lewat uji ini, keduanya sudah diperbaiki:**
+
+1. **Hydration mismatch** — skrip anti-kedip memasang `data-theme` sebelum React
+   hydrate, sehingga HTML server (tanpa atribut) berbeda dari DOM klien. Ini akan
+   menimpa **setiap pengguna yang punya preferensi tema tersimpan**. Diperbaiki
+   dengan `suppressHydrationWarning` pada `<html>` (cakupannya hanya atribut
+   elemen itu).
+2. **Peringatan React soal tag `<script>`** di dalam komponen → dipindah ke
+   `next/script` `beforeInteractive`.
+
+Setelah perbaikan, konsol **bersih tanpa error** pada tab baru.
 
 ---
 

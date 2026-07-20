@@ -4,6 +4,7 @@ import '@/styles/theme-dashboard.css';
 import '@/styles/dashboard-font.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import Script from 'next/script';
 import { ClerkProvider } from '@clerk/nextjs';
 import Providers from '@/components/Providers';
 
@@ -40,8 +41,30 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
-      <html lang="id" className={inter.variable}>
+      {/*
+        suppressHydrationWarning WAJIB di <html>: skrip anti-kedip di bawah
+        memasang data-theme SEBELUM React hydrate, sehingga atribut di HTML hasil
+        server (tanpa data-theme) sengaja berbeda dari DOM klien. Tanpa ini,
+        setiap pengguna yang punya preferensi tema tersimpan akan memicu
+        "hydration mismatch" di konsol. Cakupannya hanya atribut elemen ini.
+      */}
+      <html lang="id" className={inter.variable} suppressHydrationWarning>
         <body>
+          {/*
+            Anti-kedip tema: pasang data-theme SEBELUM konten ter-paint, jadi
+            pengguna tidak melihat kilatan tema salah. Key `ktd-theme`
+            dipertahankan dari Dashboard lama agar preferensi terbawa (§4.3).
+            Tanpa nilai tersimpan: atribut tidak dipasang — dashboard tetap
+            gelap (default token-nya) dan ops tetap mengikuti prefers-color-scheme.
+
+            Dipasang lewat next/script `beforeInteractive` (bukan <script> mentah
+            di dalam JSX) karena React memperingatkan tag script di dalam komponen
+            — peringatan itu mengotori konsol, padahal gerbang §9 Fase 4 menuntut
+            konsol bersih.
+          */}
+          <Script id="ktd-theme-init" strategy="beforeInteractive">
+            {`try{var t=localStorage.getItem('ktd-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}`}
+          </Script>
           <Providers>{children}</Providers>
         </body>
       </html>
