@@ -21,7 +21,7 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 | 1 | Fondasi struktur | ⚠️ Gerbang otomatis lulus; user mengizinkan lanjut, **UAT alur belum dijalankan** |
 | 2 | Port data layer Dashboard | ✅ Gerbang lulus — golden test diff kosong (lihat `golden-report.md`) |
 | 3 | Port API & auth terpadu | ✅ Gerbang lulus — uji kontrak identik utk 5 role |
-| 4 | Port UI Dashboard | 🔄 **Berjalan** — langkah 1/6 selesai (tema); lihat 4.x |
+| 4 | Port UI Dashboard | 🔄 **Berjalan** — langkah 1–3 dari 6 selesai; lihat 4.x |
 | 5 | Penyatuan lintas app | ⬜ Belum |
 | 6 | Hardening, cutover & pembersihan | ⬜ Belum |
 
@@ -469,7 +469,7 @@ Fase terbesar (§9: 3–5 hari). Dikerjakan berlapis dari fondasi ke atas.
 |---|---|
 | 1. `theme-dashboard.css` + pemetaan tema light ke `data-theme` | ✅ Selesai & terverifikasi |
 | 2. `ui/Table`+`Pagination`, `charts/*`, `StatCard`, `Badge`, `ThemeToggle` | ✅ Selesai & terverifikasi |
-| 3. `DashboardShell` (sidebar/topbar/period filter) | ⬜ Belum |
+| 3. `DashboardShell` (sidebar/topbar/period filter) | ✅ Selesai |
 | 4. Halaman per role (5 overview → `[view]` → `akun`) | ⬜ Belum |
 | 5. Layar `(auth)` final | ⬜ Belum |
 | 6. Gerbang: checklist visual berdampingan | ⬜ Belum |
@@ -617,6 +617,42 @@ Interaksi:
    `next/script` `beforeInteractive`.
 
 Setelah perbaikan, konsol **bersih tanpa error** pada tab baru.
+
+### 4.6 Shell dashboard (langkah 3)
+
+| Sumber `app.js` | Target |
+|---|---|
+| objek `ROLES` (navigasi saja) | `config/dashboard-nav.ts` |
+| `buildSidebar()` + `buildTopbar()` + `pageHead()` | `components/dashboard/DashboardShell.tsx` |
+| `periodFilter()` | `components/dashboard/PeriodFilter.tsx` |
+| objek ikon `I` (yang dipakai shell) | `components/dashboard/icons.tsx` |
+
+`config/dashboard-nav.ts` jadi **sumber tunggal** untuk sidebar SEKALIGUS guard
+per halaman: `/dashboard/[view]` memanggil `canOpenView()` dan membalas 404 bila
+view tidak terdaftar untuk role pemanggil — halaman tidak bisa bocor lewat URL
+tebakan. `render:` dari objek `ROLES` lama tidak ikut ke config ini; pemetaan
+view→komponen hidup di route, sehingga file config bisa diimpor Server Component
+tanpa menyeret UI.
+
+Perbedaan yang disengaja:
+
+- **Navigasi memakai `<Link>` App Router**, bukan `<a href="#">` + state
+  `cur.page`. Tiap halaman kini punya URL sendiri → bisa di-bookmark, tombol
+  back berfungsi.
+- **Periode pindah ke searchParams** (§2.3), bukan state global. Tampilan
+  ter-filter jadi bisa di-share, dan Server Component membacanya langsung.
+- **Tombol notifikasi & layar penuh dibiarkan dekoratif** — di `app.js` keduanya
+  juga tidak punya handler. Tidak "diperbaiki" sesuai §11.2.1.
+- `#refreshBtn` memuat ulang route; di sumber ia memanggil `loadLiveData()`.
+
+Kesalahan yang sempat terjadi & diperbaiki: kelas `.sidebar-hidden` saya karang
+sendiri padahal sumber memakai `.sidebar-collapsed`. Ditemukan lewat pengecekan
+sistematis setiap nama kelas terhadap CSS hasil port — pemeriksaan yang sama
+kini dijalankan untuk seluruh kelas shell (semua sisanya cocok).
+
+**Belum diverifikasi visual**: shell hanya bisa dilihat dengan sesi login
+dashboard, yang tidak tersedia untuk saya. Struktur & kelasnya sudah dicocokkan
+ke CSS, tetapi tata letak sesungguhnya baru terbukti saat UAT.
 
 ---
 
