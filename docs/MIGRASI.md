@@ -470,7 +470,7 @@ Fase terbesar (§9: 3–5 hari). Dikerjakan berlapis dari fondasi ke atas.
 | 1. `theme-dashboard.css` + pemetaan tema light ke `data-theme` | ✅ Selesai & terverifikasi |
 | 2. `ui/Table`+`Pagination`, `charts/*`, `StatCard`, `Badge`, `ThemeToggle` | ✅ Selesai & terverifikasi |
 | 3. `DashboardShell` (sidebar/topbar/period filter) | ✅ Selesai |
-| 4. Halaman per role (5 overview → `[view]` → `akun`) | ⬜ Belum |
+| 4. Halaman per role (5 overview → `[view]` → `akun`) | 🔄 Lapisan data selesai; komponen halaman belum |
 | 5. Layar `(auth)` final | ⬜ Belum |
 | 6. Gerbang: checklist visual berdampingan | ⬜ Belum |
 
@@ -653,6 +653,57 @@ kini dijalankan untuk seluruh kelas shell (semua sisanya cocok).
 **Belum diverifikasi visual**: shell hanya bisa dilihat dengan sesi login
 dashboard, yang tidak tersedia untuk saya. Struktur & kelasnya sudah dicocokkan
 ke CSS, tetapi tata letak sesungguhnya baru terbukti saat UAT.
+
+### 4.7 Lapisan data halaman (langkah 4, bagian 1)
+
+`loadLiveData()` app.js (~200 baris) di-port ke `lib/dashboard/views/`:
+
+| Sumber | Target |
+|---|---|
+| `loadLiveData()` — hidrasi 11 tab | `views/hydrate.ts` |
+| `recomputeFromPenghuni()` | `computeRoomsAndStats()` |
+| `recomputeTempo()` | `computeTempo()` |
+| variabel global (PENGHUNI, LEADS, …) | `views/types.ts` (tipe eksplisit) |
+
+**Perbedaan mendasar:** di app.js ini semua variabel global yang dimutasi
+berurutan; di sini fungsi murni yang MENGEMBALIKAN nilai. Tidak ada lagi urutan
+panggil tersembunyi, dan seluruhnya bisa dijalankan di Server Component.
+
+Deteksi tab & kolom tetap memakai **pencocokan header fuzzy** yang sama persis.
+Itu disengaja: judul tab dan label kolom bisa bergeser di spreadsheet, dan
+detektor longgar inilah yang membuat dashboard tidak langsung pecah.
+
+**PENYIMPANGAN: data sintetis fallback TIDAK ikut di-port.** app.js punya
+`PENGHUNI_RAW`, `logbookRows()`, `tiketRows()`, `logInspeksiRows()`, dll yang
+membangkitkan baris palsu saat sumber kosong — data demo yang menyamar jadi data
+nyata. Perilaku baru: sumber kosong → daftar kosong → empty-state. Ini
+menghilangkan risiko angka fiktif tampil seolah data produksi.
+
+#### Verifikasi terhadap data Turso nyata
+
+`npx tsx scripts/hydrate-check.ts` menjalankan hidrasi atas keluaran
+`readComputedSheets()` sesungguhnya — membuktikan detektor fuzzy benar-benar
+mengenali tab yang dihasilkan `sheet-map.ts`, bukan sekadar lolos typecheck:
+
+| Bagian | Baris | | Bagian | Baris |
+|---|---|---|---|---|
+| penghuni | 29 | | dokumen | 69 |
+| logbook | 21 | | occupants | 32 |
+| payments | 45 | | rooms | 29 |
+| leads | 3 | | pembayaran | 45 |
+| booking | 31 | | kamar | 29 |
+| tiket | 3 | | vendor | 11 |
+
+`STATS` = okupansi 100%, kapasitas 29, tunggakan 5 — lolos sanity check.
+`RETENTION` = 32 total, 3 churned, rate 91%, rata-rata tinggal 6 bulan.
+`TEMPO` = tunggakan 5, jatuh tempo 0, daftar 19.
+
+Dua angka yang sempat terlihat janggal, keduanya sudah ditelusuri dan **benar**:
+
+- **survey 0** — tab SURVEY memang 0 baris di Turso, bukan kegagalan deteksi.
+- **vendor 11 dari 12 baris** — satu baris (id=4, kategori "Plumbing/Air") memang
+  kosong kolom nama vendornya di Turso. Kode lama menyaringnya identik. Ini
+  masalah kualitas data, bukan bug port.
 
 ---
 
