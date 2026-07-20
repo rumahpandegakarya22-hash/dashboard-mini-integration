@@ -64,6 +64,12 @@ berdampingan dengan dashboard lama, pada tema **gelap** dan **terang**:
 
 ## 2. Deploy preview (Vercel)
 
+> **PENTING:** UAT §1 di atas **tidak cukup** dijalankan dengan `npm run dev`.
+> Satu bug pernah membuat seluruh halaman blank **hanya di mode produksi**
+> (CSP memblokir inline script hydration Next; dev lolos karena mengizinkan
+> `'unsafe-inline'` untuk HMR). Sudah diperbaiki, tetapi kelas bug ini hanya
+> terlihat di build produksi. Ulangi seluruh checklist §1 di URL preview.
+
 - [ ] Import repo ke Vercel
 - [ ] Salin **seluruh** env dari `.env.local` ke Vercel (lihat `.env.example`)
 - [ ] Deploy preview → ulangi §1 pada URL preview

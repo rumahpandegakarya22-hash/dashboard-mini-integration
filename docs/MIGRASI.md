@@ -1017,6 +1017,48 @@ Rollback murah: migrasi ini tidak menyentuh data sama sekali (skema Turso,
 struktur Sheets, metadata Clerk tidak berubah), jadi cukup mengarahkan domain &
 webhook kembali ke sistem lama.
 
+### 5.5 KOREKSI — CSP membuat produksi blank, diperbaiki dgn nonce
+
+Setelah 5.3 di-commit, ditemukan bahwa **seluruh halaman blank di mode produksi**.
+Dev normal, `npm run build` exit 0, semua gerbang otomatis hijau.
+
+**Sebab akar** (bukan tebakan — pelanggaran ditangkap langsung di browser):
+`script-src-elem <- inline`. Next menyuntik ±10 inline `<script>` untuk hydration;
+CSP statis di `next.config.mjs headers()` tidak bisa memberi nonce, jadi semuanya
+diblokir → React tidak pernah hydrate → 0 karakter di layar. Dev lolos karena di
+sana `'unsafe-inline'` memang diizinkan untuk HMR — **bug ini hanya muncul di
+produksi**, persis skenario R7.
+
+**Perbaikan #1 gagal:** memindahkan CSP ke `proxy.ts` dengan nonce per-request
+saja tidak cukup — script tetap tanpa nonce. Dokumentasi resmi Next menjelaskan
+kenapa: nonce hanya bisa disuntikkan saat render server; halaman statis dibuat
+saat build ketika header request belum ada.
+
+**Perbaikan #2 (berhasil):** `force-dynamic` pada 4 halaman yang tadinya statis
+(`/login`, `/sign-up`, `/pending`, `/_not-found`). Keempatnya kini `ƒ`.
+
+Kenapa tidak memilih jalan mudah `'unsafe-inline'`: CSP Dashboard **lama** tidak
+punya `'unsafe-inline'` di `script-src`. Menambahkannya = memundurkan keamanan
+yang sudah ada. Biaya `force-dynamic` kecil — hanya 4 layar auth/error, bukan
+konten yang butuh cache.
+
+Verifikasi setelah perbaikan (mode produksi `next start`):
+
+| Uji | Sebelum | Sesudah |
+|---|---|---|
+| `/login` teks ter-render | **0 karakter (blank)** | 191 karakter |
+| Clerk ter-mount | tidak | ya |
+| Script ber-nonce | 0 | 20 |
+| Pelanggaran CSP di konsol | `script-src-elem` | tidak ada |
+
+`script-src` produksi tetap ketat: `'self' 'nonce-…' 'strict-dynamic'` + origin
+Clerk — **tanpa** `'unsafe-inline'`. Golden test, uji kontrak, dan matriks akses
+dijalankan ulang: semuanya masih lulus.
+
+**Pelajaran untuk `CUTOVER.md`:** UAT wajib dijalankan di **preview deploy
+Vercel (mode produksi)**, bukan hanya `npm run dev`. Bug kelas ini tidak terlihat
+di dev sama sekali.
+
 ---
 
 ## Penyimpangan dari perilaku lama

@@ -108,6 +108,13 @@ uji otomatis tidak cukup.
 | G6 | Nama kelas dikarang: `.sidebar-hidden` (seharusnya `.sidebar-collapsed`) | Pengecekan sistematis tiap kelas |
 | G7 | **Hydration mismatch** dari skrip anti-kedip tema — menimpa setiap pengguna yang punya preferensi tersimpan | Uji render di browser |
 | G8 | Peringatan React soal tag `<script>` dalam komponen | idem |
+| G9 | **CSP produksi membuat SELURUH halaman blank** — `script-src` tanpa `'unsafe-inline'`/nonce memblokir 10 inline script hydration Next (`script-src-elem`). Dev lolos karena di sana `'unsafe-inline'` diizinkan untuk HMR, jadi bug hanya muncul di produksi | Uji `next start` mode produksi |
+
+G9 adalah yang paling berbahaya: `npm run build` **exit 0**, dev server normal,
+seluruh gerbang otomatis hijau — tetapi aplikasi produksi tidak menampilkan apa
+pun. Perbaikannya nonce per-request di `proxy.ts` + `force-dynamic` pada halaman
+yang sebelumnya statis, karena Next hanya bisa menyuntikkan nonce saat render
+server (halaman statis dibuat saat build, tanpa header request).
 
 G5 dan G6 **tidak tertangkap typecheck maupun build** — hanya membuat elemen
 tampil tanpa gaya. Karena itu dibuat `scripts/css-coverage-check.ts` yang kini
