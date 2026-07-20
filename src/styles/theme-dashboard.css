@@ -354,12 +354,21 @@
 @keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* =========================== STAT CARDS ================================= */
+/* Kolom INTRINSIK: jumlah kolom ngikut ruang nyata, bukan angka mati.
+   `repeat(var(--cols),1fr)` lama maksa N kolom berapa pun lebar induk — di
+   .main ~1200px, 6 kartu jadi 182px & teks nilai nabrak badge (bug yg
+   dilaporin). auto-fit+minmax bikin kartu WRAP turun baris, bukan gepeng.
+   min() jaga di layar sempit: track gak pernah lebih lebar dari induk. */
 [data-app='dashboard'] .stat-grid {
   display: grid; gap: 14px;
-  grid-template-columns: repeat(var(--cols, 5), 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
 }
+/* container-type: inline-size -> teks di dalam bisa diukur relatif LEBAR
+   KARTU (cqi), bukan lebar viewport. Kartu yg sama jadi otomatis nyesuaikan
+   pas sidebar collapse/expand ngubah ruang. */
 [data-app='dashboard'] .stat-card {
   position: relative; overflow: hidden;
+  container-type: inline-size;
   border-radius: var(--r-card);
   padding: 14px 16px 0;
   min-height: 116px;
@@ -378,7 +387,15 @@
   box-shadow: 0 18px 46px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.45);
 }
 [data-app='dashboard'] .stat-card__label { font-size: 13px; font-weight: 500; opacity: .85; }
-[data-app='dashboard'] .stat-card__value { font-size: 30px; font-weight: 700; line-height: 1.1; margin-top: 6px; letter-spacing: -.02em; }
+/* nilai: dulu 30px mati -> di kartu sempit teksnya wrap & ketabrak badge
+   (yg absolut di kanan). clamp+cqi bikin ngecil mulus ngikut lebar kartu.
+   padding-right nyediain lorong buat badge, jadi gak numpuk lagi. */
+[data-app='dashboard'] .stat-card__value {
+  font-size: clamp(19px, 13cqi, 30px);
+  font-weight: 700; line-height: 1.1; margin-top: 6px; letter-spacing: -.02em;
+  padding-right: 74px;
+  overflow-wrap: anywhere;
+}
 [data-app='dashboard'] .stat-card__badge {
   margin-top: 7px; align-self: flex-start;
   display: inline-flex; align-items: center; gap: 3px;
@@ -414,15 +431,27 @@
 [data-app='dashboard'] .grid { display: grid; gap: 14px; }
 [data-app='dashboard'] .mt { margin-top: 14px; }
 
-/* charts row layouts */
-[data-app='dashboard'] .row-3 { grid-template-columns: 1fr 1fr 1fr; }
+/* charts row layouts — intrinsik: chart wrap turun baris sendiri pas sempit,
+   melar pas lega. Chart butuh lebar lebih dari stat-card biar sumbu kebaca,
+   jadi minimum-nya lebih gede (320px). */
+[data-app='dashboard'] .row-3 { grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); }
+[data-app='dashboard'] .row-2 { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
+/* Dua baris ini RASIO-nya disengaja (donut kecil + tabel lebar), jadi bukan
+   auto-fit. Tetap runtuh jadi 1 kolom lewat @container di blok RESPONSIVE. */
 [data-app='dashboard'] .row-donut-2 { grid-template-columns: minmax(0,1.1fr) minmax(0,1.6fr); }
-[data-app='dashboard'] .row-2 { grid-template-columns: 1fr 1fr; }
 [data-app='dashboard'] .row-2-3 { grid-template-columns: minmax(0,2fr) minmax(0,1fr); }
 
 /* donut */
 [data-app='dashboard'] .donut { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-[data-app='dashboard'] .donut__chart { position: relative; width: 150px; height: 150px; }
+/* dulu mati 150x150 — kartu melar, donut tetap kuncup. Sekarang ikut lebar
+   kartu (% dari .donut) tapi dijaga clamp biar gak mikro di kartu sempit
+   & gak jumbo di kartu lebar. aspect-ratio jaga bulat tanpa height mati. */
+[data-app='dashboard'] .donut__chart {
+  position: relative;
+  width: clamp(120px, 58%, 176px);
+  aspect-ratio: 1 / 1;
+}
+[data-app='dashboard'] .donut__chart svg { width: 100%; height: 100%; }
 [data-app='dashboard'] .donut__center {
   position: absolute; inset: 0; display: grid; place-content: center; text-align: center;
   pointer-events: none; /* jangan halangi hover ke segmen donut di bawahnya */
@@ -557,7 +586,9 @@
 [data-app='dashboard'] .pager .pager-info { align-self: center; color: var(--text-2); font-size: 12px; margin-left: 4px; }
 
 /* =========================== DATA KAMAR ================================= */
-[data-app='dashboard'] .rooms { display: grid; grid-template-columns: repeat(3, minmax(0, 220px)); gap: 14px; }
+/* dulu `repeat(3, minmax(0,220px))`: mati di 3 kolom & mentok 220px, gak mau
+   melar walau .main lega. Sekarang ngikut ruang. */
+[data-app='dashboard'] .rooms { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 14px; }
 /* 30-scorecard grid (Data Kamar) */
 [data-app='dashboard'] .rooms-30 { grid-template-columns: repeat(auto-fill, minmax(184px, 1fr)); }
 [data-app='dashboard'] .room {
@@ -844,45 +875,38 @@
 :root[data-theme='light'] [data-app='dashboard'] .cell-select { background-color: rgba(0,0,0,.03); }
 
 /* =============================== RESPONSIVE ============================= */
-/* Kolom konten (stat-grid, chart rows, rooms, topbar) ikut LEBAR .main lewat
-   @container, bukan lebar viewport lewat @media -- supaya reflow konsisten
-   baik sidebar terbuka atau di-collapse (lebar .main beda meski viewport
-   sama persis) maupun desktop vs mobile. Breakpoint shell (drawer sidebar,
-   scrim, hamburger) TETAP @media viewport karena itu soal ukuran layar/
-   device, bukan lebar konten -- lihat blok kedua di bawah. */
+/* Breakpoint di sini ikut LEBAR .main lewat @container, bukan lebar viewport
+   lewat @media -- supaya reflow konsisten baik sidebar terbuka atau collapse
+   (lebar .main beda ~212px di viewport yg sama persis).
+
+   CATATAN: grid yg simetris (.stat-grid, .row-2, .row-3, .rooms) SENGAJA
+   gak dioverride di sini. Mereka udah auto-fit+minmax, jadi jumlah kolomnya
+   nyesuaikan MULUS di tiap lebar -- bukan lompat kaku di 3 titik breakpoint.
+   Nambahin `repeat(N, 1fr)` di blok ini justru balikin bug gepeng-nya.
+   Yg tersisa cuma: padding, rasio asimetris, dan detail topbar.
+
+   Breakpoint shell (drawer sidebar, scrim, hamburger) TETAP @media viewport
+   -- itu soal ukuran layar/device, bukan lebar konten. Lihat blok bawah. */
 @container dashboard-main (max-width: 1200px) {
-  
+
 [data-app='dashboard'] .content { --pad: 22px; }
-  
-[data-app='dashboard'] .stat-grid { grid-template-columns: repeat(3, 1fr); }
-  
-[data-app='dashboard'] .row-3 { grid-template-columns: 1fr; }
-  
+
 [data-app='dashboard'] .row-donut-2,
-[data-app='dashboard'] .row-2,
 [data-app='dashboard'] .row-2-3 { grid-template-columns: 1fr; }
 }
 
 @container dashboard-main (max-width: 900px) {
-  
-[data-app='dashboard'] .stat-grid { grid-template-columns: repeat(2, 1fr); }
-  
-[data-app='dashboard'] .rooms { grid-template-columns: 1fr 1fr; }
-  
+
 [data-app='dashboard'] .topbar { padding: 0 16px; gap: 6px; }
-  
+
 [data-app='dashboard'] .search input { width: 130px; }
-  
+
 [data-app='dashboard'] .search kbd { display: none; }
 }
 
 @container dashboard-main (max-width: 600px) {
-  
+
 [data-app='dashboard'] .content { --pad: 16px; }
-  
-[data-app='dashboard'] .stat-grid { grid-template-columns: 1fr; }
-  
-[data-app='dashboard'] .rooms { grid-template-columns: 1fr; }
   
 [data-app='dashboard'] .section-title { font-size: 19px; }
   /* topbar sempit: sembunyikan search global (tabel tetap punya search sendiri) + bell dekoratif */
