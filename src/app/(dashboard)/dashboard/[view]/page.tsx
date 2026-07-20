@@ -4,6 +4,7 @@ import { DEFAULT_PERIOD, canOpenView, findPage } from '@/config/dashboard-nav';
 import { loadDashboardData } from '@/lib/dashboard/views/load';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import OverviewFor, { type OverviewKey } from '@/components/dashboard/overviews/OverviewFor';
+import ViewFor from '@/components/dashboard/pages/ViewFor';
 
 /**
  * Halaman per view. `config/dashboard-nav.ts` adalah sumber tunggal untuk
@@ -32,7 +33,9 @@ export default async function DashboardViewPage({
   const page = findPage(user.role, view)!;
   const period = sp.period || DEFAULT_PERIOD;
 
-  const loaded = await loadDashboardData(user.role, period, sp.from, sp.to);
+  const loaded = await loadDashboardData(user.role, period, sp.from, sp.to, {
+    withInventory: view === 'stok'
+  });
   const isDash = page.group === 'dash';
 
   return (
@@ -50,10 +53,7 @@ export default async function DashboardViewPage({
       {isDash ? (
         <OverviewFor which={view as OverviewKey} loaded={loaded} period={period} from={sp.from} to={sp.to} />
       ) : (
-        <section className="card" style={{ padding: 20 }}>
-          <div className="card__title">{page.label}</div>
-          <p>Tabel halaman ini di-port pada bagian berikutnya Fase 4 langkah 4.</p>
-        </section>
+        <ViewFor view={view} role={user.role} loaded={loaded} period={period} />
       )}
     </DashboardShell>
   );

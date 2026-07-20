@@ -7,7 +7,7 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 | | |
 |---|---|
 | Repo basis | `miniapp-kost` (Next.js 16 + React 19 + TS) |
-| Sumber port | `G:\Dashboard Mini App Integration\Dashboard Figma\` (read-only) |
+| Sumber port | `D:\Dashboard Figma\` (read-only) — pindah dari G: yang tercabut, lihat §4.9 |
 | Repo terpadu | `D:\kost-tiga-dara\` (dipindah dari G: — lihat §0.6) |
 | Mulai | 20 Juli 2026 |
 
@@ -21,7 +21,7 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 | 1 | Fondasi struktur | ⚠️ Gerbang otomatis lulus; user mengizinkan lanjut, **UAT alur belum dijalankan** |
 | 2 | Port data layer Dashboard | ✅ Gerbang lulus — golden test diff kosong (lihat `golden-report.md`) |
 | 3 | Port API & auth terpadu | ✅ Gerbang lulus — uji kontrak identik utk 5 role |
-| 4 | Port UI Dashboard | 🔄 **Berjalan** — langkah 1–3 selesai; langkah 4: data + 5 overview selesai, halaman data & akun belum |
+| 4 | Port UI Dashboard | 🔄 **Berjalan** — langkah 1–3 selesai; langkah 4 tersisa halaman akun; lihat 4.x |
 | 5 | Penyatuan lintas app | ⬜ Belum |
 | 6 | Hardening, cutover & pembersihan | ⬜ Belum |
 
@@ -470,7 +470,7 @@ Fase terbesar (§9: 3–5 hari). Dikerjakan berlapis dari fondasi ke atas.
 | 1. `theme-dashboard.css` + pemetaan tema light ke `data-theme` | ✅ Selesai & terverifikasi |
 | 2. `ui/Table`+`Pagination`, `charts/*`, `StatCard`, `Badge`, `ThemeToggle` | ✅ Selesai & terverifikasi |
 | 3. `DashboardShell` (sidebar/topbar/period filter) | ✅ Selesai |
-| 4. Halaman per role (5 overview → `[view]` → `akun`) | 🔄 5 overview selesai; halaman data & akun belum |
+| 4. Halaman per role (5 overview → `[view]` → `akun`) | 🔄 5 overview + halaman data selesai; halaman akun belum |
 | 5. Layar `(auth)` final | ⬜ Belum |
 | 6. Gerbang: checklist visual berdampingan | ⬜ Belum |
 
@@ -755,6 +755,86 @@ Gaji Karyawan 1,8 Jt, Internet 456 rb.
   hanya grafik trennya yang ikut periode — perilaku sumber dipertahankan.
 - CAC Marketing dan Response/Resolution Time Ops tetap "—" bila tak ada
   sumbernya, bukan angka karangan.
+
+### 4.9 Drive sumber tercabut — port dilanjutkan dari salinan D:
+
+Di tengah langkah 4, drive **`G:` (1 TB, exFAT) lenyap dari sistem** — hilang
+sepenuhnya dari `Get-Volume`. Itu lokasi `Dashboard Figma/` yang jadi sumber port.
+
+Ditemukan salinan di **`D:\Dashboard Figma\`** (lokasi asli menurut §1.1).
+Salinan itu **tidak langsung dipakai** — memakai versi berbeda tanpa sadar akan
+mencampur hasil port. Kesamaannya dibuktikan lebih dulu:
+
+| Uji | Hasil |
+|---|---|
+| Jumlah baris `app.js` / `styles.css` | 2183 / 1099 — sama |
+| Baris penanda 655, 768, 1002, 1224, 1797, 2094 `app.js` | isi identik dgn yang tercatat dari G: |
+| `styles.css` baris 8 & 973 | identik |
+| **Transformer CSS dijalankan ulang atas sumber D:** | keluaran **byte-identical** dgn `theme-dashboard.css` yang sudah ter-commit dari sumber G: |
+
+Bukti terakhir bersifat menentukan: seluruh 1.317 deklarasi menghasilkan berkas
+yang sama persis. Sumber D: = sumber G:. Port dilanjutkan dari `D:\Dashboard Figma\`.
+
+### 4.10 Halaman data `[view]` (langkah 4, bagian 3)
+
+| Sumber `app.js` | Target |
+|---|---|
+| `pagePenghuni` / `pagePenghuniSales` | `pages/ViewFor.tsx` (pilih set kolom per role) |
+| `pagePembayaran` + filter nama | `pages/PembayaranPage.tsx` |
+| `pageDokumen` + `dokumenRows` | `views/pages.ts` + `ViewFor` |
+| `pageInventory` | `views/pages.ts:inventoryRows` + `ViewFor` |
+| `rooms(variant)` + filter chip | `pages/Rooms.tsx` |
+| `logbookForRole` + cabang 3-tabel Ops | `views/pages.ts` + `ViewFor` |
+| `waBtn`/`openBtn`/`tagihanBtn` | `components/dashboard/CellButtons.tsx` |
+| cabang sel `aksi`/`open`/`tagihan` di `table()` | `pages/DataTablePage.tsx` |
+
+`DataTablePage` memisahkan renderer sel domain dari `ui/Table`, supaya `ui/Table`
+tetap primitif bersama yang tidak bergantung ke lib domain (§7).
+
+**Fallback sintetis TIDAK di-port** (instruksi user + §4.7): `dokumenRows()` hanya
+memakai cabang data live; `tiketRows()`, `logInspeksiRows()`, `logPerbaikanRows()`,
+dan `logbookOpsPage()` versi karangan tidak ikut sama sekali. Halaman Logbook
+Operasional kini memakai cabang 3-tabel dari data live.
+
+**Stok inventory dimuat kondisional** — hanya saat view `stok` dibuka, supaya
+halaman lain tidak menanggung query ke DB app Inventory.
+
+#### Verifikasi cakupan & isi
+
+Cakupan: seluruh **35 kombinasi role × view** terbukti punya isi — tidak ada
+halaman yang jatuh ke `null` dan tampil kosong tanpa error.
+
+Jumlah baris nyata per role:
+
+| role | halaman |
+|---|---|
+| admin | penghuni 29 · pembayaran **0** · vendor 11 · stok 22/0 · dokumen 20 · logbook 6 |
+| marketing | leads 3+0 · dokumen 11 · logbook 3 |
+| operasional | tiket 3 · vendor 11 · stok 22/0 · kamar 29 · dokumen 0 · logbook 9 |
+| sales | prospek 0 · penghuni 29 · kamar 29 · dokumen 5 · logbook 3 |
+| owner | penghuni 29 · kamar 29 · pembayaran 45 · stok 22/0 · dokumen 69 · logbook 21 |
+
+Konsistensi logbook terverifikasi: 6+3+3+9 = 21 = total yang dilihat owner.
+
+#### TEMUAN: Admin tidak bisa melihat Data Pembayaran (celah bawaan, BUKAN regresi)
+
+`admin` punya menu **Data Pembayaran** tetapi menerima **0 baris**, sedangkan
+owner menerima 45. Sebabnya `SHEET_ACCESS.admin` tidak punya regex yang cocok
+dengan judul tab `PAYMENT (Pembayaran Sewa)` — `/keuangan|transaksi|jurnal|kas/`
+tidak match.
+
+Diverifikasi ke snapshot RLS Dashboard **lama** (`golden-old-rls.json`): tab
+PAYMENT juga **tidak lolos** untuk admin di sistem lama. Jadi ini celah yang sudah
+ada sebelum migrasi, bukan regresi port.
+
+**Tidak diperbaiki** — §11.2.1 melarang "memperbaiki" saat port, dan mengubah
+regex RLS adalah perubahan hak akses data yang harus diputuskan sadar oleh Owner.
+**Keputusan user diperlukan:** apakah Admin & Keuangan memang seharusnya melihat
+data pembayaran? Bila ya, tambahkan pola pada `SHEET_ACCESS.admin` di
+`src/config/dashboard-access.ts` (mis. `/payment|pembayaran/i`).
+
+Catatan kecil: DB Inventory berisi 22 bahan tetapi **0 transaksi** — tabel
+"Mutasi Stok Terakhir" akan tampil kosong. Kondisi data, bukan bug.
 
 ---
 

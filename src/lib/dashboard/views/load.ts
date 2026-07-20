@@ -13,6 +13,7 @@
 import { readComputedSheets, isConfigured, type SheetGrid } from '../source';
 import { filterSheetsForRole } from '../rls';
 import { hydrateDashboard } from './hydrate';
+import { readInventory, isInventoryConfigured, type InventoryData } from '../inventory';
 import { computeFinance, findTransaksiGrid, type FinanceResult } from './finance';
 import { periodRange, DEFAULT_PERIOD_FALLBACK } from './period';
 import type { DashboardData } from './types';
@@ -23,15 +24,29 @@ export interface DashboardPageData {
   txGrid: SheetGrid | null;
   range: { from: Date | null; to: Date | null };
   configured: boolean;
+  /** Hanya terisi bila halaman memintanya (view "stok"); null = tak tersedia. */
+  inventory: InventoryData | null;
 }
 
 export async function loadDashboardData(
   role: string,
   period: string,
   from?: string,
-  to?: string
+  to?: string,
+  opts?: { withInventory?: boolean }
 ): Promise<DashboardPageData> {
   const range = periodRange(period || DEFAULT_PERIOD_FALLBACK, from, to);
+
+  // Stok inventory berasal dari DB app lain; hanya dibaca saat halaman stok
+  // dibuka supaya halaman lain tidak menanggung query tambahan.
+  let inventory: InventoryData | null = null;
+  if (opts?.withInventory && isInventoryConfigured()) {
+    try {
+      inventory = await readInventory();
+    } catch (e) {
+      console.error('[dashboard] gagal baca DB inventory:', e);
+    }
+  }
 
   if (!isConfigured()) {
     return {
@@ -39,7 +54,8 @@ export async function loadDashboardData(
       finance: null,
       txGrid: null,
       range,
-      configured: false
+      configured: false,
+      inventory
     };
   }
 
@@ -49,5 +65,5 @@ export async function loadDashboardData(
   const txGrid = findTransaksiGrid(sheets);
   const finance = computeFinance(txGrid, range);
 
-  return { data, finance, txGrid, range, configured: true };
+  return { data, finance, txGrid, range, configured: true, inventory };
 }
