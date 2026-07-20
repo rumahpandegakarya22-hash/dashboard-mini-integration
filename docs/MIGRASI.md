@@ -8,7 +8,7 @@ sadar dari perilaku lama WAJIB dicatat di sini sebelum commit.
 |---|---|
 | Repo basis | `miniapp-kost` (Next.js 16 + React 19 + TS) |
 | Sumber port | `G:\Dashboard Mini App Integration\Dashboard Figma\` (read-only) |
-| Repo terpadu | `G:\Dashboard Mini App Integration\kost-tiga-dara\` |
+| Repo terpadu | `D:\kost-tiga-dara\` (dipindah dari G: — lihat §0.6) |
 | Mulai | 20 Juli 2026 |
 
 ---
