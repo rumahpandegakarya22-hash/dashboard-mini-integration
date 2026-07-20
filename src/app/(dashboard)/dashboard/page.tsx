@@ -1,9 +1,11 @@
 import { redirect } from 'next/navigation';
 import { getAuthState } from '@/lib/core/auth';
 import { DEFAULT_PERIOD, findPage } from '@/config/dashboard-nav';
+import { loadDashboardData } from '@/lib/dashboard/views/load';
 import DashboardShell from '@/components/dashboard/DashboardShell';
+import OverviewFor from '@/components/dashboard/overviews/OverviewFor';
 
-/** Overview per role. Konten overview-nya sendiri di-port pada langkah 4 Fase 4. */
+/** Overview per role — halaman default `/dashboard`. */
 export default async function DashboardPage({
   searchParams
 }: {
@@ -11,9 +13,13 @@ export default async function DashboardPage({
 }) {
   const s = await getAuthState();
   if (!s.dashboardUser) redirect('/pending');
+
   const sp = await searchParams;
   const user = s.dashboardUser;
+  const period = sp.period || DEFAULT_PERIOD;
   const page = findPage(user.role, 'overview')!;
+
+  const loaded = await loadDashboardData(user.role, period, sp.from, sp.to);
 
   return (
     <DashboardShell
@@ -23,17 +29,11 @@ export default async function DashboardPage({
       view="overview"
       crumb={page.crumb}
       isDash
-      period={sp.period || DEFAULT_PERIOD}
+      period={period}
       from={sp.from}
       to={sp.to}
     >
-      <section className="card" style={{ padding: 20 }}>
-        <div className="card__title">Overview {user.role}</div>
-        <p>
-          Shell, tema, chart, dan tabel sudah aktif. Konten overview per role di-port pada langkah 4 Fase 4
-          (fungsi <code>*Overview()</code> di app.js → <code>lib/dashboard/views/</code> + komponen).
-        </p>
-      </section>
+      <OverviewFor which={user.role} loaded={loaded} period={period} from={sp.from} to={sp.to} />
     </DashboardShell>
   );
 }

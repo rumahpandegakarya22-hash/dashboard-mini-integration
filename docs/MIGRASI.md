@@ -470,7 +470,7 @@ Fase terbesar (§9: 3–5 hari). Dikerjakan berlapis dari fondasi ke atas.
 | 1. `theme-dashboard.css` + pemetaan tema light ke `data-theme` | ✅ Selesai & terverifikasi |
 | 2. `ui/Table`+`Pagination`, `charts/*`, `StatCard`, `Badge`, `ThemeToggle` | ✅ Selesai & terverifikasi |
 | 3. `DashboardShell` (sidebar/topbar/period filter) | ✅ Selesai |
-| 4. Halaman per role (5 overview → `[view]` → `akun`) | 🔄 Lapisan data selesai; komponen halaman belum |
+| 4. Halaman per role (5 overview → `[view]` → `akun`) | 🔄 5 overview selesai; halaman data & akun belum |
 | 5. Layar `(auth)` final | ⬜ Belum |
 | 6. Gerbang: checklist visual berdampingan | ⬜ Belum |
 
@@ -704,6 +704,57 @@ Dua angka yang sempat terlihat janggal, keduanya sudah ditelusuri dan **benar**:
 - **vendor 11 dari 12 baris** — satu baris (id=4, kategori "Plumbing/Air") memang
   kosong kolom nama vendornya di Turso. Kode lama menyaringnya identik. Ini
   masalah kualitas data, bukan bug port.
+
+### 4.8 Lima overview role (langkah 4, bagian 2)
+
+| Sumber `app.js` | Target |
+|---|---|
+| `adminOverview()` … `salesOverview()` | `components/dashboard/overviews/*.tsx` |
+| `computeFinance()` + `fmtRpShort`/`topEntries`/`shortAcct` | `views/finance.ts` |
+| `seriesByDate()` | `views/finance.ts` |
+| `donutBlock()` | `components/dashboard/DonutBlock.tsx` |
+| objek `G`, `PAL`, `barStops*`, `OWN_BAR` | `config/dashboard-palette.ts` + `components/dashboard/BarStops.tsx` |
+| objek `COLS` (105 pasangan kolom, 16 set) | `config/dashboard-cols.ts` (konversi mekanis, diverifikasi identik) |
+| pemetaan `render:` objek `ROLES` | `overviews/OverviewFor.tsx` |
+
+Overview dibuat **presentasional murni**: menerima data hasil hidrasi + hasil
+`computeFinance`, tanpa fetch sendiri (§2.2). Pemuatan dilakukan
+`views/load.ts` di Server Component.
+
+#### RLS juga diterapkan di jalur halaman — bukan hanya di API
+
+`views/load.ts` memanggil `filterSheetsForRole()` sebelum hidrasi. Ini **bukan**
+duplikasi berlebih: halaman dashboard membaca Turso lewat jalur server langsung,
+tidak lewat `/api/dashboard/sheets`. Tanpa filter di jalur ini, role marketing
+akan melihat data keuangan di halamannya meskipun API-nya menolak.
+
+Terverifikasi terhadap data nyata:
+
+| role | leads | booking | tiket | vendor | keuangan |
+|---|---|---|---|---|---|
+| owner | 3 | 31 | 3 | 11 | 52 Jt |
+| admin | 0 | 0 | 0 | 11 | 52 Jt |
+| marketing | 3 | 0 | 0 | 0 | **NULL** |
+| operasional | 0 | 0 | 3 | 11 | **NULL** |
+| sales | 3 | 31 | 0 | 0 | **NULL** |
+
+#### Verifikasi keuangan terhadap data nyata
+
+`computeFinance` diuji pada beberapa periode: **Tahun ini** → pendapatan 52,4 Jt,
+beban 5,2 Jt, laba 47,2 Jt, 6 bucket **bulanan**; **Bulan ini** → 17,4 Jt /
+413 rb / 17,0 Jt, 12 bucket **harian**. Perpindahan bucket bulanan↔harian
+(ambang 62 hari) berfungsi. Rincian OPEX wajar: Utilitas & Listrik 2,5 Jt,
+Gaji Karyawan 1,8 Jt, Internet 456 rb.
+
+#### Catatan port
+
+- Fallback "Sisa Hari dari tab PENGHUNI" untuk Daftar Jatuh Tempo **tetap
+  di-port** — itu jalur cadangan sah saat tabel `payment` belum terhidrasi,
+  bukan data demo. Yang tidak di-port hanya pembangkit baris fiktif (§4.7).
+- Scorecard Sales sengaja **tanpa filter periode** (metrik agregat lintas tahun);
+  hanya grafik trennya yang ikut periode — perilaku sumber dipertahankan.
+- CAC Marketing dan Response/Resolution Time Ops tetap "—" bila tak ada
+  sumbernya, bukan angka karangan.
 
 ---
 

@@ -1,14 +1,18 @@
 import { notFound, redirect } from 'next/navigation';
 import { getAuthState } from '@/lib/core/auth';
 import { DEFAULT_PERIOD, canOpenView, findPage } from '@/config/dashboard-nav';
+import { loadDashboardData } from '@/lib/dashboard/views/load';
 import DashboardShell from '@/components/dashboard/DashboardShell';
+import OverviewFor, { type OverviewKey } from '@/components/dashboard/overviews/OverviewFor';
 
 /**
- * Halaman data per role. `config/dashboard-nav.ts` adalah sumber tunggal untuk
+ * Halaman per view. `config/dashboard-nav.ts` adalah sumber tunggal untuk
  * sidebar SEKALIGUS guard: view yang tidak terdaftar untuk role pemanggil → 404,
  * jadi tidak ada halaman yang bocor lewat URL tebakan (§8.2).
  *
- * Isi tiap view di-port pada langkah 4 Fase 4.
+ * View bergrup "dash" (Owner: sales/marketing/admin/operasional) merender
+ * overview divisi terkait — sama seperti properti `render:` objek ROLES lama.
+ * View bergrup "page" (tabel data) di-port pada bagian berikutnya langkah 4.
  */
 export default async function DashboardViewPage({
   params,
@@ -19,12 +23,17 @@ export default async function DashboardViewPage({
 }) {
   const s = await getAuthState();
   if (!s.dashboardUser) redirect('/pending');
+
   const { view } = await params;
   const sp = await searchParams;
   const user = s.dashboardUser;
 
   if (!canOpenView(user.role, view)) notFound();
   const page = findPage(user.role, view)!;
+  const period = sp.period || DEFAULT_PERIOD;
+
+  const loaded = await loadDashboardData(user.role, period, sp.from, sp.to);
+  const isDash = page.group === 'dash';
 
   return (
     <DashboardShell
@@ -33,15 +42,19 @@ export default async function DashboardViewPage({
       tfaEnabled={s.totpEnrolled}
       view={view}
       crumb={page.crumb}
-      isDash={page.group === 'dash'}
-      period={sp.period || DEFAULT_PERIOD}
+      isDash={isDash}
+      period={period}
       from={sp.from}
       to={sp.to}
     >
-      <section className="card" style={{ padding: 20 }}>
-        <div className="card__title">{page.label}</div>
-        <p>Konten halaman ini di-port pada langkah 4 Fase 4.</p>
-      </section>
+      {isDash ? (
+        <OverviewFor which={view as OverviewKey} loaded={loaded} period={period} from={sp.from} to={sp.to} />
+      ) : (
+        <section className="card" style={{ padding: 20 }}>
+          <div className="card__title">{page.label}</div>
+          <p>Tabel halaman ini di-port pada bagian berikutnya Fase 4 langkah 4.</p>
+        </section>
+      )}
     </DashboardShell>
   );
 }
