@@ -265,7 +265,7 @@
 }
 
 /* --------------------------- Main column -------------------------------- */
-[data-app='dashboard'] .main { display: flex; flex-direction: column; min-width: 0; }
+[data-app='dashboard'] .main { display: flex; flex-direction: column; min-width: 0; container: dashboard-main / inline-size; }
 
 [data-app='dashboard'] .topbar {
   height: var(--topbar-h);
@@ -844,9 +844,15 @@
 :root[data-theme='light'] [data-app='dashboard'] .cell-select { background-color: rgba(0,0,0,.03); }
 
 /* =============================== RESPONSIVE ============================= */
-@media (max-width: 1200px) {
+/* Kolom konten (stat-grid, chart rows, rooms, topbar) ikut LEBAR .main lewat
+   @container, bukan lebar viewport lewat @media -- supaya reflow konsisten
+   baik sidebar terbuka atau di-collapse (lebar .main beda meski viewport
+   sama persis) maupun desktop vs mobile. Breakpoint shell (drawer sidebar,
+   scrim, hamburger) TETAP @media viewport karena itu soal ukuran layar/
+   device, bukan lebar konten -- lihat blok kedua di bawah. */
+@container dashboard-main (max-width: 1200px) {
   
-[data-app='dashboard'] { --pad: 22px; }
+[data-app='dashboard'] .content { --pad: 22px; }
   
 [data-app='dashboard'] .stat-grid { grid-template-columns: repeat(3, 1fr); }
   
@@ -857,6 +863,42 @@
 [data-app='dashboard'] .row-2-3 { grid-template-columns: 1fr; }
 }
 
+@container dashboard-main (max-width: 900px) {
+  
+[data-app='dashboard'] .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  
+[data-app='dashboard'] .rooms { grid-template-columns: 1fr 1fr; }
+  
+[data-app='dashboard'] .topbar { padding: 0 16px; gap: 6px; }
+  
+[data-app='dashboard'] .search input { width: 130px; }
+  
+[data-app='dashboard'] .search kbd { display: none; }
+}
+
+@container dashboard-main (max-width: 600px) {
+  
+[data-app='dashboard'] .content { --pad: 16px; }
+  
+[data-app='dashboard'] .stat-grid { grid-template-columns: 1fr; }
+  
+[data-app='dashboard'] .rooms { grid-template-columns: 1fr; }
+  
+[data-app='dashboard'] .section-title { font-size: 19px; }
+  /* topbar sempit: sembunyikan search global (tabel tetap punya search sendiri) + bell dekoratif */
+[data-app='dashboard'] .topbar .search,
+[data-app='dashboard'] .topbar__bell { display: none; }
+  
+[data-app='dashboard'] .funnel-wrap { flex-direction: column; align-items: stretch; }
+  
+[data-app='dashboard'] .topbar { padding: 0 14px; }
+}
+
+/* Shell: drawer sidebar mobile, scrim, hamburger -- pakai @media viewport
+   (bukan @container) karena nentuin apakah .sidebar jadi fixed-overlay.
+   Kalau ini ikut lebar .main, hamburger bisa muncul padahal .sidebar belum
+   jadi drawer (masih grid item biasa di viewport >900px tapi kebetulan
+   .main sempit karena sidebar expanded). */
 @media (max-width: 900px) {
   
 [data-app='dashboard'] { padding: 0; background-attachment: scroll; } /* avoid iOS Safari fixed-bg jank */
@@ -877,38 +919,8 @@
 [data-app='dashboard'] .app.nav-open .scrim { opacity: 1; pointer-events: auto; }
   
 [data-app='dashboard'] .menu-toggle { display: grid; }
-  
-[data-app='dashboard'] .stat-grid { grid-template-columns: repeat(2, 1fr); }
-  
-[data-app='dashboard'] .rooms { grid-template-columns: 1fr 1fr; }
   /* sidebar sudah jadi drawer (menu-toggle + scrim) → tombol "sembunyikan sidebar" desktop mubazir */
 [data-app='dashboard'] #sidebarToggle { display: none; }
-  
-[data-app='dashboard'] .topbar { padding: 0 16px; gap: 6px; }
-  
-[data-app='dashboard'] .search input { width: 130px; }
-  
-[data-app='dashboard'] .search kbd { display: none; }
-}
-
-@media (max-width: 600px) {
-  
-[data-app='dashboard'] { --pad: 16px; }
-  
-[data-app='dashboard'] .stat-grid { grid-template-columns: 1fr; }
-  
-[data-app='dashboard'] .rooms { grid-template-columns: 1fr; }
-  
-[data-app='dashboard'] .search input { width: 130px; }
-  
-[data-app='dashboard'] .section-title { font-size: 19px; }
-  /* topbar sempit: sembunyikan search global (tabel tetap punya search sendiri) + bell dekoratif */
-[data-app='dashboard'] .topbar .search,
-[data-app='dashboard'] .topbar__bell { display: none; }
-  
-[data-app='dashboard'] .funnel-wrap { flex-direction: column; align-items: stretch; }
-  
-[data-app='dashboard'] .topbar { padding: 0 14px; }
 }
 
 /* ============== TOUCH TARGETS (perangkat sentuh nyata ATAU viewport ≤900px,
