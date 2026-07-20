@@ -3,7 +3,8 @@ node_modules/
 .env.local
 .env*.local
 *.tsbuildinfo
-next-env.d.ts
+next-env.d.
+.claude
 
 # Bukti golden test Fase 2 — berisi PII penghuni NYATA (nama, no HP, email,
 # kontak darurat pihak ketiga). Disimpan lokal sebagai bukti kerja, TIDAK
