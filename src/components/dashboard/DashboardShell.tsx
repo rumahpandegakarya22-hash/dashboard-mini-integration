@@ -207,9 +207,6 @@ export default function DashboardShell({
               <div className="seg">
                 <button className="is-active">Overview</button>
               </div>
-              <button className="seg-pill">
-                {period} <IconCaret />
-              </button>
             </div>
           )}
           {children}
