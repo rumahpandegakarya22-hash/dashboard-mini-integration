@@ -1,5 +1,4 @@
-import { appendRow } from './sheets';
-import { SHEETS } from '@/config/spreadsheets';
+import { turso } from './turso';
 import type { SessionUser } from './auth';
 
 export interface AuditEntry {
@@ -7,7 +6,7 @@ export interface AuditEntry {
   user: SessionUser;
   moduleId: string;
   action: 'CREATE' | 'UPDATE';
-  target: string; // "namaFile → sheet"
+  target: string; // "namaFile → sheet" (era Sheets) / "Turso → tabel"
   row?: number;
   oldData?: unknown;
   newData?: unknown;
@@ -17,30 +16,43 @@ export interface AuditEntry {
 }
 
 /**
- * Tulis 1 baris audit (append-only) ke spreadsheet "Audit Log Mini App".
- * Kegagalan audit tidak boleh menggagalkan transaksi utama — hanya di-log ke console.
+ * Tulis 1 baris audit (append-only) ke tabel Turso `audit_log`.
+ *
+ * Wave 3 migrasi Sheets → Turso: dulu append ke spreadsheet AUDIT_LOG tab
+ * 'Log'!A:M. Urutan & makna kolom dipertahankan 1:1 (lihat DDL di
+ * db/schema/001_ops_sheets_to_turso.sql), hanya `ts` yang kini kolom TEXT
+ * ber-default CURRENT_TIMESTAMP alih-alih string ISO yang dikirim aplikasi —
+ * tetap diisi eksplisit di sini supaya jam-nya jam kejadian, bukan jam commit.
+ *
+ * Kegagalan audit TIDAK boleh menggagalkan transaksi utama — hanya di-log ke
+ * console (perilaku ini sengaja dipertahankan dari versi Sheets).
+ *
+ * Tidak ada lagi guard "SHEET_ID_AUDIT_LOG belum di-set": tabelnya selalu ada
+ * selama Turso terkonfigurasi, jadi audit tidak lagi diam-diam dilewati.
  */
 export async function writeAudit(e: AuditEntry): Promise<void> {
-  if (!SHEETS.AUDIT_LOG) {
-    console.warn('[audit] SHEET_ID_AUDIT_LOG belum di-set; audit dilewati.');
-    return;
-  }
   try {
-    await appendRow(SHEETS.AUDIT_LOG, "'Log'!A:M", [
-      new Date().toISOString(),
-      e.requestId,
-      e.user.username,
-      e.user.role,
-      e.moduleId,
-      e.action,
-      e.target,
-      e.row ?? '',
-      e.oldData ? JSON.stringify(e.oldData) : '',
-      e.newData ? JSON.stringify(e.newData) : '',
-      e.durationSec ?? '',
-      e.status,
-      e.error ?? ''
-    ]);
+    await turso().execute({
+      sql: `INSERT INTO audit_log
+              (ts, request_id, username, role, module_id, action, target,
+               row_ref, old_data, new_data, duration_sec, status, error)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        new Date().toISOString(),
+        e.requestId,
+        e.user.username,
+        e.user.role,
+        e.moduleId,
+        e.action,
+        e.target,
+        e.row ?? null,
+        e.oldData ? JSON.stringify(e.oldData) : null,
+        e.newData ? JSON.stringify(e.newData) : null,
+        e.durationSec ?? null,
+        e.status,
+        e.error ?? null
+      ]
+    });
   } catch (err) {
     console.error('[audit] gagal menulis audit log:', err);
   }

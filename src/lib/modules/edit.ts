@@ -2,30 +2,44 @@
 // terakhir target modul → pilih → form terisi → simpan menimpa baris yang sama.
 //
 // Dua jenis store:
-// - 'sheet'  : baris Google Sheets, di-update via nomor baris (readTableWithRowNum
-//              → updateRange). Tulis pakai buildRow YANG SAMA dgn submit (satu
-//              aturan validasi/normalisasi); sel null (kolom formula) dilewati
-//              Google API sehingga formula tidak tertimpa.
-// - 'turso'  : UPDATE by id.
+// - 'turso-row' : baris tabel Turso, di-UPDATE by primary key. Tulis pakai
+//                 buildRow YANG SAMA dgn submit (satu aturan validasi/
+//                 normalisasi). Kolom formula tidak pernah muncul di hasil
+//                 buildRow, jadi tidak mungkin tertimpa.
+// - 'custom'    : list/save bebas (mis. butuh join, efek berantai, atau masih
+//                 di Google Sheets).
+//
+// Wave 2 migrasi Sheets → Turso mengganti jenis 'sheet' lama (update by nomor
+// baris + assertHeaders) dengan 'turso-row'. Sisa yang MASIH Sheets ada di
+// config 'custom': penghuni-baru & checkout (dijadwalkan Wave 3).
 //
 // SENGAJA TIDAK ada edit utk: pembayaran-sewa & pindah-kamar (submitnya memicu
 // efek berantai — invoice/email/payment, perpindahan atomik antar tabel — edit
-// aman butuh proses void/koreksi sendiri) dan inspeksi-kebersihan (5 field form
-// digabung jadi 4 kolom sheet — tidak bisa dibalik utuh).
+// aman butuh proses void/koreksi sendiri).
+// CATATAN: inspeksi-kebersihan dulu dikecualikan karena 5 field form dipadatkan
+// jadi 4 kolom sheet sehingga tidak bisa dibalik utuh. Setelah pindah ke tabel
+// `inspeksi_kebersihan` (kolom terpisah) alasan itu HILANG — edit bisa
+// ditambahkan kapan saja, belum dilakukan agar cakupan Wave 2 tetap sempit.
 
-import { readTableWithRowNum, updateRange, assertHeaders } from '../core/sheets';
 import { turso, DIVISI_DB, TASK_STATUS } from '../core/turso';
 import { getAccounts, getActiveTenants, getTenantByLabel, getRoomFresh } from '../master';
-import { toISODateFlexible, parseDateISO, parseRupiah, normalizePhone, normalizeRoomId, required } from '../core/validate';
+import {
+  toISODateFlexible,
+  parseDateISO,
+  parseRupiah,
+  parseRupiahOptional,
+  normalizePhone,
+  normalizeRoomId,
+  required
+} from '../core/validate';
 import { MODULES } from './registry';
-import type { AppendConfig } from './handlers/helpers';
-import { surveyAppendCfg } from './handlers/survey';
-import { leadsAppendCfg } from './handlers/leads';
-import { kontenAppendCfg } from './handlers/konten';
-import { promosiAppendCfg } from './handlers/promosi';
+import type { InsertConfig } from './handlers/helpers';
+import { surveyInsertCfg } from './handlers/survey';
+import { leadsInsertCfg } from './handlers/leads';
+import { kontenInsertCfg } from './handlers/konten';
+import { promosiInsertCfg } from './handlers/promosi';
 import { KODE_KATEGORI } from './handlers/maintenance';
-import { inspeksiFasilitasAppendCfg } from './handlers/inspeksi-fasilitas';
-import { SHEETS } from '@/config/spreadsheets';
+import { inspeksiFasilitasInsertCfg } from './handlers/inspeksi-fasilitas';
 
 export interface EditEntry {
   ref: string; // sheet: nomor baris; turso: id
@@ -35,13 +49,22 @@ export interface EditEntry {
 
 const LIST_LIMIT = 20;
 
-interface SheetEditCfg {
-  kind: 'sheet';
-  append: AppendConfig;
-  /** Nama field form berurutan PERSIS dgn output buildRow; null = kolom formula/dilewati. */
-  editFields: (string | null)[];
+/**
+ * Baris tabel Turso yang diedit by primary key (Wave 2 migrasi Sheets → Turso).
+ * Menggantikan SheetEditCfg lama: tidak ada lagi nomor baris sheet, urutan kolom,
+ * maupun assertHeaders — kolom dirujuk by NAMA dari skema database.
+ */
+interface TursoRowEditCfg {
+  kind: 'turso-row';
+  /** Dipakai ulang dari submit → satu aturan validasi/normalisasi untuk simpan & edit. */
+  insert: InsertConfig;
+  /** Kolom DB → nama field form; dipakai mengisi ulang form saat entri dipilih.
+   *  Kolom formula (mis. promotion.roi_kotor) sengaja TIDAK dicantumkan. */
+  fieldByColumn: Record<string, string>;
   /** Field yang dirangkai jadi label daftar. */
   labelFields: string[];
+  /** Kolom primary key (default 'id'). */
+  pk?: string;
 }
 
 /** Modul dgn list/save bebas (Turso, sheet berkolom gabungan, atau butuh infer field). Save boleh return warning. */
@@ -51,7 +74,7 @@ interface CustomEditCfg {
   save: (ref: string, values: Record<string, unknown>) => Promise<string | undefined | void>;
 }
 
-type EditCfg = SheetEditCfg | CustomEditCfg;
+type EditCfg = TursoRowEditCfg | CustomEditCfg;
 
 // ---- Turso: Tugas Harian ----
 
@@ -278,30 +301,31 @@ const perbaikanKorektifEdit: CustomEditCfg = {
 const penghuniBaruEdit: CustomEditCfg = {
   kind: 'custom',
   list: async () => {
-    const rows = await readTableWithRowNum(SHEETS.LOG_SALES, "'Log Booking'!B:M");
-    return rows
-      .slice(-LIST_LIMIT)
-      .reverse()
-      .map(({ row, data }) => {
-        const d = (k: string) => String(data[k] ?? '').trim();
-        const values = {
-          tanggalBooking: toISODateFlexible(d('Tanggal Booking')) ?? '',
-          namaPenyewa: d('Nama Penyewa'),
-          noHp: d('No. HP'),
-          kamar: d('Kamar'),
-          tglMasuk: toISODateFlexible(d('Tgl Masuk')) ?? '',
-          durasiBulan: d('Durasi (bulan)').replace(/[^0-9]/g, ''),
-          hargaDisepakati: d('Harga Disepakati (Rp)').replace(/[^0-9]/g, ''),
-          statusBooking: d('Status Booking'),
-          sumberLeads: d('Sumber Leads'),
-          catatan: d('Catatan')
-        };
-        return { ref: String(row), label: `Baris ${row} · ${values.tanggalBooking} · ${values.namaPenyewa} · K${values.kamar}`, values };
-      });
+    const res = await turso().execute(
+      `SELECT no_booking, tanggal_booking, nama_penyewa, no_hp, kamar_no, tgl_masuk,
+              durasi_bulan, harga_disepakati, status_booking, sumber_leads, catatan
+       FROM booking ORDER BY tanggal_booking DESC, no_booking DESC LIMIT ${LIST_LIMIT}`
+    );
+    return res.rows.map((r) => {
+      const s = (v: unknown) => (v == null ? '' : String(v).trim());
+      const values = {
+        tanggalBooking: toISODateFlexible(s(r.tanggal_booking)) ?? '',
+        namaPenyewa: s(r.nama_penyewa),
+        noHp: s(r.no_hp),
+        kamar: s(r.kamar_no),
+        tglMasuk: toISODateFlexible(s(r.tgl_masuk)) ?? '',
+        durasiBulan: s(r.durasi_bulan).replace(/[^0-9]/g, ''),
+        hargaDisepakati: s(r.harga_disepakati).replace(/[^0-9]/g, ''),
+        statusBooking: s(r.status_booking),
+        sumberLeads: s(r.sumber_leads),
+        catatan: s(r.catatan)
+      };
+      const ref = s(r.no_booking);
+      return { ref, label: `${ref} · ${values.tanggalBooking} · ${values.namaPenyewa} · K${values.kamar}`, values };
+    });
   },
   save: async (ref, values) => {
-    const rowNum = parseInt(ref, 10);
-    if (!Number.isInteger(rowNum) || rowNum < 2) throw new Error('Referensi baris tidak valid.');
+    if (!ref.trim()) throw new Error('Referensi booking tidak valid.');
     const tanggalBooking = parseDateISO(String(values.tanggalBooking ?? ''));
     const namaPenyewa = required(values.namaPenyewa, 'Nama Penyewa');
     const noHp = normalizePhone(String(values.noHp ?? ''));
@@ -323,9 +347,18 @@ const penghuniBaruEdit: CustomEditCfg = {
     const statusBooking = required(values.statusBooking, 'Status Booking');
     const sumberLeads = required(values.sumberLeads, 'Sumber Leads');
     const catatan = String(values.catatan ?? '').trim();
-    await updateRange(SHEETS.LOG_SALES, `'Log Booking'!B${rowNum}:M${rowNum}`, [
-      [tanggalBooking, namaPenyewa, `'${noHp}`, kamarId, tglMasuk, durasi, null, harga, statusBooking, null, sumberLeads, catatan]
-    ]);
+    // tgl_keluar_est TIDAK ditulis: kolom formula (FORMULA_COLUMNS.booking),
+    // dihitung compute.ts — sama seperti dulu kolom H sheet dilewati.
+    // alasan_cancel juga tidak disentuh agar isian manual tidak tertimpa.
+    const res = await turso().execute({
+      sql: `UPDATE booking SET
+              tanggal_booking = ?, nama_penyewa = ?, no_hp = ?, kamar_no = ?,
+              tgl_masuk = ?, durasi_bulan = ?, harga_disepakati = ?,
+              status_booking = ?, sumber_leads = ?, catatan = ?
+            WHERE no_booking = ?`,
+      args: [tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, harga, statusBooking, sumberLeads, catatan, ref]
+    });
+    if (res.rowsAffected === 0) throw new Error(`Booking ${ref} tidak ditemukan.`);
     return 'Catatan: status kamar TIDAK diubah otomatis dari edit — kalau kamarnya diganti, sesuaikan status kamar manual.';
   }
 };
@@ -337,48 +370,51 @@ const penghuniBaruEdit: CustomEditCfg = {
 const checkoutEdit: CustomEditCfg = {
   kind: 'custom',
   list: async () => {
-    const rows = await readTableWithRowNum(SHEETS.CHECKOUT, "'Log Checkout'!A:J");
-    return rows
-      .slice(-LIST_LIMIT)
-      .reverse()
-      .map(({ row, data }) => {
-        const d = (k: string) => String(data[k] ?? '').trim();
-        const tunggakanText = d('Tunggakan?');
-        const values = {
-          tanggalCheckout: toISODateFlexible(d('Tanggal Checkout')) ?? '',
-          penghuni: d('Penghuni'),
-          tglMasuk: toISODateFlexible(d('Tgl Masuk')) ?? '',
-          adaTunggakan: /^ya/i.test(tunggakanText) ? 'Ya' : tunggakanText ? 'Tidak' : '',
-          nominalTunggakan: /^ya/i.test(tunggakanText) ? tunggakanText.replace(/[^0-9]/g, '') : '',
-          pengembalianDeposit: d('Pengembalian Deposit').replace(/[^0-9]/g, ''),
-          kondisiKamar: d('Kondisi Kamar'),
-          catatanKerusakan: d('Catatan Kerusakan')
-        };
-        return { ref: String(row), label: `Baris ${row} · ${values.tanggalCheckout} · ${values.penghuni}`, values };
-      });
+    const res = await turso().execute(
+      `SELECT id, tanggal_checkout, penghuni_label, tgl_masuk, ada_tunggakan,
+              nominal_tunggakan, pengembalian_deposit, kondisi_kamar, catatan_kerusakan
+       FROM checkout_log ORDER BY id DESC LIMIT ${LIST_LIMIT}`
+    );
+    return res.rows.map((r) => {
+      const s = (v: unknown) => (v == null ? '' : String(v).trim());
+      const adaTunggakan = s(r.ada_tunggakan);
+      const values = {
+        tanggalCheckout: toISODateFlexible(s(r.tanggal_checkout)) ?? '',
+        penghuni: s(r.penghuni_label),
+        tglMasuk: toISODateFlexible(s(r.tgl_masuk)) ?? '',
+        adaTunggakan,
+        // Dulu tunggakan disimpan sbg teks gabungan "Ya - Rp150.000" lalu di-parse
+        // ulang di sini. Sekarang dua kolom terpisah, jadi tidak ada parsing tebak-tebakan.
+        nominalTunggakan: adaTunggakan === 'Ya' ? s(r.nominal_tunggakan) : '',
+        pengembalianDeposit: s(r.pengembalian_deposit),
+        kondisiKamar: s(r.kondisi_kamar),
+        catatanKerusakan: s(r.catatan_kerusakan)
+      };
+      const ref = s(r.id);
+      return { ref, label: `#${ref} · ${values.tanggalCheckout} · ${values.penghuni}`, values };
+    });
   },
   save: async (ref, values) => {
-    const rowNum = parseInt(ref, 10);
-    if (!Number.isInteger(rowNum) || rowNum < 2) throw new Error('Referensi baris tidak valid.');
-    const rows = await readTableWithRowNum(SHEETS.CHECKOUT, "'Log Checkout'!A:J");
-    const existing = rows.find((r) => r.row === rowNum);
-    if (!existing) throw new Error('Baris checkout tidak ditemukan lagi di sheet.');
-    const kamar = String(existing.data['Kamar'] ?? '').trim(); // penghuni sudah non-aktif — kamar dari baris lama
-
+    if (!ref.trim()) throw new Error('Referensi checkout tidak valid.');
     const tanggalCheckout = parseDateISO(String(values.tanggalCheckout ?? ''));
     const penghuni = required(values.penghuni, 'Penghuni');
-    const tglMasuk = values.tglMasuk ? parseDateISO(String(values.tglMasuk)) : '';
+    const tglMasuk = values.tglMasuk ? parseDateISO(String(values.tglMasuk)) : null;
     const adaTunggakan = required(values.adaTunggakan, 'Tunggakan?');
     if (adaTunggakan !== 'Ya' && adaTunggakan !== 'Tidak') throw new Error('Nilai Tunggakan? tidak valid.');
-    const nominalTunggakan =
-      adaTunggakan === 'Ya' && values.nominalTunggakan ? parseRupiah(values.nominalTunggakan as string | number) : 0;
-    const pengembalianDeposit = values.pengembalianDeposit ? parseRupiah(values.pengembalianDeposit as string | number) : 0;
+    const nominalTunggakan = adaTunggakan === 'Ya' ? parseRupiahOptional(values.nominalTunggakan) : 0;
+    const pengembalianDeposit = parseRupiahOptional(values.pengembalianDeposit);
     const kondisiKamar = required(values.kondisiKamar, 'Kondisi Kamar');
     const catatanKerusakan = String(values.catatanKerusakan ?? '').trim();
-    const tunggakanText = adaTunggakan === 'Ya' ? `Ya - Rp${nominalTunggakan.toLocaleString('id-ID')}` : 'Tidak';
-    await updateRange(SHEETS.CHECKOUT, `'Log Checkout'!A${rowNum}:H${rowNum}`, [
-      [tanggalCheckout, penghuni, kamar, tglMasuk, tunggakanText, pengembalianDeposit, kondisiKamar, catatanKerusakan]
-    ]);
+    // no_kamar & diinput_oleh sengaja TIDAK diubah — dipertahankan dari baris asli
+    // (perilaku sama dgn versi sheet yang hanya menimpa kolom A:H).
+    const res = await turso().execute({
+      sql: `UPDATE checkout_log SET
+              tanggal_checkout = ?, penghuni_label = ?, tgl_masuk = ?, ada_tunggakan = ?,
+              nominal_tunggakan = ?, pengembalian_deposit = ?, kondisi_kamar = ?, catatan_kerusakan = ?
+            WHERE id = ?`,
+      args: [tanggalCheckout, penghuni, tglMasuk, adaTunggakan, nominalTunggakan, pengembalianDeposit, kondisiKamar, catatanKerusakan, ref]
+    });
+    if (res.rowsAffected === 0) throw new Error(`Entri checkout ${ref} tidak ditemukan.`);
   }
 };
 
@@ -537,35 +573,98 @@ export const EDIT_CONFIGS: Record<string, EditCfg> = {
   pengeluaran: pengeluaranEdit,
   feedback: feedbackEdit,
   survey: {
-    kind: 'sheet',
-    append: surveyAppendCfg,
-    editFields: ['tanggalSurvey', 'namaCalon', 'noHp', 'dariMana', 'kamarDitinjau', 'jamSurvey', 'durasiMnt', 'feedback', 'keberatan', 'hasilSurvey', 'tindakLanjut', 'pic', 'tanggalFu'],
+    kind: 'turso-row',
+    insert: surveyInsertCfg,
+    fieldByColumn: {
+      tanggal_survey: 'tanggalSurvey',
+      nama_calon_penyewa: 'namaCalon',
+      no_hp: 'noHp',
+      sumber: 'dariMana',
+      kamar_ditinjau: 'kamarDitinjau',
+      jam_survey: 'jamSurvey',
+      durasi_menit: 'durasiMnt',
+      feedback: 'feedback',
+      keberatan_kendala: 'keberatan',
+      hasil_survey: 'hasilSurvey',
+      tindak_lanjut: 'tindakLanjut',
+      pic: 'pic',
+      tanggal_fu_survey: 'tanggalFu'
+    },
     labelFields: ['tanggalSurvey', 'namaCalon', 'hasilSurvey']
   },
   leads: {
-    kind: 'sheet',
-    append: leadsAppendCfg,
-    editFields: ['tanggal', 'namaLeads', 'noHp', 'sumberLeads', 'platform', 'jenisKamarDicari', 'budget', 'checkinRencana', 'statusLeads', 'tindakLanjut', 'picCs', 'waktuFollowUp'],
+    kind: 'turso-row',
+    insert: leadsInsertCfg,
+    fieldByColumn: {
+      tanggal: 'tanggal',
+      nama_leads: 'namaLeads',
+      no_hp_wa: 'noHp',
+      sumber_leads: 'sumberLeads',
+      platform: 'platform',
+      kamar_dicari: 'jenisKamarDicari',
+      budget: 'budget',
+      checkin_rencana: 'checkinRencana',
+      status_leads: 'statusLeads',
+      tindak_lanjut: 'tindakLanjut',
+      pic: 'picCs',
+      tanggal_fu: 'waktuFollowUp'
+    },
     labelFields: ['tanggal', 'namaLeads', 'statusLeads']
   },
   konten: {
-    kind: 'sheet',
-    append: kontenAppendCfg,
-    editFields: ['tanggalPost', 'platform', 'jenisKonten', 'judulCaption', 'visual', 'linkPost', 'jamTayang', 'status', 'likes', 'komentar', 'shareSaves', 'reach', 'catatan'],
+    kind: 'turso-row',
+    insert: kontenInsertCfg,
+    // jam_tayang↔visual & jam↔jamTayang memang tertukar — lihat catatan di handlers/konten.ts
+    fieldByColumn: {
+      tgl_post: 'tanggalPost',
+      platform: 'platform',
+      tipe_konten: 'jenisKonten',
+      judul_caption: 'judulCaption',
+      jam_tayang: 'visual',
+      link_post: 'linkPost',
+      jam: 'jamTayang',
+      status: 'status',
+      likes: 'likes',
+      komentar: 'komentar',
+      share_saves: 'shareSaves',
+      reach: 'reach',
+      catatan: 'catatan'
+    },
     labelFields: ['tanggalPost', 'platform', 'judulCaption']
   },
   promosi: {
-    kind: 'sheet',
-    append: promosiAppendCfg,
-    editFields: ['tanggalMulai', 'tanggalSelesai', 'namaPromosi', 'platform', 'tipePromosi', 'budget', 'spendAktual', 'target', 'leadsAktual', 'bookingDariPromo', null /* ROI: formula */, 'status'],
+    kind: 'turso-row',
+    insert: promosiInsertCfg,
+    // roi_persen/cpl/conv_lead_booking/roi_kotor TIDAK dicantumkan: kolom formula.
+    fieldByColumn: {
+      tgl_mulai: 'tanggalMulai',
+      tgl_selesai: 'tanggalSelesai',
+      nama_promosi: 'namaPromosi',
+      platform: 'platform',
+      tipe: 'tipePromosi',
+      budget: 'budget',
+      spend_aktual: 'spendAktual',
+      target_leads: 'target',
+      leads_aktual: 'leadsAktual',
+      booking_dr_promo: 'bookingDariPromo',
+      status: 'status'
+    },
     labelFields: ['tanggalMulai', 'namaPromosi', 'status']
   },
   'perawatan-preventif': perawatanPreventifEdit,
   'perbaikan-korektif': perbaikanKorektifEdit,
   'inspeksi-fasilitas': {
-    kind: 'sheet',
-    append: inspeksiFasilitasAppendCfg,
-    editFields: ['tanggal', 'areaFasilitas', 'kondisiDitemukan', 'kategori', 'tindakLanjutPerlu', 'petugas', 'catatan'],
+    kind: 'turso-row',
+    insert: inspeksiFasilitasInsertCfg,
+    fieldByColumn: {
+      tanggal: 'tanggal',
+      area_fasilitas: 'areaFasilitas',
+      kondisi_ditemukan: 'kondisiDitemukan',
+      kategori: 'kategori',
+      tindak_lanjut_perlu: 'tindakLanjutPerlu',
+      petugas: 'petugas',
+      catatan: 'catatan'
+    },
     labelFields: ['tanggal', 'areaFasilitas', 'kategori']
   }
 };
@@ -575,33 +674,20 @@ export function isEditable(moduleId: string): boolean {
   return moduleId in EDIT_CONFIGS;
 }
 
-// ---- Helper sheet ----
+// ---- Helper baris Turso ----
 
-/** "'Log Survey'!A:M" → { sheetName: "Log Survey", colStart: "A", colEnd: "M" } */
-function parseColRange(range: string): { sheetName: string; colStart: string; colEnd: string } {
-  const m = range.match(/^'([^']+)'!([A-Z]+):([A-Z]+)$/);
-  if (!m) throw new Error(`Format range tidak dikenal: ${range}`);
-  return { sheetName: m[1], colStart: m[2], colEnd: m[3] };
-}
-
-/** Cocokkan header aktual sheet dgn header expected (normalisasi spasi + case, sama spt assertHeaders). */
-function normHeader(h: string): string {
-  return h.replace(/\s+/g, ' ').trim().toLowerCase();
-}
-
-/** Ubah baris sheet (keyed header aktual) → values form, pakai urutan editFields + normalisasi tanggal/jam. */
-function rowToValues(moduleId: string, cfg: SheetEditCfg, data: Record<string, string>): Record<string, string> {
-  const actualByNorm: Record<string, string> = {};
-  for (const k of Object.keys(data)) actualByNorm[normHeader(k)] = data[k];
-
+/** Ubah baris Turso (keyed nama kolom) → values form, pakai fieldByColumn + normalisasi tanggal/jam. */
+function tursoRowToValues(
+  moduleId: string,
+  cfg: TursoRowEditCfg,
+  data: Record<string, unknown>
+): Record<string, string> {
   const fieldDefs = MODULES.find((m) => m.id === moduleId)?.fields ?? [];
   const typeOf = (name: string) => fieldDefs.find((f) => f.name === name)?.type;
 
   const values: Record<string, string> = {};
-  cfg.editFields.forEach((fieldName, i) => {
-    if (!fieldName) return; // kolom formula
-    const header = cfg.append.expectedHeaders[i];
-    let v = String(actualByNorm[normHeader(header)] ?? '').trim();
+  for (const [column, fieldName] of Object.entries(cfg.fieldByColumn)) {
+    let v = data[column] == null ? '' : String(data[column]).trim();
     const t = typeOf(fieldName);
     if (t === 'date' && v) v = toISODateFlexible(v) ?? '';
     if (t === 'time' && v) {
@@ -610,7 +696,7 @@ function rowToValues(moduleId: string, cfg: SheetEditCfg, data: Record<string, s
     }
     if (t === 'number' && v) v = v.replace(/[^0-9-]/g, '');
     values[fieldName] = v;
-  });
+  }
   return values;
 }
 
@@ -621,15 +707,19 @@ export async function listEntries(moduleId: string): Promise<EditEntry[]> {
   if (!cfg) throw new Error('Modul ini tidak punya fitur edit.');
   if (cfg.kind === 'custom') return cfg.list();
 
-  const rows = await readTableWithRowNum(cfg.append.spreadsheetId, cfg.append.range);
-  return rows
-    .slice(-LIST_LIMIT)
-    .reverse()
-    .map(({ row, data }) => {
-      const values = rowToValues(moduleId, cfg, data);
-      const label = `Baris ${row} · ${cfg.labelFields.map((f) => values[f]).filter(Boolean).join(' · ')}`;
-      return { ref: String(row), label, values };
-    });
+  const pk = cfg.pk ?? 'id';
+  const cols = Object.keys(cfg.fieldByColumn);
+  const res = await turso().execute(
+    `SELECT "${pk}", ${cols.map((c) => `"${c}"`).join(', ')}
+     FROM "${cfg.insert.table}" ORDER BY "${pk}" DESC LIMIT ${LIST_LIMIT}`
+  );
+  return res.rows.map((row) => {
+    const data = row as unknown as Record<string, unknown>;
+    const values = tursoRowToValues(moduleId, cfg, data);
+    const ref = String(data[pk]);
+    const label = `#${ref} · ${cfg.labelFields.map((f) => values[f]).filter(Boolean).join(' · ')}`;
+    return { ref, label, values };
+  });
 }
 
 /** Simpan perubahan entri; return warning non-blokir (mis. "jurnal DB tidak ikut berubah") bila ada. */
@@ -638,12 +728,17 @@ export async function saveEntry(moduleId: string, ref: string, values: Record<st
   if (!cfg) throw new Error('Modul ini tidak punya fitur edit.');
   if (cfg.kind === 'custom') return (await cfg.save(ref, values)) || undefined;
 
-  const rowNum = parseInt(ref, 10);
-  if (!Number.isInteger(rowNum) || rowNum < 2) throw new Error('Referensi baris tidak valid.');
-  await assertHeaders(cfg.append.spreadsheetId, cfg.append.headerRange, cfg.append.expectedHeaders);
-  const row = cfg.append.buildRow(values); // validasi & normalisasi SAMA dgn submit (anti-formula dijaga updateRange)
-  const { sheetName, colStart, colEnd } = parseColRange(cfg.append.range);
-  // Sel null (kolom formula) dilewati API update — formula di sheet tidak tertimpa.
-  await updateRange(cfg.append.spreadsheetId, `'${sheetName}'!${colStart}${rowNum}:${colEnd}${rowNum}`, [row]);
+  const pk = cfg.pk ?? 'id';
+  if (!ref.trim()) throw new Error('Referensi baris tidak valid.');
+  // buildRow SAMA dgn submit → satu aturan validasi/normalisasi.
+  // Kolom formula tidak ada di hasilnya, jadi tidak pernah tertimpa.
+  const row = cfg.insert.buildRow(values);
+  const cols = Object.keys(row);
+  if (cols.length === 0) throw new Error('Tidak ada kolom untuk disimpan.');
+  const res = await turso().execute({
+    sql: `UPDATE "${cfg.insert.table}" SET ${cols.map((c) => `"${c}" = ?`).join(', ')} WHERE "${pk}" = ?`,
+    args: [...cols.map((c) => row[c]), ref]
+  });
+  if (res.rowsAffected === 0) throw new Error(`Entri ${ref} tidak ditemukan.`);
   return undefined;
 }

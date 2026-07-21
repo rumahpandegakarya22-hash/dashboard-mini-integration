@@ -1,35 +1,25 @@
-import { createAppendHandler, type AppendConfig } from './helpers';
-import { SHEETS } from '@/config/spreadsheets';
+import { createInsertHandler, type InsertConfig } from './helpers';
 import { parseDateISO, required } from '../../core/validate';
 
-// Sheet "Log Inspeksi Harian". Kolom A (No) = formula (PRD §6 Modul 12).
-// ⚠️ Posisi kolom B:H TEBAKAN — belum diverifikasi ke sheet asli.
-const EXPECTED_HEADERS = [
-  'Tanggal',
-  'Area/Fasilitas',
-  'Kondisi Ditemukan',
-  'Kategori',
-  'Tindak Lanjut Diperlukan?',
-  'Petugas Inspeksi',
-  'Catatan'
-];
+/* Wave 2 migrasi Sheets → Turso: dulu append ke LOG_INSPEKSI_PERAWATAN →
+   'Log Inspeksi Harian'!B:H. Sekarang INSERT ke tabel `inspeksi_fasilitas`
+   (tabel BARU, dibuat di db/schema/001_ops_sheets_to_turso.sql).
 
-export const inspeksiFasilitasAppendCfg: AppendConfig = {
-  spreadsheetId: SHEETS.LOG_INSPEKSI_PERAWATAN,
-  range: "'Log Inspeksi Harian'!B:H",
-  headerRange: "'Log Inspeksi Harian'!B1:H1",
-  expectedHeaders: EXPECTED_HEADERS,
-  target: 'Log Laporan Inspeksi Perawatan Perbaikan → Log Inspeksi Harian',
-  buildRow: (values) => {
-    const tanggal = parseDateISO(String(values.tanggal ?? ''));
-    const areaFasilitas = required(values.areaFasilitas, 'Area/Fasilitas');
-    const kondisiDitemukan = required(values.kondisiDitemukan, 'Kondisi Ditemukan');
-    const kategori = required(values.kategori, 'Kategori');
-    const tindakLanjutPerlu = required(values.tindakLanjutPerlu, 'Tindak Lanjut Diperlukan?');
-    const petugas = required(values.petugas, 'Petugas Inspeksi');
-    const catatan = String(values.catatan ?? '').trim();
-    return [tanggal, areaFasilitas, kondisiDitemukan, kategori, tindakLanjutPerlu, petugas, catatan];
-  }
+   Catatan lama "posisi kolom B:H TEBAKAN — belum diverifikasi" kini TIDAK
+   RELEVAN lagi: tujuan bukan posisi kolom sheet, melainkan kolom bernama di
+   skema database, jadi tidak ada lagi risiko salah kolom diam-diam. */
+export const inspeksiFasilitasInsertCfg: InsertConfig = {
+  table: 'inspeksi_fasilitas',
+  target: 'Turso → inspeksi_fasilitas',
+  buildRow: (values) => ({
+    tanggal: parseDateISO(String(values.tanggal ?? '')),
+    area_fasilitas: required(values.areaFasilitas, 'Area/Fasilitas'),
+    kondisi_ditemukan: required(values.kondisiDitemukan, 'Kondisi Ditemukan'),
+    kategori: required(values.kategori, 'Kategori'),
+    tindak_lanjut_perlu: required(values.tindakLanjutPerlu, 'Tindak Lanjut Diperlukan?'),
+    petugas: required(values.petugas, 'Petugas Inspeksi'),
+    catatan: String(values.catatan ?? '').trim()
+  })
 };
 
-export const submitInspeksiFasilitas = createAppendHandler(inspeksiFasilitasAppendCfg);
+export const submitInspeksiFasilitas = createInsertHandler(inspeksiFasilitasInsertCfg);

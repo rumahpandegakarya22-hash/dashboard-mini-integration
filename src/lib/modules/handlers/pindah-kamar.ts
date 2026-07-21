@@ -8,8 +8,11 @@ import type { SubmitHandler } from '../types';
  *   1. Validasi: penghuni masih aktif; kamar baru ada, tidak Terisi, tidak
  *      ditempati penghuni lain, dan tanpa booking aktif (Konfirmasi/Check-in).
  *   2. INSERT rooms_transfer (histori perpindahan).
- *   3. UPDATE penghuni.no_kamar berdasarkan ID unik penghuni
- *      ("ID Penghuni", fallback kamar_id utk data lama yang ID-nya kosong).
+ *   3. UPDATE active_tenant.no_kamar berdasarkan ID unik penghuni
+ *      (id_penghuni, fallback kamar_id utk data lama yang ID-nya kosong).
+ *      BUG DIPERBAIKI 2026-07-21: dulu menulis ke tabel `penghuni` yang tidak
+ *      pernah ada di Turso — submit modul ini pasti gagal. Lihat catatan di
+ *      getPenghuniTurso() (src/lib/master.ts).
  *   4. UPSERT occupancy_history (PK id_penghuni → satu baris posisi terkini).
  * Langkah 2-4 dijalankan atomik via batch; lock per-kamar cegah race ganda.
  */
@@ -23,10 +26,10 @@ export const submitPindahKamar: SubmitHandler = async (values, ctx) => {
   const db = turso();
 
   return withLock(`kamar:${kamarBaru}`, 15, async () => {
-    // Penghuni masih aktif? (ada di tabel penghuni & masih menempati kamar)
+    // Penghuni masih aktif? (ada di active_tenant & masih menempati kamar)
     const p = await db.execute({
-      sql: `SELECT COALESCE("ID Penghuni", kamar_id) id, nama_lengkap, no_kamar
-            FROM penghuni WHERE COALESCE("ID Penghuni", kamar_id) = ?`,
+      sql: `SELECT COALESCE(id_penghuni, kamar_id) id, nama_lengkap, no_kamar
+            FROM active_tenant WHERE COALESCE(id_penghuni, kamar_id) = ?`,
       args: [idPenghuni]
     });
     if (p.rows.length === 0) throw new Error('Penghuni tidak ditemukan / sudah tidak aktif.');
@@ -42,7 +45,7 @@ export const submitPindahKamar: SubmitHandler = async (values, ctx) => {
       throw new Error(`Kamar ${kamarBaru} berstatus Terisi — pilih kamar lain.`);
     }
     const occupied = await db.execute({
-      sql: 'SELECT nama_lengkap FROM penghuni WHERE CAST(no_kamar AS TEXT) = ? LIMIT 1',
+      sql: 'SELECT nama_lengkap FROM active_tenant WHERE CAST(no_kamar AS TEXT) = ? LIMIT 1',
       args: [kamarBaru]
     });
     if (occupied.rows.length > 0) {
@@ -68,8 +71,8 @@ export const submitPindahKamar: SubmitHandler = async (values, ctx) => {
           args: [idTransfer, idPenghuni, kamarLama, kamarBaru, tanggal, alasan, notes, ctx.user.username]
         },
         {
-          sql: `UPDATE penghuni SET no_kamar = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE COALESCE("ID Penghuni", kamar_id) = ?`,
+          sql: `UPDATE active_tenant SET no_kamar = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE COALESCE(id_penghuni, kamar_id) = ?`,
           args: [kamarBaru, idPenghuni]
         },
         {

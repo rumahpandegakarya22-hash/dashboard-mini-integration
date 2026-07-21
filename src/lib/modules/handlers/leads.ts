@@ -1,59 +1,31 @@
-import { createAppendHandler, type AppendConfig } from './helpers';
-import { SHEETS } from '@/config/spreadsheets';
-import { parseDateISO, parseRupiah, normalizePhone, required } from '../../core/validate';
+import { createInsertHandler, type InsertConfig } from './helpers';
+import { parseDateISO, parseRupiahOptional, normalizePhone, required } from '../../core/validate';
 
-// Sheet "Log Leads Harian" di Log Marketing. Header DIKONFIRMASI dari sheet asli yang dibuat user
-// (8 Jul) — BUKAN lagi rancangan agregat-harian PRD awal (Tanggal/Kanal/Jumlah Leads/dst). Struktur
-// nyata: per-lead (CRM-style), 12 kolom A:L.
-const EXPECTED_HEADERS = [
-  'Tanggal',
-  'Nama Leads',
-  'No. HP / WA',
-  'Sumber Leads',
-  'Platform',
-  'Jenis Kamar Dicari',
-  'Budget (Rp)',
-  'Check-in Rencana',
-  'Status Leads',
-  'Tindak Lanjut',
-  'PIC / CS',
-  'Waktu Follow-up'
-];
-
-export const leadsAppendCfg: AppendConfig = {
-  spreadsheetId: SHEETS.LOG_MARKETING,
-  range: "'Log Leads Harian'!A:L",
-  headerRange: "'Log Leads Harian'!A1:L1",
-  expectedHeaders: EXPECTED_HEADERS,
-  target: 'Log Marketing → Log Leads Harian',
-  buildRow: (values) => {
-    const tanggal = parseDateISO(String(values.tanggal ?? ''));
-    const namaLeads = required(values.namaLeads, 'Nama Leads');
-    const noHp = normalizePhone(String(values.noHp ?? ''));
-    const sumberLeads = required(values.sumberLeads, 'Sumber Leads');
-    const platform = String(values.platform ?? '').trim();
-    const jenisKamarDicari = String(values.jenisKamarDicari ?? '').trim();
-    const budget = values.budget ? parseRupiah(values.budget as string | number) : 0;
-    const checkinRencana = values.checkinRencana ? parseDateISO(String(values.checkinRencana)) : '';
-    const statusLeads = required(values.statusLeads, 'Status Leads');
-    const tindakLanjut = String(values.tindakLanjut ?? '').trim();
-    const picCs = String(values.picCs ?? '').trim();
-    const waktuFollowUp = values.waktuFollowUp ? parseDateISO(String(values.waktuFollowUp)) : '';
-    return [
-      tanggal,
-      namaLeads,
-      `'${noHp}`, // apostrof: paksa Sheets simpan sebagai TEKS, bukan angka
-      sumberLeads,
-      platform,
-      jenisKamarDicari,
-      budget,
-      checkinRencana,
-      statusLeads,
-      tindakLanjut,
-      picCs,
-      waktuFollowUp
-    ];
-  }
+/* Wave 2 migrasi Sheets → Turso: dulu append ke Log Marketing → 'Log Leads Harian'!A:L.
+   Sekarang INSERT ke tabel `leads`. Pemetaan kolom sheet → Turso:
+     Tanggal→tanggal, Nama Leads→nama_leads, No. HP / WA→no_hp_wa,
+     Sumber Leads→sumber_leads, Platform→platform,
+     Jenis Kamar Dicari→kamar_dicari, Budget (Rp)→budget,
+     Check-in Rencana→checkin_rencana, Status Leads→status_leads,
+     Tindak Lanjut→tindak_lanjut, PIC / CS→pic, Waktu Follow-up→tanggal_fu.
+   Kolom `keterangan` tidak punya padanan field di modul — dibiarkan NULL. */
+export const leadsInsertCfg: InsertConfig = {
+  table: 'leads',
+  target: 'Turso → leads',
+  buildRow: (values) => ({
+    tanggal: parseDateISO(String(values.tanggal ?? '')),
+    nama_leads: required(values.namaLeads, 'Nama Leads'),
+    no_hp_wa: normalizePhone(String(values.noHp ?? '')),
+    sumber_leads: required(values.sumberLeads, 'Sumber Leads'),
+    platform: String(values.platform ?? '').trim(),
+    kamar_dicari: String(values.jenisKamarDicari ?? '').trim(),
+    budget: parseRupiahOptional(values.budget),
+    checkin_rencana: values.checkinRencana ? parseDateISO(String(values.checkinRencana)) : null,
+    status_leads: required(values.statusLeads, 'Status Leads'),
+    tindak_lanjut: String(values.tindakLanjut ?? '').trim(),
+    pic: String(values.picCs ?? '').trim(),
+    tanggal_fu: values.waktuFollowUp ? parseDateISO(String(values.waktuFollowUp)) : null
+  })
 };
 
-export const submitLeads = createAppendHandler(leadsAppendCfg);
+export const submitLeads = createInsertHandler(leadsInsertCfg);

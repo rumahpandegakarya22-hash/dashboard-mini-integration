@@ -1,10 +1,23 @@
-import { appendRow, assertHeaders } from '../../core/sheets';
+import { turso } from '../../core/turso';
 import { withLock } from '../../core/redis';
-import { SHEETS } from '@/config/spreadsheets';
 import { normalizePhone, normalizeRoomId, parseDateISO, parseRupiah, required } from '../../core/validate';
 import { getActiveTenants, getRoomFresh } from '../../master';
 import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
+
+/** Ejaan status_booking yang dipakai tabel `booking` & dicocokkan trigger.
+ *  Kunci = ejaan apa adanya dari dropdown (warisan tab SETTING spreadsheet). */
+const STATUS_BOOKING_DB: Record<string, string> = {
+  'check-in': 'Check-in',
+  'check-out': 'Check-out',
+  konfirmasi: 'Konfirmasi',
+  pending: 'Pending',
+  dibatalkan: 'Dibatalkan'
+};
+
+function normalizeStatusBooking(v: string): string {
+  return STATUS_BOOKING_DB[v.trim().toLowerCase()] ?? v.trim();
+}
 
 // Kolom B:M sheet "Log Booking" (Log Sales). Kolom A (No. Booking) & H (Tgl Keluar Est.) = FORMULA,
 // tidak ditulis. Header DIKONFIRMASI live 8 Jul (bukan tebakan lagi) — TIDAK ada kolom Upload
@@ -53,6 +66,13 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
   if (!DURATIONS.includes(durasi)) throw new Error('Durasi tidak valid.');
   const hargaDisepakati = parseRupiah(values.hargaDisepakati as string | number);
   const statusBooking = required(values.statusBooking, 'Status Booking');
+  /* Samakan ejaan status dgn konvensi DATABASE. Dropdown mewarisi ejaan sheet
+     ("Check-In"/"Check-Out", huruf I/O besar), sedangkan trigger booking
+     mencocokkan PERSIS 'Check-in' / 'Check-out' (perbandingan teks SQLite
+     case-sensitive). Tanpa normalisasi ini booking tersimpan tapi trigger
+     TIDAK jalan — id_penghuni, occupancy_history, dan active_tenant tidak
+     pernah terbentuk, jadi penghuni baru tak pernah muncul sebagai aktif. */
+  const statusDb = normalizeStatusBooking(statusBooking);
   const sumberLeads = required(values.sumberLeads, 'Sumber Leads');
   const catatan = String(values.catatan ?? '').trim();
 
@@ -92,29 +112,48 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
       throw new Error(`No. HP ${noHp} sudah terdaftar sebagai penghuni aktif.`);
     }
 
-    await assertHeaders(SHEETS.LOG_SALES, HEADER_RANGE, EXPECTED_HEADERS);
+    /* no_booking = 'BK-YYMM-NNN', urut per bulan. Dihitung DI DALAM statement
+       INSERT (bukan SELECT terpisah lalu INSERT) supaya penomoran tetap atomik:
+       withLock di sini per-KAMAR, jadi dua booking kamar berbeda bisa berjalan
+       bersamaan dan akan bentrok kalau nomornya dihitung di aplikasi.
+       substr(no_booking,4,4) = YYMM, substr(no_booking,-3) = urutan. */
+    const yymm = tanggalBooking.slice(2, 4) + tanggalBooking.slice(5, 7);
 
-    const row = await appendRow(SHEETS.LOG_SALES, "'Log Booking'!B:M", [
-      tanggalBooking,
-      namaPenyewa,
-      `'${noHp}`, // apostrof: paksa Sheets simpan sebagai TEKS, bukan angka
-      kamarId,
-      tglMasuk,
-      durasi,
-      null, // H: Tgl Keluar (Est.) — FORMULA, jangan ditulis
-      hargaDisepakati,
-      statusBooking,
-      '', // K: Alasan Cancel — kosong saat booking baru, diisi manual kalau nanti dibatalkan
-      sumberLeads,
-      catatan
-    ]);
+    const res = await turso().execute({
+      sql: `INSERT INTO booking
+              (no_booking, tanggal_booking, nama_penyewa, no_hp, kamar_no, tgl_masuk,
+               durasi_bulan, harga_disepakati, status_booking, alasan_cancel,
+               sumber_leads, catatan)
+            VALUES (
+              printf('BK-%s-%03d', ?, COALESCE((
+                SELECT MAX(CAST(substr(no_booking, -3) AS INTEGER)) FROM booking
+                WHERE substr(no_booking, 4, 4) = ?
+              ), 0) + 1),
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING no_booking`,
+      args: [
+        yymm,
+        yymm,
+        tanggalBooking,
+        namaPenyewa,
+        noHp,
+        kamarId,
+        tglMasuk,
+        durasi,
+        hargaDisepakati,
+        statusDb,
+        '', // Alasan Cancel — kosong saat booking baru
+        sumberLeads,
+        catatan
+      ]
+    });
+    const noBooking = res.rows.length > 0 ? String(res.rows[0].no_booking) : '(tidak diketahui)';
 
     const warning = await saveLampiran(values, ctx, `Penghuni Baru — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin');
 
     return {
-      target: 'Log Sales → Log Booking',
-      row,
-      data: { tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, hargaDisepakati, statusBooking, sumberLeads, catatan },
+      target: `Turso → booking (${noBooking})`,
+      data: { noBooking, tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, hargaDisepakati, statusBooking: statusDb, sumberLeads, catatan },
       warning
     };
   });

@@ -1,7 +1,11 @@
 import { redis, nsKey } from './core/redis';
 import { turso } from './core/turso';
 import { fetchMaterials } from './inventory';
-import { readRange, readTable, readTableWithRowNum, updateRange } from './core/sheets';
+// Sisa ketergantungan Google Sheets di file ini TINGGAL master tarif Invoice
+// Generator (INVOICE_SEWA / INVOICE_DP). Master lain sudah pindah ke Turso di
+// Wave 1. Migrasi tarif ke tabel `invoice_harga` tertunda: service account
+// belum punya izin baca kedua spreadsheet itu (lihat db/schema/001_*.sql).
+import { readRange, readTable } from './core/sheets';
 import { SHEETS } from '@/config/spreadsheets';
 import { normalizeRoomId } from './core/validate';
 
@@ -51,39 +55,36 @@ export interface Room {
   label: string; // untuk tampilan dropdown, mis. "5 — Tipe A · Rp850.000/bln" (id = nomor kamar polos, BUKAN "KTD-x")
 }
 
+/** Master kamar dari tabel Turso `kamar` (Wave 1 migrasi Sheets → Turso).
+ *  Dulu: LOG_SALES → "1.Daftar Kamar & Harga" via pencocokan header fuzzy.
+ *  Kolom kini eksplisit, jadi findHeader() tidak diperlukan lagi di sini. */
 async function fetchRoomsUncached(): Promise<Room[]> {
-  const rows = await readTable(SHEETS.LOG_SALES, "'1.Daftar Kamar & Harga'!A:Z");
-  if (rows.length === 0) return [];
-  const headers = Object.keys(rows[0]);
-  const hId = findHeader(headers, 'No. Kamar', 'no. kamar', 'kamar');
-  const hTipe = findHeader(headers, 'Tipe', 'tipe');
-  const hB1 = findHeader(headers, 'Harga/Bulan', 'harga/bulan', 'harga bulan');
-  const hB3 = findHeader(headers, 'Harga/3 Bln', '3 bln', '3 bulan');
-  const hB6 = findHeader(headers, 'Harga/6 Bln', '6 bln', '6 bulan');
-  const hB9 = findHeader(headers, 'Harga/9 Bln', '9 bln', '9 bulan');
-  const hTahun = findHeader(headers, 'Harga/Tahun', 'tahun');
-  const hStatus = findHeader(headers, 'Status', 'status');
-  return rows
-    .filter((r) => String(r[hId] ?? '').trim() !== '')
+  const res = await turso().execute(
+    `SELECT no_kamar, tipe_kamar, harga_bulan, harga_3bulan, harga_6bulan,
+            harga_9bulan, harga_tahun, status
+     FROM kamar ORDER BY no_kamar`
+  );
+  return res.rows
+    .filter((r) => String(r.no_kamar ?? '').trim() !== '')
     .map((r) => {
-      const id = normalizeRoomId(r[hId]);
-      const tipe = r[hTipe] || '';
-      const hargaBulan = parseNum(r[hB1]);
+      const id = normalizeRoomId(String(r.no_kamar));
+      const tipe = String(r.tipe_kamar ?? '');
+      const hargaBulan = Number(r.harga_bulan ?? 0);
       return {
         id,
         tipe,
         hargaBulan,
-        harga3: parseNum(r[hB3]),
-        harga6: parseNum(r[hB6]),
-        harga9: parseNum(r[hB9]),
-        hargaTahun: parseNum(r[hTahun]),
-        status: (r[hStatus] || '').trim(),
+        harga3: Number(r.harga_3bulan ?? 0),
+        harga6: Number(r.harga_6bulan ?? 0),
+        harga9: Number(r.harga_9bulan ?? 0),
+        hargaTahun: Number(r.harga_tahun ?? 0),
+        status: String(r.status ?? '').trim(),
         label: `${id} — ${tipe} · Rp${hargaBulan.toLocaleString('id-ID')}/bln`
       };
     });
 }
 
-/** Master kamar dari Log Sales → "1.Daftar Kamar & Harga". */
+/** Master kamar (Turso `kamar`). */
 export async function getRooms(): Promise<Room[]> {
   return cached('rooms', fetchRoomsUncached);
 }
@@ -100,24 +101,14 @@ export async function getRoomFresh(roomId: string): Promise<Room | undefined> {
   return rooms.find((r) => r.id === roomId);
 }
 
-/** Update sel Status pada baris kamar terkait di Daftar Kamar & Harga (dipakai Modul 3 & 4). */
+/** Update status kamar di Turso `kamar` (dipakai Modul 3 & 4).
+ *  Dulu menulis sel Status di sheet Daftar Kamar & Harga lewat updateRange. */
 export async function updateRoomStatus(roomId: string, newStatus: string): Promise<void> {
-  const rows = await readTableWithRowNum(SHEETS.LOG_SALES, "'1.Daftar Kamar & Harga'!A:Z");
-  if (rows.length === 0) throw new Error('Sheet Daftar Kamar & Harga kosong.');
-  const headers = Object.keys(rows[0].data);
-  const hId = findHeader(headers, 'No. Kamar', 'no. kamar', 'kamar');
-  const hStatus = findHeader(headers, 'Status', 'status');
-  const target = rows.find((r) => {
-    try {
-      return normalizeRoomId(r.data[hId]) === roomId;
-    } catch {
-      return false;
-    }
+  const res = await turso().execute({
+    sql: 'UPDATE kamar SET status = ? WHERE CAST(no_kamar AS TEXT) = ?',
+    args: [newStatus, roomId]
   });
-  if (!target) throw new Error(`Kamar ${roomId} tidak ditemukan untuk update status.`);
-  const colIdx = headers.indexOf(hStatus);
-  const colLetter = String.fromCharCode(65 + colIdx);
-  await updateRange(SHEETS.LOG_SALES, `'1.Daftar Kamar & Harga'!${colLetter}${target.row}`, [[newStatus]]);
+  if (res.rowsAffected === 0) throw new Error(`Kamar ${roomId} tidak ditemukan untuk update status.`);
   await redis.del(nsKey('master:rooms')); // cache 5 menit jadi stale kalau tidak dibersihkan setelah update status
 }
 
@@ -159,28 +150,33 @@ export interface Tenant {
   label: string; // untuk dropdown & kolom Unit/Penyewa, format baku PRD "KTD-x — Nama" (pakai id, BUKAN kamar)
 }
 
-/** Penghuni aktif dari Database Penghuni → sheet DATA. READ-ONLY — jangan pernah ditulis, lihat sheets.ts assertHeaders/READ_ONLY_SHEETS. */
+/** Penghuni aktif dari tabel Turso `active_tenant` (Wave 1 migrasi Sheets → Turso).
+ *
+ *  Dulu: DATABASE_PENGHUNI → sheet DATA (berformula/IMPORTRANGE, READ-ONLY).
+ *  `active_tenant` dirawat trigger check-in/check-out di tabel `booking`, jadi
+ *  isinya memang hanya penghuni yang sedang aktif — filter status "Aktif" ala
+ *  sheet tidak diperlukan lagi. Status dilaporkan 'Aktif' agar bentuk Tenant
+ *  (dipakai dropdown & handler) tidak berubah. */
 export async function getActiveTenants(): Promise<Tenant[]> {
   return cached('tenants', async () => {
-    const rows = await readTable(SHEETS.DATABASE_PENGHUNI, "'DATA'!A:Z");
-    if (rows.length === 0) return [];
-    const headers = Object.keys(rows[0]);
-    const hId = findHeader(headers, 'ID Penghuni', 'id penghuni', 'no. penghuni', 'ktd', 'id');
-    const hKamar = findHeader(headers, 'Kamar', 'no. kamar', 'kamar');
-    const hNama = findHeader(headers, 'Nama', 'nama lengkap', 'nama');
-    const hHp = findHeader(headers, 'No. HP', 'no. hp', 'hp');
-    const hStatus = findHeader(headers, 'Status', 'status');
-    return rows
-      .filter((r) => {
-        const s = (r[hStatus] || '').toLowerCase();
-        return s.includes('aktif') && !s.includes('non');
-      })
-      .map((r) => {
-        const id = r[hId] || '';
-        const kamar = r[hKamar] || '';
-        const nama = r[hNama] || '';
-        return { id, kamar, nama, hp: r[hHp] || '', status: r[hStatus] || '', label: `${id} — ${nama}` };
-      });
+    const res = await turso().execute(
+      `SELECT COALESCE(id_penghuni, kamar_id) id, nama_lengkap, no_kamar, no_hp
+       FROM active_tenant
+       WHERE COALESCE(nama_lengkap, '') != ''
+       ORDER BY nama_lengkap`
+    );
+    return res.rows.map((r) => {
+      const id = String(r.id ?? '');
+      const nama = String(r.nama_lengkap ?? '');
+      return {
+        id,
+        kamar: String(r.no_kamar ?? ''),
+        nama,
+        hp: String(r.no_hp ?? ''),
+        status: 'Aktif',
+        label: `${id} — ${nama}`
+      };
+    });
   });
 }
 
@@ -253,40 +249,59 @@ export async function getSumberDana(): Promise<SumberDana[]> {
   return rows;
 }
 
-/** Nilai dropdown generik dari kolom `column` pada sheet SETTING suatu file (dipakai per modul di Tahap 3+). */
-export async function getSettingList(spreadsheetId: string, sheetName: string, column: string): Promise<string[]> {
-  return cached(`setting:${spreadsheetId}:${sheetName}:${column}`, async () => {
-    const rows = await readTable(spreadsheetId, `'${sheetName}'!A:Z`);
-    if (rows.length === 0) return [];
-    const headers = Object.keys(rows[0]);
-    const hCol = findHeader(headers, column, column);
-    return Array.from(new Set(rows.map((r) => (r[hCol] || '').trim()).filter(Boolean)));
+/**
+ * Nilai dropdown dari tabel Turso `settings` (Wave 1 migrasi Sheets → Turso).
+ *
+ * Dulu membaca tab SETTING tiap spreadsheet lewat Google Sheets API. Sekarang
+ * dari `settings` (grup, kolom, nilai, urutan) — di-seed sekali oleh
+ * scripts/seed-settings.ts dari db/seed/settings.json.
+ *
+ * `grup` sengaja tetap memakai kunci lama SHEETS ('LOG_SALES', 'LOG_MARKETING',
+ * ...) supaya string master di registry.ts ("setting:LOG_SALES:SETTING:PIC")
+ * tidak perlu diubah sama sekali.
+ *
+ * Parameter `sheetName` dipertahankan agar signature tidak berubah, tapi TIDAK
+ * dipakai lagi: seluruh nilai berasal dari satu tab SETTING per file.
+ */
+export async function getSettingList(grup: string, _sheetName: string, column: string): Promise<string[]> {
+  return cached(`setting:${grup}:${column}`, async () => {
+    const res = await turso().execute({
+      sql: `SELECT nilai FROM settings
+            WHERE grup = ? AND kolom = ? AND aktif = 1
+            ORDER BY urutan, id`,
+      args: [grup, column]
+    });
+    return res.rows.map((r) => String(r.nilai ?? '').trim()).filter(Boolean);
   });
 }
 
-/** Status Booking (dropdown) dari Log Sales → SETTING. */
+/** Status Booking (dropdown) — settings grup LOG_SALES. */
 export async function getStatusBookingOptions(): Promise<{ id: string; label: string }[]> {
-  const list = await getSettingList(SHEETS.LOG_SALES, 'SETTING', 'Status Booking');
+  const list = await getSettingList('LOG_SALES', 'SETTING', 'Status Booking');
   return list.map((v) => ({ id: v, label: v }));
 }
 
-/** Sumber Leads (dropdown) dari Log Sales → SETTING. */
+/** Sumber Leads (dropdown) — settings grup LOG_SALES. */
 export async function getSumberLeadsOptions(): Promise<{ id: string; label: string }[]> {
-  const list = await getSettingList(SHEETS.LOG_SALES, 'SETTING', 'Sumber Leads');
+  const list = await getSettingList('LOG_SALES', 'SETTING', 'Sumber Leads');
   return list.map((v) => ({ id: v, label: v }));
 }
 
 /**
- * Dropdown SETTING generik: type = "setting:<SHEETS_KEY>:<namaSheet>:<namaKolom>",
- * mis. "setting:LOG_SALES:SETTING:Dari Mana". Menghindari perlu fungsi getX() baru
- * per dropdown SETTING — dipakai modul-modul Tahap 4-5.
+ * Dropdown SETTING generik: type = "setting:<GRUP>:<namaSheet>:<namaKolom>",
+ * mis. "setting:LOG_SALES:SETTING:Dari Mana". Format string TIDAK berubah dari
+ * era Sheets — <GRUP> yang dulu kunci SHEETS kini jadi kolom `grup` di Turso.
  */
 async function getGenericSettingOptions(type: string): Promise<{ id: string; label: string }[]> {
-  const [, sheetKey, sheetName, ...colParts] = type.split(':');
+  const [, grup, sheetName, ...colParts] = type.split(':');
   const column = colParts.join(':');
-  const spreadsheetId = (SHEETS as Record<string, string>)[sheetKey];
-  if (!spreadsheetId) throw new Error(`Spreadsheet key tidak dikenal: "${sheetKey}".`);
-  const list = await getSettingList(spreadsheetId, sheetName, column);
+  if (!grup || !column) throw new Error(`Format master setting tidak valid: "${type}".`);
+  const list = await getSettingList(grup, sheetName, column);
+  if (list.length === 0) {
+    throw new Error(
+      `Dropdown "${column}" (grup ${grup}) kosong di tabel settings. Jalankan: npx tsx scripts/seed-settings.ts --commit`
+    );
+  }
   return list.map((v) => ({ id: v, label: v }));
 }
 
@@ -343,19 +358,19 @@ export async function getInvoiceSewaMaster(): Promise<InvoiceSewaMaster> {
   return cached('invoice-sewa', fetchInvoiceSewaMasterUncached);
 }
 
-/** Listrik/bulan per No Kamar — sumber sama dgn getActiveTenants (DATABASE_PENGHUNI/DATA), kolom "Listrik". */
+/** Listrik/bulan per No Kamar — kolom Turso `kamar.listrik` (Wave 1 migrasi
+ *  Sheets → Turso; dulu DATABASE_PENGHUNI/DATA kolom "Listrik").
+ *  Kamar tanpa nilai listrik sengaja TIDAK dimasukkan ke map, sama seperti
+ *  perilaku lama saat selnya kosong. */
 async function fetchListrikByKamarUncached(): Promise<Record<string, number>> {
-  const rows = await readTable(SHEETS.DATABASE_PENGHUNI, "'DATA'!A:Z");
-  if (rows.length === 0) return {};
-  const headers = Object.keys(rows[0]);
-  const hKamar = findHeaderOptional(headers, 'No Kamar', 'no. kamar', 'kamar');
-  const hListrik = findHeaderOptional(headers, 'Listrik');
+  const res = await turso().execute(
+    'SELECT no_kamar, listrik FROM kamar WHERE listrik IS NOT NULL AND listrik != 0'
+  );
   const map: Record<string, number> = {};
-  if (!hKamar || !hListrik) return map;
-  for (const r of rows) {
-    const kamar = String(r[hKamar] ?? '').trim();
+  for (const r of res.rows) {
+    const kamar = String(r.no_kamar ?? '').trim();
     if (!kamar) continue;
-    map[kamar] = parseNum(r[hListrik]);
+    map[kamar] = Number(r.listrik ?? 0);
   }
   return map;
 }
@@ -365,22 +380,22 @@ export async function getListrikByKamar(): Promise<Record<string, number>> {
 }
 
 /**
- * Tanggal Masuk per No Kamar — sumber sama dgn Listrik (DATABASE_PENGHUNI/DATA). Kolom OPSIONAL:
- * kalau sheet belum punya kolom ini, kembalikan map kosong — caller (checkout-lookup) HARUS
- * fallback ke instruksi manual, jangan pernah menebak tanggal.
+ * Tanggal Masuk per No Kamar — kolom Turso `active_tenant.tanggal_masuk` (Wave 1
+ * migrasi Sheets → Turso; dulu DATABASE_PENGHUNI/DATA).
+ * Nilai OPSIONAL: kamar tanpa tanggal masuk tidak dimasukkan ke map, sehingga
+ * caller (checkout-lookup) tetap fallback ke instruksi manual — jangan pernah
+ * menebak tanggal.
  */
 async function fetchTanggalMasukByKamarUncached(): Promise<Record<string, string>> {
-  const rows = await readTable(SHEETS.DATABASE_PENGHUNI, "'DATA'!A:Z");
-  if (rows.length === 0) return {};
-  const headers = Object.keys(rows[0]);
-  const hKamar = findHeaderOptional(headers, 'No Kamar', 'no. kamar', 'kamar');
-  const hMasuk = findHeaderOptional(headers, 'Tanggal Masuk', 'tgl masuk');
+  const res = await turso().execute(
+    `SELECT no_kamar, tanggal_masuk FROM active_tenant
+     WHERE COALESCE(no_kamar, '') != '' AND COALESCE(tanggal_masuk, '') != ''`
+  );
   const map: Record<string, string> = {};
-  if (!hKamar || !hMasuk) return map;
-  for (const r of rows) {
-    const kamar = String(r[hKamar] ?? '').trim();
+  for (const r of res.rows) {
+    const kamar = String(r.no_kamar ?? '').trim();
     if (!kamar) continue;
-    map[kamar] = String(r[hMasuk] ?? '').trim();
+    map[kamar] = String(r.tanggal_masuk ?? '').trim();
   }
   return map;
 }
@@ -425,12 +440,19 @@ export async function getInvoiceDpMaster(): Promise<InvoiceDpPenghuni[]> {
 
 // ---- Master dari Turso (Mini App Improvement §5 — pindah kamar berbasis database) ----
 
-/** Penghuni aktif dari Turso. id efektif = "ID Penghuni" bila terisi, fallback kamar_id (PK). */
+/** Penghuni aktif dari Turso. id efektif = id_penghuni bila terisi, fallback kamar_id (PK).
+ *
+ *  BUG DIPERBAIKI 2026-07-21: dulu query `FROM penghuni` dengan kolom `"ID Penghuni"`.
+ *  Tabel `penghuni` TIDAK PERNAH ADA di Turso (dikonfirmasi ke sqlite_master: 24 tabel,
+ *  tidak satupun bernama penghuni) sehingga master ini SELALU melempar error — modul
+ *  Pindah Kamar praktis tidak bisa dipakai (kedua dropdown-nya gagal memuat; dicek
+ *  langsung di produksi: /api/ops/master/penghuni-turso → 400). Tabel yang benar adalah
+ *  `active_tenant`, dengan kolom `id_penghuni` (snake_case, bukan berspasi). */
 async function getPenghuniTurso(): Promise<{ id: string; label: string }[]> {
   const { turso } = await import('./core/turso');
   const res = await turso().execute(
-    `SELECT COALESCE("ID Penghuni", kamar_id) id, nama_lengkap, no_kamar
-     FROM penghuni WHERE COALESCE(no_kamar, '') != '' ORDER BY nama_lengkap`
+    `SELECT COALESCE(id_penghuni, kamar_id) id, nama_lengkap, no_kamar
+     FROM active_tenant WHERE COALESCE(no_kamar, '') != '' ORDER BY nama_lengkap`
   );
   return res.rows.map((r) => ({ id: String(r.id), label: `${r.nama_lengkap} — Kamar ${r.no_kamar}` }));
 }
@@ -444,7 +466,7 @@ async function getKamarKosongTurso(): Promise<{ id: string; label: string }[]> {
   const res = await turso().execute(
     `SELECT k.no_kamar, k.tipe_kamar, k.harga_bulan FROM kamar k
      WHERE LOWER(COALESCE(k.status,'')) != 'terisi'
-       AND NOT EXISTS (SELECT 1 FROM penghuni p WHERE CAST(p.no_kamar AS TEXT) = CAST(k.no_kamar AS TEXT))
+       AND NOT EXISTS (SELECT 1 FROM active_tenant p WHERE CAST(p.no_kamar AS TEXT) = CAST(k.no_kamar AS TEXT))
        AND NOT EXISTS (SELECT 1 FROM booking b WHERE b.kamar_no = k.no_kamar AND b.status_booking IN ('Konfirmasi','Check-in'))
      ORDER BY k.no_kamar`
   );

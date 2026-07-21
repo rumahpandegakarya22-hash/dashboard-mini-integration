@@ -21,6 +21,24 @@ export function parseRupiah(input: string | number): number {
   return n;
 }
 
+/**
+ * Nominal OPSIONAL (boleh 0). Kosong → 0; "0" → 0; selain itu divalidasi.
+ *
+ * parseRupiah() sengaja menolak 0 karena dipakai field nominal WAJIB (mis.
+ * Pengeluaran) yang memang tidak masuk akal bernilai nol. Tapi field opsional
+ * seperti Budget / Spend Aktual / Denda / Pajak / Diskon sah bernilai 0 —
+ * pola lama `values.x ? parseRupiah(values.x) : 0` gagal untuk input "0"
+ * (string "0" truthy → parseRupiah melempar "Nominal tidak valid"). Ditemukan
+ * lewat scripts/smoke-insert-handlers.ts saat migrasi Wave 2.
+ */
+export function parseRupiahOptional(input: unknown): number {
+  const s = String(input ?? '').trim();
+  if (!s) return 0;
+  const n = parseInt(s.replace(/[^0-9]/g, ''), 10);
+  if (!Number.isFinite(n) || n < 0) throw new Error(`Nominal tidak valid: "${s}".`);
+  return n;
+}
+
 /** Validasi tanggal ISO (yyyy-mm-dd) dan batasi rentang wajar (2020–2035). */
 export function parseDateISO(input: string): string {
   const m = String(input).match(/^(\d{4})-(\d{2})-(\d{2})$/);

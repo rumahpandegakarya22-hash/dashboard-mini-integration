@@ -8,6 +8,33 @@ import { previewPembayaranSewa } from './pembayaran-sewa-preview';
 import { saveLampiran, resolveOccupancyId } from './helpers';
 import type { AutoFillHandler, SubmitHandler } from '../types';
 
+/* ==========================================================================
+   SENGAJA MASIH MEMAKAI GOOGLE SHEETS — bukan terlewat dari migrasi.
+
+   Ini satu-satunya modul Ops yang belum dipindah ke Turso pada Wave 3, karena
+   pencatatan pembayaran adalah HILIR dari generator invoice Apps Script, yang
+   keputusannya ditunda ("bahas nanti"). Buktinya ada di data produksi:
+
+     - payment.id_payment berisi NOMOR INVOICE hasil Apps Script
+       (mis. "INV/11/TDU/07/2026"), bukan id yang dibuat aplikasi ini.
+     - Tabel payment punya CHECK:
+         (invoice_dp_id IS NOT NULL) + (invoice_sewa_id IS NOT NULL) = 1
+       jadi satu baris payment WAJIB tertaut tepat satu baris invoice. Semua 45
+       baris produksi memenuhinya (29 DP + 16 Sewa).
+
+   Artinya menulis payment ke Turso mengharuskan aplikasi ini lebih dulu
+   membuat baris invoice_sewa/invoice_dp + nomor invoicenya — yaitu mengambil
+   alih tugas Apps Script. Memaksakannya sekarang berisiko merusak catatan
+   keuangan, jadi jalur Sheets dipertahankan APA ADANYA sampai nasib generator
+   invoice diputuskan.
+
+   Yang juga perlu diputuskan saat migrasi modul ini nanti:
+     - payment.payment_method dibatasi ('Transfer','Qris','Cash'), sedangkan
+       form mengirim nama akun kas/bank → butuh pemetaan.
+     - payment.status dibatasi ('Pending','Paid',...), sedangkan sheet memakai
+       'Belum'.
+   ========================================================================== */
+
 // Kolom A:F sheet "Input Sewa Dimuka" (Log Input Transaksi). Jurnal digenerate Apps Script "Kost Tools"
 // dari sheet ini — TIDAK menulis langsung ke sheet Transaksi (PRD §6/§8 Modul 2). Header DIKONFIRMASI
 // live 8 Jul (bukan tebakan lagi) — perhatikan "Unit / Penyewa" pakai spasi di sekitar garis miring.

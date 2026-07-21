@@ -1,18 +1,11 @@
-import { appendRow, assertHeaders } from '../../core/sheets';
 import { turso } from '../../core/turso';
 import type { SubmitContext, SubmitHandler } from '../types';
 
-export interface AppendConfig {
-  spreadsheetId: string;
-  range: string; // mis. "'Log Survey'!A:M"
-  headerRange: string; // mis. "'Log Survey'!A1:M1"
-  expectedHeaders: string[]; // TEBAKAN dari PRD kecuali dicatat lain — assertHeaders menolak submit jika beda (bukan silent-wrong-column)
-  target: string; // label audit, mis. "Log Sales → Log Survey"
-  buildRow: (values: Record<string, unknown>) => (string | number | null)[];
-  // Modul dgn field upload `lampiran` (Improvement v1.1 §1): metadata + URL Drive
-  // disimpan ke tabel Turso `dokumen` setelah baris sheet tercatat.
-  lampiran?: { judul: (values: Record<string, unknown>) => string; role: string };
-}
+/* AppendConfig / createAppendHandler (jalur Google Sheets) DIHAPUS pada Wave 4
+   migrasi Sheets → Turso: seluruh modul yang memakainya sudah pindah ke
+   createInsertHandler di bawah. Satu-satunya penulis Sheets yang tersisa di
+   repo adalah handlers/pembayaran-sewa.ts, yang memanggil appendRow langsung
+   dan sengaja ditunda (lihat catatan di file itu). */
 
 /**
  * Simpan URL lampiran (field `lampiran`, sudah di Drive via /api/upload) ke tabel Turso
@@ -56,13 +49,46 @@ export async function resolveOccupancyId(kamar: string): Promise<string | null> 
   return res.rows.length > 0 ? String(res.rows[0].id_penghuni) : null;
 }
 
-/** Factory handler untuk modul append-only sederhana (tanpa lock resource / cross-check khusus). */
-export function createAppendHandler(cfg: AppendConfig): SubmitHandler {
+/* ----------------------------- Turso (Wave 2) ----------------------------- */
+
+export interface InsertConfig {
+  /** Nama tabel Turso tujuan. */
+  table: string;
+  /** Label audit, mis. "Turso → survey". */
+  target: string;
+  /** Bangun baris sebagai peta kolom → nilai. Kolom HARUS sama persis dgn skema
+   *  (lihat db/schema/000_existing_snapshot.sql). Kolom yang tidak disebut
+   *  dibiarkan DEFAULT/NULL. */
+  buildRow: (values: Record<string, unknown>) => Record<string, string | number | null>;
+  /** Sama seperti AppendConfig.lampiran — metadata upload disimpan ke tabel `dokumen`. */
+  lampiran?: { judul: (values: Record<string, unknown>) => string; role: string };
+}
+
+/**
+ * Padanan Turso dari createAppendHandler (migrasi Sheets → Turso, Wave 2).
+ *
+ * Perbedaan yang disengaja dari versi Sheets:
+ * - TIDAK ada assertHeaders: urutan/nama kolom dijamin skema database, bukan
+ *   posisi kolom sheet yang bisa bergeser. Ini justru menghapus seluruh kelas
+ *   bug "salah kolom diam-diam" yang dulu dijaga assertHeaders.
+ * - TIDAK ada prefiks apostrof pada nomor HP. Itu hack khusus Sheets supaya
+ *   angka panjang tidak diubah jadi notasi ilmiah; kolom TEXT Turso menyimpan
+ *   apa adanya, jadi apostrofnya harus DIBUANG (kalau tidak, ikut tersimpan).
+ * - `row` yang dikembalikan kini rowid Turso, bukan nomor baris sheet.
+ */
+export function createInsertHandler(cfg: InsertConfig): SubmitHandler {
   return async (values, ctx) => {
     const row = cfg.buildRow(values);
-    await assertHeaders(cfg.spreadsheetId, cfg.headerRange, cfg.expectedHeaders);
-    const rowNum = await appendRow(cfg.spreadsheetId, cfg.range, row);
+    const cols = Object.keys(row);
+    if (cols.length === 0) throw new Error(`buildRow untuk tabel ${cfg.table} tidak menghasilkan kolom apa pun.`);
+    const res = await turso().execute({
+      sql: `INSERT INTO "${cfg.table}" (${cols.map((c) => `"${c}"`).join(', ')})
+            VALUES (${cols.map(() => '?').join(', ')})`,
+      args: cols.map((c) => row[c])
+    });
+    const rowId = res.lastInsertRowid != null ? Number(res.lastInsertRowid) : undefined;
     const warning = cfg.lampiran ? await saveLampiran(values, ctx, cfg.lampiran.judul(values), cfg.lampiran.role) : undefined;
-    return { target: cfg.target, row: rowNum, data: values, warning };
+    return { target: cfg.target, row: rowId, data: values, warning };
   };
 }
+

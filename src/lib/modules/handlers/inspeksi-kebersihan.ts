@@ -1,34 +1,26 @@
-import { createAppendHandler } from './helpers';
-import { SHEETS } from '@/config/spreadsheets';
+import { createInsertHandler, type InsertConfig } from './helpers';
 import { parseDateISO, required } from '../../core/validate';
 
-// Sheet aktual bernama "Sheet1" (BUKAN "Logbook" seperti tebakan awal), judul internal "LOGBOOK
-// KEBERSIHAN". Header DIKONFIRMASI dari sheet asli (dibuat user, 8 Jul): cuma 4 kolom generik
-// (Tanggal/Aktivitas/Lokasi/Keterangan), data mulai KOLOM B (kolom A kosong) dan header di BARIS 3
-// (bukan baris 1).
-// Field Area/Hasil-Kondisi/Temuan/Tindak Lanjut/Petugas tetap dipertahankan sbg field form (didukung
-// dropdown SETTING nyata: Area, Hasil, Petugas), tapi digabung ke 4 kolom yg tersedia:
-//   Aktivitas ← Hasil/Kondisi, Lokasi ← Area, Keterangan ← gabungan Temuan + Tindak Lanjut + Petugas.
-// Ini asumsi pemetaan — kalau user lebih suka struktur lain (mis. tambah kolom Petugas terpisah
-// di sheet), sesuaikan di sini + tambah kolom di Google Sheets.
-const EXPECTED_HEADERS = ['Tanggal', 'Aktivitas', 'Lokasi', 'Keterangan'];
+/* Wave 2 migrasi Sheets → Turso: dulu append ke LOGBOOK_INSPEKSI_KEBERSIHAN →
+   'Sheet1'!B:E. Sekarang INSERT ke tabel `inspeksi_kebersihan` (tabel BARU).
 
-export const submitInspeksiKebersihan = createAppendHandler({
-  spreadsheetId: SHEETS.LOGBOOK_INSPEKSI_KEBERSIHAN,
-  range: "'Sheet1'!B:E",
-  headerRange: "'Sheet1'!B3:E3",
-  expectedHeaders: EXPECTED_HEADERS,
-  target: 'Logbook Inspeksi Kebersihan',
-  buildRow: (values) => {
-    const tanggal = parseDateISO(String(values.tanggal ?? ''));
-    const area = required(values.area, 'Area');
-    const hasilKondisi = required(values.hasilKondisi, 'Hasil/Kondisi');
-    const temuan = String(values.temuan ?? '').trim();
-    const tindakLanjut = String(values.tindakLanjut ?? '').trim();
-    const petugas = required(values.petugas, 'Petugas');
-    const keterangan = [temuan && `Temuan: ${temuan}`, tindakLanjut && `Tindak Lanjut: ${tindakLanjut}`, `Petugas: ${petugas}`]
-      .filter(Boolean)
-      .join(' | ');
-    return [tanggal, hasilKondisi, area, keterangan];
-  }
-});
+   PERBAIKAN KEHILANGAN DATA: sheet lama cuma punya 4 kolom generik
+   (Tanggal/Aktivitas/Lokasi/Keterangan), sehingga lima field form dipadatkan —
+   Temuan + Tindak Lanjut + Petugas digabung jadi SATU string "Keterangan"
+   ("Temuan: ... | Tindak Lanjut: ... | Petugas: ..."). Akibatnya ketiganya
+   tidak bisa difilter/diagregasi lagi. Tabel Turso punya kolom sendiri-sendiri,
+   jadi penggabungan itu DIBUANG dan tiap field disimpan utuh. */
+export const inspeksiKebersihanInsertCfg: InsertConfig = {
+  table: 'inspeksi_kebersihan',
+  target: 'Turso → inspeksi_kebersihan',
+  buildRow: (values) => ({
+    tanggal: parseDateISO(String(values.tanggal ?? '')),
+    area: required(values.area, 'Area'),
+    hasil_kondisi: required(values.hasilKondisi, 'Hasil/Kondisi'),
+    temuan: String(values.temuan ?? '').trim(),
+    tindak_lanjut: String(values.tindakLanjut ?? '').trim(),
+    petugas: required(values.petugas, 'Petugas')
+  })
+};
+
+export const submitInspeksiKebersihan = createInsertHandler(inspeksiKebersihanInsertCfg);

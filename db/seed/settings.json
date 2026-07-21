@@ -1,0 +1,72 @@
+{
+  "_catatan": [
+    "Seed tabel `settings` — pengganti tab SETTING di berbagai spreadsheet.",
+    "Nilai diambil dari API master PRODUKSI (/api/ops/master/...) pada 2026-07-21,",
+    "yang saat itu masih membaca Google Sheets. Sengaja dibekukan jadi file agar",
+    "proses seeding TIDAK bergantung kredensial Google (service account lokal",
+    "tidak punya akses ke spreadsheet ini; produksi punya).",
+    "Kunci = string master di registry.ts. 'status-booking' & 'sumber-leads' bukan",
+    "format setting:* tapi sumbernya sama (LOG_SALES/SETTING), jadi ikut di sini."
+  ],
+  "settings": {
+    "setting:LOG_SALES:SETTING:Dari Mana": [
+      "Mami Kos", "Instagram", "Referral", "Google Maps", "TikTok", "Facebook"
+    ],
+    "setting:LOG_SALES:SETTING:Hasil Survey": [
+      "Tertarik- Lanjut", "Dalam pertimbangan", "Tidak Jadi", "Booking di Tempat", "Tidak hadir"
+    ],
+    "setting:LOG_SALES:SETTING:PIC": ["A", "B", "C"],
+    "setting:LOG_SALES:SETTING:Tindak Lanjut": ["Follow Up", "Non Follow Up"],
+    "setting:LOG_SALES:SETTING:Status Booking": [
+      "Pending", "Konfirmasi", "Check-In", "Check-Out", "Dibatalkan"
+    ],
+    "setting:LOG_SALES:SETTING:Sumber Leads": [
+      "Mami Kos", "Instagram", "Referral", "Google Maps", "TikTok", "Facebook"
+    ],
+
+    "setting:LOG_MARKETING:SETTING:Jenis Konten": [
+      "Foto Kamar", "VIdeo Tour", "Testimoni", "Promo", "Edukasi", "BTS", "Quote", "Meme",
+      "Info Harga", "Event"
+    ],
+    "setting:LOG_MARKETING:SETTING:Kanal Leads": [
+      "IG", "Facebook", "Google", "Referral", "Walk-in", "TikTok", "WhatsApp", "Brosur", "Lainnya"
+    ],
+    "setting:LOG_MARKETING:SETTING:Kanal Promosi": [
+      "IG Ads", "Fb Ads", "Google Ads", "TikTok Ads", "WhatsApp", "Offline", "Multi-Platform"
+    ],
+    "setting:LOG_MARKETING:SETTING:Platform": [
+      "IG Feed", "IG Story", "IG Reels", "TikTok", "Facebook", "WA Broadcast", "Google Maps", "Lainnya"
+    ],
+    "setting:LOG_MARKETING:SETTING:Status Konten": [
+      "Draft", "Ready", "Terjadwal", "Posted", "Cancel"
+    ],
+    "setting:LOG_MARKETING:SETTING:Status Promosi": ["Planned", "Aktif", "Selesai", "Cancel"],
+
+    "setting:LOG_INSPEKSI_PERAWATAN:SETTING:Area": [
+      "KM Barat Lt 1", "KM Barat Lt 2", "KM Timur Lt 1", "KM Timur Lt 2",
+      "Dapur Lt 1", "Dapur Lt 2", "Koridor Selatan Lt 1", "Koridor Selatan Lt 2",
+      "Koridor Timur Lt 1", "Koridor Timur Lt 2", "Koridor Barat Lt 1", "Koridor Barat Lt 2",
+      "Parkiran", "Taman", "Ruang Tamu", "Seluruh Area"
+    ],
+    "setting:LOG_INSPEKSI_PERAWATAN:SETTING:Kategori Inspeksi": [
+      "Kelistrikan", "Air/Plumbing", "Kebersihan", "Furniture", "AC/Pendingin",
+      "Keamanan", "Struktur Bangunan", "Lainnya"
+    ],
+    "setting:LOG_INSPEKSI_PERAWATAN:SETTING:PIC": ["A", "B", "C"],
+    "setting:LOG_INSPEKSI_PERAWATAN:SETTING:Tindak Lanjut": [
+      "Tidak", "Ya, Perbaikan", "Ya, jadwalkan Perawatan"
+    ],
+
+    "setting:LOGBOOK_INSPEKSI_KEBERSIHAN:SETTING:Area": [
+      "KM Barat Lt 1", "KM Barat Lt 2", "KM Timur Lt 1", "KM Timur Lt 2",
+      "Dapur Lt 1", "Dapur Lt 2", "Koridor Selatan Lt 1", "Koridor Selatan Lt 2",
+      "Koridor Timur Lt 1", "Koridor Timur Lt 2", "Koridor Barat Lt 1", "Koridor Barat Lt 2",
+      "Parkiran", "Taman", "Ruang Tamu", "Seluruh Area"
+    ],
+    "setting:LOGBOOK_INSPEKSI_KEBERSIHAN:SETTING:Hasil": ["Bersih", "Kotor sedikit", "Kotor"],
+    "setting:LOGBOOK_INSPEKSI_KEBERSIHAN:SETTING:Petugas": ["Dwi"],
+
+    "setting:LOGBOOK_FEEDBACK:SETTING:Kategori": ["Komplain", "Saran", "Kritik"],
+    "setting:LOGBOOK_FEEDBACK:SETTING:Status": ["Selesai", "Review"]
+  }
+}
