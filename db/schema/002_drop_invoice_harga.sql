@@ -1,0 +1,21 @@
+-- =========================================================================
+-- Batalkan tabel `invoice_harga` (dibuat di 001, tidak pernah terisi).
+--
+-- ALASAN: mubazir. Tabel `kamar` SUDAH menyimpan matriks tarif x durasi:
+--   harga_bulan | harga_3bulan | harga_6bulan | harga_9bulan | harga_tahun
+-- dan nilainya cocok dengan invoice yang sudah terbit (diverifikasi terhadap
+-- 45 invoice produksi): Eco 1bln 850rb & 3bln 800rb/bln, Classic 3bln 1,2jt.
+-- Menyimpan angka yang sama di dua tempat justru menciptakan sumber kebenaran
+-- ganda — persis penyakit yang sedang dihapus migrasi Sheets -> Turso ini.
+--
+-- Nominal DP juga TIDAK butuh tabel: aturannya 50% dari tarif 1 bulan
+-- (keputusan Owner 2026-07-21; kode pembayaran-sewa-preview.ts memang sudah
+-- memakai `Math.round(hargaKamar / 2)` sejak awal).
+--
+-- Tarif kini diedit Owner lewat UI /ops/admin/kamar yang menulis langsung ke
+-- tabel `kamar`.
+--
+-- Aman: tabel ini 0 baris dan tidak pernah dirujuk kode runtime.
+-- =========================================================================
+
+DROP TABLE IF EXISTS invoice_harga;

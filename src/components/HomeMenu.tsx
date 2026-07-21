@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Users } from 'lucide-react';
+import { Tag, Users } from 'lucide-react';
 import { DIVISION_GROUPS, moduleIcon } from './module-icons';
 import type { NavModule } from './AppShell';
 
@@ -76,6 +76,19 @@ export default function HomeMenu({ isOwner, modules }: Props) {
                   <Users size={20} />
                 </span>
                 <span className="module-card-title">Kelola User</span>
+              </Link>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: 0.33, ease: EASE }}
+              whileTap={{ scale: 0.97 }}
+            >
+              <Link href="/ops/admin/kamar" className="module-card">
+                <span className="icon-tile" aria-hidden>
+                  <Tag size={20} />
+                </span>
+                <span className="module-card-title">Kelola Harga Kamar</span>
               </Link>
             </motion.div>
           </div>

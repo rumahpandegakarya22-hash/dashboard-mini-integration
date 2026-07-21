@@ -1,13 +1,10 @@
 import { redis, nsKey } from './core/redis';
 import { turso } from './core/turso';
 import { fetchMaterials } from './inventory';
-// Sisa ketergantungan Google Sheets di file ini TINGGAL master tarif Invoice
-// Generator (INVOICE_SEWA / INVOICE_DP). Master lain sudah pindah ke Turso di
-// Wave 1. Migrasi tarif ke tabel `invoice_harga` tertunda: service account
-// belum punya izin baca kedua spreadsheet itu (lihat db/schema/001_*.sql).
-import { readRange, readTable } from './core/sheets';
-import { SHEETS } from '@/config/spreadsheets';
 import { normalizeRoomId } from './core/validate';
+
+/* File ini SUDAH BEBAS Google Sheets sejak master tarif invoice ikut pindah ke
+   tabel `kamar` (2026-07-21). Seluruh master kini dari Turso. */
 
 const TTL_SEC = 300; // 5 menit, sesuai PRD §8.4
 
@@ -20,28 +17,9 @@ async function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
   return val;
 }
 
-/** Cari nama kolom aktual di header yang cocok salah satu kandidat (case-insensitive, partial match). */
-function findHeader(headers: string[], label: string, ...candidates: string[]): string {
-  const found = findHeaderOptional(headers, ...candidates);
-  if (found) return found;
-  throw new Error(
-    `Kolom "${label}" tidak ditemukan. Header sheet aktual: ${headers.join(', ') || '(kosong)'}. Struktur sheet mungkin berubah — hubungi pengawas.`
-  );
-}
-
-/** Sama seperti findHeader, tapi kembalikan undefined (bukan throw) jika kolom opsional tidak ada. */
-function findHeaderOptional(headers: string[], ...candidates: string[]): string | undefined {
-  for (const c of candidates) {
-    const found = headers.find((h) => h.toLowerCase().includes(c.toLowerCase()));
-    if (found) return found;
-  }
-  return undefined;
-}
-
-function parseNum(v: string | undefined): number {
-  const n = parseInt(String(v ?? '').replace(/[^0-9]/g, ''), 10);
-  return Number.isFinite(n) ? n : 0;
-}
+/* findHeader / findHeaderOptional / parseNum DIHAPUS: itu alat pencocokan header
+   sheet yang longgar, tidak relevan lagi karena kolom sekarang dirujuk by nama
+   dari skema database. */
 
 export interface Room {
   id: string;
@@ -318,39 +296,61 @@ export interface InvoiceSewaMaster {
   harga: Record<string, Record<number, number>>; // harga[tipe][durasiBulan] = Rp/bulan
 }
 
+/** Durasi sewa yang punya kolom tarif sendiri di tabel `kamar`. */
+export const DURASI_TIER: { bulan: number; kolom: string }[] = [
+  { bulan: 1, kolom: 'harga_bulan' },
+  { bulan: 3, kolom: 'harga_3bulan' },
+  { bulan: 6, kolom: 'harga_6bulan' },
+  { bulan: 9, kolom: 'harga_9bulan' },
+  { bulan: 12, kolom: 'harga_tahun' }
+];
+
 /**
- * Master Invoice Generator SEWA (spreadsheet INVOICE_SEWA, sheet "Data") — dibaca POSISI kolom, BUKAN
- * header, karena Apps Script sumbernya (getFormData) juga baca posisi tetap: A=NoKamar B=Nama C=Email
- * D=Tipe (mulai baris 2), dan tabel harga F2:K5 (baris2=header durasi G:K, baris3-5=tipe+harga).
- * Dipakai buat preview invoice — HARUS baca dari sini (bukan Room master Log Sales) supaya angka preview
- * sama persis dgn yang bakal di-generate Apps Script.
+ * Master Invoice SEWA — SUMBER TUNGGAL: tabel Turso `kamar` + `active_tenant`.
+ *
+ * Dulu membaca spreadsheet INVOICE_SEWA "Data" (daftar penghuni A:D + blok tarif
+ * F2:K5) secara POSISIONAL. Blok tarif itu ternyata MENDUPLIKASI kolom tier yang
+ * sudah ada di `kamar` (harga_bulan / 3bulan / 6bulan / 9bulan / tahun) —
+ * diverifikasi terhadap invoice nyata: Eco 1bln 850rb & 3bln 800rb, Classic 3bln
+ * 1,2jt semuanya cocok dgn tier `kamar`. Dua sumber kebenaran untuk angka yang
+ * sama persis adalah akar masalah yang sedang dihapus migrasi ini, jadi tarif
+ * kini HANYA dari `kamar` dan bisa diubah Owner lewat UI Kelola Harga Kamar.
+ *
+ * harga[tipe][durasi] = Rp PER BULAN (kolom tier dibagi jumlah bulannya).
  */
 async function fetchInvoiceSewaMasterUncached(): Promise<InvoiceSewaMaster> {
-  const rows = await readRange(SHEETS.INVOICE_SEWA, "'Data'!A2:D300");
-  const penghuni: InvoiceSewaPenghuni[] = rows
-    .filter((r) => String(r[1] ?? '').trim() !== '')
-    .map((r) => ({
-      noKamar: String(r[0] ?? '').trim(),
-      nama: String(r[1] ?? '').trim(),
-      email: String(r[2] ?? '').trim(),
-      tipe: String(r[3] ?? '').trim()
-    }));
+  const kamarRes = await turso().execute(
+    `SELECT no_kamar, tipe_kamar, harga_bulan, harga_3bulan, harga_6bulan, harga_9bulan, harga_tahun
+     FROM kamar ORDER BY no_kamar`
+  );
 
-  const block = await readRange(SHEETS.INVOICE_SEWA, "'Data'!F2:K5");
-  const durasiRow = block[0] || [];
-  const durasiOptions = durasiRow
-    .slice(1)
-    .map((v) => Number(v))
-    .filter((n) => Number.isFinite(n) && n > 0);
   const harga: Record<string, Record<number, number>> = {};
-  for (let i = 1; i < block.length; i++) {
-    const tipe = String(block[i][0] ?? '').trim();
-    if (!tipe) continue;
+  for (const r of kamarRes.rows) {
+    const tipe = String(r.tipe_kamar ?? '').trim();
+    if (!tipe || harga[tipe]) continue; // tarif seragam per tipe — cukup baris pertama
     harga[tipe] = {};
-    durasiOptions.forEach((d, j) => {
-      harga[tipe][d] = parseNum(block[i][j + 1]);
-    });
+    for (const { bulan, kolom } of DURASI_TIER) {
+      const total = Number((r as Record<string, unknown>)[kolom] ?? 0);
+      if (total > 0) harga[tipe][bulan] = Math.round(total / bulan);
+    }
   }
+
+  const tenantRes = await turso().execute(
+    `SELECT t.no_kamar, t.nama_lengkap, t.email, k.tipe_kamar
+     FROM active_tenant t LEFT JOIN kamar k ON CAST(k.no_kamar AS TEXT) = CAST(t.no_kamar AS TEXT)
+     WHERE COALESCE(t.nama_lengkap, '') != '' AND COALESCE(t.no_kamar, '') != ''
+     ORDER BY CAST(t.no_kamar AS INTEGER)`
+  );
+  const penghuni: InvoiceSewaPenghuni[] = tenantRes.rows.map((r) => ({
+    noKamar: String(r.no_kamar ?? '').trim(),
+    nama: String(r.nama_lengkap ?? '').trim(),
+    email: String(r.email ?? '').trim(),
+    tipe: String(r.tipe_kamar ?? '').trim()
+  }));
+
+  const durasiOptions = DURASI_TIER.map((d) => d.bulan).filter((b) =>
+    Object.values(harga).some((h) => h[b] > 0)
+  );
   return { penghuni, durasiOptions, harga };
 }
 
@@ -412,26 +412,34 @@ export interface InvoiceDpPenghuni {
   hargaKamar: number;
 }
 
-/** Master Invoice Generator DP (spreadsheet INVOICE_DP, sheet "Sheet1") — header baris 1 (beda dgn Sewa). */
+/**
+ * Master Invoice DP — SUMBER TUNGGAL: `active_tenant` + `kamar` (dulu spreadsheet
+ * INVOICE_DP "Sheet1").
+ *
+ * `hargaKamar` = tarif sewa 1 bulan kamar tsb (`kamar.harga_bulan`). Nominal DP
+ * TIDAK disimpan: dihitung 50% dari hargaKamar di pembayaran-sewa-preview
+ * (`Math.round(p.hargaKamar / 2)`, label "Harga/unit (DP 50%)") — aturan 50% itu
+ * memang sudah dipakai kode sejak awal dan dikonfirmasi Owner 2026-07-21.
+ *
+ * CATATAN DATA LAMA: invoice DP historis tipe Eco tercatat Rp300.000, padahal
+ * 50% × 850.000 = 425.000. Penyebabnya sheet DP lama menyimpan "Harga Kamar" Eco
+ * berbeda dari tarif kamar sebenarnya. Invoice lama TIDAK diubah; aturan 50%
+ * berlaku untuk invoice baru.
+ */
 async function fetchInvoiceDpMasterUncached(): Promise<InvoiceDpPenghuni[]> {
-  const rows = await readTable(SHEETS.INVOICE_DP, "'Sheet1'!A:Z");
-  if (rows.length === 0) return [];
-  const headers = Object.keys(rows[0]);
-  const hNama = findHeaderOptional(headers, 'Nama');
-  const hEmail = findHeaderOptional(headers, 'Email');
-  const hKamar = findHeaderOptional(headers, 'No Kamar', 'kamar');
-  const hTipe = findHeaderOptional(headers, 'Tipe Kamar', 'tipe');
-  const hHarga = findHeaderOptional(headers, 'Harga Kamar', 'harga');
-  if (!hNama || !hKamar) return [];
-  return rows
-    .filter((r) => String(r[hNama!] ?? '').trim() !== '')
-    .map((r) => ({
-      noKamar: String(r[hKamar!] ?? '').trim(),
-      nama: String(r[hNama!] ?? '').trim(),
-      email: hEmail ? String(r[hEmail] ?? '').trim() : '',
-      tipe: hTipe ? String(r[hTipe] ?? '').trim() : '',
-      hargaKamar: hHarga ? parseNum(r[hHarga]) : 0
-    }));
+  const res = await turso().execute(
+    `SELECT t.no_kamar, t.nama_lengkap, t.email, k.tipe_kamar, k.harga_bulan
+     FROM active_tenant t LEFT JOIN kamar k ON CAST(k.no_kamar AS TEXT) = CAST(t.no_kamar AS TEXT)
+     WHERE COALESCE(t.nama_lengkap, '') != '' AND COALESCE(t.no_kamar, '') != ''
+     ORDER BY CAST(t.no_kamar AS INTEGER)`
+  );
+  return res.rows.map((r) => ({
+    noKamar: String(r.no_kamar ?? '').trim(),
+    nama: String(r.nama_lengkap ?? '').trim(),
+    email: String(r.email ?? '').trim(),
+    tipe: String(r.tipe_kamar ?? '').trim(),
+    hargaKamar: Number(r.harga_bulan ?? 0)
+  }));
 }
 
 export async function getInvoiceDpMaster(): Promise<InvoiceDpPenghuni[]> {

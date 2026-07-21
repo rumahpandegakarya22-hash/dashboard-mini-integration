@@ -115,21 +115,12 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_ts ON audit_log (ts);
 CREATE INDEX IF NOT EXISTS idx_audit_log_module ON audit_log (module_id, ts);
 
 -- -------------------------------------------------------------------------
--- 6. invoice_harga — master TARIF Invoice Generator (harga[tipe][durasi]).
---    CATATAN PENTING: ini master HARGA, beda dari tabel invoice_sewa/invoice_dp
---    yang berisi invoice TERBIT. Sumber lama dibaca POSISIONAL dari
---    INVOICE_SEWA/INVOICE_DP tab 'Data' blok F2:K5.
---    Spreadsheet-nya JANGAN dihapus dulu — Apps Script generator invoice masih
---    membacanya (keputusan "bahas nanti").
+-- 6. invoice_harga — DIBATALKAN, lihat 002_drop_invoice_harga.sql.
+--    Ternyata MUBAZIR: tabel `kamar` sudah punya matriks harga x durasi
+--    (harga_bulan / harga_3bulan / harga_6bulan / harga_9bulan / harga_tahun),
+--    dan angkanya cocok dgn invoice nyata. DP bukan kolom, tapi turunan:
+--    50% dari harga 1 bulan.
 -- -------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS invoice_harga (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  jenis        TEXT NOT NULL CHECK (jenis IN ('Sewa', 'DP')),
-  tipe_kamar   TEXT NOT NULL,
-  durasi_bulan INTEGER NOT NULL,
-  harga        INTEGER NOT NULL,        -- rupiah per bulan
-  UNIQUE (jenis, tipe_kamar, durasi_bulan)
-);
 
 -- -------------------------------------------------------------------------
 -- 7. kamar.listrik — tarif listrik/bulan per kamar.
