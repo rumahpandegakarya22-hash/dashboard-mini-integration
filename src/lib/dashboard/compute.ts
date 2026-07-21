@@ -24,6 +24,10 @@
    TINGKAT KEYAKINAN tiap formula ditandai di komentar:
      [VERIFIED] cocok 100% dengan data hasil migrasi (batched.db).
      [LOOKUP]   tabel referensi diturunkan dari data / aturan akuntansi baku.
+     [VERIFIED-EMPIRIS] sumbernya di spreadsheet TIDAK berformula (jadi tak bisa
+                dikunci dari rumus), tetapi aturannya sudah diuji mereproduksi
+                100% baris produksi yang ada. Bukan tebakan, tapi juga bukan
+                salinan rumus.
      [PENDING]  aritmetika ambigu — best-effort; WAJIB dikonfirmasi dari
                 formula asli via scripts/dump-formulas.ts (lihat FORMULA_CONFIG).
    ========================================================================= */
@@ -76,28 +80,24 @@ export const FORMULA_CONFIG = {
     Pendapatan: 'Kredit'
   } as Record<string, string | undefined>,
 
-  /* [PENDING — MASIH, lihat docs/formulas-dump.json 20 Juli 2026] Target SLA
-     hari per prioritas (maintenance korektif/CM).
+  /* [VERIFIED — dump formulas 21 Juli 2026] Target SLA maintenance: SATU angka
+     flat (hari), BUKAN per prioritas.
 
-     Dump formula spreadsheet MEMBUKTIKAN bentuk tebakan ini SALAH: rumus SLA
-     asli (baik Preventif maupun Korektif) TIDAK bercabang per prioritas sama
-     sekali — keduanya membandingkan durasi ke SATU angka target tunggal
-     ('1_PARAMETER'!$B$9):
-       Korektif : =IF(A2:A="";"";IF(Q2:Q<='1_PARAMETER'!$B$9;"OK";"BREACH"))
-       Preventif: =IF(B2:B="";"";IF(A2:A="Perbaikan";
-                    IF(P2:P<='1_PARAMETER'!$B$9;"OK";"BREACH");"-"))
+     Rumus asli — kedua tab membandingkan ke sel yang SAMA, '1_PARAMETER'!$B$9:
+       Korektif  (10_CORRECTIVE, kolom S):
+         =IF(A2:A="";"";IF(Q2:Q<='1_PARAMETER'!$B$9;"OK";"BREACH"))
+       Preventif (9_PREVENTIVE, kolom R):
+         =IF(B2:B="";"";IF(A2:A="Perbaikan";
+              IF(P2:P<='1_PARAMETER'!$B$9;"OK";"BREACH");"-"))
 
-     TAPI nilai asli $B$9 tidak ikut tertangkap dump — sheet 1_PARAMETER
-     ternyata >6 baris sedangkan dump-formulas.ts lama memotong di baris ke-6
-     (sudah diperbaiki di skrip, lihat commit; perlu di-jalankan ULANG untuk
-     menangkap baris 7 & 9 yang sebenarnya).
+     Nilai '1_PARAMETER'!$B$9 = 3 — baris "SLA perbaikan (hari)", keterangan
+     "Maks hari penyelesaian komplain". Angka ini dulu tidak tertangkap karena
+     dump-formulas.ts memotong sheet di baris ke-6; cap sudah diperbaiki dan
+     dump dijalankan ULANG (21 Juli 2026), barulah baris 7 & 9 terbaca.
 
-     Sesuai §11.2.1 "jangan menebak perbaikan formula PENDING": bentuk
-     per-prioritas TIDAK diubah jadi flat tanpa angka asli — mengganti satu
-     tebakan dengan tebakan lain (angka flat yang mana? 2, 3, atau 5?) bukan
-     perbaikan, cuma tebakan berbeda. Jalankan ulang dump-formulas.ts lalu baca
-     '1_PARAMETER'!$B$9 sebelum mengubah SHAPE ini. */
-  slaTargetHari: { pending: true, Tinggi: 2, Sedang: 3, Rendah: 5 } as Record<string, any>,
+     Tebakan lama { Tinggi:2, Sedang:3, Rendah:5 } DIBUANG: kolom prioritas
+     sama sekali tidak dipakai rumus SLA asli. */
+  slaTargetHari: 3,
 
   /* [VERIFIED — dump formulas 20 Juli 2026] Aturan durasi perbaikan (hari).
      Formula asli (Preventif, kolom "Durasi Perbaikan (Hari)"):
@@ -110,16 +110,27 @@ export const FORMULA_CONFIG = {
      mungkin menghasilkan 0. MAX(1,d) dipertahankan apa adanya, tidak diubah. */
   durasiMinimalSatuHari: true,
 
-  /* [PENDING] Sumber kategori arus kas jurnal: "kredit" atau "debit".
+  /* [VERIFIED-EMPIRIS — 21 Juli 2026] Sumber kategori jurnal: "kredit" atau "debit".
 
-     Dump formula MEMBUKTIKAN ini benar-benar tidak bisa dikunci dari
-     spreadsheet: kolom "Kategori" di tab 3_KEUANGAN TIDAK PUNYA FORMULA sama
-     sekali (formulaByCol tidak menyebutkannya) — nilainya diisi MANUAL oleh
-     user per transaksi. Tidak ada rumus sumber yang menentukan "ambil dari
-     akun debit atau kredit" karena spreadsheet tidak pernah menurunkannya
-     secara algoritmik. Ini keputusan desain dashboard (bukan port dari
-     spreadsheet), jadi tebakan 'kredit' TETAP dipertahankan — bukan lagi
-     "belum sempat dicek", tapi "memang tidak ada jawaban di sumber". */
+     Tetap TIDAK bisa dikunci dari formula: kolom F "Kategori" di tab 3_KEUANGAN
+     memang tidak punya formula (dikonfirmasi ulang dari dump 21 Juli 2026 —
+     formulaByCol hanya memuat Tanggal, Status, Saran Kat.(D/K), Arus Kas,
+     Aktivitas KK, Dampak Laba). Nilainya diisi MANUAL per transaksi.
+
+     TAPI aturan 'kredit' sekarang bukan lagi tebakan buta: diuji terhadap
+     SELURUH 128 baris jurnal_transaksi produksi, "ambil kategori_arus_kas akun
+     KREDIT, fallback ke akun DEBIT" mereproduksi nilai tersimpan 128/128 (100%).
+
+     JANGAN tertukar dengan kolom K "Aktivitas KK" yang PUNYA formula:
+       =IF(AND(COUNTIF(KasList;$B2)>0;COUNTIF(KasList;$C2)=0);
+            VLOOKUP($C2;'11_DAFTAR_AKUN'!$B:$F;4;FALSE);
+          IF(AND(COUNTIF(KasList;$C2)>0;COUNTIF(KasList;$B2)=0);
+            VLOOKUP($B2;'11_DAFTAR_AKUN'!$B:$F;4;FALSE);""))
+     yaitu "ambil dari sisi NON-KAS, kosong bila kedua sisi kas/bukan-kas".
+     Itu KONSEP LAIN (aktivitas arus kas, hanya untuk transaksi kas) dan bila
+     dipakai untuk kolom ini cuma cocok 38/128 — sudah diuji, ditolak data.
+     Padanan kolom J "Arus Kas" sudah diimplementasi terpisah di computeJurnal
+     sebagai `arus_kas`. */
   jurnalKategoriDari: 'kredit'
 };
 
@@ -213,7 +224,7 @@ function computePromotion(r: DbRow): DbRow {
   return o;
 }
 
-/* maintenance (CM & PM): kode [LOOKUP], durasi [PENDING-rule], sla [PENDING]. */
+/* maintenance (CM & PM): kode [LOOKUP], durasi [VERIFIED], sla [VERIFIED]. */
 function computeMaintenance(r: DbRow, isPM: boolean): DbRow {
   const o: DbRow = { ...r };
   const k = FORMULA_CONFIG.kodeByKategori[String(r.kategori || '').trim()];
@@ -223,12 +234,24 @@ function computeMaintenance(r: DbRow, isPM: boolean): DbRow {
     if (d !== null) o.durasi_perbaikan_hari = FORMULA_CONFIG.durasiMinimalSatuHari ? Math.max(1, d) : d;
   }
   if (isPM) {
+    /* Preventif tetap "-": rumus asli baru membandingkan durasi ke target bila
+       kolom A (hasil IMPORTRANGE 'Log Perawatan Preventif'!A2:o) bernilai
+       "Perbaikan", selain itu "-". Tabel Turso `maintenance_pm` TIDAK punya
+       kolom pembeda itu, jadi cabang pembanding tidak bisa dievaluasi dan
+       seluruh baris jatuh ke "-" — sama dengan perilaku sebelumnya. Kalau kolom
+       jenis perawatan kelak ditambahkan, pasang cabangnya di sini. */
     o.sla = '-';
   } else {
-    const target = FORMULA_CONFIG.slaTargetHari[String(r.prioritas || '').trim()];
-    if (target != null && o.durasi_perbaikan_hari != null && o.durasi_perbaikan_hari !== '') {
-      o.sla = num(o.durasi_perbaikan_hari) <= target ? 'OK' : 'Telat';
+    /* Korektif: durasi <= target → "OK", selebihnya "BREACH" (label verbatim
+       rumus asli; port lama memakai "Telat" yang tidak ada di spreadsheet). */
+    if (o.durasi_perbaikan_hari != null && o.durasi_perbaikan_hari !== '') {
+      o.sla = num(o.durasi_perbaikan_hari) <= FORMULA_CONFIG.slaTargetHari ? 'OK' : 'BREACH';
     }
+    /* PENYIMPANGAN DISENGAJA: rumus asli tidak menjaga durasi kosong — di Sheets
+       ""<=3 bernilai FALSE (teks selalu diurut setelah angka), sehingga tiket
+       yang BELUM selesai ikut ditandai "BREACH". Itu artefak koersi Sheets, bukan
+       maksud bisnis: tiket yang baru dibuka belum melanggar SLA. Di sini `sla`
+       dibiarkan kosong sampai tanggal_selesai terisi. */
   }
   return o;
 }
@@ -242,7 +265,7 @@ function computeCoa(r: DbRow): DbRow {
 }
 
 /* jurnal_transaksi: enrich untuk dashboard keuangan.
-   - kategori           : dari kategori_arus_kas akun terkait [PENDING]
+   - kategori           : dari kategori_arus_kas akun terkait [VERIFIED-EMPIRIS 128/128]
    - akun_debit_nama /
      akun_kredit_nama   : nama akun (join COA) — dipakai klasifikasi pembayaran
    - dampak_laba        : efek ke laba-rugi (akrual) berdasarkan tipe akun COA
