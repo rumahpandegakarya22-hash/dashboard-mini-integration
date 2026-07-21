@@ -159,7 +159,9 @@ export default function AppShell({ userName, roleLabel, isOwner,
           </div>
         </header>
 
-        <main className="content">{children}</main>
+        {/* Beranda dilebarkan penuh (module-grid & joblist butuh ruang) --
+            halaman lain (form input dsb) tetap kolom nyaman-baca 640/760px. */}
+        <main className={isHome ? 'content content--wide' : 'content'}>{children}</main>
 
         {/* ---- Dock kaca (mobile) ---- */}
         <nav className="dock" aria-label="Navigasi bawah">

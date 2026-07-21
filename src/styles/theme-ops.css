@@ -127,6 +127,14 @@
   padding: 16px 16px calc(118px + env(safe-area-inset-bottom));
 }
 
+/* Beranda: lepas kolom nyaman-baca 640/760px punya form input, biar
+   module-grid & tabel joblist bisa ngisi lebar layar penuh (mobile & desktop)
+   kayak Dashboard. Compound selector (2 kelas) sengaja dipilih biar menang
+   dari rule `.content` biasa di atas TANPA peduli urutan/breakpoint. */
+[data-app='ops'] .content.content--wide {
+  max-width: none;
+}
+
 /* Top bar kaca mengambang — hanya mobile/tablet */
 [data-app='ops'] .topbar-glass {
   position: sticky;
@@ -408,7 +416,10 @@
 
 [data-app='ops'] .module-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  /* auto-fit (bukan auto-fill): track kosong di-collapse, sisa ruang dibagi
+     rata ke kartu yg ADA -- kartu melebar ngisi baris, gak nyisa lorong
+     kosong di kanan pas layar lebar (sama pola dgn .stat-grid Dashboard). */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
 }
 
