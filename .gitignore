@@ -11,3 +11,7 @@ next-env.d.
 # pernah di-commit. Bukti yang di-commit adalah hash-nya di docs/golden-report.md.
 docs/golden-*.json
 docs/formulas-dump.json
+
+# Knowledge graph graphify — hasil turunan, bisa dibangun ulang dengan /graphify.
+# Ikut mengutip isi dokumen internal (termasuk SETUP/ABOUT_ME.md), jadi tidak di-commit.
+graphify-out/

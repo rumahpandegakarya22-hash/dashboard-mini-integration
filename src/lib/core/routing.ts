@@ -9,7 +9,7 @@
 
 import type { AuthState } from './auth';
 
-export type Landing = '/login' | '/2fa' | '/dashboard' | '/ops' | '/pending';
+export type Landing = '/login' | '/2fa' | '/dashboard' | '/ops' | '/inventory' | '/pending';
 
 /**
  * Tujuan akar `/`. Urutan gerbang sengaja: sesi → step-up 2FA → akses.
@@ -40,4 +40,13 @@ export function guardOps(s: AuthState): true | Landing {
   if (s.needsTotp) return '/2fa';
   if (!s.user) return '/pending';
   return true;
+}
+
+/**
+ * Boleh masuk route group (inventory)? Sama persis dengan Ops: pemakainya orang
+ * yang sama. Sengaja TIDAK masuk `resolveLanding` — Inventory diakses lewat
+ * tautan silang, bukan tujuan akar.
+ */
+export function guardInventory(s: AuthState): true | Landing {
+  return guardOps(s);
 }

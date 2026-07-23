@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
-import { ChevronLeft, House, LoaderCircle, LogOut, ShieldCheck, Users, LayoutDashboard } from 'lucide-react';
+import { ChevronLeft, House, LoaderCircle, LogOut, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
 import { DIVISION_GROUPS, moduleIcon } from './module-icons';
 
 export interface NavModule {
@@ -108,15 +108,19 @@ export default function AppShell({ userName, roleLabel, isOwner,
 
           {/* Navigasi silang (§9 Fase 5.2) — hanya bila akun ini punya akses
               Dashboard, supaya tidak menawarkan pintu yang terkunci. */}
-          {hasDashboardAccess && (
-            <div>
-              <div className="side-group-label">Aplikasi Lain</div>
+          <div>
+            <div className="side-group-label">Aplikasi Lain</div>
+            {hasDashboardAccess && (
               <a href="/dashboard" className="side-item">
                 <LayoutDashboard size={18} />
                 Dashboard
               </a>
-            </div>
-          )}
+            )}
+            <a href="/inventory" className="side-item">
+              <Package size={18} />
+              Stok Inventory
+            </a>
+          </div>
         </nav>
 
         <div className="side-footer">

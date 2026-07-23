@@ -4,16 +4,15 @@
    PORT VERBATIM dari `server/inventory.js` repo Dashboard lama (Fase 2).
 
    Dashboard membaca DB Turso app Inventory Stock (inventorystockktd.vercel.app)
-   untuk seksi monitoring "Stok Inventory". Dashboard TIDAK pernah menulis ke DB
-   ini — gunakan token read-only bila ada.
+   untuk seksi monitoring "Stok Inventory". Fungsi di file ini read-only.
 
-   CATATAN: berbeda dari `lib/inventory.ts` milik Mini App, yang memanggil REST
-   API app Inventory (INVENTORY_API_URL) untuk modul pemakaian-stok. Yang ini
-   membaca database-nya langsung untuk pelaporan.
+   PENTING: sejak Integrasi A dipotong, `lib/inventory.ts` MENULIS ke DB yang
+   sama lewat `getInventoryClient()` di bawah. INVENTORY_AUTH_TOKEN karena itu
+   TIDAK boleh read-only lagi.
 
    ENV:
      INVENTORY_DATABASE_URL = libsql://inventoystock-<org>.turso.io
-     INVENTORY_AUTH_TOKEN   = token (idealnya read-only)
+     INVENTORY_AUTH_TOKEN   = token (butuh izin tulis)
    ========================================================================= */
 
 import { createClient, type Client } from '@libsql/client';
@@ -29,6 +28,18 @@ const CACHE_MS = 60 * 1000;
 
 export function isInventoryConfigured(): boolean {
   return !!process.env.INVENTORY_DATABASE_URL;
+}
+
+/** Buang cache 60 detik. Wajib dipanggil setelah menulis ke DB Inventory,
+ *  kalau tidak stok yang baru berubah tampil basi sampai TTL habis. */
+export function invalidateInventoryCache(): void {
+  cache = null;
+}
+
+/** Klien libSQL ke DB Inventory. Dipakai bersama oleh pembaca dashboard dan
+ *  penulis Mini App (`lib/inventory.ts`) — satu koneksi per proses. */
+export function getInventoryClient(): Client {
+  return getClient();
 }
 
 function getClient(): Client {
