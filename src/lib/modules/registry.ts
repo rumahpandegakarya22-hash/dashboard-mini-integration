@@ -682,6 +682,9 @@ export const MODULES: ModuleMeta[] = [
         type: 'select-async',
         required: true,
         master: 'inventory-materials',
+        // Tanpa ini label dropdown jatuh ke masterValue ('id') — yang tampil
+        // angka, bukan nama bahan (lihat DynamicForm: lKey = masterLabel || vKey).
+        masterLabel: 'label',
         helpText: 'Daftar & sisa stok live dari DB Inventory Stock'
       },
       { name: 'jumlah', label: 'Jumlah Dipakai', type: 'number', required: true, placeholder: 'mis. 2' },
@@ -699,6 +702,9 @@ export const MODULES: ModuleMeta[] = [
         type: 'select-async',
         required: true,
         master: 'inventory-materials',
+        // Tanpa ini label dropdown jatuh ke masterValue ('id') — yang tampil
+        // angka, bukan nama bahan (lihat DynamicForm: lKey = masterLabel || vKey).
+        masterLabel: 'label',
         helpText: 'Daftar & sisa stok live dari DB Inventory Stock'
       },
       { name: 'jumlah', label: 'Jumlah Dipakai', type: 'number', required: true, placeholder: 'mis. 1' },
