@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
-import { ChevronLeft, House, LoaderCircle, LogOut, ShieldCheck, Users, LayoutDashboard } from 'lucide-react';
+import { ChevronLeft, House, LoaderCircle, LogOut, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
 import { DIVISION_GROUPS, moduleIcon } from './module-icons';
 
 export interface NavModule {
@@ -99,24 +99,40 @@ export default function AppShell({ userName, roleLabel, isOwner,
           {isOwner && (
             <div>
               <div className="side-group-label">Admin</div>
-              <Link href="/ops/admin/users" className={isAdmin ? 'side-item active' : 'side-item'}>
-                <Users size={18} />
-                Kelola User
-              </Link>
+              {/* Satu pintu kelola akun: panel gabungan di Dashboard mengatur
+                  role Ops DAN Dashboard sekaligus. Panel lokal Ops hanya jadi
+                  cadangan untuk Owner yang belum punya akses Dashboard. */}
+              {hasDashboardAccess ? (
+                <a href="/dashboard/akun" className="side-item">
+                  <Users size={18} />
+                  Kelola User
+                </a>
+              ) : (
+                <Link href="/ops/admin/users" className={isAdmin ? 'side-item active' : 'side-item'}>
+                  <Users size={18} />
+                  Kelola User
+                </Link>
+              )}
             </div>
           )}
 
           {/* Navigasi silang (§9 Fase 5.2) — hanya bila akun ini punya akses
               Dashboard, supaya tidak menawarkan pintu yang terkunci. */}
-          {hasDashboardAccess && (
-            <div>
-              <div className="side-group-label">Aplikasi Lain</div>
+          <div>
+            <div className="side-group-label">Aplikasi Lain</div>
+            {hasDashboardAccess && (
               <a href="/dashboard" className="side-item">
                 <LayoutDashboard size={18} />
                 Dashboard
               </a>
-            </div>
-          )}
+            )}
+            {/* Inventory dibuka dengan akses Ops yang sama, jadi tautannya
+                selalu ada — beda dari Dashboard yang butuh akses terpisah. */}
+            <a href="/inventory" className="side-item">
+              <Package size={18} />
+              Inventory Stock
+            </a>
+          </div>
         </nav>
 
         <div className="side-footer">

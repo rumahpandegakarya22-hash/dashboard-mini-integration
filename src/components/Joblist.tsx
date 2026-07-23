@@ -20,7 +20,13 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
   const [error, setError] = useState('');
 
   const readOnly = !divisi; // owner/pengawas: logbook saja
-  const woRows = readOnly ? rows : rows.filter((r) => r.status === 'Pending');
+  // Complete disembunyikan untuk SEMUA peran. Sebelumnya owner/pengawas melihat
+  // seluruh baris apa adanya, jadi pekerjaan yang sudah selesai tetap menumpuk
+  // di tabel — persis keluhan "task tidak hilang setelah selesai". Tabel ini
+  // daftar pekerjaan berjalan, bukan arsip.
+  const woRows = readOnly
+    ? rows.filter((r) => r.status !== 'Complete')
+    : rows.filter((r) => r.status === 'Pending');
   const jobRows = readOnly ? [] : rows.filter((r) => r.status === 'In Progress');
   const pendingCount = rows.filter((r) => r.status === 'Pending').length;
 

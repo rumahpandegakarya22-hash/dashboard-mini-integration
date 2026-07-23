@@ -9,7 +9,7 @@ import {
   Activity, 
   ClipboardList, 
   Sliders, 
-  LogOut, 
+  ArrowLeft, 
   Menu, 
   X,
   User,
@@ -53,11 +53,6 @@ export default function Navbar() {
     fetchUser();
   }, [pathname, router]);
 
-  const handleKeluar = () => {
-    // Sesi Clerk dipakai bersama Dashboard & Ops — keluar dari sini berarti
-    // kembali ke Dashboard, bukan mengakhiri sesi ketiga app sekaligus.
-    window.location.assign("/dashboard");
-  };
 
   if (loading) {
     return (
@@ -136,13 +131,14 @@ export default function Navbar() {
               </div>
             </div>
             
-            <button
-              onClick={handleKeluar}
-              className="p-2 rounded-xl text-taupe-dark hover:text-accent hover:bg-accent/10 border border-transparent hover:border-accent/25 transition-all duration-300"
+            <a
+              href="/dashboard"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-accent bg-accent/10 border border-accent/25 hover:bg-accent/15 transition-all duration-300"
               title="Kembali ke Dashboard"
             >
-              <LogOut className="h-5 w-5" />
-            </button>
+              <ArrowLeft className="h-4 w-4" />
+              Dashboard
+            </a>
           </div>
 
           {/* Mobile menu button */}
@@ -160,6 +156,13 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="lg:hidden glass-panel border-t border-sand/70 px-2 pt-2 pb-4 space-y-1">
+          <a
+            href="/dashboard"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold text-accent bg-accent/10 border border-accent/25"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            Kembali ke Dashboard
+          </a>
           {navigation.map((item) => {
             if (!item.roles.includes(user.role)) return null;
             const isActive = pathname === item.href;
@@ -192,12 +195,13 @@ export default function Navbar() {
                 </span>
               </div>
             </div>
-            <button
-              onClick={handleKeluar}
-              className="p-2 rounded-xl text-accent hover:bg-accent/10 border border-accent/25 transition-all duration-200"
+            <a
+              href="/dashboard"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-accent bg-accent/10 border border-accent/25 transition-all duration-200"
             >
-              <LogOut className="h-5 w-5" />
-            </button>
+              <ArrowLeft className="h-4 w-4" />
+              Dashboard
+            </a>
           </div>
         </div>
       )}

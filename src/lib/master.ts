@@ -486,9 +486,21 @@ async function getKamarKosongTurso(): Promise<{ id: string; label: string }[]> {
 
 /** Dispatcher dipakai API /api/master/[type]. */
 export async function getMasterData(type: string): Promise<unknown> {
-  // Dropdown bahan dari app Inventory Stock: "inventory-materials:<kategori>" (mis. Kebersihan).
-  if (type.startsWith('inventory-materials:')) {
-    const category = type.slice('inventory-materials:'.length);
+  /* Dropdown bahan dari DB Inventory Stock.
+     `inventory-materials` = seluruh bahan; `inventory-materials:<kategori>`
+     = disaring kategori.
+
+     Modul pemakaian stok sekarang memakai bentuk TANPA kategori. Sebelumnya
+     Cleaning dikunci ke "Kebersihan" dan Maintenance ke "Perawatan Kamar",
+     padahal kategori yang benar-benar ada di DB cuma "Kebersihan" dan
+     "Fasilitas Umum" — dropdown Maintenance karena itu selalu kosong, tanpa
+     satu pun pesan error. Menyaring pakai string yang ditulis manual di dua
+     tempat berbeda memang rapuh: kategori diganti nama di app Inventory,
+     dropdown di sini mati diam-diam. */
+  if (type.startsWith('inventory-materials')) {
+    const category = type.startsWith('inventory-materials:')
+      ? type.slice('inventory-materials:'.length)
+      : '';
     const mats = await fetchMaterials(category);
     return mats.map((m) => ({ id: String(m.id), label: `${m.name} (stok: ${m.currentStock} ${m.unit})` }));
   }

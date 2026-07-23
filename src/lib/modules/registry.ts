@@ -681,8 +681,8 @@ export const MODULES: ModuleMeta[] = [
         label: 'Bahan',
         type: 'select-async',
         required: true,
-        master: 'inventory-materials:Perawatan Kamar',
-        helpText: 'Daftar & sisa stok live dari app Inventory Stock'
+        master: 'inventory-materials',
+        helpText: 'Daftar & sisa stok live dari DB Inventory Stock'
       },
       { name: 'jumlah', label: 'Jumlah Dipakai', type: 'number', required: true, placeholder: 'mis. 2' },
       { name: 'catatan', label: 'Catatan (lokasi/keperluan)', type: 'textarea', required: false, placeholder: 'mis. ganti keran kamar 12' }
@@ -698,8 +698,8 @@ export const MODULES: ModuleMeta[] = [
         label: 'Bahan',
         type: 'select-async',
         required: true,
-        master: 'inventory-materials:Kebersihan',
-        helpText: 'Daftar & sisa stok live dari app Inventory Stock'
+        master: 'inventory-materials',
+        helpText: 'Daftar & sisa stok live dari DB Inventory Stock'
       },
       { name: 'jumlah', label: 'Jumlah Dipakai', type: 'number', required: true, placeholder: 'mis. 1' },
       { name: 'catatan', label: 'Catatan (lokasi/keperluan)', type: 'textarea', required: false, placeholder: 'mis. pel lantai 2' }

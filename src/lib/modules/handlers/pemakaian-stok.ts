@@ -47,7 +47,7 @@ async function biayaKeJoblistAdmin(p: {
     return undefined;
   } catch (e: unknown) {
     console.error('[pemakaian-stok] gagal tulis joblist Admin:', (e as Error)?.message);
-    return `Pemakaian tercatat, tapi biaya Rp${Math.round(p.biaya)} GAGAL masuk joblist Admin — minta Admin catat pengeluaran manual (ref inv_tx_${p.transactionId}).`;
+    return `Pemakaian tercatat, tapi biayanya GAGAL masuk joblist Admin — laporkan ke Admin dengan referensi inv_tx_${p.transactionId}.`;
   }
 }
 
@@ -77,12 +77,14 @@ function makePemakaianStokHandler(divisi: 'Cleaning' | 'Maintenance'): SubmitHan
     return {
       target: 'DB Inventory → inventory_transactions (USAGE)',
       row: res.transactionId,
+      // Biaya sengaja TIDAK dikembalikan ke staf: harga pokok bukan urusan
+      // lapangan, dan angkanya muncul di tempat yang tepat — joblist Admin
+      // untuk dicatat sebagai pengeluaran.
       data: {
         materialId,
         jumlah,
         catatan,
-        sisaStok: res.newStock,
-        biaya: res.totalCost ?? 'tidak diketahui (tanpa batch)'
+        sisaStok: res.newStock
       },
       warning
     };
