@@ -12,6 +12,7 @@ process.env.INVENTORY_DATABASE_URL = `file:${file}`;
 delete process.env.INVENTORY_AUTH_TOKEN;
 
 const { postUsage, postPurchase } = await import('../src/lib/inventory');
+const { postCorrection, createOpname, getOpname, saveOpname } = await import('../src/lib/inventory-admin');
 
 const c = createClient({ url: process.env.INVENTORY_DATABASE_URL });
 await c.batch(
@@ -30,6 +31,11 @@ await c.batch(
     `CREATE TABLE activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL
        REFERENCES users(id), action TEXT NOT NULL, target_data TEXT, created_at INTEGER NOT NULL)`,
     `INSERT INTO users (id, email, name, role) VALUES ('svc-miniapp', 'svc@local', 'Service', 'STAFF')`,
+    `CREATE TABLE stock_opnames (id INTEGER PRIMARY KEY AUTOINCREMENT, period TEXT NOT NULL,
+       status TEXT NOT NULL DEFAULT 'DRAFT', verified_by_id TEXT REFERENCES users(id), created_at INTEGER NOT NULL)`,
+    `CREATE TABLE opname_details (id INTEGER PRIMARY KEY AUTOINCREMENT, opname_id INTEGER NOT NULL
+       REFERENCES stock_opnames(id), material_id INTEGER NOT NULL REFERENCES materials(id),
+       system_stock REAL NOT NULL, physical_stock REAL NOT NULL, difference REAL NOT NULL, notes TEXT)`,
     `INSERT INTO materials (name, category, unit) VALUES ('Sabun', 'Kebersihan', 'botol')`
   ],
   'write'
@@ -61,4 +67,36 @@ const sebelum = (await c.execute('SELECT COUNT(*) n FROM inventory_transactions'
 await assert.rejects(() => postUsage({ materialId: 999, quantity: 1, notes: 'x' }));
 assert.equal((await c.execute('SELECT COUNT(*) n FROM inventory_transactions')).rows[0].n, sebelum, 'rollback bersih');
 
-console.log('OK — FIFO, saldo, dan rollback benar.');
+// Koreksi: stok fisik adalah saldo tujuan, selisihnya jadi mutasi CORRECTION.
+const k = await postCorrection({ materialId: 1, physicalStock: 10, reason: 'hitung ulang', by: 'owner' });
+assert.equal(k.difference, 2, 'selisih koreksi: 20 beli − 12 pakai = 8, dikoreksi ke 10');
+assert.equal(await stok(), 10, 'saldo mengikuti hitungan fisik');
+const kor = await c.execute("SELECT quantity FROM inventory_transactions WHERE type='CORRECTION'");
+assert.equal(kor.rows.length, 1, 'satu mutasi koreksi');
+assert.equal(Number(kor.rows[0].quantity), k.difference);
+
+// Koreksi tanpa selisih tidak boleh melahirkan mutasi kosong.
+const nol = await postCorrection({ materialId: 1, physicalStock: 10, reason: 'sama', by: 'owner' });
+assert.equal(nol.transactionId, null);
+assert.equal((await c.execute("SELECT COUNT(*) n FROM inventory_transactions WHERE type='CORRECTION'")).rows[0].n, 1);
+
+// Opname: draf menyimpan tanpa mengubah saldo; finalisasi menyesuaikan + mencatat CORRECTION.
+const opId = await createOpname('2026-07', 'owner');
+await saveOpname({ opnameId: opId, items: [{ materialId: 1, physicalStock: 7, notes: 'susut' }], finalize: false, by: 'owner' });
+assert.equal(await stok(), 10, 'draf TIDAK mengubah saldo');
+const draf = (await getOpname(opId))!;
+assert.equal(draf.details[0].difference, -3, 'selisih tercatat di draf');
+
+const fin = await saveOpname({ opnameId: opId, items: [{ materialId: 1, physicalStock: 7, notes: 'susut' }], finalize: true, by: 'owner' });
+assert.equal(fin.adjusted, 1);
+assert.equal(await stok(), 7, 'finalisasi menyesuaikan saldo');
+assert.equal((await getOpname(opId))!.opname.status, 'FINALIZED');
+assert.equal((await c.execute("SELECT COUNT(*) n FROM inventory_transactions WHERE type='CORRECTION'")).rows[0].n, 2, 'selisih opname punya mutasi');
+
+// Laporan final terkunci.
+await assert.rejects(() =>
+  saveOpname({ opnameId: opId, items: [{ materialId: 1, physicalStock: 99, notes: '' }], finalize: false, by: 'owner' })
+);
+assert.equal(await stok(), 7);
+
+console.log('OK — FIFO, saldo, rollback, koreksi, dan opname benar.');

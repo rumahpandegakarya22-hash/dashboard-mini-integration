@@ -1,18 +1,13 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getSessionUser } from '@/lib/core/auth';
 import { fetchMaterials, postPurchase } from '@/lib/inventory';
-
-/** Input pembelian stok. Menyentuh uang, jadi dibatasi Owner/Pengawas. */
-function boleh(role: string) {
-  return role === 'owner' || role === 'pengawas';
-}
+import { bolehKelola } from '../../akses';
 
 async function simpan(formData: FormData) {
   'use server';
   const user = await getSessionUser();
-  if (!user || !boleh(user.role)) throw new Error('Tidak berwenang mencatat pembelian.');
+  if (!user || !bolehKelola(user.role)) throw new Error('Tidak berwenang mencatat pembelian.');
 
   const catatan = String(formData.get('catatan') ?? '').trim();
   await postPurchase({
@@ -30,16 +25,13 @@ async function simpan(formData: FormData) {
 export default async function PembelianPage() {
   const user = await getSessionUser();
   if (!user) return null;
-  if (!boleh(user.role)) redirect('/inventory');
+  if (!bolehKelola(user.role)) redirect('/inventory');
 
   const materials = await fetchMaterials('');
 
   return (
     <>
       <h1>Input Pembelian Stok</h1>
-      <p>
-        <Link href="/inventory">← Stok Inventory</Link>
-      </p>
       <form action={simpan}>
         <p>
           <label>

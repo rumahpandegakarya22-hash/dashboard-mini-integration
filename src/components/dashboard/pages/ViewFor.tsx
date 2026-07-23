@@ -7,8 +7,9 @@ import {
   dokumenRows,
   vendorRows,
   tiketRows,
-  inventoryRows
+  inventoryOverview
 } from '@/lib/dashboard/views/pages';
+import InventoryOverview from '../overviews/InventoryOverview';
 import type { DashboardPageData } from '@/lib/dashboard/views/load';
 import type { DashboardRole } from '@/config/dashboard-access';
 
@@ -98,8 +99,8 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
     }
 
     case 'stok': {
-      const { materials, transactions } = inventoryRows(loaded.inventory);
-      if (!loaded.inventory) {
+      const inv = inventoryOverview(loaded.inventory);
+      if (!inv) {
         return (
           <section className="table-block">
             <h2 className="section-title">STOK INVENTORY</h2>
@@ -110,18 +111,7 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
           </section>
         );
       }
-      return (
-        <div className="view">
-          <DataTablePage title="STOK BAHAN" titleRight cols={COLS.stokMaterial} data={materials} period={period} />
-          <DataTablePage
-            title="MUTASI STOK TERAKHIR"
-            titleRight
-            cols={COLS.stokTransaksi}
-            data={transactions}
-            period={period}
-          />
-        </div>
-      );
+      return <InventoryOverview inv={inv} period={period} />;
     }
 
     case 'logbook': {

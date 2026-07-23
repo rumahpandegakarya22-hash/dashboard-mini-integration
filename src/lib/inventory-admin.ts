@@ -1,0 +1,349 @@
+// Kelola bahan (CRUD), koreksi stok, dan stock opname di DB Inventory.
+// Port dari /api/materials, branch CORRECTION /api/transactions, dan /api/opname
+// app lama. Dipisah dari lib/inventory.ts karena ini jalur Owner, bukan jalur
+// staf lapangan — yang dipakai modul Mini App tetap di sana.
+//
+// Semua tulisan atas nama svc-miniapp; alasan foreign key ada di postPurchase().
+
+import { getInventoryClient, invalidateInventoryCache } from './dashboard/inventory';
+import { SERVICE_USER_ID } from './inventory';
+
+type Executor = { execute: (q: { sql: string; args: any[] }) => Promise<any> };
+
+const now = () => Math.floor(Date.now() / 1000);
+
+async function logActivity(tx: Executor, action: string, target: string) {
+  await tx.execute({
+    sql: 'INSERT INTO activity_logs (user_id, action, target_data, created_at) VALUES (?, ?, ?, ?)',
+    args: [SERVICE_USER_ID, action, target, now()]
+  });
+}
+
+export interface MaterialRow {
+  id: number;
+  name: string;
+  category: string;
+  unit: string;
+  currentStock: number;
+  minStock: number;
+}
+
+export async function listMaterials(): Promise<MaterialRow[]> {
+  const rs = await getInventoryClient().execute(
+    'SELECT id, name, category, unit, current_stock, min_stock FROM materials ORDER BY name'
+  );
+  return rs.rows.map((r: any) => ({
+    id: Number(r.id),
+    name: String(r.name),
+    category: String(r.category),
+    unit: String(r.unit),
+    currentStock: Number(r.current_stock),
+    minStock: Number(r.min_stock)
+  }));
+}
+
+export async function createMaterial(p: {
+  name: string;
+  category: string;
+  unit: string;
+  currentStock: number;
+  minStock: number;
+  by: string;
+}): Promise<number> {
+  const name = p.name.trim();
+  const category = p.category.trim();
+  const unit = p.unit.trim();
+  if (!name || !category || !unit) throw new Error('Nama, kategori, dan satuan wajib diisi.');
+
+  const c = getInventoryClient();
+  const dup = await c.execute({ sql: 'SELECT id FROM materials WHERE name = ?', args: [name] });
+  if (dup.rows.length > 0) throw new Error(`Bahan "${name}" sudah ada.`);
+
+  const ins = await c.execute({
+    sql: `INSERT INTO materials (name, category, unit, current_stock, min_stock)
+          VALUES (?, ?, ?, ?, ?) RETURNING id`,
+    args: [name, category, unit, p.currentStock || 0, p.minStock || 0]
+  });
+  const id = Number(ins.rows[0].id);
+  await logActivity(
+    c,
+    `Menambahkan bahan baku baru: ${name} (stok awal ${p.currentStock || 0} ${unit}) — oleh ${p.by}`,
+    `material_${id}`
+  );
+  invalidateInventoryCache();
+  return id;
+}
+
+/**
+ * Ubah identitas bahan + stok minimum. Stok berjalan TIDAK diubah di sini —
+ * itu urusan koreksi stok, supaya setiap perubahan saldo punya mutasi.
+ */
+export async function updateMaterial(p: {
+  id: number;
+  name: string;
+  category: string;
+  unit: string;
+  minStock: number;
+  by: string;
+}): Promise<void> {
+  const name = p.name.trim();
+  const category = p.category.trim();
+  const unit = p.unit.trim();
+  if (!name || !category || !unit) throw new Error('Nama, kategori, dan satuan wajib diisi.');
+
+  const c = getInventoryClient();
+  const cur = await c.execute({ sql: 'SELECT name FROM materials WHERE id = ?', args: [p.id] });
+  if (cur.rows.length === 0) throw new Error('Bahan baku tidak ditemukan.');
+  const lama = String(cur.rows[0].name);
+
+  if (name !== lama) {
+    const dup = await c.execute({ sql: 'SELECT id FROM materials WHERE name = ?', args: [name] });
+    if (dup.rows.length > 0) throw new Error(`Bahan "${name}" sudah ada.`);
+  }
+
+  await c.execute({
+    sql: 'UPDATE materials SET name = ?, category = ?, unit = ?, min_stock = ? WHERE id = ?',
+    args: [name, category, unit, p.minStock || 0, p.id]
+  });
+  await logActivity(c, `Mengubah detail bahan baku: ${lama} menjadi ${name} — oleh ${p.by}`, `material_${p.id}`);
+  invalidateInventoryCache();
+}
+
+/**
+ * Koreksi stok manual: `physicalStock` adalah saldo TUJUAN, bukan selisih.
+ * Mutasi CORRECTION dicatat sebesar selisihnya supaya saldo tidak pernah
+ * berubah tanpa jejak. Batch sengaja tidak disentuh — koreksi bukan pemakaian,
+ * dan menebak batch mana yang salah hitung akan merusak dasar HPP.
+ */
+export async function postCorrection(p: {
+  materialId: number;
+  physicalStock: number;
+  reason: string;
+  by: string;
+}): Promise<{ newStock: number; difference: number; transactionId: number | null }> {
+  if (!Number.isFinite(p.physicalStock) || p.physicalStock < 0) throw new Error('Stok fisik tidak valid.');
+  const reason = p.reason.trim();
+  if (!reason) throw new Error('Alasan koreksi wajib diisi.');
+
+  const tx = await getInventoryClient().transaction('write');
+  try {
+    const mat = await tx.execute({
+      sql: 'SELECT name, unit, current_stock FROM materials WHERE id = ?',
+      args: [p.materialId]
+    });
+    if (mat.rows.length === 0) throw new Error('Bahan baku tidak ditemukan.');
+    const m = mat.rows[0] as any;
+    const lama = Number(m.current_stock);
+    const difference = p.physicalStock - lama;
+
+    if (difference === 0) {
+      await tx.commit();
+      return { newStock: lama, difference: 0, transactionId: null };
+    }
+
+    const ins = await tx.execute({
+      sql: `INSERT INTO inventory_transactions
+              (material_id, user_id, type, quantity, batch_id, unit_price, total_cost, notes, created_at)
+            VALUES (?, ?, 'CORRECTION', ?, NULL, NULL, NULL, ?, ?) RETURNING id`,
+      args: [p.materialId, SERVICE_USER_ID, difference, `${p.by} — ${reason}`, now()]
+    });
+    const transactionId = Number(ins.rows[0].id);
+
+    await tx.execute({
+      sql: 'UPDATE materials SET current_stock = ? WHERE id = ?',
+      args: [p.physicalStock, p.materialId]
+    });
+    await logActivity(
+      tx,
+      `Koreksi stok manual: ${m.name} dari ${lama} menjadi ${p.physicalStock} ${m.unit} (alasan: ${reason}) — oleh ${p.by}`,
+      `transaction_${transactionId}`
+    );
+
+    await tx.commit();
+    invalidateInventoryCache();
+    return { newStock: p.physicalStock, difference, transactionId };
+  } catch (e) {
+    await tx.rollback().catch(() => {});
+    throw e;
+  }
+}
+
+/* ------------------------------------------------------------ opname ---- */
+
+export interface OpnameRow {
+  id: number;
+  period: string;
+  status: 'DRAFT' | 'FINALIZED';
+}
+
+export interface OpnameDetailRow {
+  materialId: number;
+  materialName: string;
+  materialUnit: string;
+  systemStock: number;
+  physicalStock: number;
+  difference: number;
+  notes: string;
+}
+
+export async function listOpnames(): Promise<OpnameRow[]> {
+  const rs = await getInventoryClient().execute(
+    'SELECT id, period, status FROM stock_opnames ORDER BY period DESC'
+  );
+  return rs.rows.map((r: any) => ({
+    id: Number(r.id),
+    period: String(r.period),
+    status: String(r.status) as 'DRAFT' | 'FINALIZED'
+  }));
+}
+
+export async function getOpname(id: number): Promise<{ opname: OpnameRow; details: OpnameDetailRow[] } | null> {
+  const c = getInventoryClient();
+  const head = await c.execute({ sql: 'SELECT id, period, status FROM stock_opnames WHERE id = ?', args: [id] });
+  if (head.rows.length === 0) return null;
+  const h = head.rows[0] as any;
+
+  const det = await c.execute({
+    sql: `SELECT d.material_id, m.name, m.unit, d.system_stock, d.physical_stock, d.difference, d.notes
+          FROM opname_details d JOIN materials m ON m.id = d.material_id
+          WHERE d.opname_id = ? ORDER BY m.name`,
+    args: [id]
+  });
+
+  return {
+    opname: { id: Number(h.id), period: String(h.period), status: String(h.status) as 'DRAFT' | 'FINALIZED' },
+    details: det.rows.map((r: any) => ({
+      materialId: Number(r.material_id),
+      materialName: String(r.name),
+      materialUnit: String(r.unit),
+      systemStock: Number(r.system_stock),
+      physicalStock: Number(r.physical_stock),
+      difference: Number(r.difference),
+      notes: r.notes == null ? '' : String(r.notes)
+    }))
+  };
+}
+
+/** Buka draf opname periode YYYY-MM: snapshot stok sistem semua bahan saat ini. */
+export async function createOpname(period: string, by: string): Promise<number> {
+  if (!/^\d{4}-\d{2}$/.test(period)) throw new Error('Periode harus format YYYY-MM.');
+
+  const tx = await getInventoryClient().transaction('write');
+  try {
+    const dup = await tx.execute({ sql: 'SELECT id FROM stock_opnames WHERE period = ?', args: [period] });
+    if (dup.rows.length > 0) throw new Error(`Opname periode ${period} sudah dibuat.`);
+
+    const ins = await tx.execute({
+      sql: `INSERT INTO stock_opnames (period, status, created_at) VALUES (?, 'DRAFT', ?) RETURNING id`,
+      args: [period, now()]
+    });
+    const id = Number(ins.rows[0].id);
+
+    const mats = await tx.execute({ sql: 'SELECT id, current_stock FROM materials', args: [] });
+    for (const m of mats.rows as any[]) {
+      await tx.execute({
+        sql: `INSERT INTO opname_details (opname_id, material_id, system_stock, physical_stock, difference, notes)
+              VALUES (?, ?, ?, ?, 0, '')`,
+        args: [id, Number(m.id), Number(m.current_stock), Number(m.current_stock)]
+      });
+    }
+
+    await logActivity(tx, `Memulai draf opname periode ${period} — oleh ${by}`, `opname_${id}`);
+    await tx.commit();
+    return id;
+  } catch (e) {
+    await tx.rollback().catch(() => {});
+    throw e;
+  }
+}
+
+export interface OpnameInput {
+  materialId: number;
+  physicalStock: number;
+  notes: string;
+}
+
+/**
+ * Simpan hitungan fisik. `finalize` mengunci laporan DAN menyesuaikan stok
+ * sistem ke hitungan fisik.
+ *
+ * BEDA DARI APP LAMA: app lama menimpa `materials.current_stock` tanpa menulis
+ * mutasi apa pun, jadi selisih opname hilang dari riwayat dan jumlah transaksi
+ * di Dashboard tidak pernah cocok dengan pergerakan saldo. Di sini tiap selisih
+ * bukan-nol menjadi satu baris CORRECTION.
+ */
+export async function saveOpname(p: {
+  opnameId: number;
+  items: OpnameInput[];
+  finalize: boolean;
+  by: string;
+}): Promise<{ adjusted: number }> {
+  const tx = await getInventoryClient().transaction('write');
+  try {
+    const head = await tx.execute({
+      sql: 'SELECT period, status FROM stock_opnames WHERE id = ?',
+      args: [p.opnameId]
+    });
+    if (head.rows.length === 0) throw new Error('Laporan opname tidak ditemukan.');
+    const h = head.rows[0] as any;
+    if (String(h.status) === 'FINALIZED') throw new Error('Laporan sudah final dan tidak dapat diubah.');
+
+    let adjusted = 0;
+    for (const item of p.items) {
+      const cur = await tx.execute({
+        sql: `SELECT d.system_stock, m.name, m.unit FROM opname_details d
+              JOIN materials m ON m.id = d.material_id
+              WHERE d.opname_id = ? AND d.material_id = ?`,
+        args: [p.opnameId, item.materialId]
+      });
+      if (cur.rows.length === 0) continue;
+      const c0 = cur.rows[0] as any;
+      const diff = item.physicalStock - Number(c0.system_stock);
+
+      await tx.execute({
+        sql: `UPDATE opname_details SET physical_stock = ?, difference = ?, notes = ?
+              WHERE opname_id = ? AND material_id = ?`,
+        args: [item.physicalStock, diff, item.notes || null, p.opnameId, item.materialId]
+      });
+
+      if (p.finalize && diff !== 0) {
+        const ins = await tx.execute({
+          sql: `INSERT INTO inventory_transactions
+                  (material_id, user_id, type, quantity, batch_id, unit_price, total_cost, notes, created_at)
+                VALUES (?, ?, 'CORRECTION', ?, NULL, NULL, NULL, ?, ?) RETURNING id`,
+          args: [
+            item.materialId,
+            SERVICE_USER_ID,
+            diff,
+            `Opname ${h.period}${item.notes ? ` — ${item.notes}` : ''}`,
+            now()
+          ]
+        });
+        await tx.execute({
+          sql: 'UPDATE materials SET current_stock = ? WHERE id = ?',
+          args: [item.physicalStock, item.materialId]
+        });
+        await logActivity(
+          tx,
+          `Opname ${h.period}: ${c0.name} disesuaikan ${diff > 0 ? '+' : ''}${diff} ${c0.unit} — oleh ${p.by}`,
+          `transaction_${Number(ins.rows[0].id)}`
+        );
+        adjusted++;
+      }
+    }
+
+    if (p.finalize) {
+      await tx.execute({ sql: `UPDATE stock_opnames SET status = 'FINALIZED' WHERE id = ?`, args: [p.opnameId] });
+      await logActivity(tx, `Memfinalisasi opname periode ${h.period} — oleh ${p.by}`, `opname_${p.opnameId}`);
+    } else {
+      await logActivity(tx, `Menyimpan draf opname periode ${h.period} — oleh ${p.by}`, `opname_${p.opnameId}`);
+    }
+
+    await tx.commit();
+    invalidateInventoryCache();
+    return { adjusted };
+  } catch (e) {
+    await tx.rollback().catch(() => {});
+    throw e;
+  }
+}

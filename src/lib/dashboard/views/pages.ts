@@ -95,58 +95,85 @@ export function filterPembayaran(pembayaran: PembayaranRow[], nama?: string): Pe
 
 /* --------------------------------------------------------- inventory ---- */
 
-export interface StokMaterialRow {
+export interface StokMenipisRow {
   name: string;
   category: string;
   stok: string;
   min: string;
-  statusStok: string;
+  kurang: string;
 }
 
-export interface StokTransaksiRow {
-  tanggal: string;
-  material: string;
-  tipe: string;
+export interface StokTerpakaiRow {
+  name: string;
   jumlah: string;
+  frekuensi: number;
   biaya: string;
-  oleh: string;
-  catatan: string;
 }
 
-/** PORT dari bagian data `pageInventory()`. */
-export function inventoryRows(inv: InventoryData | null): {
-  materials: StokMaterialRow[];
-  transactions: StokTransaksiRow[];
-} {
-  if (!inv) return { materials: [], transactions: [] };
+export interface InventoryOverviewData {
+  totalJenis: number;
+  jumlahTransaksi: number;
+  dibawahMin: number;
+  totalBiayaPemakaian: number;
+  menipis: StokMenipisRow[];
+  terpakai: StokTerpakaiRow[];
+}
 
-  const materials = (inv.materials || []).map((m) => {
-    const low = Number(m.current_stock) < Number(m.min_stock);
-    return {
+/**
+ * Ringkasan untuk Overview Stok Inventory di Dashboard.
+ *
+ * "Pemakaian terbanyak" dihitung dari mutasi USAGE saja — pembelian dan koreksi
+ * bukan pemakaian, dan mencampurnya membuat peringkat tidak berarti. Sumber
+ * transaksinya 200 baris terakhir (batas query readInventory), jadi angkanya
+ * ringkasan mutakhir, bukan total sepanjang masa.
+ */
+export function inventoryOverview(inv: InventoryData | null): InventoryOverviewData | null {
+  if (!inv) return null;
+
+  const materials = inv.materials || [];
+  const transactions = inv.transactions || [];
+
+  const menipis = materials
+    .filter((m) => Number(m.current_stock) < Number(m.min_stock))
+    .sort((a, b) => Number(a.current_stock) - Number(a.min_stock) - (Number(b.current_stock) - Number(b.min_stock)))
+    .map((m) => ({
       name: m.name,
       category: m.category,
       stok: fmtNum(m.current_stock, m.unit),
       min: fmtNum(m.min_stock, m.unit),
-      statusStok: low ? '⚠️ Menipis' : 'OK'
-    };
-  });
+      kurang: fmtNum(Number(m.min_stock) - Number(m.current_stock), m.unit)
+    }));
 
-  const transactions = (inv.transactions || []).map((t) => ({
-    // created_at bisa detik atau milidetik — deteksi pakai ambang 1e12, verbatim.
-    tanggal: t.created_at
-      ? new Date(Number(t.created_at) < 1e12 ? Number(t.created_at) * 1000 : Number(t.created_at))
-          .toISOString()
-          .slice(0, 10)
-      : '',
-    material: t.material_name,
-    tipe: t.type === 'PURCHASE' ? 'Pembelian' : t.type === 'USAGE' ? 'Pemakaian' : 'Koreksi',
-    jumlah: fmtNum(t.quantity, t.unit),
-    biaya: t.total_cost != null ? 'Rp' + Math.round(t.total_cost).toLocaleString('id-ID') : '-',
-    oleh: t.user_name || '-',
-    catatan: t.notes || '-'
-  }));
+  const pakai = new Map<string, { qty: number; n: number; biaya: number; unit: string }>();
+  let totalBiayaPemakaian = 0;
+  for (const t of transactions) {
+    if (t.type !== 'USAGE') continue;
+    const key = String(t.material_name);
+    const cur = pakai.get(key) || { qty: 0, n: 0, biaya: 0, unit: String(t.unit ?? '') };
+    cur.qty += Math.abs(Number(t.quantity) || 0); // quantity USAGE negatif
+    cur.n += 1;
+    cur.biaya += Number(t.total_cost) || 0;
+    pakai.set(key, cur);
+    totalBiayaPemakaian += Number(t.total_cost) || 0;
+  }
 
-  return { materials, transactions };
+  const terpakai = [...pakai.entries()]
+    .sort((a, b) => b[1].qty - a[1].qty)
+    .map(([name, v]) => ({
+      name,
+      jumlah: fmtNum(v.qty, v.unit),
+      frekuensi: v.n,
+      biaya: v.biaya > 0 ? 'Rp' + Math.round(v.biaya).toLocaleString('id-ID') : '-'
+    }));
+
+  return {
+    totalJenis: materials.length,
+    jumlahTransaksi: transactions.length,
+    dibawahMin: menipis.length,
+    totalBiayaPemakaian,
+    menipis,
+    terpakai
+  };
 }
 
 /* -------------------------------------------------------------- kamar --- */

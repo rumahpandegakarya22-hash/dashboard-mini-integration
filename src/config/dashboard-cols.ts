@@ -39,8 +39,8 @@ export const COLS: Record<string, TableCol[]> = {
     logInspeksi: [{key:"name",label:"Tanggal"},{key:"item",label:"Item"},{key:"lokasi",label:"Lokasi"},{key:"kategori",label:"Kategori"},{key:"status",label:"Prioritas"}],
     logPerbaikan: [{key:"id",label:"ID"},{key:"name",label:"PIC"},{key:"project",label:"Project"},{key:"prioritas",label:"Prioritas"},{key:"biaya",label:"Biaya"},{key:"status",label:"Status"}],
     // Stok Inventory (monitoring dari app Inventory Stock — integrasi 3 app)
-    stokMaterial: [{key:"name",label:"Bahan"},{key:"category",label:"Kategori"},{key:"stok",label:"Stok"},{key:"min",label:"Stok Min"},{key:"statusStok",label:"Status"}],
-    stokTransaksi: [{key:"tanggal",label:"Tanggal"},{key:"material",label:"Bahan"},{key:"tipe",label:"Tipe"},{key:"jumlah",label:"Jumlah"},{key:"biaya",label:"Biaya"},{key:"oleh",label:"Oleh"},{key:"catatan",label:"Catatan"}],
+    stokMenipis: [{key:"name",label:"Bahan"},{key:"category",label:"Kategori"},{key:"stok",label:"Stok"},{key:"min",label:"Stok Min"},{key:"kurang",label:"Kurang"}],
+    stokTerpakai: [{key:"name",label:"Bahan"},{key:"jumlah",label:"Total Dipakai"},{key:"frekuensi",label:"Transaksi"},{key:"biaya",label:"Total Biaya"}],
     // Daftar Prospek/Survey — Nomor WA (teks) + kolom Pertimbangan + Aksi (tombol WA)
     prospek: [
     {key:"check",label:""},{key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"pertimbangan",label:"Pertimbangan"},

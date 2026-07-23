@@ -1,19 +1,16 @@
-import Link from 'next/link';
-import { readInventory, isInventoryConfigured } from '@/lib/dashboard/inventory';
+import { listMaterials } from '@/lib/inventory-admin';
+import { isInventoryConfigured } from '@/lib/dashboard/inventory';
 
 export default async function InventoryHome() {
   if (!isInventoryConfigured()) {
     return <p>Integrasi DB Inventory belum dikonfigurasi (INVENTORY_DATABASE_URL).</p>;
   }
 
-  const { materials } = await readInventory();
+  const materials = await listMaterials();
 
   return (
     <>
       <h1>Stok Inventory</h1>
-      <p>
-        <Link href="/ops">← Beranda Ops</Link> · <Link href="/inventory/pembelian">Input Pembelian</Link>
-      </p>
       <table>
         <thead>
           <tr>
@@ -21,6 +18,7 @@ export default async function InventoryHome() {
             <th>Kategori</th>
             <th>Stok</th>
             <th>Min</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -29,9 +27,10 @@ export default async function InventoryHome() {
               <td>{m.name}</td>
               <td>{m.category}</td>
               <td>
-                {m.current_stock} {m.unit}
+                {m.currentStock} {m.unit}
               </td>
-              <td>{m.min_stock}</td>
+              <td>{m.minStock}</td>
+              <td>{m.currentStock < m.minStock ? '⚠️ Menipis' : 'OK'}</td>
             </tr>
           ))}
         </tbody>

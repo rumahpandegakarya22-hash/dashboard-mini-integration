@@ -11,7 +11,7 @@
 import { getInventoryClient, invalidateInventoryCache } from './dashboard/inventory';
 
 /** User layanan di tabel `users` DB Inventory. Nama staf asli masuk ke notes. */
-const SERVICE_USER_ID = 'svc-miniapp';
+export const SERVICE_USER_ID = 'svc-miniapp';
 
 export interface InventoryMaterial {
   id: number;
@@ -49,7 +49,7 @@ export async function postUsage(p: {
   materialId: number;
   quantity: number;
   notes: string;
-}): Promise<{ newStock: number; totalCost: number | null; transactionId: number }> {
+}): Promise<{ newStock: number; totalCost: number | null; transactionId: number; materialName: string; unit: string }> {
   const { materialId, quantity, notes } = p;
   if (!Number.isFinite(quantity) || quantity <= 0) throw new Error('Jumlah pemakaian tidak valid.');
 
@@ -111,7 +111,7 @@ export async function postUsage(p: {
 
     await tx.commit();
     invalidateInventoryCache();
-    return { newStock, totalCost, transactionId };
+    return { newStock, totalCost, transactionId, materialName: String(material.name), unit: String(material.unit) };
   } catch (e) {
     await tx.rollback().catch(() => {});
     throw e;
