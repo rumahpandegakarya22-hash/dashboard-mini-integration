@@ -2,8 +2,9 @@ import '@/styles/globals.css';
 import '@/styles/theme-ops.css';
 import '@/styles/theme-dashboard.css';
 import '@/styles/dashboard-font.css';
+import '@/styles/theme-inventory.css';
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Outfit } from 'next/font/google';
 import Script from 'next/script';
 import { ClerkProvider } from '@clerk/nextjs';
 import Providers from '@/components/Providers';
@@ -19,6 +20,15 @@ const inter = Inter({
   weight: ['400', '500', '600', '700'],
   display: 'swap',
   variable: '--font-inter'
+});
+
+/** Font khas app Inventory Stock — self-hosted, menggantikan <link> Google Fonts
+ *  di globals.css app lama. Hanya dipakai di subtree [data-app="inventory"]. */
+const outfit = Outfit({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-outfit'
 });
 
 export const metadata: Metadata = {
@@ -48,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         setiap pengguna yang punya preferensi tema tersimpan akan memicu
         "hydration mismatch" di konsol. Cakupannya hanya atribut elemen ini.
       */}
-      <html lang="id" className={inter.variable} suppressHydrationWarning>
+      <html lang="id" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
         <body>
           {/*
             Anti-kedip tema: pasang data-theme SEBELUM konten ter-paint, jadi

@@ -1,0 +1,174 @@
+/* ============================================================
+   theme-inventory.css — port dari src/app/globals.css app Inventory Stock.
+
+   SETIAP selector di-prefix [data-app='inventory']. Aturan yang di sumber
+   menempel ke `body` dan `::-webkit-scrollbar` global sengaja diturunkan ke
+   wrapper: tanpa itu latar cream dan scrollbar Inventory akan ikut mengubah
+   Ops & Dashboard, persis kebocoran yang diperbaiki commit 029542e.
+
+   Utilitas Tailwind-nya sendiri lihat tailwind.config.ts (preflight mati).
+   ============================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[data-app='inventory'] {
+  --background: #f8f6f2;
+  --foreground: #292524;
+
+  color: var(--foreground);
+  background-color: var(--background);
+  font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+[data-app='inventory'] h1,
+[data-app='inventory'] h2,
+[data-app='inventory'] h3 {
+  text-wrap: balance;
+}
+
+/* Preflight mati, jadi reset minimal yang benar-benar dipakai markup hasil port
+   ditulis tangan di sini — sebatas subtree Inventory. */
+[data-app='inventory'] *,
+[data-app='inventory'] *::before,
+[data-app='inventory'] *::after {
+  box-sizing: border-box;
+  border: 0 solid #e8dfd5;
+}
+
+[data-app='inventory'] h1,
+[data-app='inventory'] h2,
+[data-app='inventory'] h3,
+[data-app='inventory'] h4,
+[data-app='inventory'] p {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+[data-app='inventory'] ul,
+[data-app='inventory'] ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-app='inventory'] table {
+  border-collapse: collapse;
+  text-indent: 0;
+}
+
+[data-app='inventory'] button,
+[data-app='inventory'] input,
+[data-app='inventory'] select,
+[data-app='inventory'] textarea {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+[data-app='inventory'] button {
+  cursor: pointer;
+  text-transform: none;
+}
+
+[data-app='inventory'] button:disabled {
+  cursor: not-allowed;
+}
+
+[data-app='inventory'] svg {
+  display: block;
+  vertical-align: middle;
+}
+
+[data-app='inventory'] a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+/* ---- Permukaan (nama class dipertahankan dari tema lama) ---- */
+
+[data-app='inventory'] .glass-panel {
+  background: #ffffff;
+  border: 1px solid #e8dfd5;
+  box-shadow:
+    0 1px 2px rgba(41, 37, 36, 0.04),
+    0 10px 28px -18px rgba(41, 37, 36, 0.12);
+}
+
+[data-app='inventory'] .glass-panel-dark {
+  background: #ffffff;
+  border: 1px solid #e8dfd5;
+  box-shadow:
+    0 2px 4px rgba(41, 37, 36, 0.05),
+    0 24px 48px -16px rgba(41, 37, 36, 0.22);
+}
+
+[data-app='inventory'] .glass-card {
+  background: #ffffff;
+  border: 1px solid #e8dfd5;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+[data-app='inventory'] .glass-card:hover {
+  border-color: #cf7872;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -14px rgba(201, 45, 49, 0.18);
+}
+
+[data-app='inventory'] .glass-input {
+  background: #ffffff;
+  border: 1px solid #e8dfd5;
+  color: #292524;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+[data-app='inventory'] .glass-input::placeholder {
+  color: #6b6762;
+}
+
+[data-app='inventory'] .glass-input:focus {
+  border-color: #c92d31;
+  box-shadow: 0 0 0 3px rgba(201, 45, 49, 0.12);
+  outline: none;
+}
+
+[data-app='inventory'] .glass-button {
+  background: #f2ebe1;
+  border: 1px solid #e8dfd5;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+[data-app='inventory'] .glass-button:hover {
+  background: #e8dfd5;
+  border-color: #d8ccbd;
+}
+
+[data-app='inventory'] ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+[data-app='inventory'] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-app='inventory'] ::-webkit-scrollbar-thumb {
+  background: #d8ccbd;
+  border-radius: 4px;
+}
+
+[data-app='inventory'] ::-webkit-scrollbar-thumb:hover {
+  background: #8e8b87;
+}

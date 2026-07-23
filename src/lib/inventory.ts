@@ -49,6 +49,8 @@ export async function postUsage(p: {
   materialId: number;
   quantity: number;
   notes: string;
+  /** Batch pilihan manual (halaman Pemakaian di app Inventory). Kosong = FIFO. */
+  batchId?: number | null;
 }): Promise<{ newStock: number; totalCost: number | null; transactionId: number; materialName: string; unit: string }> {
   const { materialId, quantity, notes } = p;
   if (!Number.isFinite(quantity) || quantity <= 0) throw new Error('Jumlah pemakaian tidak valid.');
@@ -64,12 +66,24 @@ export async function postUsage(p: {
     const material = mat.rows[0] as any;
     const newStock = Number(material.current_stock) - quantity;
 
-    const batchRs = await tx.execute({
-      sql: `SELECT id, remaining_qty, price_per_unit FROM purchase_batches
-            WHERE material_id = ? AND remaining_qty > 0
-            ORDER BY purchase_date ASC LIMIT 1`,
-      args: [materialId]
-    });
+    // Batch dipilih manual → pakai itu, tapi tetap wajib milik bahan yang sama;
+    // tanpa cek ini biaya bisa diambil dari harga pokok barang lain.
+    const batchRs = p.batchId
+      ? await tx.execute({
+          sql: 'SELECT id, remaining_qty, price_per_unit, material_id FROM purchase_batches WHERE id = ?',
+          args: [p.batchId]
+        })
+      : await tx.execute({
+          sql: `SELECT id, remaining_qty, price_per_unit, material_id FROM purchase_batches
+                WHERE material_id = ? AND remaining_qty > 0
+                ORDER BY purchase_date ASC LIMIT 1`,
+          args: [materialId]
+        });
+    if (p.batchId) {
+      if (batchRs.rows.length === 0) throw new Error('Batch tidak ditemukan.');
+      if (Number((batchRs.rows[0] as any).material_id) !== materialId)
+        throw new Error('Batch tidak sesuai dengan bahan.');
+    }
 
     let batchId: number | null = null;
     let unitPrice: number | null = null;

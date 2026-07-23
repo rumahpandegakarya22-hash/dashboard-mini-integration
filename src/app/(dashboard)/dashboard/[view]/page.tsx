@@ -51,7 +51,10 @@ export default async function DashboardViewPage({
       from={sp.from}
       to={sp.to}
     >
-      {isDash ? (
+      {/* `stok` bergrup "dash" supaya muncul di seksi Dashboards sidebar, tapi
+          isinya bukan overview per divisi — sumber datanya DB Inventory, bukan
+          hidrasi Turso utama. Karena itu tetap dirender lewat ViewFor. */}
+      {isDash && view !== 'stok' ? (
         <OverviewFor which={view as OverviewKey} loaded={loaded} period={period} from={sp.from} to={sp.to} />
       ) : (
         <ViewFor view={view} role={user.role} loaded={loaded} period={period} />

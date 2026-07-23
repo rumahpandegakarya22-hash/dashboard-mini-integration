@@ -347,3 +347,144 @@ export async function saveOpname(p: {
     throw e;
   }
 }
+
+/* ------------------------------------------------- baca untuk halaman ---- */
+
+export interface TransactionRow {
+  id: number;
+  materialId: number;
+  materialName: string;
+  materialUnit: string;
+  userName: string;
+  type: 'PURCHASE' | 'USAGE' | 'CORRECTION';
+  quantity: number;
+  batchId: number | null;
+  unitPrice: number | null;
+  totalCost: number | null;
+  notes: string | null;
+  createdAt: number;
+}
+
+export async function listTransactions(f: {
+  type?: string;
+  search?: string;
+  from?: string;
+  to?: string;
+}): Promise<TransactionRow[]> {
+  const where: string[] = [];
+  const args: any[] = [];
+  if (f.type) {
+    where.push('t.type = ?');
+    args.push(f.type);
+  }
+  if (f.search) {
+    where.push('(m.name LIKE ? OR t.notes LIKE ?)');
+    args.push(`%${f.search}%`, `%${f.search}%`);
+  }
+  if (f.from) {
+    where.push('t.created_at >= ?');
+    args.push(Math.floor(new Date(`${f.from}T00:00:00`).getTime() / 1000));
+  }
+  if (f.to) {
+    where.push('t.created_at <= ?');
+    args.push(Math.floor(new Date(`${f.to}T23:59:59`).getTime() / 1000));
+  }
+
+  const rs = await getInventoryClient().execute({
+    sql: `SELECT t.id, t.material_id, m.name AS material_name, m.unit AS material_unit,
+                 COALESCE(u.name, t.user_id) AS user_name, t.type, t.quantity, t.batch_id,
+                 t.unit_price, t.total_cost, t.notes, t.created_at
+          FROM inventory_transactions t
+          JOIN materials m ON m.id = t.material_id
+          LEFT JOIN users u ON u.id = t.user_id
+          ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+          ORDER BY t.created_at DESC, t.id DESC`,
+    args
+  });
+
+  return rs.rows.map((r: any) => ({
+    id: Number(r.id),
+    materialId: Number(r.material_id),
+    materialName: String(r.material_name),
+    materialUnit: String(r.material_unit),
+    userName: String(r.user_name ?? '-'),
+    type: String(r.type) as TransactionRow['type'],
+    quantity: Number(r.quantity),
+    batchId: r.batch_id == null ? null : Number(r.batch_id),
+    unitPrice: r.unit_price == null ? null : Number(r.unit_price),
+    totalCost: r.total_cost == null ? null : Number(r.total_cost),
+    notes: r.notes == null ? null : String(r.notes),
+    createdAt: Number(r.created_at)
+  }));
+}
+
+export interface BatchRow {
+  id: number;
+  materialId: number;
+  materialName: string;
+  materialUnit: string;
+  purchaseDate: number;
+  quantity: number;
+  remainingQty: number;
+  totalPrice: number;
+  pricePerUnit: number;
+  notes: string | null;
+}
+
+/** Default hanya batch yang masih bersisa — itu yang bisa dipakai. */
+export async function listBatches(materialId?: number, includeEmpty = false): Promise<BatchRow[]> {
+  const where: string[] = [];
+  const args: any[] = [];
+  if (materialId) {
+    where.push('b.material_id = ?');
+    args.push(materialId);
+  }
+  if (!includeEmpty) where.push('b.remaining_qty > 0');
+
+  const rs = await getInventoryClient().execute({
+    sql: `SELECT b.id, b.material_id, m.name AS material_name, m.unit AS material_unit,
+                 b.purchase_date, b.quantity, b.remaining_qty, b.total_price, b.price_per_unit, b.notes
+          FROM purchase_batches b
+          JOIN materials m ON m.id = b.material_id
+          ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+          ORDER BY b.purchase_date DESC`,
+    args
+  });
+
+  return rs.rows.map((r: any) => ({
+    id: Number(r.id),
+    materialId: Number(r.material_id),
+    materialName: String(r.material_name),
+    materialUnit: String(r.material_unit),
+    purchaseDate: Number(r.purchase_date),
+    quantity: Number(r.quantity),
+    remainingQty: Number(r.remaining_qty),
+    totalPrice: Number(r.total_price),
+    pricePerUnit: Number(r.price_per_unit),
+    notes: r.notes == null ? null : String(r.notes)
+  }));
+}
+
+export interface LogRow {
+  id: number;
+  userName: string;
+  action: string;
+  targetData: string | null;
+  createdAt: number;
+}
+
+export async function listLogs(limit = 300): Promise<LogRow[]> {
+  const rs = await getInventoryClient().execute({
+    sql: `SELECT l.id, COALESCE(u.name, l.user_id) AS user_name, l.action, l.target_data, l.created_at
+          FROM activity_logs l LEFT JOIN users u ON u.id = l.user_id
+          ORDER BY l.created_at DESC, l.id DESC LIMIT ?`,
+    args: [limit]
+  });
+  return rs.rows.map((r: any) => ({
+    id: Number(r.id),
+    userName: String(r.user_name ?? '-'),
+    action: String(r.action),
+    targetData: r.target_data == null ? null : String(r.target_data),
+    createdAt: Number(r.created_at)
+  }));
+}

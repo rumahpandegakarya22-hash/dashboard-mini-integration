@@ -120,6 +120,14 @@ export default function DashboardShell({
               </span>
               Mini App Ops
             </a>
+            {/* Inventory Stock sejajar Mini App Ops: keduanya app terpisah yang
+                dipakai akun yang sama, bukan halaman data Dashboard. */}
+            <a className="nav-link" href="/inventory">
+              <span className="caret">
+                <IconCaret />
+              </span>
+              Inventory Stock
+            </a>
           </div>
         )}
 
