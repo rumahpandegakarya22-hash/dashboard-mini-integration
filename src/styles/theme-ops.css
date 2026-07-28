@@ -575,6 +575,99 @@
   transform: rotate(180deg);
 }
 
+/* Modal (WifiPanel/AkunPenghuniPanel/EditPanel/ModulePanel dst) -- dipakai di
+   JSX sejak awal tapi juga tanpa CSS sama sekali: tanpa ini modal cuma dump
+   konten polos di akhir <body>, tanpa overlay/posisi/kartu. */
+[data-app='ops'] .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-backdrop);
+  background: rgba(0, 0, 0, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+[data-app='ops'] .modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 86vh;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--card-hairline);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card), 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+[data-app='ops'] .modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--card-hairline);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
+
+[data-app='ops'] .modal-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[data-app='ops'] .modal-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+
+[data-app='ops'] .modal-close:hover {
+  background: var(--brand-tint);
+  color: var(--ink);
+}
+
+[data-app='ops'] .modal-body {
+  padding: 20px;
+}
+
+/* Utilitas kecil lain yg juga kepakai dari awal tanpa CSS -- gejalanya lebih
+   halus dari .modal (bukan hilang total, cuma acak-acakan): gap kartu ilang,
+   baris tabel tidak kelihatan bisa diklik, tombol Edit nempel judul. */
+[data-app='ops'] .form-col {
+  display: flex;
+  flex-direction: column;
+}
+
+[data-app='ops'] .panel-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+[data-app='ops'] .page-head-actions {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+[data-app='ops'] .table-scroll {
+  overflow-x: auto;
+}
+
+[data-app='ops'] .row-click {
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out);
+}
+
+[data-app='ops'] .row-click:hover {
+  background: var(--brand-tint);
+}
+
 [data-app='ops'] .section-title {
   font-size: 0.8125rem;
   font-weight: 600;
