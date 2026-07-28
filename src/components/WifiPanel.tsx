@@ -174,7 +174,7 @@ export default function WifiPanel() {
                 aria-haspopup="dialog"
                 onClick={() => setTerbuka(k.idKamar)}
               >
-                <span className="icon-tile" aria-hidden>
+                <span className={k.ssid ? 'icon-tile' : 'icon-tile warn'} aria-hidden>
                   <Wifi size={18} />
                 </span>
                 <span className="bento-meta">

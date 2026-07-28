@@ -452,6 +452,129 @@
   margin-top: auto;
 }
 
+/* Kartu ringkasan yang bukanya lewat modal (WifiPanel, AkunPenghuniPanel) --
+   sama bahasa visualnya dengan .module-card (kartu, bukan baris akordion),
+   cuma isinya baris ikon+teks+chevron karena butuh subjudul. */
+[data-app='ops'] .bento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+[data-app='ops'] .bento-card {
+  background: var(--surface);
+  border: 1px solid var(--card-hairline);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+[data-app='ops'] .bento-card[data-alert='true'] {
+  border-color: color-mix(in srgb, var(--warn-ink) 45%, var(--card-hairline));
+}
+
+[data-app='ops'] .bento-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+  transition: background var(--t-fast) var(--ease-out);
+}
+
+[data-app='ops'] .bento-head:hover {
+  background: var(--brand-tint);
+}
+
+[data-app='ops'] .bento-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+[data-app='ops'] .bento-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[data-app='ops'] .bento-sub {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-app='ops'] .accordion-chevron {
+  flex-shrink: 0;
+  color: var(--ink-2);
+}
+
+/* Accordion form modul (Input Manual) -- sama bahasa visual dgn .card/.bento-card,
+   sebelumnya tanpa CSS sama sekali jadi render polos tanpa batas kartu. */
+[data-app='ops'] .accordion {
+  background: var(--surface);
+  border: 1px solid var(--card-hairline);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+[data-app='ops'] .accordion-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+[data-app='ops'] .accordion-head:hover {
+  background: var(--brand-tint);
+}
+
+[data-app='ops'] .accordion-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[data-app='ops'] .accordion-sub {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+[data-app='ops'] .accordion-body {
+  padding: 0 16px 16px;
+}
+
+[data-app='ops'] .accordion .accordion-chevron {
+  flex-shrink: 0;
+  transition: transform var(--t-fast) var(--ease-out);
+}
+
+[data-app='ops'] .accordion[data-open='true'] .accordion-chevron {
+  transform: rotate(180deg);
+}
+
 [data-app='ops'] .section-title {
   font-size: 0.8125rem;
   font-weight: 600;

@@ -170,7 +170,7 @@ export default function AkunPenghuniPanel() {
                 aria-haspopup="dialog"
                 onClick={() => setTerbuka(a.idPenghuni)}
               >
-                <span className="icon-tile" aria-hidden>
+                <span className={bermasalah ? 'icon-tile warn' : 'icon-tile'} aria-hidden>
                   <UserRound size={18} />
                 </span>
                 <span className="bento-meta">
