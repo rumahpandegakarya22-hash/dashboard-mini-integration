@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 
 /**
@@ -40,11 +41,25 @@ export default function Accordion({
           {title}
           {subtitle && <span className="accordion-sub">{subtitle}</span>}
         </span>
+        {/* Rotasi chevron sudah ditangani CSS lewat [data-open] di .accordion —
+            tidak dobel dianimasi di sini supaya tidak numpuk jadi 360°. */}
         <ChevronDown size={20} className="accordion-chevron" aria-hidden />
       </button>
-      <div id={id} className="accordion-body" hidden={!open}>
-        {children}
-      </div>
+      {/* Wrapper luar HANYA mengurus tinggi (0 <-> auto) + overflow; padding
+          tetap di .accordion-body bagian dalam supaya tidak ikut "mengempis"
+          jadi sliver setinggi padding saat tertutup. Isi TIDAK dilepas dari
+          DOM saat tertutup — form di dalamnya jangan kehilangan nilai. */}
+      <motion.div
+        inert={!open || undefined}
+        initial={false}
+        animate={{ height: open ? 'auto' : 0, opacity: open ? 1 : 0 }}
+        transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
+        style={{ overflow: 'hidden' }}
+      >
+        <div id={id} className="accordion-body">
+          {children}
+        </div>
+      </motion.div>
     </section>
   );
 }

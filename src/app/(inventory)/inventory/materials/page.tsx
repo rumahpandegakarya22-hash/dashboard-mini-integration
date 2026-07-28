@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "@/components/inventory/Navbar";
 import { 
   Package, 
@@ -297,10 +298,24 @@ export default function MaterialsPage() {
           </div>
         )}
 
-        {/* Modal: Add Material */}
+        {/* Modal: Add Material — AnimatePresence supaya exit sempat diputar,
+            bukan langsung unmount seperti sebelumnya. */}
+        <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-            <div className="w-full max-w-lg glass-panel-dark rounded-3xl p-6 border border-sand relative">
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <motion.div
+              className="w-full max-w-lg glass-panel-dark rounded-3xl p-6 border border-sand relative"
+              initial={{ opacity: 0, y: 18, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.97 }}
+              transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+            >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-ink flex items-center gap-2">
                   <Package className="h-5 w-5 text-accent" />
@@ -409,14 +424,28 @@ export default function MaterialsPage() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         {/* Modal: Edit Material */}
+        <AnimatePresence>
         {showEditModal && selectedMaterial && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-            <div className="w-full max-w-lg glass-panel-dark rounded-3xl p-6 border border-sand relative">
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <motion.div
+              className="w-full max-w-lg glass-panel-dark rounded-3xl p-6 border border-sand relative"
+              initial={{ opacity: 0, y: 18, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.97 }}
+              transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+            >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-ink flex items-center gap-2">
                   <FileEdit className="h-5 w-5 text-accent" />
@@ -522,9 +551,10 @@ export default function MaterialsPage() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </main>
     </div>
   );

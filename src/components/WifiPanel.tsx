@@ -167,7 +167,7 @@ export default function WifiPanel() {
           const berubah = d.ssid !== k.ssid || d.password !== k.password || d.catatan !== k.catatan;
           const open = terbuka === k.idKamar;
           return (
-            <div key={k.idKamar} className="bento-card" data-alert={!k.ssid}>
+            <div key={k.idKamar} className="bento-card border-beam" data-alert={!k.ssid}>
               <button
                 type="button"
                 className="bento-head"

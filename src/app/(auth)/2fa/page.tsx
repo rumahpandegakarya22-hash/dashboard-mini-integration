@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getAuthState } from '@/lib/core/auth';
 import TotpVerifyForm from '@/components/TotpVerifyForm';
+import AnimatedAuthCard from '@/components/ui/AnimatedAuthCard';
 
 /** Step-up 2FA setelah login Clerk: minta kode Google Authenticator. */
 export default async function TwoFaPage() {
@@ -10,7 +11,9 @@ export default async function TwoFaPage() {
 
   return (
     <div className="center-page">
-      <TotpVerifyForm />
+      <AnimatedAuthCard className="">
+        <TotpVerifyForm />
+      </AnimatedAuthCard>
     </div>
   );
 }

@@ -9,8 +9,45 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
+import { motion } from 'framer-motion';
 import { ChevronLeft, House, LoaderCircle, LogOut, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
 import { DIVISION_GROUPS, NAV_TEMAN_RARA, moduleIcon } from './module-icons';
+
+/** Item sidebar dengan pil aktif yang meluncur (layoutId bersama) — pola
+ * manuarora700: satu elemen `motion` dipindah antar item lewat shared layout
+ * animation, bukan style statis yang loncat. */
+function SideLink({
+  href,
+  active,
+  icon: Icon,
+  children
+}: {
+  href: string;
+  active: boolean;
+  icon: React.ComponentType<{ size?: number }>;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link href={href} className={active ? 'side-item active' : 'side-item'} style={{ position: 'relative' }}>
+      {active && (
+        <motion.span
+          layoutId="ops-side-active"
+          transition={{ type: 'spring', stiffness: 420, damping: 38 }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 'var(--r-md)',
+            background: 'var(--brand-tint)'
+          }}
+        />
+      )}
+      <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex' }}>
+        <Icon size={18} />
+      </span>
+      <span style={{ position: 'relative', zIndex: 1 }}>{children}</span>
+    </Link>
+  );
+}
 
 export interface NavModule {
   id: string;
@@ -82,10 +119,9 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
         </div>
 
         <nav aria-label="Navigasi utama">
-          <Link href="/ops" className={isHome ? 'side-item active' : 'side-item'}>
-            <House size={18} />
+          <SideLink href="/ops" active={isHome} icon={House}>
             Beranda
-          </Link>
+          </SideLink>
 
           {groups.map((g) => (
             <div key={g.label}>
@@ -94,10 +130,9 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
                 const Icon = moduleIcon(m.id);
                 const active = pathname === `/ops/m/${m.id}`;
                 return (
-                  <Link key={m.id} href={`/ops/m/${m.id}`} className={active ? 'side-item active' : 'side-item'}>
-                    <Icon size={18} />
+                  <SideLink key={m.id} href={`/ops/m/${m.id}`} active={active} icon={Icon}>
                     {m.title}
-                  </Link>
+                  </SideLink>
                 );
               })}
             </div>
@@ -115,10 +150,9 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
                   Kelola User
                 </a>
               ) : (
-                <Link href="/ops/admin/users" className={isAdmin ? 'side-item active' : 'side-item'}>
-                  <Users size={18} />
+                <SideLink href="/ops/admin/users" active={isAdmin} icon={Users}>
                   Kelola User
-                </Link>
+                </SideLink>
               )}
             </div>
           )}
@@ -129,14 +163,9 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
               {NAV_TEMAN_RARA.map((n) => {
                 const Icon = n.icon;
                 return (
-                  <Link
-                    key={n.href}
-                    href={n.href}
-                    className={pathname.startsWith(n.href) ? 'side-item active' : 'side-item'}
-                  >
-                    <Icon size={18} />
+                  <SideLink key={n.href} href={n.href} active={pathname.startsWith(n.href)} icon={Icon}>
                     {n.label}
-                  </Link>
+                  </SideLink>
                 );
               })}
             </div>
@@ -171,10 +200,9 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
               <div className="side-user-role">{roleLabel}</div>
             </div>
           </div>
-          <Link href="/ops/account" className={isAccount ? 'side-item active' : 'side-item'}>
-            <ShieldCheck size={18} />
+          <SideLink href="/ops/account" active={isAccount} icon={ShieldCheck}>
             Keamanan Akun
-          </Link>
+          </SideLink>
           <button type="button" className="side-item" onClick={logout} disabled={loggingOut}>
             {loggingOut ? <LoaderCircle size={18} className="spin" /> : <LogOut size={18} />}
             Keluar

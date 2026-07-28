@@ -215,7 +215,7 @@ export default function PengumumanPanel() {
 
       <div className="panel-grid">
         {data?.map((e) => (
-        <div key={e.id} className="card">
+        <div key={e.id} className="card border-beam">
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
             <span className="prio-badge">{LABEL_TIPE[e.tipe]}</span>
             <span className="muted" style={{ fontSize: '0.8125rem' }}>

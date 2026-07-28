@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import { BellRing, CircleAlert, ClipboardList, ImageIcon, ListChecks } from 'lucide-react';
 import type { WorkOrderRow } from '@/lib/joblist';
 
@@ -120,8 +121,9 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                   </tr>
                 </thead>
                 <tbody>
+                  <AnimatePresence initial={false}>
                   {woRows.map((r) => (
-                    <tr key={r.id}>
+                    <motion.tr key={r.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
                       <td>{r.tanggalInput}</td>
                       <td>{r.lokasiItem}</td>
                       <td>{r.kategori}</td>
@@ -168,8 +170,9 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                       )}
                       {/* Owner/pengawas: read-only (logbook) + siapa penyelesainya. Staf: dropdown — In Progress memindahkan ke List Job. */}
                       <td>{readOnly ? `${r.status}${r.completedBy ? ` — ${r.completedBy}` : ''}` : statusSelect(r)}</td>
-                    </tr>
+                    </motion.tr>
                   ))}
+                  </AnimatePresence>
                 </tbody>
               </table>
             </div>
@@ -198,8 +201,9 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                     </tr>
                   </thead>
                   <tbody>
+                    <AnimatePresence initial={false}>
                     {jobRows.map((r, i) => (
-                      <tr key={r.id}>
+                      <motion.tr key={r.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
                         <td>{i + 1}</td>
                         <td>WO-{r.id}</td>
                         <td style={{ maxWidth: 320, whiteSpace: 'normal' }}>
@@ -207,8 +211,9 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                         </td>
                         <td>{r.pic || '-'}</td>
                         <td>{statusSelect(r)}</td>
-                      </tr>
+                      </motion.tr>
                     ))}
+                    </AnimatePresence>
                   </tbody>
                 </table>
               </div>

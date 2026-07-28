@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
 /**
@@ -49,7 +50,7 @@ export default function Modal({
     };
   }, [open, onClose]);
 
-  if (!open || typeof document === 'undefined') return null;
+  if (typeof document === 'undefined') return null;
 
   return createPortal(
     // `data-app` dipasang di pembungkus TERPISAH, bukan di .modal-backdrop itu
@@ -58,31 +59,46 @@ export default function Modal({
     // elemen, aturannya tidak cocok dan modal kehilangan position/z-index-nya —
     // ia berhenti melayang dan hanya menumpuk di akhir halaman.
     <div data-app="ops">
-      <div
-        className="modal-backdrop"
-        onClick={(e) => {
-          // Hanya klik pada latar yang menutup — klik di dalam panel ikut
-          // ter-bubble ke sini kalau tidak dibedakan.
-          if (e.target === e.currentTarget) onClose();
-        }}
-      >
-        <div
-          ref={panelRef}
-          className="modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label={title}
-          tabIndex={-1}
-        >
-          <div className="modal-head">
-            <h2 className="modal-title">{title}</h2>
-            <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup">
-              <X size={20} />
-            </button>
-          </div>
-          <div className="modal-body">{children}</div>
-        </div>
-      </div>
+      {/* AnimatePresence membungkus SELURUH kondisi `open`, bukan early-return
+          di atas — supaya animasi exit sempat diputar sebelum modal lepas
+          dari DOM (early-return lama langsung unmount tanpa transisi). */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={(e) => {
+              // Hanya klik pada latar yang menutup — klik di dalam panel ikut
+              // ter-bubble ke sini kalau tidak dibedakan.
+              if (e.target === e.currentTarget) onClose();
+            }}
+          >
+            <motion.div
+              ref={panelRef}
+              className="modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label={title}
+              tabIndex={-1}
+              initial={{ opacity: 0, y: 18, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.97 }}
+              transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+            >
+              <div className="modal-head">
+                <h2 className="modal-title">{title}</h2>
+                <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="modal-body">{children}</div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>,
     document.body
   );

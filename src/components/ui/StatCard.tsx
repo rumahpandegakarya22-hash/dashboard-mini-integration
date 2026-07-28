@@ -1,9 +1,12 @@
+'use client';
+
 /* PORT VERBATIM dari `statCard()` / `statGrid()` public/app.js (Fase 4).
 
    Aturan warna tren dipertahankan apa adanya: HIJAU #13a05f = kenaikan,
    MERAH #e23d3d = penurunan — konsisten lintas seluruh scorecard. Garis di
    dalam kartu adalah sparkline DATA asli, bukan ornamen dekoratif. */
 
+import { motion } from 'framer-motion';
 import Sparkline from '@/components/charts/Sparkline';
 import { trendBadge } from '@/lib/dashboard/format';
 
@@ -29,7 +32,7 @@ export interface StatCardData {
   onDark?: boolean;
 }
 
-export function StatCard(c: StatCardData) {
+export function StatCard(c: StatCardData & { index?: number }) {
   const hasSeries = Array.isArray(c.spark) && c.spark.length > 1;
   const t = hasSeries ? trendBadge(c.spark) : c.badge ? { badge: c.badge, dir: c.dir || 'up' } : null;
 
@@ -38,9 +41,22 @@ export function StatCard(c: StatCardData) {
   const arrow = up ? '▲' : '▼';
 
   return (
-    <article className={`stat-card${c.onDark ? ' on-dark' : ''}`} style={{ background: glassify(c.bg, 0.58), position: 'relative' }}>
+    <motion.article
+      className={`stat-card${c.onDark ? ' on-dark' : ''}`}
+      style={{ background: glassify(c.bg, 0.58), position: 'relative' }}
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.3, delay: Math.min((c.index ?? 0) * 0.04, 0.32), ease: [0.22, 0.61, 0.36, 1] }}
+    >
       <span className="stat-card__label">{c.label}</span>
-      <span className="stat-card__value">{c.value}</span>
+      <motion.span
+        className="stat-card__value"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: Math.min((c.index ?? 0) * 0.04, 0.32) + 0.08, ease: [0.22, 0.61, 0.36, 1] }}
+      >
+        {c.value}
+      </motion.span>
       {t && (
         <span
           className="stat-card__badge"
@@ -67,7 +83,7 @@ export function StatCard(c: StatCardData) {
       <span className="stat-card__wave">
         <Sparkline series={c.spark || []} color={c.onDark ? 'rgba(255,255,255,.7)' : 'rgba(20,40,60,.45)'} />
       </span>
-    </article>
+    </motion.article>
   );
 }
 
@@ -75,7 +91,7 @@ export function StatGrid({ cards, cols }: { cards: StatCardData[]; cols: number 
   return (
     <section className="stat-grid" style={{ ['--cols' as any]: cols }}>
       {cards.map((c, i) => (
-        <StatCard key={i} {...c} />
+        <StatCard key={i} index={i} {...c} />
       ))}
     </section>
   );

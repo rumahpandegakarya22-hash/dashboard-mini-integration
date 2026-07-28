@@ -34,7 +34,7 @@ export default function HomeMenu({ isOwner, canKelola, modules }: Props) {
         transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3), ease: EASE }}
         whileTap={{ scale: 0.97 }}
       >
-        <Link href={href} className="module-card">
+        <Link href={href} className="module-card border-beam">
           <span className="icon-tile" aria-hidden>
             <Icon size={20} />
           </span>
@@ -87,7 +87,7 @@ export default function HomeMenu({ isOwner, canKelola, modules }: Props) {
               transition={{ duration: 0.25, delay: 0.3, ease: EASE }}
               whileTap={{ scale: 0.97 }}
             >
-              <Link href="/ops/admin/users" className="module-card">
+              <Link href="/ops/admin/users" className="module-card border-beam">
                 <span className="icon-tile" aria-hidden>
                   <Users size={20} />
                 </span>
@@ -100,7 +100,7 @@ export default function HomeMenu({ isOwner, canKelola, modules }: Props) {
               transition={{ duration: 0.25, delay: 0.33, ease: EASE }}
               whileTap={{ scale: 0.97 }}
             >
-              <Link href="/ops/admin/kamar" className="module-card">
+              <Link href="/ops/admin/kamar" className="module-card border-beam">
                 <span className="icon-tile" aria-hidden>
                   <Tag size={20} />
                 </span>

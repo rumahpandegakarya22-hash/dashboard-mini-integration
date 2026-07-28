@@ -1,8 +1,11 @@
+'use client';
+
 /* PORT VERBATIM dari `lineChart()` public/app.js (Fase 4).
    Multi-seri (2–3) dengan marker; sumbu Y dinamis dan MENDUKUNG NILAI NEGATIF
    (dipakai Laba Bersih). Seri ke-2 bergaris putus-putus, seri ke-1 diberi area
    gradien — sama persis seperti versi lama. */
 
+import { motion } from 'framer-motion';
 import { fmtNum } from '@/lib/dashboard/format';
 
 export const LINE_COLORS = ['var(--teal)', 'var(--text-2)', '#e0a13a'];
@@ -86,23 +89,45 @@ export default function AreaLine({ seriesList, xLabels, names, unit, gradId = 'l
         ))}
 
         {series[0] && (
-          <path
+          <motion.path
             d={`${path(series[0])} L ${X(series[0].length - 1, series[0].length)} ${padT + ch} L ${padL} ${padT + ch} Z`}
             fill={`url(#${gradId})`}
+            initial={{ clipPath: 'inset(100% 0 0 0)' }}
+            animate={{ clipPath: 'inset(0% 0 0 0)' }}
+            transition={{ duration: 0.7, ease: [0.22, 0.61, 0.36, 1] }}
           />
         )}
 
-        {series.map((s, i) => (
-          <path
-            key={`l${i}`}
-            d={path(s)}
-            fill="none"
-            stroke={LINE_COLORS[i] || 'var(--teal)'}
-            strokeWidth={i === 0 ? 2.2 : 2}
-            strokeDasharray={i === 1 ? '5 5' : undefined}
-            strokeLinecap="round"
-          />
-        ))}
+        {series.map((s, i) =>
+          i === 1 ? (
+            // Seri putus-putus: pathLength framer-motion menimpa strokeDasharray
+            // manual, jadi cukup fade-in supaya pola dash "5 5" tetap utuh.
+            <motion.path
+              key={`l${i}`}
+              d={path(s)}
+              fill="none"
+              stroke={LINE_COLORS[i] || 'var(--teal)'}
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              strokeLinecap="round"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 0.61, 0.36, 1] }}
+            />
+          ) : (
+            <motion.path
+              key={`l${i}`}
+              d={path(s)}
+              fill="none"
+              stroke={LINE_COLORS[i] || 'var(--teal)'}
+              strokeWidth={i === 0 ? 2.2 : 2}
+              strokeLinecap="round"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.8, delay: i * 0.1, ease: [0.22, 0.61, 0.36, 1] }}
+            />
+          )
+        )}
 
         {series.map((s, si) => {
           const color = LINE_COLORS[si] || 'var(--teal)';

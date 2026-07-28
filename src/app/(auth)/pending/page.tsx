@@ -1,5 +1,6 @@
 import { SignOutButton } from '@clerk/nextjs';
 import { Hourglass } from 'lucide-react';
+import AnimatedAuthCard from '@/components/ui/AnimatedAuthCard';
 
 /**
  * Wajib dinamis: CSP memakai nonce per-request, dan Next hanya bisa menyuntikkan
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export default function PendingPage() {
   return (
     <div className="center-page">
-      <div className="center-card card success-card">
+      <AnimatedAuthCard className="center-card card success-card">
         <span className="icon-tile lg warn" aria-hidden>
           <Hourglass size={26} />
         </span>
@@ -28,7 +29,7 @@ export default function PendingPage() {
             Keluar
           </button>
         </SignOutButton>
-      </div>
+      </AnimatedAuthCard>
     </div>
   );
 }

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { 
+import { AnimatePresence, motion } from "framer-motion";
+import {
   Package, 
   ShoppingCart, 
   Activity, 
@@ -95,7 +96,8 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation — pil aktif meluncur antar item (shared layoutId),
+              padanan "sidebar" untuk chrome nav Inventory yang berbentuk topbar. */}
           <div className="hidden lg:flex items-center space-x-1">
             {navigation.map((item) => {
               if (!item.roles.includes(user.role)) return null;
@@ -104,14 +106,21 @@ export default function Navbar() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  className={`relative flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${
                     isActive
-                      ? "bg-accent/10 border border-accent/20 text-accent"
+                      ? "text-accent"
                       : "text-stone-700 hover:bg-blush/30 hover:text-ink border border-transparent"
                   }`}
                 >
-                  <item.icon className="h-4 w-4" />
-                  {item.name}
+                  {isActive && (
+                    <motion.span
+                      layoutId="inv-nav-active"
+                      transition={{ type: "spring", stiffness: 420, damping: 38 }}
+                      className="absolute inset-0 rounded-xl bg-accent/10 border border-accent/20"
+                    />
+                  )}
+                  <item.icon className="h-4 w-4 relative" />
+                  <span className="relative">{item.name}</span>
                 </Link>
               );
             })}
@@ -154,8 +163,16 @@ export default function Navbar() {
       </div>
 
       {/* Mobile Menu */}
+      <AnimatePresence>
       {isOpen && (
-        <div className="lg:hidden glass-panel border-t border-sand/70 px-2 pt-2 pb-4 space-y-1">
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.22, ease: [0.22, 0.61, 0.36, 1] }}
+          className="lg:hidden glass-panel border-t border-sand/70 overflow-hidden"
+        >
+        <div className="px-2 pt-2 pb-4 space-y-1">
           <a
             href="/dashboard"
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold text-accent bg-accent/10 border border-accent/25"
@@ -204,7 +221,9 @@ export default function Navbar() {
             </a>
           </div>
         </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </nav>
   );
 }

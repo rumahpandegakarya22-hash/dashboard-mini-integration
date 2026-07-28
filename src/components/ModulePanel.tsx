@@ -1,3 +1,6 @@
+'use client';
+
+import { motion } from 'framer-motion';
 import PengaduanPanel from './PengaduanPanel';
 import ReviewPendaftaranPanel from './ReviewPendaftaranPanel';
 import VerifikasiBuktiPanel from './VerifikasiBuktiPanel';
@@ -19,12 +22,12 @@ const PANEL: Record<string, () => React.ReactNode> = {
   'penghuni-baru': () => <ReviewPendaftaranPanel />
 };
 
-/** Dipakai halaman modul untuk memutuskan apakah form utamanya perlu dilipat. */
-export function punyaPanel(moduleId: string): boolean {
-  return moduleId in PANEL;
-}
-
 export default function ModulePanel({ moduleId }: { moduleId: string }) {
   const render = PANEL[moduleId];
-  return render ? <>{render()}</> : null;
+  if (!render) return null;
+  return (
+    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+      {render()}
+    </motion.div>
+  );
 }

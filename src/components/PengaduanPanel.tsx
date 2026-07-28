@@ -166,7 +166,7 @@ export default function PengaduanPanel() {
             const menutup = d.status === 'Selesai' || d.status === 'Dibatalkan';
             const berubah = d.status !== a.status || d.tanggapan !== a.tanggapan;
             return (
-            <div key={a.id} className="card">
+            <div key={a.id} className="card border-beam">
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                 <span className={KELAS_STATUS[a.status]}>{a.status}</span>
                 <span className="muted" style={{ fontSize: '0.8125rem' }}>

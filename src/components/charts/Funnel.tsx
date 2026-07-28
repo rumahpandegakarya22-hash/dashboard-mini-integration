@@ -1,4 +1,8 @@
+'use client';
+
 /* PORT VERBATIM dari `funnel()` public/app.js (Fase 4). */
+
+import { motion } from 'framer-motion';
 
 export interface FunnelStage {
   label?: string;
@@ -22,11 +26,17 @@ export default function Funnel({ stages }: { stages: FunnelStage[] }) {
           const y = i * seg;
           const x0 = (w - topW) / 2;
           const x1 = (w - botW) / 2;
+          const cy = y + (seg - 4) / 2;
+          // Morph-only: bentuk trapesium berubah mengikuti data lewat animasi
+          // atribut `points` — tidak ada perubahan lain pada kartu di sekitarnya.
+          const flat = `${w / 2},${cy} ${w / 2},${cy} ${w / 2},${cy} ${w / 2},${cy}`;
           return (
-            <polygon
+            <motion.polygon
               key={i}
-              points={`${x0},${y} ${x0 + topW},${y} ${x1 + botW},${y + seg - 4} ${x1},${y + seg - 4}`}
               fill={COLORS[i % COLORS.length]}
+              initial={{ points: flat }}
+              animate={{ points: `${x0},${y} ${x0 + topW},${y} ${x1 + botW},${y + seg - 4} ${x1},${y + seg - 4}` }}
+              transition={{ duration: 0.55, delay: i * 0.06, ease: [0.22, 0.61, 0.36, 1] }}
             />
           );
         })}

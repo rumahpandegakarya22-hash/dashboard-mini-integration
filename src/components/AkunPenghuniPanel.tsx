@@ -163,7 +163,7 @@ export default function AkunPenghuniPanel() {
           const bermasalah = a.ganda || a.yatim;
           const open = terbuka === a.idPenghuni;
           return (
-            <div key={a.idPenghuni} className="bento-card" data-alert={bermasalah}>
+            <div key={a.idPenghuni} className="bento-card border-beam" data-alert={bermasalah}>
               <button
                 type="button"
                 className="bento-head"

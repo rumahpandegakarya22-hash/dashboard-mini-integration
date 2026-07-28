@@ -5,11 +5,12 @@ import { getSessionUser } from '@/lib/core/auth';
 import { canAccess } from '@/lib/core/roles';
 import { MODULES } from '@/lib/modules/registry';
 import { isEditable } from '@/lib/modules/edit';
+import { punyaPanel } from '@/lib/modules/panel';
 import { moduleIcon } from '@/components/module-icons';
 import Accordion from '@/components/Accordion';
 import DynamicForm from '@/components/DynamicForm';
 import EditPanel from '@/components/EditPanel';
-import ModulePanel, { punyaPanel } from '@/components/ModulePanel';
+import ModulePanel from '@/components/ModulePanel';
 
 export default async function ModulePage({
   params,
