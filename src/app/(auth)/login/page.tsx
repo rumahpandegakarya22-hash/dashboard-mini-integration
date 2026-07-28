@@ -1,4 +1,5 @@
 import { SignIn } from '@clerk/nextjs';
+import AnimatedAuthCard from '@/components/ui/AnimatedAuthCard';
 
 /**
  * Wajib dinamis: CSP memakai nonce per-request, dan Next hanya bisa menyuntikkan
@@ -18,7 +19,9 @@ export const dynamic = 'force-dynamic';
 export default function LoginPage() {
   return (
     <div className="center-page">
-      <SignIn routing="hash" signUpUrl="/sign-up" fallbackRedirectUrl="/" />
+      <AnimatedAuthCard>
+        <SignIn routing="hash" signUpUrl="/sign-up" fallbackRedirectUrl="/" />
+      </AnimatedAuthCard>
     </div>
   );
 }

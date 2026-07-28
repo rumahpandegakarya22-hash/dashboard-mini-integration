@@ -1,7 +1,10 @@
+'use client';
+
 /* PORT VERBATIM dari `barChart()` public/app.js (Fase 4).
    Sumbu Y dinamis dari data; headroom 1.18× dipertahankan; label nilai di atas
    tiap batang. Parameter `_legacyY` versi lama sudah tak dipakai dan tidak ikut. */
 
+import { motion } from 'framer-motion';
 import { fmtNum, niceTicks } from '@/lib/dashboard/format';
 
 export interface BarsProps {
@@ -56,10 +59,27 @@ export default function Bars({ cats, vals, gradId, gradStops, unit }: BarsProps)
           const y = padT + ch - bh;
           return (
             <g key={`b${i}`}>
-              <rect x={x} y={y} width={bw} height={bh} rx={bw / 2} fill={`url(#${gradId})`} />
-              <text className="chart-val" x={x + bw / 2} y={y - 5} textAnchor="middle">
+              <motion.rect
+                x={x}
+                width={bw}
+                rx={bw / 2}
+                fill={`url(#${gradId})`}
+                style={{ transformOrigin: `${x + bw / 2}px ${padT + ch}px` }}
+                initial={{ y: padT + ch, height: 0 }}
+                animate={{ y, height: bh }}
+                transition={{ duration: 0.5, delay: i * 0.05, ease: [0.22, 0.61, 0.36, 1] }}
+              />
+              <motion.text
+                className="chart-val"
+                x={x + bw / 2}
+                y={y - 5}
+                textAnchor="middle"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, delay: i * 0.05 + 0.35 }}
+              >
                 {fmtNum(v, unit)}
-              </text>
+              </motion.text>
               <text className="chart-cat" x={x + bw / 2} y={h - 8} textAnchor="middle">
                 {cats[i]}
               </text>

@@ -280,9 +280,12 @@
 [data-app='dashboard'] .topbar__icon {
   width: 30px; height: 30px; border-radius: 8px;
   display: grid; place-items: center; color: var(--text-2);
+  transition: background .15s ease, color .15s ease, transform .15s ease;
 }
 [data-app='dashboard'] .topbar__icon:hover { background: rgba(255,255,255,.05); color: var(--text); }
-[data-app='dashboard'] .topbar__icon svg { width: 16px; height: 16px; }
+[data-app='dashboard'] .topbar__icon:active { transform: scale(.92); }
+[data-app='dashboard'] .topbar__icon svg { width: 16px; height: 16px; transition: transform .2s ease; }
+[data-app='dashboard'] .topbar__icon:hover svg { transform: scale(1.08); }
 [data-app='dashboard'] .crumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-3); min-width: 0; flex: 1 1 auto; overflow: hidden; }
 [data-app='dashboard'] .crumbs .sep { color: var(--text-3); flex: none; }
 [data-app='dashboard'] .crumbs span:first-child { flex: none; }
@@ -424,6 +427,10 @@
 [data-app='dashboard'] .card:hover {
   transform: translateY(-2px);
   box-shadow: var(--specular), 0 1px 1px rgba(0,0,0,.10), 0 16px 40px rgba(0,0,0,.30);
+}
+[data-app='dashboard'] .skeleton {
+  border-radius: var(--r-sm);
+  background-image: linear-gradient(90deg, var(--card) 25%, var(--card-2) 50%, var(--card) 75%);
 }
 [data-app='dashboard'] .card__title { font-size: 13.5px; font-weight: 600; }
 [data-app='dashboard'] .card__sub { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
@@ -821,14 +828,30 @@
 [data-app='dashboard'] .filter-menu button:hover { background: rgba(255,255,255,.06); color: var(--text); }
 
 /* hide sidebar
-   BUG DITEMUKAN & DIPERBAIKI: `grid-template-columns: 0 1fr` (dua kolom)
-   dipertahankan dari sumber asli app.js/styles.css, tapi begitu .sidebar
-   di-display:none ia lepas dari grid sama sekali — sisa satu grid-item
-   (.main) auto-placement ke KOLOM 1 (yang lebar 0), bukan kolom 2, jadi
-   seluruh dashboard nyusut ke lebar 0 saat sidebar disembunyikan. Diverifikasi
-   getBoundingClientRect() .main: 0px sebelum fix, penuh setelah 1 kolom. */
-[data-app='dashboard'] .app.sidebar-collapsed { grid-template-columns: 1fr; }
-[data-app='dashboard'] .app.sidebar-collapsed .sidebar { display: none; }
+   BUG DITEMUKAN & DIPERBAIKI (sejarah): `grid-template-columns: 0 1fr` (dua
+   kolom) dipertahankan dari sumber asli app.js/styles.css, tapi begitu
+   .sidebar di-display:none ia lepas dari grid sama sekali — sisa satu
+   grid-item (.main) auto-placement ke KOLOM 1 (yang lebar 0), bukan kolom 2,
+   jadi seluruh dashboard nyusut ke lebar 0 saat sidebar disembunyikan.
+
+   Animasi collapse (manuarora700-style): sidebar TIDAK lagi display:none —
+   ia tetap grid-item (menghindari bug di atas), kolomnya dikecilkan ke 0 lewat
+   transisi grid-template-columns, sedangkan isinya opacity-fade duluan supaya
+   label/ikon tidak "gepeng" kelihatan saat kolom menyempit. */
+[data-app='dashboard'] .app {
+  transition: grid-template-columns 0.32s cubic-bezier(.22,.61,.36,1);
+}
+[data-app='dashboard'] .sidebar {
+  overflow: hidden;
+  transition: opacity 0.2s ease, padding 0.32s ease;
+}
+[data-app='dashboard'] .app.sidebar-collapsed { grid-template-columns: 0px 1fr; }
+[data-app='dashboard'] .app.sidebar-collapsed .sidebar {
+  opacity: 0;
+  padding-left: 0;
+  padding-right: 0;
+  pointer-events: none;
+}
 
 /* refresh spin */
 [data-app='dashboard'] .topbar__icon.spin svg { animation: spin .7s linear; }

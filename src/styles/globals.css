@@ -90,3 +90,71 @@ svg {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============ Skeleton shimmer (bersama lintas app) ============
+   Mekanisme (keyframe + animasi) satu-satunya di sini; warna gradien per-app
+   ada di theme-*.css lewat `background-image` supaya token tidak bocor lintas
+   [data-app]. Dulu ops punya keyframe sendiri yang salah tulis (selector
+   di-nest di dalam @keyframes — CSS tidak valid, jadi animasinya tidak pernah
+   jalan); disatukan & diperbaiki di sini. */
+.skeleton {
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ============ Border-beam (bersama lintas app) ============
+   Border yang menyala & bergerak mengikuti tepi kartu saat hover — dipakai
+   di kartu bento/module Ops & Inventory. Warna ikut var(--brand) milik
+   [data-app] tempat elemen berada, jadi aman tanpa duplikasi per-app. */
+@property --beam-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.border-beam {
+  position: relative;
+  isolation: isolate;
+}
+.border-beam::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg,
+    transparent 270deg,
+    var(--brand, currentColor) 315deg,
+    color-mix(in srgb, var(--brand, currentColor) 60%, transparent) 340deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 2;
+}
+.border-beam:hover::after,
+.border-beam:focus-within::after {
+  opacity: 1;
+  animation: border-beam-spin 2.4s linear infinite;
+}
+@keyframes border-beam-spin {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  .border-beam:hover::after,
+  .border-beam:focus-within::after { animation: none; opacity: 1; }
+}

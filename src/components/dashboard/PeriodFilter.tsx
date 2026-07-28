@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import { PERIODS } from '@/config/dashboard-nav';
 import { IconCal, IconCaret } from './icons';
 
@@ -46,22 +47,37 @@ export default function PeriodFilter({
         <IconCaret />
       </button>
 
-      <div className="period-menu" id="periodMenu" hidden={!open}>
-        {PERIODS.map((p) => (
-          <button
-            key={p}
-            type="button"
-            className={`period-opt ${p === period ? 'is-active' : ''}`}
-            data-period={p}
-            onClick={() => {
-              setOpen(false);
-              push({ period: p, ...(p === 'Custom' ? {} : { from: undefined, to: undefined }) });
-            }}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            className="period-menu"
+            id="periodMenu"
+            style={{ overflow: 'hidden', transformOrigin: 'top' }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 0.61, 0.36, 1] }}
           >
-            {p}
-          </button>
-        ))}
-      </div>
+            {PERIODS.map((p, i) => (
+              <motion.button
+                key={p}
+                type="button"
+                className={`period-opt ${p === period ? 'is-active' : ''}`}
+                data-period={p}
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.16, delay: i * 0.025 }}
+                onClick={() => {
+                  setOpen(false);
+                  push({ period: p, ...(p === 'Custom' ? {} : { from: undefined, to: undefined }) });
+                }}
+              >
+                {p}
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {period === 'Custom' && (
         <div className="period-custom">

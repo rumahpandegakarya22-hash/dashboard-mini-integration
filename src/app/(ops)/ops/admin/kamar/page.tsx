@@ -34,7 +34,10 @@ export default async function AdminKamarPage() {
           <p className="page-head-sub">Tarif sewa per tipe &amp; durasi — dipakai invoice sewa dan DP</p>
         </div>
       </header>
-      <KamarHargaPanel />
+      {/* Editor tarif = form, jadi ditahan di kolom nyaman-baca. */}
+      <div className="form-col">
+        <KamarHargaPanel />
+      </div>
     </>
   );
 }

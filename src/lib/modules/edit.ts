@@ -551,9 +551,10 @@ const feedbackEdit: CustomEditCfg = {
         throw new Error('Entri ini tercatat sebagai Saran/Kritik — mengubah jenis ke Komplain tidak didukung dari edit. Input baru saja.');
       }
       const res = await turso().execute({
-        sql: `UPDATE feedback SET id_penghuni = ?, nama = ?, no_kamar = ?, category = ?, deskripsi = ?, status = ?
+        sql: `UPDATE feedback SET id_penghuni = ?, nama = ?, no_kamar = ?, category = ?, deskripsi = ?, status = ?,
+                     reported_at = ?
               WHERE id_feedback = ?`,
-        args: [tenant.id, tenant.nama, tenant.kamar, kategoriTerkait, `[${tanggal}] [${kategoriFeedback}] ${isi}`, status, Number(ref.slice(3))]
+        args: [tenant.id, tenant.nama, tenant.kamar, kategoriTerkait, `[${tanggal}] [${kategoriFeedback}] ${isi}`, status, tanggal, Number(ref.slice(3))]
       });
       if (res.rowsAffected === 0) throw new Error('Feedback tidak ditemukan (mungkin sudah dihapus).');
       return;

@@ -16,6 +16,10 @@
 [data-app='inventory'] {
   --background: #f8f6f2;
   --foreground: #292524;
+  /* Dipakai `.border-beam` (globals.css) — sama dengan warna accent Tailwind
+     (tailwind.config.ts `accent.DEFAULT`), sengaja diduplikasi sebagai
+     custom property karena border-beam butuh var(), bukan kelas Tailwind. */
+  --brand: #c92d31;
 
   color: var(--foreground);
   background-color: var(--background);
@@ -142,9 +146,17 @@
   outline: none;
 }
 
+[data-app='inventory'] .skeleton {
+  border-radius: 10px;
+  background-image: linear-gradient(90deg, #ede6db 25%, #f8f6f2 50%, #ede6db 75%);
+}
+
 [data-app='inventory'] .glass-button {
   background: #f2ebe1;
   border: 1px solid #e8dfd5;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease;
@@ -153,6 +165,26 @@
 [data-app='inventory'] .glass-button:hover {
   background: #e8dfd5;
   border-color: #d8ccbd;
+}
+
+/* flow-button: sapuan halus + ikon geser dikit saat hover — micro. */
+[data-app='inventory'] .glass-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.55) 50%, transparent 80%);
+  transform: translateX(-120%);
+  transition: transform 0.5s ease;
+}
+[data-app='inventory'] .glass-button:hover::before {
+  transform: translateX(120%);
+}
+[data-app='inventory'] .glass-button svg {
+  transition: transform 0.2s ease;
+}
+[data-app='inventory'] .glass-button:hover svg {
+  transform: translateX(2px);
 }
 
 [data-app='inventory'] ::-webkit-scrollbar {

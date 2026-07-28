@@ -1,6 +1,10 @@
+'use client';
+
 /* PORT VERBATIM dari `donut()` public/app.js (Fase 4).
    Kaidah viz dipertahankan: butt-cap (tanpa cap bulat yang mendistorsi
    proporsi) + celah keliling konstan 2px, bukan celah per-segmen. */
+
+import { motion } from 'framer-motion';
 
 export interface DonutSegment {
   label?: string;
@@ -34,7 +38,7 @@ export default function Donut({ segments, center }: DonutProps) {
     const pct = Math.round(frac * 100);
     const draw = Math.max(0.5, len - gap);
     const node = (
-      <circle
+      <motion.circle
         key={i}
         className="donut__seg"
         cx={cx}
@@ -44,12 +48,14 @@ export default function Donut({ segments, center }: DonutProps) {
         stroke={s.color}
         strokeWidth={sw}
         strokeLinecap="butt"
-        strokeDasharray={`${draw} ${C - draw}`}
         strokeDashoffset={-offset}
         transform={`rotate(-90 ${cx} ${cy})`}
         data-tip-label={s.label || ''}
         data-tip-value={`${s.disp != null ? s.disp : s.value} · ${pct}%`}
         data-tip-color={s.color}
+        initial={{ strokeDasharray: `0 ${C}` }}
+        animate={{ strokeDasharray: `${draw} ${C - draw}` }}
+        transition={{ duration: 0.7, delay: i * 0.08, ease: [0.22, 0.61, 0.36, 1] }}
       />
     );
     offset += len;

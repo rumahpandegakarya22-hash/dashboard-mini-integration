@@ -601,8 +601,32 @@
   letter-spacing: -0.01em;
   text-decoration: none;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   transition: filter var(--t-fast) var(--ease-out), transform 120ms var(--ease-out),
     opacity var(--t-fast);
+}
+
+/* flow-button: sapuan halus + ikon geser dikit saat hover/tap — micro, tidak
+   mengganti warna/latar tombol yang sudah ada. */
+[data-app='ops'] .btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.22) 50%, transparent 80%);
+  transform: translateX(-120%);
+  transition: transform 0.5s var(--ease-out);
+}
+[data-app='ops'] .btn:hover::before {
+  transform: translateX(120%);
+}
+[data-app='ops'] .btn svg {
+  transition: transform 0.2s var(--ease-out);
+}
+[data-app='ops'] .btn:hover svg {
+  transform: translateX(2px);
 }
 
 [data-app='ops'] .btn:hover {
@@ -645,6 +669,12 @@
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
+}
+[data-app='ops'] .btn-plain svg {
+  transition: transform 0.2s var(--ease-out);
+}
+[data-app='ops'] .btn-plain:hover svg {
+  transform: translateX(2px);
 }
 
 [data-app='ops'] .btn-plain.danger {
@@ -877,15 +907,7 @@
 
 [data-app='ops'] .skeleton {
   border-radius: var(--r-md);
-  background: linear-gradient(90deg, var(--surface-2) 25%, var(--brand-tint) 50%, var(--surface-2) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
-}
-
-@keyframes shimmer {
-  [data-app='ops'] to {
-    background-position: -200% 0;
-  }
+  background-image: linear-gradient(90deg, var(--surface-2) 25%, var(--brand-tint) 50%, var(--surface-2) 75%);
 }
 
 [data-app='ops'] .sr-only {
@@ -964,6 +986,15 @@
   align-items: center;
   justify-content: center;
   padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  /* Gradien layar auth (login/sign-up/2fa/pending) — token milik app ini saja
+     (--brand, --ambient-a/b), sama komposisi blob dengan mesh Dashboard, tanpa
+     mengarang warna baru (§4/R8). */
+  background:
+    radial-gradient(60% 55% at 14% 8%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 60%),
+    radial-gradient(55% 60% at 88% 12%, var(--ambient-a), transparent 65%),
+    radial-gradient(65% 60% at 80% 92%, var(--ambient-b), transparent 65%),
+    var(--bg);
+  background-attachment: fixed;
 }
 
 [data-app='ops'] .center-card {

@@ -44,6 +44,9 @@ export const proxy = clerkMiddleware(async (auth, req) => {
 
   if (isPublicRoute(req)) return pass();
 
+  // Bypass login lokal — syarat sama persis dengan bypassDev() di lib/core/auth.ts.
+  if (process.env.NODE_ENV !== 'production' && process.env.DEV_BYPASS_AUTH === '1') return pass();
+
   const { userId } = await auth();
   if (!userId) {
     if (req.nextUrl.pathname.startsWith('/api/')) {

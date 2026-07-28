@@ -117,7 +117,7 @@ export default function Dashboard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Stat 1: Total Bahan */}
-          <div className="glass-card rounded-2xl p-6 relative overflow-hidden flex items-center justify-between">
+          <div className="glass-card border-beam rounded-2xl p-6 relative overflow-hidden flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-taupe-dark text-sm font-semibold tracking-wider uppercase">
                 Total Bahan Master
@@ -133,7 +133,7 @@ export default function Dashboard() {
           </div>
 
           {/* Stat 2: Stok Menipis */}
-          <div className={`glass-card rounded-2xl p-6 relative overflow-hidden flex items-center justify-between border ${
+          <div className={`glass-card border-beam rounded-2xl p-6 relative overflow-hidden flex items-center justify-between border ${
             stats.lowStockItemsCount > 0 
               ? "border-accent/25 bg-accent/[0.03]" 
               : "border-sand/70"
@@ -159,7 +159,7 @@ export default function Dashboard() {
           </div>
 
           {/* Stat 3: Total Mutasi */}
-          <div className="glass-card rounded-2xl p-6 relative overflow-hidden flex items-center justify-between">
+          <div className="glass-card border-beam rounded-2xl p-6 relative overflow-hidden flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-taupe-dark text-sm font-semibold tracking-wider uppercase">
                 Transaksi Dicatat
