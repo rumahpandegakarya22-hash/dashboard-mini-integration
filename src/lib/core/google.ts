@@ -1,16 +1,44 @@
 import { google } from 'googleapis';
 
+/**
+ * Kredensial Google — mendukung DUA skema, dipilih otomatis saat runtime:
+ *
+ *   1. OAuth 2.0 refresh token (dipakai bila GOOGLE_CLIENT_ID +
+ *      GOOGLE_CLIENT_SECRET + GOOGLE_REFRESH_TOKEN ketiganya ada)
+ *   2. Service Account JWT (fallback, skema lama)
+ *
+ * Kenapa dua-duanya hidup berdampingan, bukan langsung ganti:
+ *
+ * Aplikasi penghuni Teman Rara mengunggah berkas (bukti bayar, foto pengaduan,
+ * scan KTP) memakai OAuth. Berkas itu DIMILIKI akun OAuth tersebut, sehingga
+ * service account Ops tidak selalu bisa membacanya — padahal fitur verifikasi
+ * bukti bayar & review pendaftaran wajib bisa. Menyamakan kredensial kedua app
+ * menyelesaikan itu di akarnya.
+ *
+ * Peralihannya dibuat lewat environment (bukan perubahan kode) supaya bisa
+ * dinyalakan dan dimatikan tanpa deploy ulang: cukup set/hapus tiga env OAuth.
+ * Rollback ke service account = hapus GOOGLE_REFRESH_TOKEN.
+ *
+ * Refresh token WAJIB dibuat dengan dua scope sekaligus — `drive` dan
+ * `spreadsheets` — karena klien di bawah ini melayani Drive maupun Sheets
+ * (Sheets masih dipakai handler pembayaran-sewa untuk tabel harga invoice).
+ */
+
+const SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'];
+
+export function oauthTersedia(): boolean {
+  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN);
+}
+
 function getAuth() {
+  if (oauthTersedia()) {
+    const auth = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
+    auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+    return auth;
+  }
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!;
   const key = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
-  return new google.auth.JWT({
-    email,
-    key,
-    scopes: [
-      'https://www.googleapis.com/auth/spreadsheets',
-      'https://www.googleapis.com/auth/drive'
-    ]
-  });
+  return new google.auth.JWT({ email, key, scopes: SCOPES });
 }
 
 let _sheets: ReturnType<typeof google.sheets> | null = null;

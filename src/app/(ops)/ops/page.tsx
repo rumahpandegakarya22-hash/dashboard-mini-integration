@@ -27,7 +27,11 @@ export default async function HomePage() {
     <>
       <HomeGreeting userName={user.name} roleLabel={ROLE_LABEL[user.role]} />
       <Joblist rows={joblistRows} divisi={divisi} />
-      <HomeMenu isOwner={user.role === 'owner'} modules={visible} />
+      <HomeMenu
+        isOwner={user.role === 'owner'}
+        canKelola={user.role === 'owner' || user.role === 'staff_admin'}
+        modules={visible}
+      />
     </>
   );
 }

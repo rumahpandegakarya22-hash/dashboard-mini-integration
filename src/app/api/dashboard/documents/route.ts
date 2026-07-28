@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireDashboardAuth } from '@/lib/dashboard/api-guard';
 import { driveFolderFor } from '@/config/drive-folders';
-import { driveClient } from '@/lib/core/google';
+import { driveClient, oauthTersedia } from '@/lib/core/google';
 
 /**
  * Paritas `POST /api/documents` server.js: buat Sheet/Doc baru di folder Drive
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     cleaned || `${role}-doc-${new Date().toISOString().slice(0, 10)}-${Date.now().toString().slice(-4)}`;
 
   const folderId = driveFolderFor(role);
-  if (!folderId || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+  if (!folderId || !(oauthTersedia() || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL)) {
     return NextResponse.json(
       { error: 'Integrasi Google Drive belum dikonfigurasi di server.', setup: true },
       { status: 503 }

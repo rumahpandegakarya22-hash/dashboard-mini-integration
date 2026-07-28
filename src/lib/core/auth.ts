@@ -176,7 +176,35 @@ const SIGNED_OUT: AuthState = {
   dashboardStatus: 'pending'
 };
 
+/**
+ * Bypass login KHUSUS pengembangan lokal. Aktif hanya bila DUA syarat terpenuhi
+ * sekaligus: build bukan production DAN `DEV_BYPASS_AUTH=1` disetel manual di
+ * .env.local. Satu syarat saja tidak cukup — `NODE_ENV` di Vercel selalu
+ * 'production', jadi variabel yang tidak sengaja terbawa ke sana tetap mati.
+ *
+ * Tanpa ini, memeriksa tampilan /ops di lokal butuh sesi Clerk yang valid.
+ */
+function bypassDev(): AuthState | null {
+  if (process.env.NODE_ENV === 'production' || process.env.DEV_BYPASS_AUTH !== '1') return null;
+  const palsu: SessionUser = { id: 'dev-bypass', username: 'dev', name: 'Dev Lokal', role: 'owner' };
+  return {
+    signedIn: true,
+    status: 'active',
+    needsTotp: false,
+    totpEnrolled: false,
+    user: palsu,
+    opsRole: 'owner',
+    opsStatus: 'active',
+    dashboardUser: { ...palsu, role: 'owner' },
+    dashboardRole: 'owner',
+    dashboardStatus: 'active'
+  };
+}
+
 export async function getAuthState(): Promise<AuthState> {
+  const lewat = bypassDev();
+  if (lewat) return lewat;
+
   const { userId, sessionId } = await auth();
   if (!userId || !sessionId) return { ...SIGNED_OUT };
 

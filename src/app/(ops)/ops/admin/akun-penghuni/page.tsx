@@ -1,20 +1,20 @@
 import Link from 'next/link';
-import { ChevronLeft, ShieldAlert, Tag } from 'lucide-react';
+import { ChevronLeft, ShieldAlert, UsersRound } from 'lucide-react';
 import { getSessionUser } from '@/lib/core/auth';
-import KamarHargaPanel from '@/components/KamarHargaPanel';
+import AkunPenghuniPanel from '@/components/AkunPenghuniPanel';
 
-export default async function AdminKamarPage() {
+export default async function AdminAkunPenghuniPage() {
   const user = await getSessionUser();
   if (!user) return null; // (ops)/layout sudah redirect ke /login
 
-  if (user.role !== 'owner') {
+  if (user.role !== 'owner' && user.role !== 'staff_admin') {
     return (
       <div className="card success-card">
         <span className="icon-tile lg danger" aria-hidden>
           <ShieldAlert size={26} />
         </span>
-        <h2>Hanya untuk Owner</h2>
-        <p className="muted">Halaman kelola harga kamar hanya bisa diakses akun Owner.</p>
+        <h2>Tidak punya akses</h2>
+        <p className="muted">Akun penghuni hanya bisa dikelola Owner dan Staff Admin.</p>
         <Link className="btn-plain" href="/ops">
           <ChevronLeft size={18} />
           Kembali ke Beranda
@@ -27,17 +27,14 @@ export default async function AdminKamarPage() {
     <>
       <header className="page-head">
         <span className="icon-tile lg" aria-hidden>
-          <Tag size={24} />
+          <UsersRound size={24} />
         </span>
         <div>
-          <h1 style={{ fontSize: '1.375rem' }}>Kelola Harga Kamar</h1>
-          <p className="page-head-sub">Tarif sewa per tipe &amp; durasi — dipakai invoice sewa dan DP</p>
+          <h1 style={{ fontSize: '1.375rem' }}>Akun Teman Rara</h1>
+          <p className="page-head-sub">Cegah akun ganda per kamar &amp; akun eks-penghuni yang belum dicabut</p>
         </div>
       </header>
-      {/* Editor tarif = form, jadi ditahan di kolom nyaman-baca. */}
-      <div className="form-col">
-        <KamarHargaPanel />
-      </div>
+      <AkunPenghuniPanel />
     </>
   );
 }

@@ -67,6 +67,6 @@
     "setting:LOGBOOK_INSPEKSI_KEBERSIHAN:SETTING:Petugas": ["Dwi"],
 
     "setting:LOGBOOK_FEEDBACK:SETTING:Kategori": ["Komplain", "Saran", "Kritik"],
-    "setting:LOGBOOK_FEEDBACK:SETTING:Status": ["Selesai", "Review"]
+    "setting:LOGBOOK_FEEDBACK:SETTING:Status": ["Menunggu", "Diproses", "Selesai", "Dibatalkan"]
   }
 }

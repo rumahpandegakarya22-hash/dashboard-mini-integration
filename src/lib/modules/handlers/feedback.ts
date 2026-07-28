@@ -33,10 +33,21 @@ export const submitFeedback: SubmitHandler = async (values, ctx) => {
     return { target: `Turso → tenant_complain (${idComplain})`, data: { ...values, idComplain, submittedBy: ctx.user.username } };
   }
 
+  // reported_at (migrasi 005) menggantikan trik menyelipkan tanggal ke dalam
+  // teks deskripsi. Formatnya tetap ditulis karena fitur edit di bawah masih
+  // mem-parse pola itu, dan aplikasi penghuni ikut membacanya.
   const res = await turso().execute({
-    sql: `INSERT INTO feedback (id_penghuni, nama, no_kamar, category, deskripsi, status)
-          VALUES (?, ?, ?, ?, ?, ?)`,
-    args: [tenant.id, tenant.nama, tenant.kamar, kategoriTerkait, `[${tanggal}] [${kategoriFeedback}] ${isi}`, status]
+    sql: `INSERT INTO feedback (id_penghuni, nama, no_kamar, category, deskripsi, status, reported_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      tenant.id,
+      tenant.nama,
+      tenant.kamar,
+      kategoriTerkait,
+      `[${tanggal}] [${kategoriFeedback}] ${isi}`,
+      status,
+      tanggal
+    ]
   });
   return {
     target: 'Turso → feedback',

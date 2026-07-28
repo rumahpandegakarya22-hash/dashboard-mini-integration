@@ -6,6 +6,25 @@ Sebelum mengerjakan apa pun di proyek ini, baca dulu ketiga file berikut secara 
 2. `/SETUP/OUTPUTS.md` — standar output yang harus diikuti di setiap respons
 3. `/SETUP/TEMPLATES.md` — template dokumen yang sudah ada, jangan duplikat, perbaiki yang existing
 
+# Penggunaan Skills (Wajib dalam melaksanakan semua prompt dari user, harus disesuaikan dengan konteks task, pilih yang relevan)
+    1. General (Coding, Responing, etc.)
+        -ponytail /ultra (semua skills set untuk simplifikasi source code)
+        -caveman (untuk menghemat token dalam sesi)
+        -Superpowers (semua skills set untuk workflow lengkap dalam perancangan)
+        -Graphify (untuk membaca architechture diagram penggunaan fungsi sistem secara cepat)
+        -Context7
+    2. Desain Front-End
+        -ui-ux promax (untuk mendesai UI, Audit Ui, Improve UI)
+        -Framer Motion (untuk mengambil library animation UI)
+        -Motion.dev (untuk mengambil library animation UI)
+        -Shadcn/ui
+        -Tailwind Expert
+    3. Quality 
+        -Playwright (End-to-End testing)
+        -vibe-security (audit keamanan sistem )
+        -humanizer (untuk penulisan baik dalam sistem maupun respon jawaban promp)
+
+
 ## Konteks Proyek Ini Secara Spesifik
 - Stack: Next.js, React (TypeScript), Turso (libSQL), sebagian integrasi Google Workspace.
 - Ini adalah sistem administrasi operasional kost (2 properti, 90 kamar) — mencakup keuangan, manajemen penyewa, check-in/out, kegiatan operasional, feedback, data vendor, dokumen penyewa.

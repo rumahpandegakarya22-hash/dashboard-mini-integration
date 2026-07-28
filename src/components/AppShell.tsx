@@ -10,7 +10,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
 import { ChevronLeft, House, LoaderCircle, LogOut, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
-import { DIVISION_GROUPS, moduleIcon } from './module-icons';
+import { DIVISION_GROUPS, NAV_TEMAN_RARA, moduleIcon } from './module-icons';
 
 export interface NavModule {
   id: string;
@@ -21,29 +21,36 @@ interface Props {
   userName: string;
   roleLabel: string;
   isOwner: boolean;
+  /** Owner atau Staff Admin — pemegang tugas pengelola sisi penghuni. */
+  canKelola?: boolean;
   /** true bila akun ini juga punya akses Dashboard — menampilkan tautan silang (§9 Fase 5.2). */
   hasDashboardAccess?: boolean;
   modules: NavModule[];
   children: React.ReactNode;
 }
 
-export default function AppShell({ userName, roleLabel, isOwner,
+export default function AppShell({ userName, roleLabel, isOwner, canKelola,
   hasDashboardAccess, modules, children }: Props) {
   const pathname = usePathname();
   const { signOut } = useClerk();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const isHome = pathname === '/ops';
-  const isAdmin = pathname.startsWith('/ops/admin');
+  // Khusus halaman kelola user. Dipersempit dari '/ops/admin' sejak ada halaman
+  // admin lain di bawah prefix yang sama — kalau tidak, semuanya ikut tersorot.
+  const isAdmin = pathname.startsWith('/ops/admin/users');
   const isAccount = pathname.startsWith('/ops/account');
   const activeModule = modules.find((m) => pathname === `/ops/m/${m.id}`);
+  const activeKelola = NAV_TEMAN_RARA.find((n) => pathname.startsWith(n.href));
   const topTitle = isHome
     ? 'Kost Tiga Dara'
-    : isAdmin
-      ? 'Kelola User'
-      : isAccount
-        ? 'Keamanan Akun'
-        : activeModule?.title ?? 'Kost Tiga Dara';
+    : activeKelola
+      ? activeKelola.label
+      : isAdmin
+        ? 'Kelola User'
+        : isAccount
+          ? 'Keamanan Akun'
+          : activeModule?.title ?? 'Kost Tiga Dara';
   const initial = (userName.trim()[0] || '?').toUpperCase();
 
   const groups = DIVISION_GROUPS.map((g) => ({
@@ -116,6 +123,25 @@ export default function AppShell({ userName, roleLabel, isOwner,
             </div>
           )}
 
+          {canKelola && (
+            <div>
+              <div className="side-group-label">Teman Rara</div>
+              {NAV_TEMAN_RARA.map((n) => {
+                const Icon = n.icon;
+                return (
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    className={pathname.startsWith(n.href) ? 'side-item active' : 'side-item'}
+                  >
+                    <Icon size={18} />
+                    {n.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
           {/* Navigasi silang (§9 Fase 5.2) — hanya bila akun ini punya akses
               Dashboard, supaya tidak menawarkan pintu yang terkunci. */}
           <div>
@@ -175,9 +201,13 @@ export default function AppShell({ userName, roleLabel, isOwner,
           </div>
         </header>
 
-        {/* Beranda dilebarkan penuh (module-grid & joblist butuh ruang) --
-            halaman lain (form input dsb) tetap kolom nyaman-baca 640/760px. */}
-        <main className={isHome ? 'content content--wide' : 'content'}>{children}</main>
+        {/* Semua halaman mengalir mengikuti lebar layar. Kolom nyaman-baca
+            640px tidak lagi dipasang di sini melainkan per-blok lewat
+            `.form-col`, karena yang butuh dibatasi hanya form — daftar data
+            justru rugi kalau dikurung (satu kolom kurus + lorong kosong di
+            kanan). Satu-satunya pengecualian: halaman tanpa daftar apa pun,
+            di mana pembatas kolomnya sudah melekat di isinya sendiri. */}
+        <main className="content content--wide">{children}</main>
 
         {/* ---- Dock kaca (mobile) ---- */}
         <nav className="dock" aria-label="Navigasi bawah">

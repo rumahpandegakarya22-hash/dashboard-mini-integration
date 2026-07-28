@@ -18,7 +18,9 @@ import {
   Sparkles,
   TrendingUp,
   UserRoundPlus,
+  UsersRound,
   Wallet,
+  Wifi,
   Wrench,
   type LucideIcon
 } from 'lucide-react';
@@ -61,4 +63,15 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Maintenance', ids: ['perawatan-preventif', 'perbaikan-korektif', 'pemakaian-stok-maintenance'] },
   { label: 'Inspeksi', ids: ['inspeksi-kebersihan', 'inspeksi-fasilitas', 'wo-inspeksi'] },
   { label: 'Cleaning', ids: ['wo-cleaning', 'pemakaian-stok-cleaning'] }
+];
+
+/**
+ * Halaman pengelola untuk data yang berasal dari aplikasi penghuni Teman Rara.
+ * Bukan modul form, jadi tidak masuk MODULES registry — didaftarkan di sini agar
+ * sidebar (AppShell) dan grid beranda (HomeMenu) memakai daftar yang sama.
+ */
+export const NAV_TEMAN_RARA: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/ops/admin/pengumuman', label: 'Pengumuman', icon: Megaphone },
+  { href: '/ops/admin/wifi', label: 'Kredensial WiFi', icon: Wifi },
+  { href: '/ops/admin/akun-penghuni', label: 'Akun Penghuni', icon: UsersRound }
 ];

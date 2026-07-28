@@ -18,7 +18,11 @@ export default async function AccountPage() {
           <p className="page-head-sub">Autentikasi dua faktor (Google Authenticator)</p>
         </div>
       </header>
-      <TotpSettings initialEnrolled={s.totpEnrolled} />
+      {/* Pengaturan, bukan daftar data — tetap di kolom nyaman-baca meski
+          halaman sudah mengalir mengikuti lebar layar. */}
+      <div className="form-col">
+        <TotpSettings initialEnrolled={s.totpEnrolled} />
+      </div>
     </>
   );
 }

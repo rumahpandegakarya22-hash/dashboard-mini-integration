@@ -27,7 +27,9 @@ export interface ModuleMeta {
 export const MODULES: ModuleMeta[] = [
   {
     id: 'penghuni-baru',
-    title: 'Penghuni Baru',
+    // Form input (atas) untuk booking walk-in/WA; panel di bawahnya meninjau
+    // pendaftaran mandiri yang masuk lewat aplikasi Teman Rara.
+    title: 'Penghuni Baru & Review',
     ready: true,
     fields: [
       { name: 'tanggalBooking', label: 'Tanggal Booking', type: 'date', required: true, defaultToday: true },
@@ -81,7 +83,9 @@ export const MODULES: ModuleMeta[] = [
   },
   {
     id: 'pembayaran-sewa',
-    title: 'Pembayaran Sewa',
+    // Form input (atas) mencatat pembayaran & menerbitkan invoice; panel di
+    // bawahnya memeriksa bukti bayar yang diunggah penghuni lewat Teman Rara.
+    title: 'Pembayaran & Verifikasi',
     ready: true,
     hasPreview: true,
     // Improvement v1.2 §1: begitu Penghuni + Jenis terisi, Periode Awal Sewa diisi otomatis
@@ -346,7 +350,9 @@ export const MODULES: ModuleMeta[] = [
   },
   {
     id: 'feedback',
-    title: 'Feedback',
+    // Judul mencerminkan dua fungsi di halaman ini: form input feedback lisan
+    // (atas) + panel menanggapi pengaduan dari aplikasi Teman Rara (bawah).
+    title: 'Feedback & Pengaduan',
     ready: true,
     // Improvement v1.1 §7: data masuk database Turso — Kategori "Komplain" → tabel
     // tenant_complain, selain itu (Saran/Kritik) → tabel feedback. Kedua tabel punya

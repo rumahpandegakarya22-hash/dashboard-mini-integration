@@ -3,17 +3,19 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Tag, Users } from 'lucide-react';
-import { DIVISION_GROUPS, moduleIcon } from './module-icons';
+import { DIVISION_GROUPS, NAV_TEMAN_RARA, moduleIcon } from './module-icons';
 import type { NavModule } from './AppShell';
 
 interface Props {
   isOwner: boolean;
+  /** Owner atau Staff Admin — pemegang tugas pengelola sisi penghuni. */
+  canKelola: boolean;
   modules: NavModule[];
 }
 
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
-export default function HomeMenu({ isOwner, modules }: Props) {
+export default function HomeMenu({ isOwner, canKelola, modules }: Props) {
   const groups = DIVISION_GROUPS.map((g) => ({
     label: g.label,
     items: g.ids.map((id) => modules.find((m) => m.id === id)).filter((m): m is NavModule => !!m)
@@ -60,6 +62,20 @@ export default function HomeMenu({ isOwner, modules }: Props) {
           </div>
         </section>
       ))}
+
+      {/* Dock mobile hanya muat 4 slot dan sidebar baru muncul di >=900px, jadi
+          grid inilah satu-satunya jalan ke halaman ini dari HP — sama seperti
+          "Kelola Harga Kamar" di bawah. */}
+      {canKelola && (
+        <section aria-label="Teman Rara">
+          <h2 className="section-title">Teman Rara</h2>
+          <div className="module-grid">
+            {NAV_TEMAN_RARA.map((n) => (
+              <ModuleCard key={n.href} id={n.href} title={n.label} href={n.href} icon={n.icon} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {isOwner && (
         <section aria-label="Admin">
