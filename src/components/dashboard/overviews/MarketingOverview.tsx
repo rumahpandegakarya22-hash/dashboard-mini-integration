@@ -2,6 +2,7 @@
    CAC tetap "—" seperti di sumber: belum ada data biaya marketing. */
 
 import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
+import Reveal from '@/components/ui/Reveal';
 import ChartCard, { EmptyCard } from '@/components/charts/ChartCard';
 import Bars from '@/components/charts/Bars';
 import AreaLine from '@/components/charts/AreaLine';
@@ -60,7 +61,7 @@ export default function MarketingOverview({ data, period, from, to, range }: Ove
     <div className="view">
       <StatGrid cards={cards} cols={5} />
 
-      <div className="grid row-2 mt">
+      <Reveal tier={1} className="grid row-2 mt">
         {ts ? (
           <ChartCard
             title="Tren Leads & Survey"
@@ -72,9 +73,9 @@ export default function MarketingOverview({ data, period, from, to, range }: Ove
           <EmptyCard title="Tren Leads & Survey" />
         )}
         <DonutBlock label="Komposisi Leads Channel" segs={channelDonut} />
-      </div>
+      </Reveal>
 
-      <div className="grid row-2 mt">
+      <Reveal tier={2} className="grid row-2 mt">
         {nLeads || nSurvey ? (
           <ChartCard
             title="Funnel Penjualan"
@@ -116,9 +117,11 @@ export default function MarketingOverview({ data, period, from, to, range }: Ove
         ) : (
           <EmptyCard title="Leads Channel" />
         )}
-      </div>
+      </Reveal>
 
-      <Table title="DAFTAR FOLLOW UP" cols={COLS.leads} data={leadsP.slice(0, 4)} periodLabel={period} />
+      <Reveal tier={3}>
+        <Table title="DAFTAR FOLLOW UP" cols={COLS.leads} data={leadsP.slice(0, 4)} periodLabel={period} />
+      </Reveal>
     </div>
   );
 }

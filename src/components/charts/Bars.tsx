@@ -67,7 +67,7 @@ export default function Bars({ cats, vals, gradId, gradStops, unit }: BarsProps)
                 style={{ transformOrigin: `${x + bw / 2}px ${padT + ch}px` }}
                 initial={{ y: padT + ch, height: 0 }}
                 animate={{ y, height: bh }}
-                transition={{ duration: 0.5, delay: i * 0.05, ease: [0.22, 0.61, 0.36, 1] }}
+                transition={{ duration: 0.7, delay: i * 0.05, ease: [0.22, 0.61, 0.36, 1] }}
               />
               <motion.text
                 className="chart-val"
@@ -76,7 +76,7 @@ export default function Bars({ cats, vals, gradId, gradStops, unit }: BarsProps)
                 textAnchor="middle"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: i * 0.05 + 0.35 }}
+                transition={{ duration: 0.5, delay: i * 0.05 + 0.35 }}
               >
                 {fmtNum(v, unit)}
               </motion.text>

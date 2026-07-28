@@ -6,6 +6,7 @@
    sumbernya, nilainya "—" — BUKAN angka dummy. */
 
 import { StatGrid, StatCard, type StatCardData } from '@/components/ui/StatCard';
+import Reveal from '@/components/ui/Reveal';
 import ChartCard, { EmptyCard } from '@/components/charts/ChartCard';
 import Bars from '@/components/charts/Bars';
 import AreaLine from '@/components/charts/AreaLine';
@@ -74,7 +75,7 @@ export default function OpsOverview({ data, finance: F, period, from, to, range 
     <div className="view">
       <StatGrid cards={top} cols={5} />
 
-      <div className="grid row-3 mt" style={{ gridTemplateColumns: 'minmax(0,1.4fr) repeat(2,minmax(0,1fr))' }}>
+      <Reveal tier={1} className="grid row-3 mt" style={{ gridTemplateColumns: 'minmax(0,1.4fr) repeat(2,minmax(0,1fr))' }}>
         {ebars.length && es ? (
           <ChartCard title="Expense Category" legend={[{ t: 'Beban' + (es.unit ? ' (' + es.unit + ')' : ''), c: '#e58a6f' }]}>
             <Bars
@@ -90,9 +91,9 @@ export default function OpsOverview({ data, finance: F, period, from, to, range 
         )}
         <StatCard {...mid[0]} />
         <StatCard {...mid[1]} />
-      </div>
+      </Reveal>
 
-      <div className="grid row-2 mt">
+      <Reveal tier={2} className="grid row-2 mt">
         {ts ? (
           <ChartCard
             title="Tren Tiket Maintenance"
@@ -104,9 +105,11 @@ export default function OpsOverview({ data, finance: F, period, from, to, range 
           <EmptyCard title="Tren Tiket Maintenance" />
         )}
         <DonutBlock label="Komposisi Kategori Tiket" segs={tiketDonut} />
-      </div>
+      </Reveal>
 
-      <Table title="STATUS TIKET" cols={COLS.tiket} data={tiket || []} periodLabel={period} />
+      <Reveal tier={3}>
+        <Table title="STATUS TIKET" cols={COLS.tiket} data={tiket || []} periodLabel={period} />
+      </Reveal>
     </div>
   );
 }

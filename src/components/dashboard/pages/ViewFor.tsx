@@ -1,6 +1,7 @@
 import DataTablePage from './DataTablePage';
 import PembayaranPage from './PembayaranPage';
 import Rooms from './Rooms';
+import Reveal from '@/components/ui/Reveal';
 import { COLS } from '@/config/dashboard-cols';
 import {
   logbookForRole,
@@ -38,63 +39,89 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
       // Sales memakai set kolom ringkas (tanpa PII) — verbatim pagePenghuniSales.
       const cols = role === 'sales' ? COLS.penghuniSales : COLS.penghuni;
       return (
-        <DataTablePage
-          title="DAFTAR PENGHUNI"
-          cols={cols}
-          data={withName(d.penghuni, 'nama')}
-          period={period}
-        />
+        <Reveal tier={0}>
+          <DataTablePage
+            title="DAFTAR PENGHUNI"
+            cols={cols}
+            data={withName(d.penghuni, 'nama')}
+            period={period}
+          />
+        </Reveal>
       );
     }
 
     case 'pembayaran':
-      return <PembayaranPage pembayaran={d.pembayaran} period={period} />;
+      return (
+        <Reveal tier={0}>
+          <PembayaranPage pembayaran={d.pembayaran} period={period} />
+        </Reveal>
+      );
 
     case 'vendor': {
       // Operasional mendapat kolom tambahan WhatsApp — verbatim COLS.vendorOps.
       const cols = role === 'operasional' ? COLS.vendorOps : COLS.vendor;
-      return <DataTablePage title="DAFTAR VENDOR" cols={cols} data={vendorRows(d)} period={period} />;
+      return (
+        <Reveal tier={0}>
+          <DataTablePage title="DAFTAR VENDOR" cols={cols} data={vendorRows(d)} period={period} />
+        </Reveal>
+      );
     }
 
     case 'kamar':
-      return <Rooms rooms={d.rooms} variant={role === 'operasional' ? 'ops' : undefined} />;
+      return (
+        <Reveal tier={0}>
+          <Rooms rooms={d.rooms} variant={role === 'operasional' ? 'ops' : undefined} />
+        </Reveal>
+      );
 
     case 'tiket':
-      return <DataTablePage title="DAFTAR TIKET" cols={COLS.tiket} data={tiketRows(d)} period={period} />;
+      return (
+        <Reveal tier={0}>
+          <DataTablePage title="DAFTAR TIKET" cols={COLS.tiket} data={tiketRows(d)} period={period} />
+        </Reveal>
+      );
 
     case 'leads':
       // Marketing: Leads dan Survey ditumpuk — verbatim stackTables(...).
       return (
         <div className="view">
-          <DataTablePage title="DAFTAR LEADS" cols={COLS.leads} data={d.leads} period={period} />
-          <DataTablePage
-            title="DAFTAR SURVEY"
-            cols={COLS.prospek}
-            data={withName(d.survey, 'nama')}
-            period={period}
-          />
+          <Reveal tier={0}>
+            <DataTablePage title="DAFTAR LEADS" cols={COLS.leads} data={d.leads} period={period} />
+          </Reveal>
+          <Reveal tier={1}>
+            <DataTablePage
+              title="DAFTAR SURVEY"
+              cols={COLS.prospek}
+              data={withName(d.survey, 'nama')}
+              period={period}
+            />
+          </Reveal>
         </div>
       );
 
     case 'prospek':
       return (
-        <DataTablePage
-          title="DAFTAR PROSPEK"
-          cols={COLS.prospek}
-          data={withName(d.survey, 'nama')}
-          period={period}
-        />
+        <Reveal tier={0}>
+          <DataTablePage
+            title="DAFTAR PROSPEK"
+            cols={COLS.prospek}
+            data={withName(d.survey, 'nama')}
+            period={period}
+          />
+        </Reveal>
       );
 
     case 'dokumen': {
       const cols = role === 'owner' ? COLS.dokumenOwner : COLS.dokumen;
       return (
-        <DataTablePage
-          title={'DOKUMEN ' + role.toUpperCase()}
-          cols={cols}
-          data={dokumenRows(d.dokumen, role)}
-          period={period}
-        />
+        <Reveal tier={0}>
+          <DataTablePage
+            title={'DOKUMEN ' + role.toUpperCase()}
+            cols={cols}
+            data={dokumenRows(d.dokumen, role)}
+            period={period}
+          />
+        </Reveal>
       );
     }
 
@@ -102,13 +129,15 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
       const inv = inventoryOverview(loaded.inventory);
       if (!inv) {
         return (
-          <section className="table-block">
-            <h2 className="section-title">STOK INVENTORY</h2>
-            <p style={{ padding: '12px 4px', opacity: 0.7 }}>
-              Data stok belum tersedia — integrasi app Inventory Stock belum dikonfigurasi atau kamu tidak
-              punya akses.
-            </p>
-          </section>
+          <Reveal tier={0}>
+            <section className="table-block">
+              <h2 className="section-title">STOK INVENTORY</h2>
+              <p style={{ padding: '12px 4px', opacity: 0.7 }}>
+                Data stok belum tersedia — integrasi app Inventory Stock belum dikonfigurasi atau kamu tidak
+                punya akses.
+              </p>
+            </section>
+          </Reveal>
         );
       }
       return <InventoryOverview inv={inv} period={period} />;
@@ -121,9 +150,15 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
         const byDiv = (div: string) => rows.filter((r) => r.divisi === div);
         return (
           <div className="view">
-            <DataTablePage title="Logbook Inspeksi" titleRight cols={COLS.logbook} data={byDiv('Inspeksi')} period={period} />
-            <DataTablePage title="Logbook Maintenance" titleRight cols={COLS.logbook} data={byDiv('Maintenance')} period={period} />
-            <DataTablePage title="Logbook Kebersihan" titleRight cols={COLS.logbook} data={byDiv('Kebersihan')} period={period} />
+            <Reveal tier={0}>
+              <DataTablePage title="Logbook Inspeksi" titleRight cols={COLS.logbook} data={byDiv('Inspeksi')} period={period} />
+            </Reveal>
+            <Reveal tier={1}>
+              <DataTablePage title="Logbook Maintenance" titleRight cols={COLS.logbook} data={byDiv('Maintenance')} period={period} />
+            </Reveal>
+            <Reveal tier={2}>
+              <DataTablePage title="Logbook Kebersihan" titleRight cols={COLS.logbook} data={byDiv('Kebersihan')} period={period} />
+            </Reveal>
           </div>
         );
       }
@@ -133,7 +168,11 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
           : role === 'admin'
             ? 'LOGBOOK ADMIN & KEUANGAN'
             : 'LOGBOOK ' + role.toUpperCase();
-      return <DataTablePage title={title} titleRight cols={COLS.logbook} data={rows} period={period} />;
+      return (
+        <Reveal tier={0}>
+          <DataTablePage title={title} titleRight cols={COLS.logbook} data={rows} period={period} />
+        </Reveal>
+      );
     }
 
     default:

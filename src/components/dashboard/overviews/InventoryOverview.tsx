@@ -6,6 +6,7 @@
    ke tabel untuk teks empty-state. */
 
 import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
+import Reveal from '@/components/ui/Reveal';
 import DataTablePage from '../pages/DataTablePage';
 import { G } from '@/config/dashboard-palette';
 import { COLS } from '@/config/dashboard-cols';
@@ -29,20 +30,24 @@ export default function InventoryOverview({
   return (
     <div className="view">
       <StatGrid cards={cards} cols={4} />
-      <DataTablePage
-        title="NOTIFIKASI STOK MENIPIS"
-        titleRight
-        cols={COLS.stokMenipis}
-        data={inv.menipis}
-        period={period}
-      />
-      <DataTablePage
-        title="PEMAKAIAN ITEM TERBANYAK"
-        titleRight
-        cols={COLS.stokTerpakai}
-        data={inv.terpakai}
-        period={period}
-      />
+      <Reveal tier={1}>
+        <DataTablePage
+          title="NOTIFIKASI STOK MENIPIS"
+          titleRight
+          cols={COLS.stokMenipis}
+          data={inv.menipis}
+          period={period}
+        />
+      </Reveal>
+      <Reveal tier={2}>
+        <DataTablePage
+          title="PEMAKAIAN ITEM TERBANYAK"
+          titleRight
+          cols={COLS.stokTerpakai}
+          data={inv.terpakai}
+          period={period}
+        />
+      </Reveal>
     </div>
   );
 }

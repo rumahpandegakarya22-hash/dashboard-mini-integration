@@ -169,6 +169,7 @@
   width: 78px;
   display: flex;
   align-items: center;
+  gap: 6px;
 }
 
 [data-app='ops'] .topbar-slot.end {
@@ -236,9 +237,64 @@
   color: var(--brand);
 }
 
-/* Sidebar kaca — hanya desktop */
+/* Sidebar kaca — desktop: kolom statis. Mobile/tablet (<900px): drawer
+   off-canvas kaca, dibuka lewat tombol menu di topbar-glass (lihat
+   .topbar-menu-btn) — sebelumnya sidebar cuma display:none di mobile
+   tanpa jalan lain buka menu (UAT #6). Pola sama dengan drawer Dashboard. */
 [data-app='ops'] .sidebar {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 280px;
+  max-width: 84vw;
+  z-index: 70;
+  padding: 20px 14px 16px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-right: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.28s ease;
+}
+
+[data-app='ops'] .shell.nav-open .sidebar {
+  transform: none;
+}
+
+/* Tombol menu (topbar-glass, mobile only) & scrim di belakang drawer. */
+[data-app='ops'] .topbar-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out);
+}
+
+[data-app='ops'] .topbar-menu-btn:hover {
+  background: oklch(50% 0.02 32 / 10%);
+}
+
+[data-app='ops'] .ops-scrim {
   display: none;
+}
+
+[data-app='ops'] .shell.nav-open .ops-scrim {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
 }
 
 @media (min-width: 900px) {
@@ -258,17 +314,24 @@
   }
 
   [data-app='ops'] .sidebar {
-    display: flex;
-    flex-direction: column;
     position: sticky;
     top: 0;
     height: 100dvh;
-    padding: 20px 14px 16px;
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
+    width: auto;
+    max-width: none;
+    z-index: auto;
+    box-shadow: none;
     border-right: 1px solid var(--hairline);
-    overflow-y: auto;
+    transform: none;
+  }
+
+  /* menu-toggle & scrim cuma untuk drawer mobile — tidak relevan di desktop */
+  [data-app='ops'] .topbar-menu-btn {
+    display: none;
+  }
+
+  [data-app='ops'] .shell.nav-open .ops-scrim {
+    display: none;
   }
 }
 

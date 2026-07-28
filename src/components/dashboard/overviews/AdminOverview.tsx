@@ -6,6 +6,7 @@
    fiktif (lihat docs/MIGRASI.md §4.7). */
 
 import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
+import Reveal from '@/components/ui/Reveal';
 import ChartCard, { EmptyCard } from '@/components/charts/ChartCard';
 import Bars from '@/components/charts/Bars';
 import AreaLine from '@/components/charts/AreaLine';
@@ -71,7 +72,7 @@ export default function AdminOverview({ data, finance: F, period, from, to }: Ov
     <div className="view">
       <StatGrid cards={cards} cols={5} />
 
-      <div className="grid row-3 mt">
+      <Reveal tier={1} className="grid row-3 mt">
         <DonutBlock label="Komposisi Kontrak" segs={kontrakDonut} centerLabel="Total Kontrak" />
         <ChartCard title="Status Kontrak" legend={[{ t: 'Jumlah Kontrak', c: '#3fae84' }]}>
           <Bars
@@ -94,9 +95,9 @@ export default function AdminOverview({ data, finance: F, period, from, to }: Ov
         ) : (
           <EmptyCard title="OPEX" />
         )}
-      </div>
+      </Reveal>
 
-      <div className="grid row-2-3 mt">
+      <Reveal tier={2} className="grid row-2-3 mt">
         {hasFin && lsc ? (
           <ChartCard
             title="Pendapatan Kotor vs Beban vs Laba Bersih"
@@ -122,7 +123,7 @@ export default function AdminOverview({ data, finance: F, period, from, to }: Ov
         )}
 
         <Table title="DAFTAR JATUH TEMPO" titleRight cols={COLS.jatuhTempo} data={jatuh} periodLabel={period} />
-      </div>
+      </Reveal>
     </div>
   );
 }

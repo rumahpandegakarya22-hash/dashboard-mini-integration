@@ -5,6 +5,7 @@
    tahun). Hanya grafik tren yang ikut periode. */
 
 import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
+import Reveal from '@/components/ui/Reveal';
 import ChartCard, { EmptyCard } from '@/components/charts/ChartCard';
 import Bars from '@/components/charts/Bars';
 import AreaLine from '@/components/charts/AreaLine';
@@ -73,7 +74,7 @@ export default function SalesOverview({ data, period, range }: OverviewProps) {
     <div className="view">
       <StatGrid cards={cards} cols={6} />
 
-      <div className="grid row-2 mt">
+      <Reveal tier={1} className="grid row-2 mt">
         {ts ? (
           <ChartCard
             title="Tren Booking & Survey"
@@ -85,9 +86,9 @@ export default function SalesOverview({ data, period, range }: OverviewProps) {
           <EmptyCard title="Tren Booking & Survey" />
         )}
         <DonutBlock label="Komposisi Prospek" segs={prospekDonut} />
-      </div>
+      </Reveal>
 
-      <div className="grid row-2 mt">
+      <Reveal tier={2} className="grid row-2 mt">
         {nLeads || nSurvey || nBooking ? (
           <ChartCard
             title="Funnel Penjualan"
@@ -131,9 +132,11 @@ export default function SalesOverview({ data, period, range }: OverviewProps) {
         ) : (
           <EmptyCard title="Kategori Prospek" />
         )}
-      </div>
+      </Reveal>
 
-      <Table title="DAFTAR PROSPEK" cols={COLS.prospek} data={survey} periodLabel={period} />
+      <Reveal tier={3}>
+        <Table title="DAFTAR PROSPEK" cols={COLS.prospek} data={survey} periodLabel={period} />
+      </Reveal>
     </div>
   );
 }

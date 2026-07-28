@@ -3,6 +3,7 @@
    donut ikut berubah saat filter periode diganti. */
 
 import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
+import Reveal from '@/components/ui/Reveal';
 import ChartCard, { EmptyCard } from '@/components/charts/ChartCard';
 import Bars from '@/components/charts/Bars';
 import AreaLine from '@/components/charts/AreaLine';
@@ -52,7 +53,7 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
     <div className="view">
       <StatGrid cards={cards} cols={6} />
 
-      <div className="grid row-2 mt">
+      <Reveal tier={1} className="grid row-2 mt">
         {hasFin && lsc ? (
           <ChartCard
             title="Pendapatan Kotor vs Beban Operasional vs Laba Bersih"
@@ -86,13 +87,13 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
         ) : (
           <EmptyCard title="Beban Operasional" />
         )}
-      </div>
+      </Reveal>
 
-      <div className="grid row-3 mt">
+      <Reveal tier={2} className="grid row-3 mt">
         <DonutBlock label="Komposisi OPEX" segs={opex} money centerLabel="Total OPEX" />
         <DonutBlock label="Komposisi Income" segs={income} money centerLabel="Total Income" />
         <DonutBlock label="Komposisi Status Kamar" segs={kamar} centerLabel="Total Kamar" />
-      </div>
+      </Reveal>
     </div>
   );
 }

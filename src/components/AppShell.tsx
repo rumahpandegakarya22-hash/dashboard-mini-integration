@@ -7,10 +7,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
 import { motion } from 'framer-motion';
-import { ChevronLeft, House, LoaderCircle, LogOut, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
+import { ChevronLeft, House, LoaderCircle, LogOut, Menu, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
 import { DIVISION_GROUPS, NAV_TEMAN_RARA, moduleIcon } from './module-icons';
 
 /** Item sidebar dengan pil aktif yang meluncur (layoutId bersama) — pola
@@ -71,6 +71,10 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
   const pathname = usePathname();
   const { signOut } = useClerk();
   const [loggingOut, setLoggingOut] = useState(false);
+  // Drawer sidebar mobile (<900px) — tak ada jalan buka menu penuh sebelum
+  // ini (UAT #6); tutup otomatis tiap ganti route, sama pola dgn Dashboard.
+  const [navOpen, setNavOpen] = useState(false);
+  useEffect(() => setNavOpen(false), [pathname]);
 
   const isHome = pathname === '/ops';
   // Khusus halaman kelola user. Dipersempit dari '/ops/admin' sejak ada halaman
@@ -105,8 +109,8 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
   }
 
   return (
-    <div className="shell">
-      {/* ---- Sidebar (desktop) ---- */}
+    <div className={navOpen ? 'shell nav-open' : 'shell'}>
+      {/* ---- Sidebar: kolom statis di desktop, drawer off-canvas di mobile ---- */}
       <aside className="sidebar">
         <div className="side-brand">
           <span className="icon-tile" aria-hidden>
@@ -210,6 +214,9 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
         </div>
       </aside>
 
+      {/* Backdrop drawer mobile — klik utk tutup, sama pola dgn scrim Dashboard. */}
+      <div className="ops-scrim" onClick={() => setNavOpen(false)} />
+
       <div>
         {/* ---- Top bar kaca (mobile) ---- */}
         <header className="topbar-glass">
@@ -223,6 +230,14 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
           </div>
           <div className="topbar-title">{topTitle}</div>
           <div className="topbar-slot end">
+            <button
+              type="button"
+              className="topbar-menu-btn"
+              aria-label="Buka menu"
+              onClick={() => setNavOpen((o) => !o)}
+            >
+              <Menu size={20} />
+            </button>
             <span className="avatar" title={`${userName} — ${roleLabel}`}>
               {initial}
             </span>

@@ -55,7 +55,7 @@ export default function Donut({ segments, center }: DonutProps) {
         data-tip-color={s.color}
         initial={{ strokeDasharray: `0 ${C}` }}
         animate={{ strokeDasharray: `${draw} ${C - draw}` }}
-        transition={{ duration: 0.7, delay: i * 0.08, ease: [0.22, 0.61, 0.36, 1] }}
+        transition={{ duration: 0.9, delay: i * 0.08, ease: [0.22, 0.61, 0.36, 1] }}
       />
     );
     offset += len;

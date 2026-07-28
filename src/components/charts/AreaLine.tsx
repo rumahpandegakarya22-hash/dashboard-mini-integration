@@ -94,7 +94,7 @@ export default function AreaLine({ seriesList, xLabels, names, unit, gradId = 'l
             fill={`url(#${gradId})`}
             initial={{ clipPath: 'inset(100% 0 0 0)' }}
             animate={{ clipPath: 'inset(0% 0 0 0)' }}
-            transition={{ duration: 0.7, ease: [0.22, 0.61, 0.36, 1] }}
+            transition={{ duration: 0.9, ease: [0.22, 0.61, 0.36, 1] }}
           />
         )}
 
@@ -112,7 +112,7 @@ export default function AreaLine({ seriesList, xLabels, names, unit, gradId = 'l
               strokeLinecap="round"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 0.61, 0.36, 1] }}
+              transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 0.61, 0.36, 1] }}
             />
           ) : (
             <motion.path
@@ -124,7 +124,7 @@ export default function AreaLine({ seriesList, xLabels, names, unit, gradId = 'l
               strokeLinecap="round"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              transition={{ duration: 0.8, delay: i * 0.1, ease: [0.22, 0.61, 0.36, 1] }}
+              transition={{ duration: 1.0, delay: i * 0.1, ease: [0.22, 0.61, 0.36, 1] }}
             />
           )
         )}
