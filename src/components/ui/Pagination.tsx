@@ -1,5 +1,7 @@
 'use client';
 
+import OriginSelect from './OriginSelect';
+
 /* PORT dari `repage()` public/app.js (Fase 4).
 
    Versi lama memanipulasi DOM langsung (menyembunyikan <tr> di luar halaman);
@@ -40,18 +42,12 @@ export default function Pagination({ total, page, pageSize, onPage, onPageSize }
 
   return (
     <nav className="pager" data-pager hidden={!total}>
-      <select
-        className="pager-size"
-        aria-label="Baris per halaman"
-        value={pageSize}
-        onChange={(e) => onPageSize(Number(e.target.value))}
-      >
-        {PAGE_SIZES.map((s) => (
-          <option key={s} value={s}>
-            {s} / hal
-          </option>
-        ))}
-      </select>
+      <OriginSelect
+        ariaLabel="Baris per halaman"
+        value={String(pageSize)}
+        onChange={(v) => onPageSize(Number(v))}
+        options={PAGE_SIZES.map((s) => ({ value: String(s), label: `${s} / hal` }))}
+      />
 
       {navBtn('first', '«', cur === 1, 1)}
       {navBtn('prev', '‹', cur === 1, Math.max(1, cur - 1))}

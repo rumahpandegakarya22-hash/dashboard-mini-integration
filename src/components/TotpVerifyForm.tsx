@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SignOutButton } from '@clerk/nextjs';
 import { CircleAlert, LoaderCircle, ShieldCheck } from 'lucide-react';
+import FlowButton from '@/components/ui/FlowButton';
 
 /** Form step-up: kode 6 digit Google Authenticator → cookie step-up → beranda. */
 export default function TotpVerifyForm() {
@@ -69,9 +70,9 @@ export default function TotpVerifyForm() {
         )}
 
         <div className="btn-row">
-          <button type="submit" className="btn" disabled={busy || code.length !== 6}>
+          <FlowButton type="submit" className="btn" disabled={busy || code.length !== 6}>
             {busy ? <LoaderCircle size={18} className="spin" /> : 'Verifikasi'}
-          </button>
+          </FlowButton>
         </div>
       </form>
 

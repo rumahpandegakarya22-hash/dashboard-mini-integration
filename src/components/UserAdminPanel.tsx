@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { CircleAlert, LoaderCircle, RotateCcw, UserRoundCheck, UserRoundX } from 'lucide-react';
 import { ROLE_LABEL, type Role } from '@/lib/core/roles';
+import OriginSelect from '@/components/ui/OriginSelect';
 
 interface UserRow {
   id: string; // Clerk userId — kunci semua aksi
@@ -110,18 +111,14 @@ export default function UserAdminPanel({ currentUserId }: { currentUserId: strin
               <label htmlFor={`role-${u.id}`} className="sr-only">
                 Role untuk {u.name}
               </label>
-              <select
+              <OriginSelect
                 id={`role-${u.id}`}
+                ariaLabel="Role"
+                placeholder="Pilih role..."
                 value={pendingRole[u.id] || ''}
-                onChange={(e) => setPendingRole((prev) => ({ ...prev, [u.id]: e.target.value as Role }))}
-              >
-                <option value="">Pilih role...</option>
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_LABEL[r]}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setPendingRole((prev) => ({ ...prev, [u.id]: v as Role }))}
+                options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
+              />
               <button
                 type="button"
                 className="btn compact"
@@ -156,18 +153,14 @@ export default function UserAdminPanel({ currentUserId }: { currentUserId: strin
               <label htmlFor={`role-active-${u.id}`} className="sr-only">
                 Role {u.name}
               </label>
-              <select
+              <OriginSelect
                 id={`role-active-${u.id}`}
+                ariaLabel="Role"
                 value={u.role || ''}
-                onChange={(e) => callAction('role', { id: u.id, role: e.target.value }, u.id)}
+                onChange={(v) => callAction('role', { id: u.id, role: v }, u.id)}
                 disabled={busy === u.id}
-              >
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_LABEL[r]}
-                  </option>
-                ))}
-              </select>
+                options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
+              />
               {u.id !== currentUserId && (
                 <button
                   type="button"

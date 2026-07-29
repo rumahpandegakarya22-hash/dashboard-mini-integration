@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { CircleAlert, LoaderCircle, MessageSquareWarning, Paperclip } from 'lucide-react';
 import { STATUS_PENGADUAN, type StatusPengaduan } from '@/lib/core/complain';
+import OriginSelect from '@/components/ui/OriginSelect';
 
 interface Aduan {
   id: string;
@@ -201,17 +202,13 @@ export default function PengaduanPanel() {
 
               <div className="field" style={{ marginTop: 12 }}>
                 <label htmlFor={`status-${a.id}`}>Status</label>
-                <select
+                <OriginSelect
                   id={`status-${a.id}`}
+                  ariaLabel="Status"
                   value={d.status}
-                  onChange={(e) => ubah(a.id, { status: e.target.value as StatusPengaduan })}
-                >
-                  {STATUS_PENGADUAN.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => ubah(a.id, { status: v as StatusPengaduan })}
+                  options={STATUS_PENGADUAN.map((s) => ({ value: s, label: s }))}
+                />
               </div>
 
               <div className="field">

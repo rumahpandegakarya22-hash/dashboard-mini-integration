@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { DASHBOARD_ROLES, type DashboardRole } from '@/config/dashboard-access';
+import OriginSelect from '@/components/ui/OriginSelect';
 
 /* PORT dari `renderOwnerUsers()` public/app.js (Fase 4 langkah 4/5).
 
@@ -70,17 +71,13 @@ export default function DashboardUserAdmin() {
   };
 
   const RoleSelect = ({ u }: { u: Row }) => (
-    <select
+    <OriginSelect
       className="cell-select sec-role"
+      ariaLabel="Role dashboard"
       value={pick[u.username] || u.role || 'sales'}
-      onChange={(e) => setPick((p) => ({ ...p, [u.username]: e.target.value as DashboardRole }))}
-    >
-      {DASHBOARD_ROLES.map((r) => (
-        <option key={r} value={r}>
-          {r}
-        </option>
-      ))}
-    </select>
+      onChange={(v) => setPick((p) => ({ ...p, [u.username]: v as DashboardRole }))}
+      options={DASHBOARD_ROLES.map((r) => ({ value: r, label: r }))}
+    />
   );
 
   return (

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CircleAlert, CircleCheck, LoaderCircle, ShieldCheck, ShieldOff } from 'lucide-react';
+import FlowButton from '@/components/ui/FlowButton';
 
 interface SetupData {
   secret: string;
@@ -120,10 +121,10 @@ export default function TotpSettings({ initialEnrolled }: { initialEnrolled: boo
           </p>
           <form onSubmit={confirmDisable}>
             {codeField}
-            <button type="submit" className="btn compact" disabled={busy || code.length !== 6}>
+            <FlowButton type="submit" className="btn compact" disabled={busy || code.length !== 6}>
               {busy ? <LoaderCircle size={16} className="spin" /> : <ShieldOff size={16} />}
               Matikan 2FA
-            </button>
+            </FlowButton>
           </form>
         </>
       ) : setup ? (
@@ -146,9 +147,9 @@ export default function TotpSettings({ initialEnrolled }: { initialEnrolled: boo
           <form onSubmit={confirmEnable}>
             {codeField}
             <div className="btn-row" style={{ marginTop: 12 }}>
-              <button type="submit" className="btn" disabled={busy || code.length !== 6}>
+              <FlowButton type="submit" className="btn" disabled={busy || code.length !== 6}>
                 {busy ? <LoaderCircle size={18} className="spin" /> : 'Aktifkan 2FA'}
-              </button>
+              </FlowButton>
               <button type="button" className="btn secondary" onClick={() => setSetup(null)} disabled={busy}>
                 Batal
               </button>

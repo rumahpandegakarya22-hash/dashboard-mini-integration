@@ -5,6 +5,7 @@ import Table from '@/components/ui/Table';
 import { COLS } from '@/config/dashboard-cols';
 import { pembayaranNames, filterPembayaran } from '@/lib/dashboard/views/pages';
 import type { PembayaranRow } from '@/lib/dashboard/views/types';
+import OriginSelect from '@/components/ui/OriginSelect';
 
 /* PORT dari `pagePembayaran()` public/app.js.
 
@@ -28,19 +29,18 @@ export default function PembayaranPage({
     <>
       {names.length > 0 && (
         <div style={{ margin: '0 0 10px' }}>
-          <select
+          <OriginSelect
             id="payTenantFilter"
             className="chip"
+            ariaLabel="Filter penghuni"
+            placeholder="Semua Penghuni"
             value={nama}
-            onChange={(e) => setNama(e.target.value)}
-          >
-            <option value="">Semua Penghuni</option>
-            {names.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
+            onChange={setNama}
+            options={[
+              { value: '', label: 'Semua Penghuni' },
+              ...names.map((n) => ({ value: n, label: n }))
+            ]}
+          />
         </div>
       )}
       <Table title="DATA PEMBAYARAN" cols={COLS.pembayaran} data={rows} periodLabel={period} />

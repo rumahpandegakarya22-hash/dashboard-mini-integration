@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Navbar from "@/components/inventory/Navbar";
+import FlowButton from "@/components/inventory/FlowButton";
+import OriginSelect from "@/components/inventory/OriginSelect";
 import { 
   Sliders, 
   Search, 
@@ -199,17 +201,16 @@ export default function CorrectionsPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Bahan Baku</label>
-                  <select
+                  <OriginSelect
+                    ariaLabel="Bahan Baku"
                     value={selectedMaterialId}
-                    onChange={(e) => setSelectedMaterialId(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl glass-input text-sm bg-white focus:bg-white"
-                  >
-                    {materials.map(m => (
-                      <option key={m.id} value={m.id} className="bg-white text-ink">
-                        {m.name} (Sistem: {m.currentStock} {m.unit})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSelectedMaterialId}
+                    options={materials.map((m) => ({
+                      value: String(m.id),
+                      label: `${m.name} (Sistem: ${m.currentStock} ${m.unit})`
+                    }))}
+                    className="px-4 py-3 rounded-xl glass-input text-sm bg-white focus:bg-white"
+                  />
                 </div>
 
                 <div>
@@ -249,14 +250,14 @@ export default function CorrectionsPage() {
                   />
                 </div>
 
-                <button
+                <FlowButton
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3.5 px-4 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-sm transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3.5 px-4 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <CheckCircle className="h-4 w-4" />
                   {submitting ? "Menyimpan..." : "Koreksi Stok"}
-                </button>
+                </FlowButton>
               </form>
             </div>
 

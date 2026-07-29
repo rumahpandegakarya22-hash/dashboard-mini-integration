@@ -13,9 +13,7 @@ import {
   IconHome,
   IconSearch,
   IconRefresh,
-  IconBell,
   IconSidebar,
-  IconExpand,
   IconMenu,
   IconCaret,
   IconLock,
@@ -31,8 +29,8 @@ import {
    - Navigasi memakai <Link> App Router, bukan <a href="#"> + state `cur.page`;
      halaman kini punya URL sendiri sehingga bisa di-bookmark & di-back (§2.3).
    - Toggle tema dipisah ke komponen ThemeToggle bersama (dipakai ops juga).
-   - Tombol notifikasi & layar penuh DIBIARKAN dekoratif seperti di sumber —
-     di app.js keduanya juga tidak punya handler. Tidak "diperbaiki" (§11.2.1).
+   - Tombol notifikasi & layar penuh DIHAPUS (UAT #3). Keduanya memang tidak
+     pernah punya handler, baik di app.js maupun di port ini.
    - `#refreshBtn` memuat ulang route (router.refresh lewat reload) — di sumber
      ia memanggil loadLiveData(); padanan terdekat di App Router. */
 
@@ -199,12 +197,6 @@ export default function DashboardShell({
               onClick={() => window.location.reload()}
             >
               <IconRefresh />
-            </button>
-            <button className="topbar__icon topbar__bell" aria-label="Notifikasi" title="Notifikasi">
-              <IconBell />
-            </button>
-            <button className="topbar__icon" id="fullscreenBtn" aria-label="Layar penuh" title="Layar penuh">
-              <IconExpand />
             </button>
           </div>
         </header>

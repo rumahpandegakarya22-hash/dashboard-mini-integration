@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BellRing, CircleAlert, ClipboardList, ImageIcon, ListChecks } from 'lucide-react';
 import type { WorkOrderRow } from '@/lib/joblist';
+import OriginSelect from '@/components/ui/OriginSelect';
 
 const STATUS_OPTIONS = ['Pending', 'In Progress', 'Complete'];
 
@@ -56,19 +57,14 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
 
   function statusSelect(r: WorkOrderRow) {
     return (
-      <select
-        aria-label={`Status WO #${r.id}`}
+      <OriginSelect
+        ariaLabel={`Status WO #${r.id}`}
         value={r.status}
         disabled={busy === r.id}
-        onChange={(e) => changeStatus(r.id, e.target.value)}
-        style={{ minHeight: 36, padding: '6px 32px 6px 10px', fontSize: '0.875rem', width: 'auto' }}
-      >
-        {STATUS_OPTIONS.map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
-        ))}
-      </select>
+        onChange={(v) => changeStatus(r.id, v)}
+        options={STATUS_OPTIONS.map((s) => ({ value: s, label: s }))}
+        style={{ minHeight: 36, padding: '6px 10px', fontSize: '0.875rem', width: 'auto' }}
+      />
     );
   }
 

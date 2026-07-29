@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { DASHBOARD_ROLES, type DashboardRole } from '@/config/dashboard-access';
 import { ROLE_LABEL, type Role as OpsRole } from '@/lib/core/roles';
+import OriginSelect from '@/components/ui/OriginSelect';
 
 /* Kelola Akun GABUNGAN (§5.2, Fase 5 langkah 1).
 
@@ -182,19 +183,15 @@ export default function UnifiedUserAdmin() {
                               </button>
                             ) : (
                               <>
-                                <select
+                                <OriginSelect
                                   className="cell-select"
+                                  ariaLabel="Role dashboard"
                                   value={pickDash[u.username] || u.dash.role || 'sales'}
-                                  onChange={(e) =>
-                                    setPickDash((p) => ({ ...p, [u.username]: e.target.value as DashboardRole }))
+                                  onChange={(v) =>
+                                    setPickDash((p) => ({ ...p, [u.username]: v as DashboardRole }))
                                   }
-                                >
-                                  {DASHBOARD_ROLES.map((r) => (
-                                    <option key={r} value={r}>
-                                      {r}
-                                    </option>
-                                  ))}
-                                </select>
+                                  options={DASHBOARD_ROLES.map((r) => ({ value: r, label: r }))}
+                                />
                                 <button
                                   className="cell-btn"
                                   disabled={busy === dKey}
@@ -239,19 +236,18 @@ export default function UnifiedUserAdmin() {
                               </button>
                             ) : (
                               <>
-                                <select
+                                <OriginSelect
                                   className="cell-select"
+                                  ariaLabel="Role ops"
                                   value={pickOps[u.username] || u.ops.role || 'staff_admin'}
-                                  onChange={(e) =>
-                                    setPickOps((p) => ({ ...p, [u.username]: e.target.value as OpsRole }))
+                                  onChange={(v) =>
+                                    setPickOps((p) => ({ ...p, [u.username]: v as OpsRole }))
                                   }
-                                >
-                                  {(Object.keys(ROLE_LABEL) as OpsRole[]).map((r) => (
-                                    <option key={r} value={r}>
-                                      {ROLE_LABEL[r]}
-                                    </option>
-                                  ))}
-                                </select>
+                                  options={(Object.keys(ROLE_LABEL) as OpsRole[]).map((r) => ({
+                                    value: r,
+                                    label: ROLE_LABEL[r]
+                                  }))}
+                                />
                                 <button
                                   className="cell-btn"
                                   disabled={busy === oKey}

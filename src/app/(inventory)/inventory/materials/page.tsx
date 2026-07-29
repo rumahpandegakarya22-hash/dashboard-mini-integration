@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "@/components/inventory/Navbar";
+import FlowButton from "@/components/inventory/FlowButton";
+import OriginSelect from "@/components/inventory/OriginSelect";
 import { 
   Package, 
   Search, 
@@ -359,24 +361,24 @@ export default function MaterialsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Kategori</label>
-                    <select
+                    <OriginSelect
+                      ariaLabel="Kategori"
                       value={formData.category}
-                      onChange={(e) => setFormData({...formData, category: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl glass-input text-sm bg-white"
-                    >
-                      {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                      onChange={(v) => setFormData({...formData, category: v})}
+                      options={categories.map((c) => ({ value: c, label: c }))}
+                      className="px-4 py-3 rounded-xl glass-input text-sm bg-white"
+                    />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Satuan</label>
-                    <select
+                    <OriginSelect
+                      ariaLabel="Satuan"
                       value={formData.unit}
-                      onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl glass-input text-sm bg-white"
-                    >
-                      {units.map(u => <option key={u} value={u}>{u}</option>)}
-                    </select>
+                      onChange={(v) => setFormData({...formData, unit: v})}
+                      options={units.map((u) => ({ value: u, label: u }))}
+                      className="px-4 py-3 rounded-xl glass-input text-sm bg-white"
+                    />
                   </div>
                 </div>
 
@@ -416,12 +418,12 @@ export default function MaterialsPage() {
                   >
                     Batal
                   </button>
-                  <button
+                  <FlowButton
                     type="submit"
-                    className="px-5 py-3 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-sm shadow-md"
+                    className="pl-5 pr-11 py-3 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-sm shadow-md"
                   >
                     Simpan
-                  </button>
+                  </FlowButton>
                 </div>
               </form>
             </motion.div>
@@ -489,24 +491,24 @@ export default function MaterialsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Kategori</label>
-                    <select
+                    <OriginSelect
+                      ariaLabel="Kategori"
                       value={formData.category}
-                      onChange={(e) => setFormData({...formData, category: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl glass-input text-sm bg-white"
-                    >
-                      {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                      onChange={(v) => setFormData({...formData, category: v})}
+                      options={categories.map((c) => ({ value: c, label: c }))}
+                      className="px-4 py-3 rounded-xl glass-input text-sm bg-white"
+                    />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Satuan</label>
-                    <select
+                    <OriginSelect
+                      ariaLabel="Satuan"
                       value={formData.unit}
-                      onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl glass-input text-sm bg-white"
-                    >
-                      {units.map(u => <option key={u} value={u}>{u}</option>)}
-                    </select>
+                      onChange={(v) => setFormData({...formData, unit: v})}
+                      options={units.map((u) => ({ value: u, label: u }))}
+                      className="px-4 py-3 rounded-xl glass-input text-sm bg-white"
+                    />
                   </div>
                 </div>
 
@@ -543,12 +545,12 @@ export default function MaterialsPage() {
                   >
                     Batal
                   </button>
-                  <button
+                  <FlowButton
                     type="submit"
-                    className="px-5 py-3 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-sm shadow-md"
+                    className="pl-5 pr-11 py-3 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-sm shadow-md"
                   >
                     Simpan Perubahan
-                  </button>
+                  </FlowButton>
                 </div>
               </form>
             </motion.div>

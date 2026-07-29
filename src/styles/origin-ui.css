@@ -1,0 +1,420 @@
+/* Port FlowButton (@xubohuah), OriginUI DropdownMenu (@originui), dan
+   FileUploadCard (@ravikatiyar162) dari 21st.dev, ditulis sebagai CSS biasa.
+
+   Kenapa bukan Tailwind: di repo ini Tailwind hanya aktif untuk route group
+   (inventory) — lihat tailwind.config.ts (`important: [data-app='inventory']`,
+   `content` cuma folder inventory). Mini App Ops memakai CSS hasil port, jadi
+   utilitas Tailwind tidak akan menghasilkan apa pun di sana.
+
+   Nilai animasi disalin apa adanya dari sumber; warnanya memakai token milik
+   app supaya kontras tema terang/gelap tidak berubah arah. */
+
+/* ============ FlowButton ============ */
+
+.flow-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 600ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.flow-btn:hover:not(:disabled) {
+  border-radius: 12px;
+}
+
+.flow-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.flow-btn__arrow {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  z-index: 9;
+  transition: all 800ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.flow-btn__arrow--in { left: -25%; }
+.flow-btn__arrow--out { right: 16px; }
+.flow-btn:hover:not(:disabled) .flow-btn__arrow--in { left: 16px; }
+.flow-btn:hover:not(:disabled) .flow-btn__arrow--out { right: -25%; }
+
+.flow-btn__label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-12px);
+  transition: all 800ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.flow-btn:hover:not(:disabled) .flow-btn__label {
+  transform: translateX(12px);
+}
+
+.flow-btn__ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  opacity: 0;
+  background: var(--flow-ripple, rgba(0, 0, 0, 0.35));
+  transition: all 800ms cubic-bezier(0.19, 1, 0.22, 1);
+  pointer-events: none;
+}
+
+.flow-btn:hover:not(:disabled) .flow-btn__ripple {
+  width: 220px;
+  height: 220px;
+  opacity: 1;
+}
+
+[data-app='ops'] .flow-btn { --flow-ripple: var(--brand-strong); }
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-btn,
+  .flow-btn__arrow,
+  .flow-btn__label,
+  .flow-btn__ripple {
+    transition: none !important;
+  }
+  .flow-btn:hover:not(:disabled) .flow-btn__label { transform: none; }
+  .flow-btn:active:not(:disabled) { transform: none; }
+}
+
+/* ============ OriginUI dropdown ============ */
+
+.ou-select { position: relative; }
+
+.ou-select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ou-select__trigger[aria-disabled='true'],
+.ou-select__trigger:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.ou-select__value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ou-select__value.is-placeholder { color: var(--ink-2, #8e8b87); }
+
+.ou-select__chevron {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+.ou-select__trigger[aria-expanded='true'] .ou-select__chevron { transform: rotate(180deg); }
+
+/* Geometri OriginUI: rounded-lg (8px), min-w-40 (10rem), p-1, border 1px,
+   shadow-lg shadow-black/5. */
+.ou-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 50;
+  width: 100%;
+  min-width: 10rem;
+  max-height: 18rem;
+  overflow: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e8dfd5);
+  background: var(--surface, #fff);
+  padding: 4px;
+  margin: 0;
+  list-style: none;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+}
+
+/* Item OriginUI: rounded-md (6px), px-2 py-1.5, text-sm, gap-2, pl-8 untuk
+   ruang indikator centang. */
+.ou-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  padding: 6px 8px 6px 32px;
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--ink, #3a3635);
+  text-align: left;
+  cursor: default;
+  outline: none;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ou-item:hover:not(:disabled),
+.ou-item:focus-visible:not(:disabled) { background: var(--surface-2, #e8dfd5); }
+.ou-item.is-active { background: var(--brand-tint, rgba(201, 45, 49, 0.1)); }
+.ou-item:disabled { pointer-events: none; opacity: 0.5; }
+
+.ou-item__check {
+  position: absolute;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+.ou-item__check svg { width: 16px; height: 16px; }
+
+/* ============ FileUploadCard ============ */
+
+.upload-card {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border, #e8dfd5);
+  background: var(--surface, #fff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.upload-card__head { display: flex; align-items: flex-start; gap: 16px; padding: 20px 20px 0; }
+
+.upload-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--surface-2, #e8dfd5);
+  color: var(--ink-2, #8e8b87);
+}
+
+.upload-card__title { font-size: 1.0625rem; font-weight: 600; color: var(--ink, #3a3635); margin: 0; }
+.upload-card__sub { font-size: 0.8125rem; color: var(--ink-2, #8e8b87); margin: 4px 0 0; }
+
+.upload-card__drop {
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px;
+  border: 2px dashed var(--hairline, rgba(142, 139, 135, 0.35));
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.upload-card__drop:hover { border-color: var(--brand, #c92d31); }
+.upload-card__drop.is-dragging { border-color: var(--brand, #c92d31); background: var(--brand-tint, rgba(201, 45, 49, 0.08)); }
+.upload-card__drop input[type='file'] { display: none; }
+.upload-card__drop svg { color: var(--ink-2, #8e8b87); }
+.upload-card__lead { font-weight: 600; color: var(--ink, #3a3635); margin: 16px 0 0; }
+.upload-card__hint { font-size: 0.75rem; color: var(--ink-2, #8e8b87); margin: 4px 0 0; }
+
+.upload-card__browse {
+  margin-top: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e8dfd5);
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  color: var(--ink, #3a3635);
+}
+
+.upload-card__list { border-top: 1px solid var(--border, #e8dfd5); padding: 20px; margin: 0; list-style: none; }
+.upload-card__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.upload-card__row + .upload-card__row { margin-top: 16px; }
+
+.upload-card__ext {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  background: var(--surface-2, #e8dfd5);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-2, #8e8b87);
+}
+
+.upload-card__name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink, #3a3635);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.upload-card__meta { font-size: 0.75rem; color: var(--ink-2, #8e8b87); }
+.upload-card__meta .sep { margin: 0 4px; }
+.upload-card__meta .ok { color: #15803d; }
+.upload-card__meta .busy { color: var(--brand, #c92d31); }
+
+.upload-card__bar {
+  position: relative;
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-2, #e8dfd5);
+}
+.upload-card__bar > i { display: block; height: 100%; background: var(--brand, #c92d31); transition: width 0.2s ease; }
+
+.upload-card__del {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2, #8e8b87);
+  cursor: pointer;
+}
+.upload-card__del:hover { background: var(--surface-2, #e8dfd5); }
+
+/* Pemicu GlassDateField di Ops — meniru gaya input Ops karena token Dashboard
+   (--card-2, --text) tidak ada di sana. */
+.ou-datefield {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--ink, #3a3635);
+  background-color: var(--surface-2, #e8dfd5);
+  border: 1px solid transparent;
+  border-radius: var(--r-md, 14px);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ou-datefield:focus-visible {
+  outline: none;
+  border-color: var(--brand, #c92d31);
+  box-shadow: 0 0 0 3px var(--brand-tint-2, rgba(201, 45, 49, 0.2));
+}
+
+/* Pemicu OriginSelect di Ops meniru gaya `select` native Ops, supaya penggantian
+   dropdown tidak mengubah tinggi/warna field yang sudah ada. */
+[data-app='ops'] .ou-select__trigger {
+  min-height: 48px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  background-color: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast), opacity var(--t-fast);
+}
+
+[data-app='ops'] .ou-select__trigger:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-tint-2);
+}
+
+/* Ops `.btn` sudah punya sapuan `::before` dan geseran ikon 2px yang dulu
+   dipakai sebagai "flow-button" versi ringan. Keduanya dimatikan saat tombolnya
+   memakai FlowButton asli, supaya tidak ada dua animasi yang saling tumpuk dan
+   panahnya tidak ikut tergeser. */
+[data-app='ops'] .btn.flow-btn::before { content: none; }
+[data-app='ops'] .btn.flow-btn:hover .flow-btn__arrow { transform: none; }
+
+/* `[data-app='ops'] .btn` (spesifisitas 0,2,0) menimpa `transition` milik
+   `.flow-btn` (0,1,0), sehingga morph radius 600ms-nya tidak pernah jalan.
+   Ditulis ulang dengan spesifisitas yang sama. */
+[data-app='ops'] .btn.flow-btn {
+  transition: all 600ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+[data-app='ops'] .btn.flow-btn:hover:not(:disabled) { border-radius: 12px; }
+[data-app='ops'] .btn.flow-btn:active:not(:disabled) { transform: scale(0.95); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-app='ops'] .btn.flow-btn { transition: none !important; }
+  [data-app='ops'] .btn.flow-btn:active:not(:disabled) { transform: none; }
+}
+
+/* ---- OriginSelect di Dashboard ----
+   Token Dashboard beda nama dari Ops (--text/--card-2 vs --ink/--surface-2),
+   jadi panel & itemnya dipetakan ulang di sini. */
+[data-app='dashboard'] .ou-menu {
+  background: rgba(40, 42, 56, 0.92);
+  border-color: var(--border-2);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: var(--specular), var(--shadow-pop);
+}
+
+:root[data-theme='light'] [data-app='dashboard'] .ou-menu { background: rgba(255, 255, 255, 0.92); }
+
+[data-app='dashboard'] .ou-item { color: var(--text-2); }
+[data-app='dashboard'] .ou-item:hover:not(:disabled),
+[data-app='dashboard'] .ou-item:focus-visible:not(:disabled) { background: rgba(255, 255, 255, .05); color: var(--text); }
+[data-app='dashboard'] .ou-item.is-active { background: rgba(255, 255, 255, .09); color: var(--text); }
+
+/* `.pager button` di theme-dashboard.css memberi min-width 52px + tinggi 30px ke
+   SEMUA <button> keturunannya — termasuk item menu yang kini ada di dalam
+   `.pager`. Dikembalikan ke ukuran item dropdown. */
+[data-app='dashboard'] .pager .ou-menu button {
+  min-width: 0;
+  height: auto;
+  padding: 6px 8px 6px 32px;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.875rem;
+}
+[data-app='dashboard'] .pager .ou-menu button:hover { background: rgba(255, 255, 255, .05); }
+
+[data-app='dashboard'] .pager .ou-select { width: auto; }
+[data-app='dashboard'] .pager .ou-select__trigger {
+  min-width: 0;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, .04);
+  color: var(--text-2);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+[data-app='dashboard'] .pager .ou-select__trigger:hover { color: var(--text); }
+[data-app='dashboard'] .pager .ou-menu { width: max-content; }
+
+/* `.cell-select` menggambar chevron-nya sendiri lewat background-image, sedangkan
+   OriginSelect merender ikon chevron sungguhan — kalau dibiarkan jadi dobel.
+   Gambar chevron-nya dibuang, titik status di kiri dipertahankan. */
+[data-app='dashboard'] .ou-select__trigger.cell-select {
+  background-image: radial-gradient(circle, currentColor 50%, transparent 52%);
+  background-repeat: no-repeat;
+  background-position: left 9px center;
+  background-size: 6px 6px;
+  padding: 4px 8px 4px 22px;
+}
+
+[data-app='dashboard'] .ou-select__trigger.chip { padding: 5px 8px 5px 13px; }

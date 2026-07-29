@@ -1288,3 +1288,42 @@
 }
 [data-app='dashboard'] .cfm-apply { background: var(--brand) !important; color: var(--brand-ink) !important; border-color: transparent !important; }
 :root[data-theme='light'] [data-app='dashboard'] .cfm-apply { background: var(--brand-strong) !important; color: #fff !important; }
+
+/* ---- dropdown periode: geometri & interaksi OriginUI (21st.dev @originui)
+   Nilai yang disalin: container rounded-lg (8px) + min-width 10rem + p-1 +
+   border 1px + shadow-lg shadow-black/5; item rounded-md (6px) + px-2 py-1.5 +
+   text-sm + gap-2 + transition-colors. Warna tetap memakai token dashboard
+   supaya kontras di tema terang/gelap tidak berubah arah. */
+[data-app='dashboard'] .period-menu {
+  min-width: 10rem;
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid var(--border-2);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .05), 0 4px 6px -4px rgba(0, 0, 0, .05), var(--specular);
+}
+[data-app='dashboard'] .period-opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  line-height: 1.25rem;
+  outline: none;
+  transition: background-color .15s cubic-bezier(.4, 0, .2, 1), color .15s cubic-bezier(.4, 0, .2, 1);
+}
+[data-app='dashboard'] .period-opt:focus-visible {
+  background: rgba(255, 255, 255, .09);
+  color: var(--text);
+}
+[data-app='dashboard'] .period-opt.is-active::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}

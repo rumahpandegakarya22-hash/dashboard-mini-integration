@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Navbar from "@/components/inventory/Navbar";
+import FlowButton from "@/components/inventory/FlowButton";
+import OriginSelect from "@/components/inventory/OriginSelect";
+import { GlassDateField } from "@/components/ui/GlassCalendar";
 import { 
   ShoppingCart, 
   Search, 
@@ -230,17 +233,13 @@ export default function PurchasesPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Bahan Baku</label>
-                <select
+                <OriginSelect
+                  ariaLabel="Bahan Baku"
                   value={selectedMaterialId}
-                  onChange={(e) => setSelectedMaterialId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl glass-input text-sm bg-white focus:bg-white"
-                >
-                  {materials.map(m => (
-                    <option key={m.id} value={m.id} className="bg-white text-ink">
-                      {m.name} ({m.unit})
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedMaterialId}
+                  options={materials.map((m) => ({ value: String(m.id), label: `${m.name} (${m.unit})` }))}
+                  className="px-4 py-3 rounded-xl glass-input text-sm bg-white focus:bg-white"
+                />
               </div>
 
               <div>
@@ -261,12 +260,11 @@ export default function PurchasesPage() {
 
               <div>
                 <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Tanggal Pembelian</label>
-                <input
-                  type="date"
-                  required
+                <GlassDateField
                   value={purchaseDate}
-                  onChange={(e) => setPurchaseDate(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl glass-input text-sm"
+                  onChange={setPurchaseDate}
+                  placeholder="Tanggal pembelian"
+                  buttonClassName="flex w-full items-center justify-between gap-2 px-4 py-3 rounded-xl glass-input text-sm"
                 />
               </div>
 
@@ -309,14 +307,14 @@ export default function PurchasesPage() {
                 />
               </div>
 
-              <button
+              <FlowButton
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3.5 px-4 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-sm transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3.5 px-4 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <PlusCircle className="h-4 w-4" />
                 {submitting ? "Menyimpan..." : "Simpan Transaksi"}
-              </button>
+              </FlowButton>
             </form>
           </div>
 
@@ -347,18 +345,18 @@ export default function PurchasesPage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
               <span className="text-[10px] font-bold text-taupe-dark uppercase tracking-wider">Rentang Tanggal:</span>
               <div className="flex items-center gap-2">
-                <input
-                  type="date"
+                <GlassDateField
                   value={filterFrom}
-                  onChange={(e) => setFilterFrom(e.target.value)}
-                  className="px-3 py-2 rounded-xl glass-input text-xs"
+                  onChange={setFilterFrom}
+                  placeholder="Dari"
+                  buttonClassName="flex w-full items-center justify-between gap-2 px-3 py-2 rounded-xl glass-input text-xs"
                 />
                 <span className="text-taupe-dark text-xs">s/d</span>
-                <input
-                  type="date"
+                <GlassDateField
                   value={filterTo}
-                  onChange={(e) => setFilterTo(e.target.value)}
-                  className="px-3 py-2 rounded-xl glass-input text-xs"
+                  onChange={setFilterTo}
+                  placeholder="Sampai"
+                  buttonClassName="flex w-full items-center justify-between gap-2 px-3 py-2 rounded-xl glass-input text-xs"
                 />
                 {(filterFrom || filterTo) && (
                   <button

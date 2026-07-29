@@ -8,11 +8,14 @@ import {
   CircleAlert,
   House,
   LoaderCircle,
-  Paperclip,
   ReceiptText,
   TriangleAlert,
   WandSparkles
 } from 'lucide-react';
+import FileUploadCard from '@/components/ui/FileUploadCard';
+import FlowButton from '@/components/ui/FlowButton';
+import OriginSelect from '@/components/ui/OriginSelect';
+import { GlassDateField } from '@/components/ui/GlassCalendar';
 import type { FieldDef, FieldOption, PreviewResult } from '@/lib/modules/types';
 
 interface Props {
@@ -367,10 +370,10 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
         </div>
       )}
 
-      <button type="submit" className="btn" disabled={loading} style={{ marginTop: 20 }}>
+      <FlowButton type="submit" className="btn" disabled={loading} style={{ marginTop: 20 }}>
         {loading && <LoaderCircle size={18} className="spin" />}
         {loading ? (hasPreview ? 'Menghitung...' : 'Menyimpan...') : hasPreview ? 'Lihat Preview' : isEdit ? 'Simpan Perubahan' : 'Simpan'}
-      </button>
+      </FlowButton>
     </form>
   );
 }
@@ -419,12 +422,15 @@ function isVisible(f: FieldDef, values: Record<string, string>): boolean {
 function FileField({ f, value, onChange }: { f: FieldDef; value: string; onChange: (v: string) => void }) {
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState('');
+  const [fileSize, setFileSize] = useState<number | undefined>(undefined);
   const [uploadError, setUploadError] = useState('');
   const maxMb = f.maxSizeMb ?? 2;
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
     setUploadError('');
+    setFileName(file.name);
+    setFileSize(file.size);
     if (file.size > maxMb * 1024 * 1024) {
       setUploadError(`Ukuran file melebihi ${maxMb} MB.`);
       return;
@@ -437,7 +443,6 @@ function FileField({ f, value, onChange }: { f: FieldDef; value: string; onChang
       const res = await fetch('/api/ops/upload', { method: 'POST', body: fd });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Upload gagal.');
-      setFileName(file.name);
       onChange(json.url || '');
     } catch (e: any) {
       setUploadError(e.message || 'Upload gagal.');
@@ -449,24 +454,24 @@ function FileField({ f, value, onChange }: { f: FieldDef; value: string; onChang
 
   return (
     <>
-      <label className={value ? 'file-btn filled' : 'file-btn'} htmlFor={f.name}>
-        {uploading ? <LoaderCircle size={18} className="spin" /> : <Paperclip size={18} />}
-        <span>
-          {uploading
-            ? 'Mengunggah...'
-            : value
-              ? `${fileName || 'File terunggah'} ✓`
-              : f.placeholder || `Pilih file (maks ${maxMb} MB)`}
-        </span>
-        <input
-          id={f.name}
-          name={f.name}
-          type="file"
-          accept={f.accept}
-          disabled={uploading}
-          onChange={(e) => handleFile(e.target.files?.[0])}
-        />
-      </label>
+      <FileUploadCard
+        id={f.name}
+        accept={f.accept}
+        disabled={uploading}
+        judul={f.label || 'Unggah berkas'}
+        deskripsi={f.placeholder || 'Pilih dan unggah berkas yang diminta'}
+        petunjuk={`Maksimal ${maxMb} MB.`}
+        berkas={fileName ? { nama: fileName, ukuran: fileSize } : null}
+        uploading={uploading}
+        done={!!value}
+        onPick={(file) => handleFile(file)}
+        onRemove={() => {
+          setFileName('');
+          setFileSize(undefined);
+          setUploadError('');
+          onChange('');
+        }}
+      />
       {uploadError && <p className="error" style={{ marginTop: 6 }}>{uploadError}</p>}
     </>
   );
@@ -491,7 +496,15 @@ function renderField(f: FieldDef, value: string, onChange: (v: string) => void, 
         />
       );
     case 'date':
-      return <input id={f.name} name={f.name} type="date" value={value} onChange={onInputChange} />;
+      return (
+        <GlassDateField
+          id={f.name}
+          name={f.name}
+          value={value}
+          onChange={onChange}
+          buttonClassName="ou-datefield"
+        />
+      );
     case 'time':
       return <input id={f.name} name={f.name} type="time" value={value} onChange={onInputChange} />;
     case 'file':
@@ -511,20 +524,16 @@ function renderField(f: FieldDef, value: string, onChange: (v: string) => void, 
             ? 'Tidak ada pilihan tersedia'
             : 'Pilih...';
       return (
-        <select
+        <OriginSelect
           id={f.name}
           name={f.name}
+          ariaLabel={f.label}
           value={value}
-          onChange={onInputChange}
+          onChange={onChange}
+          placeholder={placeholder}
           disabled={waitingOnDependency || stillLoading || noDataAvailable}
-        >
-          <option value="">{placeholder}</option>
-          {opts.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          options={opts.map((o) => ({ value: String(o.value), label: o.label }))}
+        />
       );
     }
     default:

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CircleAlert, LoaderCircle, Megaphone, Plus, Trash2 } from 'lucide-react';
+import OriginSelect from '@/components/ui/OriginSelect';
 
 type Tipe = 'announcement' | 'rule';
 
@@ -122,10 +123,16 @@ export default function PengumumanPanel() {
 
         <div className="field" style={{ marginTop: 12 }}>
           <label htmlFor="tipe">Tipe</label>
-          <select id="tipe" value={form.tipe} onChange={(e) => setForm({ ...form, tipe: e.target.value as Tipe })}>
-            <option value="announcement">Pengumuman — tampil di daftar pengumuman</option>
-            <option value="rule">Peraturan — tampil di beranda penghuni</option>
-          </select>
+          <OriginSelect
+            id="tipe"
+            ariaLabel="Tipe"
+            value={form.tipe}
+            onChange={(v) => setForm({ ...form, tipe: v as Tipe })}
+            options={[
+              { value: 'announcement', label: 'Pengumuman — tampil di daftar pengumuman' },
+              { value: 'rule', label: 'Peraturan — tampil di beranda penghuni' }
+            ]}
+          />
         </div>
 
         <div className="field">

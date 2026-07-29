@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "@/components/inventory/Navbar";
+import FlowButton from "@/components/inventory/FlowButton";
 import { 
   ClipboardList, 
   Plus, 
@@ -653,12 +654,12 @@ export default function OpnamePage() {
                   >
                     Batal
                   </button>
-                  <button
+                  <FlowButton
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-xs"
+                    className="pl-4 pr-10 py-2 rounded-xl bg-accent hover:bg-accent-dark text-white font-bold text-xs"
                   >
                     Buat Draf Opname
-                  </button>
+                  </FlowButton>
                 </div>
               </form>
             </motion.div>

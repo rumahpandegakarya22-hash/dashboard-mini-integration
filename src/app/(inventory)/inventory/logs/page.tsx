@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Navbar from "@/components/inventory/Navbar";
+import OriginSelect from "@/components/inventory/OriginSelect";
+import { GlassDateField } from "@/components/ui/GlassCalendar";
 import {
   Activity,
   Search,
@@ -178,46 +180,40 @@ export default function LogsPage() {
                   <label className="block text-[10px] font-bold text-taupe-dark uppercase tracking-wider mb-1.5">
                     Pengguna
                   </label>
-                  <select
+                  <OriginSelect
+                    ariaLabel="Pengguna"
                     value={filterUserId}
-                    onChange={(e) => setFilterUserId(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl glass-input text-sm"
-                  >
-                    <option value="" className="bg-white">Semua Pengguna</option>
-                    {userList.map((u) => (
-                      <option key={u.id} value={u.id} className="bg-white">
-                        {u.name} ({u.email})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setFilterUserId}
+                    options={[
+                      { value: '', label: 'Semua Pengguna' },
+                      ...userList.map((u) => ({ value: u.id, label: `${u.name} (${u.email})` }))
+                    ]}
+                    className="px-3 py-2.5 rounded-xl glass-input text-sm"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-bold text-taupe-dark uppercase tracking-wider mb-1.5">
                     Jenis Aksi
                   </label>
-                  <select
+                  <OriginSelect
+                    ariaLabel="Jenis Aksi"
                     value={filterActionType}
-                    onChange={(e) => setFilterActionType(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl glass-input text-sm"
-                  >
-                    {ACTION_TYPES.map((t) => (
-                      <option key={t.value} value={t.value} className="bg-white">
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setFilterActionType}
+                    options={ACTION_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                    className="px-3 py-2.5 rounded-xl glass-input text-sm"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-bold text-taupe-dark uppercase tracking-wider mb-1.5">
                     Dari Tanggal
                   </label>
-                  <input
-                    type="date"
+                  <GlassDateField
                     value={filterFrom}
-                    onChange={(e) => setFilterFrom(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl glass-input text-sm"
+                    onChange={setFilterFrom}
+                    placeholder="Dari Tanggal"
+                    buttonClassName="flex w-full items-center justify-between gap-2 px-3 py-2.5 rounded-xl glass-input text-sm"
                   />
                 </div>
 
@@ -225,11 +221,11 @@ export default function LogsPage() {
                   <label className="block text-[10px] font-bold text-taupe-dark uppercase tracking-wider mb-1.5">
                     Sampai Tanggal
                   </label>
-                  <input
-                    type="date"
+                  <GlassDateField
                     value={filterTo}
-                    onChange={(e) => setFilterTo(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl glass-input text-sm"
+                    onChange={setFilterTo}
+                    placeholder="Sampai Tanggal"
+                    buttonClassName="flex w-full items-center justify-between gap-2 px-3 py-2.5 rounded-xl glass-input text-sm"
                   />
                 </div>
               </div>

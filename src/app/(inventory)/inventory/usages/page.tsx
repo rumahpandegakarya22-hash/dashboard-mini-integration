@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Navbar from "@/components/inventory/Navbar";
+import FlowButton from "@/components/inventory/FlowButton";
+import OriginSelect from "@/components/inventory/OriginSelect";
+import { GlassDateField } from "@/components/ui/GlassCalendar";
 import { 
   Activity, 
   Search, 
@@ -256,37 +259,38 @@ export default function UsagesPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Bahan Baku</label>
-                <select
+                <OriginSelect
+                  ariaLabel="Bahan Baku"
                   value={selectedMaterialId}
-                  onChange={(e) => setSelectedMaterialId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl glass-input text-sm bg-white focus:bg-white"
-                >
-                  {materials.map(m => (
-                    <option key={m.id} value={m.id} className="bg-white text-ink">
-                      {m.name} (Stok: {m.currentStock} {m.unit})
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedMaterialId}
+                  options={materials.map((m) => ({
+                    value: String(m.id),
+                    label: `${m.name} (Stok: ${m.currentStock} ${m.unit})`
+                  }))}
+                  className="px-4 py-3 rounded-xl glass-input text-sm bg-white focus:bg-white"
+                />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">
                   Batch Pembelian
                 </label>
-                <select
+                <OriginSelect
+                  ariaLabel="Batch Pembelian"
                   value={selectedBatchId}
-                  onChange={(e) => setSelectedBatchId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl glass-input text-sm bg-white focus:bg-white"
-                >
-                  <option value="" className="bg-white text-ink">Tanpa batch (stok lama / tanpa harga)</option>
-                  {batches.map(b => (
-                    <option key={b.id} value={b.id} className="bg-white text-ink">
-                      {new Date(b.purchaseDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                      {" · sisa "}{b.remainingQty} {b.materialUnit}
-                      {" · "}{rupiah(b.pricePerUnit)}/{b.materialUnit}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedBatchId}
+                  options={[
+                    { value: "", label: "Tanpa batch (stok lama / tanpa harga)" },
+                    ...batches.map((b) => ({
+                      value: String(b.id),
+                      label:
+                        new Date(b.purchaseDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) +
+                        ` · sisa ${b.remainingQty} ${b.materialUnit}` +
+                        ` · ${rupiah(b.pricePerUnit)}/${b.materialUnit}`
+                    }))
+                  ]}
+                  className="px-4 py-3 rounded-xl glass-input text-sm bg-white focus:bg-white"
+                />
                 {batches.length === 0 && (
                   <p className="text-[11px] text-taupe-dark mt-1.5">Belum ada batch untuk bahan ini. Pemakaian dicatat tanpa harga.</p>
                 )}
@@ -340,14 +344,15 @@ export default function UsagesPage() {
                 />
               </div>
 
-              <button
+              <FlowButton
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-sm transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                rippleClassName="bg-emerald-800"
+                className="w-full py-3.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <MinusCircle className="h-4 w-4" />
                 {submitting ? "Menyimpan..." : "Simpan Pemakaian"}
-              </button>
+              </FlowButton>
             </form>
           </div>
 
@@ -378,18 +383,18 @@ export default function UsagesPage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
               <span className="text-[10px] font-bold text-taupe-dark uppercase tracking-wider">Rentang Tanggal:</span>
               <div className="flex items-center gap-2">
-                <input
-                  type="date"
+                <GlassDateField
                   value={filterFrom}
-                  onChange={(e) => setFilterFrom(e.target.value)}
-                  className="px-3 py-2 rounded-xl glass-input text-xs"
+                  onChange={setFilterFrom}
+                  placeholder="Dari"
+                  buttonClassName="flex w-full items-center justify-between gap-2 px-3 py-2 rounded-xl glass-input text-xs"
                 />
                 <span className="text-taupe-dark text-xs">s/d</span>
-                <input
-                  type="date"
+                <GlassDateField
                   value={filterTo}
-                  onChange={(e) => setFilterTo(e.target.value)}
-                  className="px-3 py-2 rounded-xl glass-input text-xs"
+                  onChange={setFilterTo}
+                  placeholder="Sampai"
+                  buttonClassName="flex w-full items-center justify-between gap-2 px-3 py-2 rounded-xl glass-input text-xs"
                 />
                 {(filterFrom || filterTo) && (
                   <button
