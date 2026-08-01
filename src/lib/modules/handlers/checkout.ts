@@ -1,7 +1,7 @@
 import { turso } from '../../core/turso';
 import { withLock } from '../../core/redis';
 import { parseDateISO, parseRupiahOptional, required } from '../../core/validate';
-import { getTenantByLabel, updateRoomStatus } from '../../master';
+import { getTenantByLabel, invalidateTenantsCache, updateRoomStatus } from '../../master';
 import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 
@@ -108,6 +108,7 @@ export const submitCheckout: SubmitHandler = async (values, ctx) => {
 
     await db.batch(stmts, 'write');
     await updateRoomStatus(kamar, 'Kosong');
+    await invalidateTenantsCache();
 
     const lampiranWarning = await saveLampiran(values, ctx, `Checkout — ${penghuni} (${tanggalCheckout})`, 'Admin');
     const tunggakanWarning =

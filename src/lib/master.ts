@@ -168,6 +168,14 @@ export async function getTenantByLabel(label: string): Promise<Tenant | undefine
   return tenants.find((t) => t.label === label);
 }
 
+/** Bersihkan cache dropdown penghuni aktif (5 menit) — WAJIB dipanggil tiap kali booking
+ *  check-in/check-out/edit bisa mengubah isi `active_tenant` (trigger DB), supaya dropdown
+ *  langsung sinkron alih-alih nunggu TTL habis. Sama seperti redis.del('master:rooms') di
+ *  updateRoomStatus di atas — bug lama: cache ini tidak pernah di-invalidate sama sekali. */
+export async function invalidateTenantsCache(): Promise<void> {
+  await redis.del(nsKey('master:tenants'));
+}
+
 /**
  * Daftar Kas/Bank (Turso-only, arahan 2026-07-19): akun coa dengan grup_laporan 'Kas & Bank'
  * (live: Uang Kas, Aset Bank, Rekening Ops, Rekening Profit) — bukan lagi sheet "Pengaturan".

@@ -22,7 +22,7 @@
 // ditambahkan kapan saja, belum dilakukan agar cakupan Wave 2 tetap sempit.
 
 import { turso, DIVISI_DB, TASK_STATUS } from '../core/turso';
-import { getAccounts, getActiveTenants, getTenantByLabel, getRoomFresh } from '../master';
+import { getAccounts, getActiveTenants, getTenantByLabel, getRoomFresh, invalidateTenantsCache } from '../master';
 import {
   toISODateFlexible,
   parseDateISO,
@@ -359,6 +359,9 @@ const penghuniBaruEdit: CustomEditCfg = {
       args: [tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, harga, statusBooking, sumberLeads, catatan, ref]
     });
     if (res.rowsAffected === 0) throw new Error(`Booking ${ref} tidak ditemukan.`);
+    // statusBooking bisa berubah jadi/dari Check-in/Check-out di sini → trigger DB bisa ubah
+    // active_tenant, jadi cache dropdown penghuni harus ikut dibersihkan.
+    await invalidateTenantsCache();
     return 'Catatan: status kamar TIDAK diubah otomatis dari edit — kalau kamarnya diganti, sesuaikan status kamar manual.';
   }
 };

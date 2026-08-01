@@ -1,7 +1,7 @@
 import { turso } from '../../core/turso';
 import { withLock } from '../../core/redis';
 import { normalizePhone, normalizeRoomId, parseDateISO, parseRupiah, required } from '../../core/validate';
-import { getActiveTenants, getRoomFresh } from '../../master';
+import { getActiveTenants, getRoomFresh, invalidateTenantsCache } from '../../master';
 import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 
@@ -148,6 +148,10 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
       ]
     });
     const noBooking = res.rows.length > 0 ? String(res.rows[0].no_booking) : '(tidak diketahui)';
+
+    // statusDb bisa 'Check-in' → trigger DB langsung isi active_tenant; cache dropdown penghuni
+    // harus ikut dibersihkan supaya penghuni baru langsung muncul, bukan nunggu TTL 5 menit.
+    if (statusDb === 'Check-in') await invalidateTenantsCache();
 
     const warning = await saveLampiran(values, ctx, `Penghuni Baru — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin');
 
