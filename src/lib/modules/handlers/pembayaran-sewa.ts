@@ -228,40 +228,23 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
       'Belum'
     ]);
 
+    // Tulis invoice+payment ke Turso DULU (bukan lagi terakhir): Apps Script sekarang generate
+    // invoice dengan BACA row ini langsung dari Turso pakai no_inv, bukan dikirim mentah di
+    // payload — row-nya wajib sudah ada di database sebelum Apps Script dipanggil.
+    const tursoWarning = await saveInvoiceAndPaymentTurso(raw, jenisPembayaran, tanggalBayar, akunKasBank, nominal);
+
     // Trigger Apps Script invoice — best-effort, gagal tidak membatalkan pencatatan pembayaran (fallback PRD §6 Modul 2).
-    // Pakai `raw` yg SAMA dgn perhitungan nominal di atas (bukan hitung ulang) — payload yg dikirim ke
-    // Apps Script konsisten persis dgn yg ditampilkan ke user sebelum submit.
     const scriptUrl = APPS_SCRIPT_URL[jenisPembayaran];
     const token = process.env.APPS_SCRIPT_TOKEN;
     let invoiceStatus = 'Belum dipicu (URL/token Apps Script belum diisi di env) — generate manual di Generator Tagihan.';
-    if (scriptUrl && token) {
+    if (tursoWarning) {
+      invoiceStatus = 'Invoice tidak dipicu karena pencatatan ke database invoice/payment gagal (lihat warning) — generate manual di Generator Tagihan.';
+    } else if (scriptUrl && token) {
       try {
-        const input =
-          jenisPembayaran === 'Sewa'
-            ? {
-                nama: raw.nama,
-                email: raw.email,
-                noKamar: raw.noKamar,
-                tipe: raw.tipe,
-                lamaSewa: raw.lamaSewa,
-                tglPembayaran: raw.tglPembayaran,
-                periodeAwal: raw.periodeAwal,
-                dendaPerUnit: raw.dendaPerUnit,
-                jumlahDenda: raw.jumlahDenda,
-                pajak: raw.pajak,
-                diskon: raw.diskon
-              }
-            : {
-                nama: raw.nama,
-                noKamar: raw.noKamar,
-                tglPembayaran: raw.tglPembayaran,
-                pajak: raw.pajak,
-                diskon: raw.diskon
-              };
         const res = await fetch(scriptUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, mode: 'send', input })
+          body: JSON.stringify({ token, mode: 'send', input: { noInv: raw.noInv } })
         });
         const json = await res.json().catch(() => ({}) as any);
         invoiceStatus =
@@ -274,7 +257,6 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
     }
 
     const lampiranWarning = await saveLampiran(values, ctx, `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${tanggalBayar})`, 'Admin');
-    const tursoWarning = await saveInvoiceAndPaymentTurso(raw, jenisPembayaran, tanggalBayar, akunKasBank, nominal);
 
     return {
       target: 'Log Input Transaksi → Input Sewa Dimuka',

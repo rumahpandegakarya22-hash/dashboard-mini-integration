@@ -341,6 +341,13 @@ async function fetchInvoiceSewaMasterUncached(): Promise<InvoiceSewaMaster> {
       const total = Number((r as Record<string, unknown>)[kolom] ?? 0);
       if (total > 0) harga[tipe][bulan] = Math.round(total / bulan);
     }
+    // 2 bulan TIDAK punya kolom tarif sendiri (arahan 2026-08-02): per-bulannya
+    // dipatok SAMA dgn tarif per-bulan paket 3 bulan (harga_3bulan / 3), bukan
+    // tarif 1 bulan biasa — supaya penyewa 2 bulan tetap dapat rate diskon
+    // paket 3 bulan. Sama seperti DP yang juga sengaja tidak disimpan sendiri
+    // (selalu diturunkan) — kalau nanti Owner ganti harga_3bulan, tarif 2 bulan
+    // ikut berubah otomatis, tidak ada kolom terpisah yang bisa basi.
+    if (harga[tipe][3] > 0) harga[tipe][2] = harga[tipe][3];
   }
 
   const tenantRes = await turso().execute(
@@ -356,9 +363,9 @@ async function fetchInvoiceSewaMasterUncached(): Promise<InvoiceSewaMaster> {
     tipe: String(r.tipe_kamar ?? '').trim()
   }));
 
-  const durasiOptions = DURASI_TIER.map((d) => d.bulan).filter((b) =>
-    Object.values(harga).some((h) => h[b] > 0)
-  );
+  const durasiOptions = Array.from(new Set([2, ...DURASI_TIER.map((d) => d.bulan)]))
+    .filter((b) => Object.values(harga).some((h) => h[b] > 0))
+    .sort((a, b) => a - b);
   return { penghuni, durasiOptions, harga };
 }
 

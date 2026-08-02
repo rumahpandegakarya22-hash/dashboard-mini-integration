@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
 /**
@@ -156,12 +157,41 @@ export function GlassDateField({
   buttonClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number; appAttr: string | null } | null>(null);
   const wrap = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  // Popup di-portal ke <body> (position: fixed, posisi dihitung manual) — dulu
+  // position:absolute mengikuti alur dokumen, jadi kalau field ini duduk dekat
+  // dasar container yang overflow:auto (mis. .modal di Modal.tsx, max-height:86vh),
+  // popupnya kepotong batas scroll leluhur itu, tidak terlihat penuh.
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const r = triggerRef.current?.getBoundingClientRect();
+      if (!r) return;
+      setPos({
+        top: r.bottom + 6,
+        left: r.left,
+        appAttr: triggerRef.current?.closest('[data-app]')?.getAttribute('data-app') ?? null
+      });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (wrap.current?.contains(t) || popRef.current?.contains(t)) return;
+      setOpen(false);
     };
     const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
     document.addEventListener('mousedown', onDown);
@@ -177,6 +207,7 @@ export function GlassDateField({
       {/* Nilai tetap ikut FormData kalau dipakai di dalam <form>. */}
       {name && <input type="hidden" name={name} value={value} required={required} />}
       <button
+        ref={triggerRef}
         type="button"
         id={id}
         className={buttonClassName}
@@ -187,27 +218,35 @@ export function GlassDateField({
         <span>{value || placeholder}</span>
         <CalIcon />
       </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            className="glass-cal-field__pop"
-            role="dialog"
-            aria-label="Pilih tanggal"
-            initial={{ opacity: 0, y: -8, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.95 }}
-            transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
-          >
-            <GlassCalendar
-              selectedDate={fromIso(value) ?? undefined}
-              onDateSelect={(d) => {
-                onChange(toIso(d));
-                setOpen(false);
-              }}
-            />
-          </motion.div>
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <div data-app={pos?.appAttr ?? undefined}>
+            <AnimatePresence>
+              {open && pos && (
+                <motion.div
+                  ref={popRef}
+                  className="glass-cal-field__pop"
+                  role="dialog"
+                  aria-label="Pilih tanggal"
+                  style={{ position: 'fixed', top: pos.top, left: pos.left }}
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
+                >
+                  <GlassCalendar
+                    selectedDate={fromIso(value) ?? undefined}
+                    onDateSelect={(d) => {
+                      onChange(toIso(d));
+                      setOpen(false);
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 }
