@@ -201,22 +201,24 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
   return withLock(`penghuni:${penghuni}`, 15, async () => {
     await assertHeaders(SHEETS.LOG_INPUT_TRANSAKSI, HEADER_RANGE, EXPECTED_HEADERS);
 
+    // NONAKTIF SEMENTARA UTK TESTING (2026-08-02, minta developer) — JANGAN dibiarkan
+    // nonaktif di produksi, aktifkan lagi setelah selesai tes modul Pembayaran Sewa.
     // Anti bayar 2× untuk penghuni & periode yang sama (overlap tanggal mulai..+jumlah bulan).
-    const existing = await readTable(SHEETS.LOG_INPUT_TRANSAKSI, "'Input Sewa Dimuka'!A:F");
-    const newStart = new Date(`${tanggalBayar}T00:00:00`);
-    const newEnd = addMonths(tanggalBayar, jumlahBulan);
-    for (const r of existing) {
-      if ((r['Unit / Penyewa'] || '').trim() !== penghuni) continue;
-      const mulai = (r['Tanggal Mulai'] || '').trim();
-      const bulan = parseInt(r['Jumlah Bulan'] || '0', 10);
-      if (!mulai || !bulan) continue;
-      const exStart = new Date(`${mulai}T00:00:00`);
-      if (isNaN(exStart.getTime())) continue;
-      const exEnd = addMonths(mulai, bulan);
-      if (newStart.getTime() < exEnd.getTime() && exStart.getTime() < newEnd.getTime()) {
-        throw new Error(`Sudah ada pembayaran untuk ${penghuni} pada periode yang tumpang tindih.`);
-      }
-    }
+    // const existing = await readTable(SHEETS.LOG_INPUT_TRANSAKSI, "'Input Sewa Dimuka'!A:F");
+    // const newStart = new Date(`${tanggalBayar}T00:00:00`);
+    // const newEnd = addMonths(tanggalBayar, jumlahBulan);
+    // for (const r of existing) {
+    //   if ((r['Unit / Penyewa'] || '').trim() !== penghuni) continue;
+    //   const mulai = (r['Tanggal Mulai'] || '').trim();
+    //   const bulan = parseInt(r['Jumlah Bulan'] || '0', 10);
+    //   if (!mulai || !bulan) continue;
+    //   const exStart = new Date(`${mulai}T00:00:00`);
+    //   if (isNaN(exStart.getTime())) continue;
+    //   const exEnd = addMonths(mulai, bulan);
+    //   if (newStart.getTime() < exEnd.getTime() && exStart.getTime() < newEnd.getTime()) {
+    //     throw new Error(`Sudah ada pembayaran untuk ${penghuni} pada periode yang tumpang tindih.`);
+    //   }
+    // }
 
     const nominalPerBulan = Math.round(nominal / jumlahBulan);
     const row = await appendRow(SHEETS.LOG_INPUT_TRANSAKSI, "'Input Sewa Dimuka'!A:F", [
