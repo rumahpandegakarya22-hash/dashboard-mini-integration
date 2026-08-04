@@ -70,14 +70,36 @@ export const MODULES: ModuleMeta[] = [
       { name: 'sumberLeads', label: 'Sumber Leads', type: 'select-async', required: true, master: 'sumber-leads' },
       { name: 'catatan', label: 'Catatan', type: 'textarea', required: false },
       {
+        name: 'jenisDokumen',
+        label: 'Jenis Dokumen Identitas',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'KTP', label: 'KTP' },
+          { value: 'SIM', label: 'SIM' },
+          { value: 'KK', label: 'KK' }
+        ],
+        helpText: 'Menentukan penamaan berkas di Drive: (Jenis)-(ID Penghuni)-(No Kamar)-(Nama).'
+      },
+      {
         name: 'lampiran',
-        label: 'Foto/Dokumen (KTP dsb., opsional)',
+        label: 'Dokumen Identitas (opsional)',
         type: 'file',
         required: false,
         uploadKind: 'penghuni',
         accept: 'application/pdf,image/png,image/jpeg',
         maxSizeMb: 2,
         placeholder: 'Pilih foto/pdf (maks 2 MB)'
+      },
+      {
+        name: 'lampiranKontrak',
+        label: 'Kontrak Sewa (opsional)',
+        type: 'file',
+        required: false,
+        uploadKind: 'kontrak',
+        accept: 'application/pdf,image/png,image/jpeg',
+        maxSizeMb: 2,
+        placeholder: 'Pilih scan kontrak (maks 2 MB)'
       }
     ]
   },

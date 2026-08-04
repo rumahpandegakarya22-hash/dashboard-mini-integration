@@ -22,9 +22,10 @@ export async function saveLampiran(
   ctx: SubmitContext,
   judul: string,
   role: string,
-  penamaan?: { jenis: string; idPenghuni: string; noKamar: string; nama: string }
+  opts?: { field?: string; penamaan?: { jenis: string; idPenghuni: string; noKamar: string; nama: string } }
 ): Promise<string | undefined> {
-  const url = String(values.lampiran ?? '').trim();
+  const { field = 'lampiran', penamaan } = opts ?? {};
+  const url = String(values[field] ?? '').trim();
   if (!/^https:\/\//.test(url)) return undefined; // tidak ada lampiran / belum terunggah
 
   const peringatanRename = penamaan

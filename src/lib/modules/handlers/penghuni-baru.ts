@@ -2,7 +2,7 @@ import { turso } from '../../core/turso';
 import { withLock } from '../../core/redis';
 import { normalizePhone, normalizeRoomId, parseDateISO, parseRupiah, required } from '../../core/validate';
 import { getActiveTenants, getRoomFresh, invalidateTenantsCache } from '../../master';
-import { saveLampiran } from './helpers';
+import { resolveOccupancyId, saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 
 /** Ejaan status_booking yang dipakai tabel `booking` & dicocokkan trigger.
@@ -153,12 +153,25 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
     // harus ikut dibersihkan supaya penghuni baru langsung muncul, bukan nunggu TTL 5 menit.
     if (statusDb === 'Check-in') await invalidateTenantsCache();
 
-    const warning = await saveLampiran(values, ctx, `Penghuni Baru — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin');
+    // ID Penghuni dibuat TRIGGER database saat status 'Check-in', jadi baru bisa
+    // dibaca setelah INSERT di atas. Untuk booking yang belum check-in, id itu
+    // memang belum ada — nomor booking dipakai sebagai gantinya supaya berkas di
+    // Drive tetap bisa ditelusuri.
+    const idPenghuni = statusDb === 'Check-in' ? (await resolveOccupancyId(kamarId)) || noBooking : noBooking;
+    const penamaanUmum = { idPenghuni, noKamar: kamarId, nama: namaPenyewa };
+
+    const warningIdentitas = await saveLampiran(values, ctx, `Penghuni Baru — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin', {
+      penamaan: { ...penamaanUmum, jenis: String(values.jenisDokumen ?? 'Identitas') }
+    });
+    const warningKontrak = await saveLampiran(values, ctx, `Kontrak Sewa — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin', {
+      field: 'lampiranKontrak',
+      penamaan: { ...penamaanUmum, jenis: 'Kontrak' }
+    });
 
     return {
       target: `Turso → booking (${noBooking})`,
       data: { noBooking, tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, hargaDisepakati, statusBooking: statusDb, sumberLeads, catatan },
-      warning
+      warning: [warningIdentitas, warningKontrak].filter(Boolean).join(' ') || undefined
     };
   });
 };
