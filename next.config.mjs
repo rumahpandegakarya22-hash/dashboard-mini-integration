@@ -12,6 +12,15 @@ const nextConfig = {
   },
 
   /**
+   * File font invoice dibaca lewat fs saat render PDF. Next tidak bisa
+   * mendeteksi pembacaan itu secara statis, jadi tanpa baris ini font-nya tidak
+   * ikut terbawa ke bundle serverless dan PDF di produksi jatuh ke font bawaan.
+   */
+  outputFileTracingIncludes: {
+    '/**': ['./src/lib/invoice/fonts/**']
+  },
+
+  /**
    * Kompatibilitas transisi (§5.3): Mini App pindah dari akar ke prefix /ops.
    * 308 Permanent Redirect mempertahankan method & body, jadi bookmark lama,
    * shortcut PWA yang sudah terpasang di HP staf, dan tautan yang beredar di

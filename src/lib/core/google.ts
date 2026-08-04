@@ -22,6 +22,13 @@ import { google } from 'googleapis';
  * Refresh token WAJIB dibuat dengan dua scope sekaligus — `drive` dan
  * `spreadsheets` — karena klien di bawah ini melayani Drive maupun Sheets
  * (Sheets masih dipakai handler pembayaran-sewa untuk tabel harga invoice).
+ *
+ * Pengiriman invoice lewat Gmail TIDAK ikut di sini: kredensialnya berdiri
+ * sendiri (GMAIL_OAUTH_*, lihat gmailClient di bawah). Alasannya, jalur yang
+ * aktif di produksi saat ini adalah service account, dan service account tidak
+ * bisa mengirim email atas nama akun @gmail.com (butuh domain-wide delegation
+ * yang hanya ada di Google Workspace). Memisahkannya juga berarti mengutak-atik
+ * kredensial email tidak berisiko memutus akses Sheets/Drive yang sudah jalan.
  */
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'];
@@ -43,6 +50,7 @@ function getAuth() {
 
 let _sheets: ReturnType<typeof google.sheets> | null = null;
 let _drive: ReturnType<typeof google.drive> | null = null;
+let _gmail: ReturnType<typeof google.gmail> | null = null;
 
 export function sheetsClient() {
   if (!_sheets) _sheets = google.sheets({ version: 'v4', auth: getAuth() });
@@ -52,6 +60,31 @@ export function sheetsClient() {
 export function driveClient() {
   if (!_drive) _drive = google.drive({ version: 'v3', auth: getAuth() });
   return _drive;
+}
+
+export const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.send';
+
+export function gmailTersedia(): boolean {
+  return Boolean(
+    process.env.GMAIL_OAUTH_CLIENT_ID && process.env.GMAIL_OAUTH_CLIENT_SECRET && process.env.GMAIL_OAUTH_REFRESH_TOKEN
+  );
+}
+
+/**
+ * Klien Gmail dengan kredensial OAuth TERPISAH dari sheetsClient/driveClient.
+ * Refresh token-nya dibuat lewat `npx tsx scripts/gmail-token.ts` dan hanya
+ * memegang scope gmail.send — tidak bisa membaca inbox, tidak menyentuh Drive.
+ */
+export function gmailClient() {
+  if (!gmailTersedia()) {
+    throw new Error('Kredensial Gmail belum diisi (GMAIL_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN) — jalankan scripts/gmail-token.ts.');
+  }
+  if (!_gmail) {
+    const auth = new google.auth.OAuth2(process.env.GMAIL_OAUTH_CLIENT_ID, process.env.GMAIL_OAUTH_CLIENT_SECRET);
+    auth.setCredentials({ refresh_token: process.env.GMAIL_OAUTH_REFRESH_TOKEN });
+    _gmail = google.gmail({ version: 'v1', auth });
+  }
+  return _gmail;
 }
 
 /** Retry dengan exponential backoff untuk error kuota/transien Google API. */

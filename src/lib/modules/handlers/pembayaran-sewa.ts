@@ -6,6 +6,7 @@ import { getTenantByLabel } from '../../master';
 import { parseDateISO, required } from '../../core/validate';
 import { previewPembayaranSewa } from './pembayaran-sewa-preview';
 import { saveLampiran, resolveOccupancyId } from './helpers';
+import { kirimInvoice } from '../../invoice';
 import type { AutoFillHandler, SubmitHandler } from '../types';
 
 /* ==========================================================================
@@ -40,11 +41,6 @@ import type { AutoFillHandler, SubmitHandler } from '../types';
 // live 8 Jul (bukan tebakan lagi) — perhatikan "Unit / Penyewa" pakai spasi di sekitar garis miring.
 const HEADER_RANGE = "'Input Sewa Dimuka'!A1:F1";
 const EXPECTED_HEADERS = ['Tanggal Mulai', 'Unit / Penyewa', 'Nominal per Bulan', 'Jumlah Bulan', 'Akun Kas/Bank', 'Sudah Digenerate?'];
-
-const APPS_SCRIPT_URL: Record<string, string | undefined> = {
-  DP: process.env.APPS_SCRIPT_INVOICE_DP_URL,
-  Sewa: process.env.APPS_SCRIPT_INVOICE_SEWA_URL
-};
 
 function addMonths(iso: string, months: number): Date {
   const d = new Date(`${iso}T00:00:00`);
@@ -201,24 +197,24 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
   return withLock(`penghuni:${penghuni}`, 15, async () => {
     await assertHeaders(SHEETS.LOG_INPUT_TRANSAKSI, HEADER_RANGE, EXPECTED_HEADERS);
 
-    // NONAKTIF SEMENTARA UTK TESTING (2026-08-02, minta developer) — JANGAN dibiarkan
-    // nonaktif di produksi, aktifkan lagi setelah selesai tes modul Pembayaran Sewa.
     // Anti bayar 2× untuk penghuni & periode yang sama (overlap tanggal mulai..+jumlah bulan).
-    // const existing = await readTable(SHEETS.LOG_INPUT_TRANSAKSI, "'Input Sewa Dimuka'!A:F");
-    // const newStart = new Date(`${tanggalBayar}T00:00:00`);
-    // const newEnd = addMonths(tanggalBayar, jumlahBulan);
-    // for (const r of existing) {
-    //   if ((r['Unit / Penyewa'] || '').trim() !== penghuni) continue;
-    //   const mulai = (r['Tanggal Mulai'] || '').trim();
-    //   const bulan = parseInt(r['Jumlah Bulan'] || '0', 10);
-    //   if (!mulai || !bulan) continue;
-    //   const exStart = new Date(`${mulai}T00:00:00`);
-    //   if (isNaN(exStart.getTime())) continue;
-    //   const exEnd = addMonths(mulai, bulan);
-    //   if (newStart.getTime() < exEnd.getTime() && exStart.getTime() < newEnd.getTime()) {
-    //     throw new Error(`Sudah ada pembayaran untuk ${penghuni} pada periode yang tumpang tindih.`);
-    //   }
-    // }
+    // Sempat dinonaktifkan 2-4 Agt 2026 selama tes modul ini; aktif kembali sejak
+    // pengiriman invoice pindah dari Apps Script ke app.
+    const existing = await readTable(SHEETS.LOG_INPUT_TRANSAKSI, "'Input Sewa Dimuka'!A:F");
+    const newStart = new Date(`${tanggalBayar}T00:00:00`);
+    const newEnd = addMonths(tanggalBayar, jumlahBulan);
+    for (const r of existing) {
+      if ((r['Unit / Penyewa'] || '').trim() !== penghuni) continue;
+      const mulai = (r['Tanggal Mulai'] || '').trim();
+      const bulan = parseInt(r['Jumlah Bulan'] || '0', 10);
+      if (!mulai || !bulan) continue;
+      const exStart = new Date(`${mulai}T00:00:00`);
+      if (isNaN(exStart.getTime())) continue;
+      const exEnd = addMonths(mulai, bulan);
+      if (newStart.getTime() < exEnd.getTime() && exStart.getTime() < newEnd.getTime()) {
+        throw new Error(`Sudah ada pembayaran untuk ${penghuni} pada periode yang tumpang tindih.`);
+      }
+    }
 
     const nominalPerBulan = Math.round(nominal / jumlahBulan);
     const row = await appendRow(SHEETS.LOG_INPUT_TRANSAKSI, "'Input Sewa Dimuka'!A:F", [
@@ -235,28 +231,11 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
     // payload — row-nya wajib sudah ada di database sebelum Apps Script dipanggil.
     const tursoWarning = await saveInvoiceAndPaymentTurso(raw, jenisPembayaran, tanggalBayar, akunKasBank, nominal);
 
-    // Trigger Apps Script invoice — best-effort, gagal tidak membatalkan pencatatan pembayaran (fallback PRD §6 Modul 2).
-    const scriptUrl = APPS_SCRIPT_URL[jenisPembayaran];
-    const token = process.env.APPS_SCRIPT_TOKEN;
-    let invoiceStatus = 'Belum dipicu (URL/token Apps Script belum diisi di env) — generate manual di Generator Tagihan.';
-    if (tursoWarning) {
-      invoiceStatus = 'Invoice tidak dipicu karena pencatatan ke database invoice/payment gagal (lihat warning) — generate manual di Generator Tagihan.';
-    } else if (scriptUrl && token) {
-      try {
-        const res = await fetch(scriptUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, mode: 'send', input: { noInv: raw.noInv } })
-        });
-        const json = await res.json().catch(() => ({}) as any);
-        invoiceStatus =
-          res.ok && json.success
-            ? `Invoice ${json.noInv || ''} terkirim ke ${json.email || raw.email || '(email tidak diketahui)'}.`
-            : `Gagal mengirim invoice: ${json.error || `HTTP ${res.status}`} — generate manual di Generator Tagihan.`;
-      } catch (e: any) {
-        invoiceStatus = `Gagal memicu invoice: ${e?.message || 'unknown error'} — generate manual di Generator Tagihan.`;
-      }
-    }
+    // Kirim invoice langsung dari app (render HTML + Gmail API) — best-effort, gagal
+    // tidak membatalkan pencatatan pembayaran (fallback PRD §6 Modul 2).
+    const invoiceStatus = tursoWarning
+      ? 'Invoice tidak dikirim karena pencatatan ke database invoice/payment gagal (lihat warning).'
+      : (await kirimInvoice(raw.noInv, jenisPembayaran)).pesan;
 
     const lampiranWarning = await saveLampiran(values, ctx, `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${tanggalBayar})`, 'Admin');
 
