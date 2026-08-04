@@ -1,4 +1,5 @@
 import { kirimEmail } from '../core/email';
+import { arsipkanInvoice } from './arsip';
 import { getInvoiceDp, getInvoiceSewa } from './data';
 import { htmlKePdf } from './pdf';
 import { renderInvoiceDp, renderInvoiceSewa, tanggalId } from './template';
@@ -25,16 +26,24 @@ export async function kirimInvoice(noInv: string, jenis: 'DP' | 'Sewa'): Promise
 
     const html = jenis === 'Sewa' ? renderInvoiceSewa(inv as any) : renderInvoiceDp(inv as any);
     const pdf = await htmlKePdf(html);
+    // Nomor invoice memuat '/' yang tidak sah di nama file — diganti '-'.
+    const namaFile = `Invoice ${inv.no_inv.replace(/\//g, '-')}.pdf`;
 
     await kirimEmail({
       to: inv.email,
       subject: `Invoice ${jenis} Kost Tiga Dara Putri UGM — ${inv.no_inv}`,
       html: badanEmail(inv.nama, jenis === 'Sewa' ? (inv as any).periode_awal : null, jenis === 'Sewa' ? (inv as any).periode_akhir : null),
-      // Nomor invoice memuat '/' yang tidak sah di nama file — diganti '-'.
-      lampiran: [{ namaFile: `Invoice ${inv.no_inv.replace(/\//g, '-')}.pdf`, mime: 'application/pdf', isi: pdf }]
+      lampiran: [{ namaFile, mime: 'application/pdf', isi: pdf }]
     });
 
-    return { terkirim: true, email: inv.email, pesan: `Invoice ${inv.no_inv} terkirim ke ${inv.email}.` };
+    // Arsip setelah email: penghuni lebih penting daripada salinan internal.
+    const peringatanArsip = await arsipkanInvoice(jenis, namaFile, pdf);
+
+    return {
+      terkirim: true,
+      email: inv.email,
+      pesan: `Invoice ${inv.no_inv} terkirim ke ${inv.email}.${peringatanArsip ? ` ${peringatanArsip}` : ''}`
+    };
   } catch (e: any) {
     console.error('[invoice] gagal kirim:', e?.message);
     return { terkirim: false, pesan: `Gagal mengirim invoice: ${e?.message || 'unknown error'} — kirim ulang dari menu invoice.` };

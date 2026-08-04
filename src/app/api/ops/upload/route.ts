@@ -26,6 +26,7 @@ const KIND_FOLDERS: Record<string, string | undefined> = {
   'work-order': process.env.DRIVE_FOLDER_WORK_ORDER || process.env.DRIVE_FOLDER_MAINTENANCE,
   'maintenance': process.env.DRIVE_FOLDER_MAINTENANCE,
   'penghuni': process.env.DRIVE_FOLDER_PENGHUNI,
+  'kontrak': process.env.DRIVE_FOLDER_KONTRAK,
   'pembayaran': process.env.DRIVE_FOLDER_PEMBAYARAN,
   'nota': process.env.DRIVE_FOLDER_NOTA,
   'feedback': process.env.DRIVE_FOLDER_FEEDBACK

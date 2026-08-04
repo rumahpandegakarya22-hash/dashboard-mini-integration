@@ -1,4 +1,5 @@
 import { turso } from '../../core/turso';
+import { namaFileDokumen, renameDokumenDrive } from '../../drive-dokumen';
 import type { SubmitContext, SubmitHandler } from '../types';
 
 /* AppendConfig / createAppendHandler (jalur Google Sheets) DIHAPUS pada Wave 4
@@ -11,25 +12,37 @@ import type { SubmitContext, SubmitHandler } from '../types';
  * Simpan URL lampiran (field `lampiran`, sudah di Drive via /api/upload) ke tabel Turso
  * `dokumen`. Best-effort: data utama sudah tercatat, gagal simpan link tidak membatalkan
  * submit — kembalikan warning supaya user tahu link harus dicatat manual.
+ *
+ * `penamaan` opsional: kalau diisi, berkasnya sekalian di-rename di Drive mengikuti
+ * format (Jenis Docs)-(ID Penghuni)-(No Kamar)-(Nama). Dilakukan di sini, bukan saat
+ * unggah, karena ID Penghuni baru pasti setelah submit tersimpan.
  */
 export async function saveLampiran(
   values: Record<string, unknown>,
   ctx: SubmitContext,
   judul: string,
-  role: string
+  role: string,
+  penamaan?: { jenis: string; idPenghuni: string; noKamar: string; nama: string }
 ): Promise<string | undefined> {
   const url = String(values.lampiran ?? '').trim();
   if (!/^https:\/\//.test(url)) return undefined; // tidak ada lampiran / belum terunggah
+
+  const peringatanRename = penamaan
+    ? await renameDokumenDrive(url, namaFileDokumen({ ...penamaan }))
+    : undefined;
+
   const idDokumen = `DOC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${ctx.requestId.slice(0, 8)}`;
   try {
     await turso().execute({
       sql: 'INSERT INTO dokumen (id_dokumen, judul, role, link_drive) VALUES (?, ?, ?, ?)',
       args: [idDokumen, judul.slice(0, 120), role, url]
     });
-    return undefined;
+    return peringatanRename;
   } catch (e: any) {
     console.error('[lampiran] gagal simpan ke dokumen:', e?.message);
-    return `Data tersimpan, tapi link lampiran gagal dicatat ke database — simpan manual: ${url}`;
+    return [peringatanRename, `Data tersimpan, tapi link lampiran gagal dicatat ke database — simpan manual: ${url}`]
+      .filter(Boolean)
+      .join(' ');
   }
 }
 
