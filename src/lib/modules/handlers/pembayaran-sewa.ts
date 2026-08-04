@@ -1,77 +1,62 @@
-import { appendRow, assertHeaders, readTable } from '../../core/sheets';
 import { withLock } from '../../core/redis';
 import { turso } from '../../core/turso';
-import { SHEETS } from '@/config/spreadsheets';
 import { getTenantByLabel } from '../../master';
 import { parseDateISO, required } from '../../core/validate';
 import { previewPembayaranSewa } from './pembayaran-sewa-preview';
 import { saveLampiran, resolveOccupancyId } from './helpers';
 import { kirimInvoice } from '../../invoice';
+import { barisJurnalDp, barisJurnalSewa, kodeAkunKas, type BarisJurnal } from '../../jurnal';
 import type { AutoFillHandler, SubmitHandler } from '../types';
 
 /* ==========================================================================
-   SENGAJA MASIH MEMAKAI GOOGLE SHEETS — bukan terlewat dari migrasi.
+   SEPENUHNYA DI TURSO sejak 4 Agustus 2026 — Google Sheets sudah dilepas.
 
-   Ini satu-satunya modul Ops yang belum dipindah ke Turso pada Wave 3, karena
-   pencatatan pembayaran adalah HILIR dari generator invoice Apps Script, yang
-   keputusannya ditunda ("bahas nanti"). Buktinya ada di data produksi:
+   Sebelumnya modul ini menulis ke sheet 'Input Sewa Dimuka', yang dibaca Apps
+   Script "Kost Tools" untuk menghasilkan jurnal. Dua ketergantungan itu hilang
+   sekaligus: invoice dikirim app sendiri (src/lib/invoice/), dan jurnal ditulis
+   langsung ke tabel jurnal_transaksi (src/lib/jurnal.ts) dengan pola akun yang
+   sama persis dengan jurnal lama.
 
-     - payment.id_payment berisi NOMOR INVOICE hasil Apps Script
-       (mis. "INV/11/TDU/07/2026"), bukan id yang dibuat aplikasi ini.
-     - Tabel payment punya CHECK:
-         (invoice_dp_id IS NOT NULL) + (invoice_sewa_id IS NOT NULL) = 1
-       jadi satu baris payment WAJIB tertaut tepat satu baris invoice. Semua 45
-       baris produksi memenuhinya (29 DP + 16 Sewa).
-
-   Artinya menulis payment ke Turso mengharuskan aplikasi ini lebih dulu
-   membuat baris invoice_sewa/invoice_dp + nomor invoicenya — yaitu mengambil
-   alih tugas Apps Script. Memaksakannya sekarang berisiko merusak catatan
-   keuangan, jadi jalur Sheets dipertahankan APA ADANYA sampai nasib generator
-   invoice diputuskan.
-
-   Yang juga perlu diputuskan saat migrasi modul ini nanti:
-     - payment.payment_method dibatasi ('Transfer','Qris','Cash'), sedangkan
-       form mengirim nama akun kas/bank → butuh pemetaan.
-     - payment.status dibatasi ('Pending','Paid',...), sedangkan sheet memakai
-       'Belum'.
+   Yang perlu diingat soal bentuk datanya:
+     - payment.id_payment berisi NOMOR INVOICE (mis. "INV/11/TDU/07/2026"),
+       bukan id terpisah — dipertahankan supaya sebanding dengan 45 baris lama.
+     - payment punya CHECK: (invoice_dp_id IS NOT NULL) + (invoice_sewa_id IS
+       NOT NULL) = 1, jadi tiap payment wajib tertaut tepat satu invoice.
+     - payment.payment_method dibatasi ('Transfer','Qris','Cash') sedangkan form
+       mengirim nama akun kas/bank → sengaja dikosongkan, dicatat di notes.
    ========================================================================== */
 
-// Kolom A:F sheet "Input Sewa Dimuka" (Log Input Transaksi). Jurnal digenerate Apps Script "Kost Tools"
-// dari sheet ini — TIDAK menulis langsung ke sheet Transaksi (PRD §6/§8 Modul 2). Header DIKONFIRMASI
-// live 8 Jul (bukan tebakan lagi) — perhatikan "Unit / Penyewa" pakai spasi di sekitar garis miring.
-const HEADER_RANGE = "'Input Sewa Dimuka'!A1:F1";
-const EXPECTED_HEADERS = ['Tanggal Mulai', 'Unit / Penyewa', 'Nominal per Bulan', 'Jumlah Bulan', 'Akun Kas/Bank', 'Sudah Digenerate?'];
-
-function addMonths(iso: string, months: number): Date {
-  const d = new Date(`${iso}T00:00:00`);
-  d.setMonth(d.getMonth() + months);
-  return d;
-}
-
 /**
- * Catat invoice + payment ke Turso — invoice_dp/invoice_sewa dipilih dari jenisPembayaran,
- * `payment` di-link ke baris itu via invoice_dp_id/invoice_sewa_id (bukan cuma id_penghuni).
- * `payment.id_payment` = no_inv invoice-nya langsung (dipakai jg sbg "No Invoice" tampilan) —
- * TIDAK generate kode PAY-xxx sendiri.
- * Pakai `raw` yang SAMA dgn perhitungan Sheets/Apps Script di atas (bukan hitung ulang).
- * Best-effort: Sheets + email invoice tetap sumber utama & sudah tercatat sebelum ini dipanggil;
- * gagal di sini jadi warning, TIDAK membatalkan pencatatan pembayaran yang sudah sukses.
+ * Catat invoice + payment + jurnal ke Turso dalam SATU transaksi.
+ *
+ * Sejak Sheets dilepas, ini satu-satunya tempat pembayaran tercatat — jadi
+ * kegagalan di sini MELEMPAR error dan membatalkan submit, bukan lagi sekadar
+ * warning seperti waktu sheet masih jadi sumber utama. Lebih baik admin
+ * mengulang input daripada uang masuk tanpa catatan.
+ *
+ * Jurnal ikut di transaksi yang sama supaya tidak ada pembayaran tanpa jurnal
+ * atau sebaliknya. Kalau aturan jurnalnya tidak bisa dipastikan (akun kas tidak
+ * dikenal, atau ada diskon/pajak), jurnal DILEWATI dan dikembalikan sebagai
+ * peringatan — invoice & payment tetap tersimpan.
  */
-async function saveInvoiceAndPaymentTurso(
+async function simpanPembayaran(
   raw: Record<string, any>,
   jenisPembayaran: 'DP' | 'Sewa',
   tanggalBayar: string,
   akunKasBank: string,
   nominal: number
-): Promise<string | undefined> {
-  try {
-    const occupancyId = await resolveOccupancyId(String(raw.noKamar));
-    if (!occupancyId) {
-      return `Kamar ${raw.noKamar} tidak ditemukan sebagai penghuni aktif di occupancy_history — invoice/payment TIDAK dicatat ke database, cek manual.`;
-    }
+): Promise<{ peringatanJurnal?: string }> {
+  const occupancyId = await resolveOccupancyId(String(raw.noKamar));
+  if (!occupancyId) {
+    throw new Error(
+      `Kamar ${raw.noKamar} tidak ditemukan sebagai penghuni aktif di occupancy_history — pembayaran tidak dicatat. Periksa data check-in penghuni dulu.`
+    );
+  }
 
-    const tx = await turso().transaction('write');
-    try {
+  const { baris, peringatanJurnal } = await siapkanJurnal(raw, jenisPembayaran, tanggalBayar, akunKasBank);
+
+  const tx = await turso().transaction('write');
+  try {
       const invoiceRes =
         jenisPembayaran === 'Sewa'
           ? await tx.execute({
@@ -123,14 +108,85 @@ async function saveInvoiceAndPaymentTurso(
         ]
       });
 
+      for (const b of baris) {
+        await tx.execute({
+          sql: `INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori)
+                VALUES (?,?,?,?,?,?)`,
+          args: [b.tanggal, b.debit, b.kredit, b.nominal, b.keterangan, b.kategori]
+        });
+      }
+
       await tx.commit();
-      return undefined;
+      return { peringatanJurnal };
     } finally {
       tx.close();
     }
-  } catch (e: any) {
-    console.error('[pembayaran-sewa] gagal simpan invoice/payment ke Turso:', e?.message);
-    return `Pembayaran tercatat di ledger, tapi gagal disimpan ke database invoice/payment — cek manual (kemungkinan No. Invoice "${raw.noInv}" sudah pernah dicatat sebelumnya): ${e?.message || 'unknown error'}`;
+}
+
+/**
+ * Susun baris jurnal, atau lewati dengan alasan yang jelas kalau aturannya tidak
+ * bisa dipastikan. Sengaja TIDAK menebak: jurnal salah lebih merugikan daripada
+ * jurnal kosong yang diinput manual.
+ */
+async function siapkanJurnal(
+  raw: Record<string, any>,
+  jenisPembayaran: 'DP' | 'Sewa',
+  tanggalBayar: string,
+  akunKasBank: string
+): Promise<{ baris: BarisJurnal[]; peringatanJurnal?: string }> {
+  const kodeKas = await kodeAkunKas(akunKasBank);
+  if (!kodeKas) {
+    return {
+      baris: [],
+      peringatanJurnal: `Jurnal TIDAK dibuat: akun "${akunKasBank}" tidak ada di COA grup Kas & Bank. Input jurnal manual.`
+    };
+  }
+
+  // Diskon & pajak belum pernah terjadi di data produksi, jadi pembagiannya ke
+  // baris pengakuan belum punya aturan yang teruji. Daripada menebak dan
+  // menyisakan selisih di akun 2105, jurnalnya dilewati dan diberitahukan.
+  if (Number(raw.diskon) > 0 || Number(raw.pajak) > 0) {
+    return {
+      baris: [],
+      peringatanJurnal: 'Jurnal TIDAK dibuat otomatis karena ada diskon/pajak — aturan pembagiannya belum ditetapkan. Input jurnal manual.'
+    };
+  }
+
+  const umum = { kodeKas, nama: String(raw.nama), noKamar: String(raw.noKamar), tanggalBayar, grandTotal: Math.round(raw.grandTotal) };
+
+  if (jenisPembayaran === 'DP') return { baris: barisJurnalDp(umum) };
+
+  return {
+    baris: barisJurnalSewa({
+      ...umum,
+      periodeAwal: String(raw.periodeAwal),
+      jumlahBulan: Number(raw.lamaSewa),
+      totalSewa: Math.round(raw.totalSewa),
+      totalListrik: Math.round(raw.totalListrik),
+      totalDenda: Math.round(raw.totalDenda)
+    })
+  };
+}
+
+/**
+ * Anti bayar 2× untuk periode yang tumpang tindih. Dulu membaca sheet 'Input
+ * Sewa Dimuka'; sekarang dari tabel `payment` yang memang sudah menyimpan
+ * periode_awal & periode_akhir — lebih akurat karena membandingkan periode
+ * sewa sungguhan, bukan tanggal bayar + jumlah bulan.
+ */
+async function cekPeriodeTumpangTindih(occupancyId: string, periodeAwal: string, periodeAkhir: string): Promise<void> {
+  const res = await turso().execute({
+    sql: `SELECT id_payment, periode_awal, periode_akhir FROM payment
+          WHERE id_penghuni = ? AND periode_akhir IS NOT NULL
+            AND periode_awal < ? AND periode_akhir > ?
+          LIMIT 1`,
+    args: [occupancyId, periodeAkhir, periodeAwal]
+  });
+  const b = res.rows[0];
+  if (b) {
+    throw new Error(
+      `Sudah ada pembayaran ${b.id_payment} untuk periode ${b.periode_awal} s.d. ${b.periode_akhir} yang tumpang tindih dengan periode ini.`
+    );
   }
 }
 
@@ -187,63 +243,33 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
   if (jenisPembayaran === 'Sewa' && (!jumlahBulan || jumlahBulan < 1)) throw new Error('Lama Sewa tidak valid.');
   const akunKasBank = required(values.akunKasBank, 'Akun Kas/Bank');
 
-  // Nominal TIDAK lagi diketik manual — otomatis = Grand Total dari kriteria harga di sheet Invoice
-  // Generator (sama persis dgn yg sudah dilihat admin di layar Preview sebelum konfirmasi). Dihitung
-  // SEKALI di sini dan dipakai ulang di bawah utk payload Apps Script — hindari hitung dua kali/beda.
+  // Nominal TIDAK diketik manual — otomatis = Grand Total dari kriteria harga Invoice Generator
+  // (sama persis dgn yg sudah dilihat admin di layar Preview sebelum konfirmasi). Dihitung SEKALI
+  // di sini dan dipakai ulang di bawah — hindari hitung dua kali/beda.
   const preview = await previewPembayaranSewa(values, ctx);
   const raw = preview.raw as Record<string, any>;
   const nominal = Math.round(raw.grandTotal);
 
   return withLock(`penghuni:${penghuni}`, 15, async () => {
-    await assertHeaders(SHEETS.LOG_INPUT_TRANSAKSI, HEADER_RANGE, EXPECTED_HEADERS);
-
-    // Anti bayar 2× untuk penghuni & periode yang sama (overlap tanggal mulai..+jumlah bulan).
-    // Sempat dinonaktifkan 2-4 Agt 2026 selama tes modul ini; aktif kembali sejak
-    // pengiriman invoice pindah dari Apps Script ke app.
-    const existing = await readTable(SHEETS.LOG_INPUT_TRANSAKSI, "'Input Sewa Dimuka'!A:F");
-    const newStart = new Date(`${tanggalBayar}T00:00:00`);
-    const newEnd = addMonths(tanggalBayar, jumlahBulan);
-    for (const r of existing) {
-      if ((r['Unit / Penyewa'] || '').trim() !== penghuni) continue;
-      const mulai = (r['Tanggal Mulai'] || '').trim();
-      const bulan = parseInt(r['Jumlah Bulan'] || '0', 10);
-      if (!mulai || !bulan) continue;
-      const exStart = new Date(`${mulai}T00:00:00`);
-      if (isNaN(exStart.getTime())) continue;
-      const exEnd = addMonths(mulai, bulan);
-      if (newStart.getTime() < exEnd.getTime() && exStart.getTime() < newEnd.getTime()) {
-        throw new Error(`Sudah ada pembayaran untuk ${penghuni} pada periode yang tumpang tindih.`);
-      }
+    if (jenisPembayaran === 'Sewa') {
+      const occupancyId = await resolveOccupancyId(String(raw.noKamar));
+      if (occupancyId) await cekPeriodeTumpangTindih(occupancyId, String(raw.periodeAwal), String(raw.periodeAkhir));
     }
 
-    const nominalPerBulan = Math.round(nominal / jumlahBulan);
-    const row = await appendRow(SHEETS.LOG_INPUT_TRANSAKSI, "'Input Sewa Dimuka'!A:F", [
-      tanggalBayar,
-      penghuni,
-      nominalPerBulan,
-      jumlahBulan,
-      akunKasBank,
-      'Belum'
-    ]);
+    // Invoice + payment + jurnal sekali jalan; melempar error kalau gagal, karena
+    // sejak Sheets dilepas tidak ada lagi catatan cadangan di tempat lain.
+    const { peringatanJurnal } = await simpanPembayaran(raw, jenisPembayaran, tanggalBayar, akunKasBank, nominal);
 
-    // Tulis invoice+payment ke Turso DULU (bukan lagi terakhir): Apps Script sekarang generate
-    // invoice dengan BACA row ini langsung dari Turso pakai no_inv, bukan dikirim mentah di
-    // payload — row-nya wajib sudah ada di database sebelum Apps Script dipanggil.
-    const tursoWarning = await saveInvoiceAndPaymentTurso(raw, jenisPembayaran, tanggalBayar, akunKasBank, nominal);
-
-    // Kirim invoice langsung dari app (render HTML + Gmail API) — best-effort, gagal
-    // tidak membatalkan pencatatan pembayaran (fallback PRD §6 Modul 2).
-    const invoiceStatus = tursoWarning
-      ? 'Invoice tidak dikirim karena pencatatan ke database invoice/payment gagal (lihat warning).'
-      : (await kirimInvoice(raw.noInv, jenisPembayaran)).pesan;
+    // Kirim invoice langsung dari app (render PDF + Gmail API) — best-effort, gagal
+    // tidak membatalkan pencatatan pembayaran yang sudah tersimpan di atas.
+    const invoiceStatus = (await kirimInvoice(raw.noInv, jenisPembayaran)).pesan;
 
     const lampiranWarning = await saveLampiran(values, ctx, `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${tanggalBayar})`, 'Admin');
 
     return {
-      target: 'Log Input Transaksi → Input Sewa Dimuka',
-      row,
+      target: 'Database → invoice, payment, jurnal_transaksi',
       data: { penghuni, jenisPembayaran, tanggalBayar, nominal, jumlahBulan, akunKasBank, invoiceStatus },
-      warning: [lampiranWarning, tursoWarning].filter(Boolean).join(' ') || undefined
+      warning: [lampiranWarning, peringatanJurnal].filter(Boolean).join(' ') || undefined
     };
   });
 };
