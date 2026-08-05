@@ -1,36 +1,43 @@
 import { driveClient, withRetry } from './core/google';
 
 /* ==========================================================================
-   Penamaan berkas dokumen penghuni di Drive:
+   Penamaan SEMUA berkas dokumen penghuni di Drive:
 
-     (Jenis Docs)-(ID Penghuni)-(No Kamar)-(Nama Lengkap).ext
-     contoh: KTP-KTD-2608-001-23-Najwa Athaya.jpg
+     (Jenis Docs)-(ID Docs)-(ID Penghuni).ext
+     contoh: KTP-DOC-20260804-a1b2c3d4-KTD-2608-001.jpg
+             Bukti Bayar-INV-23-TDU-9-2026-KTD-2608-001.jpg
+
+   ID Docs memakai identitas yang SUDAH ada kalau dokumennya punya: bukti bayar
+   memakai nomor invoice. Untuk dokumen yang tidak punya nomor apa pun (KTP, SIM,
+   KK, kontrak), dipakai id_dokumen yang memang sudah dibuat saveLampiran saat
+   mencatat lampiran ke tabel `dokumen` — jadi nama berkas di Drive bisa dilacak
+   balik ke barisnya di database, bukan sekadar kode acak.
 
    Kenapa rename, bukan langsung dinamai saat unggah: berkas naik ke Drive
    BEGITU dipilih di form, sebelum submit — sedangkan pada modul Booking/Penghuni
    Baru, ID Penghuni baru lahir setelah submit tersimpan. Jadi berkas naik dengan
-   nama sementara, lalu diganti di sini ketika ID, kamar, dan nama sudah pasti.
+   nama sementara, lalu diganti di sini ketika semuanya sudah pasti.
    ========================================================================== */
 
 export const JENIS_DOKUMEN = ['KTP', 'SIM', 'KK', 'Kontrak'] as const;
 export type JenisDokumen = (typeof JENIS_DOKUMEN)[number];
 
-/** Buang karakter yang menyulitkan di nama berkas Drive, rapatkan spasi ganda. */
+/**
+ * Buang karakter yang menyulitkan di nama berkas Drive.
+ * Garis miring jadi tanda hubung, BUKAN spasi, supaya nomor invoice tetap terbaca
+ * sebagai satu kesatuan (INV/23/TDU/9/2026 → INV-23-TDU-9-2026), sama dengan
+ * penamaan arsip PDF invoice.
+ */
 function bersih(v: string): string {
   return String(v ?? '')
-    .replace(/[\\/:*?"<>|]+/g, ' ')
+    .replace(/[\\/]+/g, '-')
+    .replace(/[:*?"<>|]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-export function namaFileDokumen(p: {
-  jenis: string;
-  idPenghuni: string;
-  noKamar: string;
-  nama: string;
-  ekstensi?: string;
-}): string {
-  const bagian = [bersih(p.jenis), bersih(p.idPenghuni), bersih(p.noKamar), bersih(p.nama)].filter(Boolean).join('-');
+export function namaFileDokumen(p: { jenis: string; idDocs: string; idPenghuni: string; ekstensi?: string }): string {
+  const bagian = [bersih(p.jenis), bersih(p.idDocs), bersih(p.idPenghuni)].filter(Boolean).join('-');
   return p.ekstensi ? `${bagian}.${p.ekstensi.replace(/^\./, '')}` : bagian;
 }
 

@@ -158,14 +158,13 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
     // memang belum ada — nomor booking dipakai sebagai gantinya supaya berkas di
     // Drive tetap bisa ditelusuri.
     const idPenghuni = statusDb === 'Check-in' ? (await resolveOccupancyId(kamarId)) || noBooking : noBooking;
-    const penamaanUmum = { idPenghuni, noKamar: kamarId, nama: namaPenyewa };
 
     const warningIdentitas = await saveLampiran(values, ctx, `Penghuni Baru — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin', {
-      penamaan: { ...penamaanUmum, jenis: String(values.jenisDokumen ?? 'Identitas') }
+      penamaan: { idPenghuni, jenis: String(values.jenisDokumen ?? 'Identitas') }
     });
     const warningKontrak = await saveLampiran(values, ctx, `Kontrak Sewa — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin', {
       field: 'lampiranKontrak',
-      penamaan: { ...penamaanUmum, jenis: 'Kontrak' }
+      penamaan: { idPenghuni, jenis: 'Kontrak' }
     });
 
     return {

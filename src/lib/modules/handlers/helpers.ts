@@ -14,25 +14,33 @@ import type { SubmitContext, SubmitHandler } from '../types';
  * submit — kembalikan warning supaya user tahu link harus dicatat manual.
  *
  * `penamaan` opsional: kalau diisi, berkasnya sekalian di-rename di Drive mengikuti
- * format (Jenis Docs)-(ID Penghuni)-(No Kamar)-(Nama). Dilakukan di sini, bukan saat
- * unggah, karena ID Penghuni baru pasti setelah submit tersimpan.
+ * format (Jenis Docs)-(ID Docs)-(ID Penghuni). Dilakukan di sini, bukan saat unggah,
+ * karena ID Penghuni baru pasti setelah submit tersimpan. ID Docs memakai
+ * `penamaan.idDocs` kalau dokumennya sudah punya nomor sendiri (mis. nomor invoice
+ * untuk bukti bayar); kalau tidak, dipakai id_dokumen yang dibuat di bawah.
  */
 export async function saveLampiran(
   values: Record<string, unknown>,
   ctx: SubmitContext,
   judul: string,
   role: string,
-  opts?: { field?: string; penamaan?: { jenis: string; idPenghuni: string; noKamar: string; nama: string } }
+  opts?: { field?: string; penamaan?: { jenis: string; idPenghuni: string; idDocs?: string } }
 ): Promise<string | undefined> {
   const { field = 'lampiran', penamaan } = opts ?? {};
   const url = String(values[field] ?? '').trim();
   if (!/^https:\/\//.test(url)) return undefined; // tidak ada lampiran / belum terunggah
 
+  /* requestId sama untuk seluruh submit, sedangkan satu modul bisa mengunggah
+     lebih dari satu berkas (mis. identitas + kontrak di Penghuni Baru). Tanpa
+     pembeda nama field, id_dokumen keduanya identik dan INSERT kedua kena
+     PRIMARY KEY constraint. */
+  const pembeda = field === 'lampiran' ? '' : `-${field.replace(/^lampiran/i, '').toUpperCase()}`;
+  const idDokumen = `DOC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${ctx.requestId.slice(0, 8)}${pembeda}`;
+
   const peringatanRename = penamaan
-    ? await renameDokumenDrive(url, namaFileDokumen({ ...penamaan }))
+    ? await renameDokumenDrive(url, namaFileDokumen({ ...penamaan, idDocs: penamaan.idDocs || idDokumen }))
     : undefined;
 
-  const idDokumen = `DOC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${ctx.requestId.slice(0, 8)}`;
   try {
     await turso().execute({
       sql: 'INSERT INTO dokumen (id_dokumen, judul, role, link_drive) VALUES (?, ?, ?, ?)',

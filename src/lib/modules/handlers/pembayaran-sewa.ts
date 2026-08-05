@@ -264,7 +264,16 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
     // tidak membatalkan pencatatan pembayaran yang sudah tersimpan di atas.
     const invoiceStatus = (await kirimInvoice(raw.noInv, jenisPembayaran)).pesan;
 
-    const lampiranWarning = await saveLampiran(values, ctx, `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${tanggalBayar})`, 'Admin');
+    // ID Docs bukti bayar memakai nomor invoicenya, bukan kode DOC- baru — biar
+    // berkas di Drive langsung tertaut ke invoice & payment dengan id yang sama.
+    const idPenghuni = await resolveOccupancyId(String(raw.noKamar));
+    const lampiranWarning = await saveLampiran(
+      values,
+      ctx,
+      `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${tanggalBayar})`,
+      'Admin',
+      idPenghuni ? { penamaan: { jenis: `Bukti Bayar ${jenisPembayaran}`, idDocs: raw.noInv, idPenghuni } } : undefined
+    );
 
     return {
       target: 'Database → invoice, payment, jurnal_transaksi',
