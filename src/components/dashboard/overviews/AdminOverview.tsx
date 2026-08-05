@@ -31,7 +31,9 @@ export default function AdminOverview({ data, finance: F, period, from, to }: Ov
     { label: 'Kontrak Aktif', value: String(stats.aktif ?? 0), spark: moveIn, bg: G.adminCyan },
     { label: 'Kamar Kosong', value: String(stats.kosong ?? 0), spark: moveIn, bg: G.adminOlive, onDark: true },
     { label: 'Tunggakan', value: String(stats.tunggakan ?? 0), spark: tempoSpark, bg: G.adminDarkO, onDark: true },
-    { label: 'Jatuh Tempo', value: String(stats.jatuhTempo ?? 0), spark: tempoSpark, bg: G.adminDarkG, onDark: true }
+    { label: 'Jatuh Tempo', value: String(stats.jatuhTempo ?? 0), spark: tempoSpark, bg: G.adminDarkG, onDark: true },
+    // Total diskon yang diberikan pada periode aktif (akun Beban Diskon).
+    { label: 'Total Diskon', value: fmtRpShort(F ? F.diskonTotal : 0), spark: F ? F.diskonSeries : [], bg: G.adminOlive, onDark: true }
   ];
 
   // Utamakan data payment.periode_akhir (computeTempo); fallback Sisa Hari tab PENGHUNI.
@@ -70,7 +72,7 @@ export default function AdminOverview({ data, finance: F, period, from, to }: Ov
 
   return (
     <div className="view">
-      <StatGrid cards={cards} cols={5} />
+      <StatGrid cards={cards} cols={6} />
 
       <Reveal tier={1} className="grid row-3 mt">
         <DonutBlock label="Komposisi Kontrak" segs={kontrakDonut} centerLabel="Total Kontrak" />

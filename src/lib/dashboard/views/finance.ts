@@ -24,9 +24,17 @@ export interface FinanceResult {
   incSeries: number[];
   expSeries: number[];
   labaSeries: number[];
+  /** Total diskon yang diberikan pada periode aktif (akun Beban Diskon). */
+  diskonTotal: number;
+  /** Diskon per bucket, sejajar dengan `labels`. */
+  diskonSeries: number[];
   daily: boolean;
   nBuckets: number;
 }
+
+/** Akun tempat diskon dibukukan (COA 5129) — dicocokkan lewat nama, bukan kode,
+ *  karena grid jurnal dashboard menyimpan NAMA akun pada kolom debit/kredit. */
+const NAMA_AKUN_DISKON = 'beban diskon';
 
 /** Rp ringkas: 1.2 Jt / 850 rb / Rp500 — verbatim `fmtRpShort()`. */
 export const fmtRpShort = (n: number): string => {
@@ -134,14 +142,14 @@ export function computeFinance(
     ? (d: Date) => d.getDate() + ' ' + MONTH_ID3[d.getMonth()]
     : (d: Date) => MONTH_ID3[d.getMonth()] + " '" + String(d.getFullYear()).slice(2);
 
-  const buckets = new Map<string, { label: string; cash: number; inc: number; exp: number }>();
+  const buckets = new Map<string, { label: string; cash: number; inc: number; exp: number; diskon: number }>();
   const order: string[] = [];
   const repT: Record<string, number> = {};
 
   recs.forEach((x) => {
     const k = keyOf(x.d);
     if (!buckets.has(k)) {
-      buckets.set(k, { label: labOf(x.d), cash: 0, inc: 0, exp: 0 });
+      buckets.set(k, { label: labOf(x.d), cash: 0, inc: 0, exp: 0, diskon: 0 });
       order.push(k);
       repT[k] = x.d.getTime();
     }
@@ -149,6 +157,7 @@ export function computeFinance(
     if (x.arus > 0) b.cash += x.arus;
     if (x.dl > 0) b.inc += x.dl;
     else if (x.dl < 0) b.exp += -x.dl;
+    if (x.debit.toLowerCase().includes(NAMA_AKUN_DISKON)) b.diskon += Math.abs(x.dl);
   });
   order.sort((a, b) => repT[a] - repT[b]);
 
@@ -166,6 +175,8 @@ export function computeFinance(
       const b = buckets.get(k)!;
       return b.inc - b.exp;
     }),
+    diskonTotal: order.reduce((t, k) => t + buckets.get(k)!.diskon, 0),
+    diskonSeries: order.map((k) => buckets.get(k)!.diskon),
     daily,
     nBuckets: order.length
   };
