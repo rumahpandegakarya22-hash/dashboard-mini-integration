@@ -8,6 +8,7 @@ import OriginSelect from '@/components/ui/OriginSelect';
 interface Aduan {
   id: string;
   penghuni: string;
+  tipe: string; // Saran / Kritik / Komplain — panel ini menampilkan ketiganya
   kategori: string;
   judul: string;
   isi: string;
@@ -171,7 +172,7 @@ export default function PengaduanPanel() {
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                 <span className={KELAS_STATUS[a.status]}>{a.status}</span>
                 <span className="muted" style={{ fontSize: '0.8125rem' }}>
-                  {a.kategori} · {a.dilaporkan}
+                  {a.tipe} · {a.kategori} · {a.dilaporkan}
                 </span>
               </div>
 

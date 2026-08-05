@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
     return {
       id,
       penghuni: labelPenghuni(penghuni.get(idp), idp),
+      tipe: String(r.tipe ?? 'Komplain'),
       kategori: String(r.category ?? ''),
       judul: String(r.title ?? ''),
       isi: String(r.description ?? ''),
