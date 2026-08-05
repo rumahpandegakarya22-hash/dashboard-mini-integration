@@ -117,6 +117,27 @@ async function simpanPembayaran(
       }
 
       await tx.commit();
+
+      /* Penjaga: pada UAT 5 Agt 2026 sebuah submit menghasilkan invoice_sewa +
+         jurnal TAPI tanpa baris payment, padahal ketiganya satu transaksi dan
+         insert-nya tidak bisa direproduksi. Selama sebabnya belum ketahuan,
+         ketidakhadiran baris itu dijadikan warning yang terlihat admin —
+         bukan lubang senyap di catatan pembayaran. */
+      const cek = await turso().execute({
+        sql: 'SELECT 1 FROM payment WHERE id_payment = ? LIMIT 1',
+        args: [raw.noInv]
+      });
+      if (cek.rows.length === 0) {
+        return {
+          peringatanJurnal: [
+            peringatanJurnal,
+            `PERIKSA: baris payment untuk ${raw.noInv} tidak ditemukan setelah commit — catat manual & laporkan.`
+          ]
+            .filter(Boolean)
+            .join(' ')
+        };
+      }
+
       return { peringatanJurnal };
     } finally {
       tx.close();
