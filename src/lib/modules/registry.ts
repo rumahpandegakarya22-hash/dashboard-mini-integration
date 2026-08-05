@@ -79,7 +79,7 @@ export const MODULES: ModuleMeta[] = [
           { value: 'SIM', label: 'SIM' },
           { value: 'KK', label: 'KK' }
         ],
-        helpText: 'Menentukan penamaan berkas di Drive: (Jenis)-(ID Penghuni)-(No Kamar)-(Nama).'
+        helpText: 'Menentukan penamaan berkas di Drive: (Jenis)-(ID Docs)-(ID Penghuni).'
       },
       {
         name: 'lampiran',
@@ -361,6 +361,22 @@ export const MODULES: ModuleMeta[] = [
           { value: 'Operasional', label: 'Operasional' },
           { value: 'Non-operasional', label: 'Non-operasional' }
         ]
+      },
+      {
+        name: 'divisi',
+        label: 'Divisi Pengeluar Biaya',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'Admin', label: 'Admin' },
+          { value: 'Cleaning', label: 'Cleaning' },
+          { value: 'Finance', label: 'Finance' },
+          { value: 'Inspeksi', label: 'Inspeksi' },
+          { value: 'Maintenance', label: 'Maintenance' },
+          { value: 'Marketing', label: 'Marketing' },
+          { value: 'Sales', label: 'Sales' }
+        ],
+        helpText: 'Dipakai untuk penomoran nota: YYMM-Divisi-urutan.'
       },
       {
         name: 'lampiran',
@@ -765,6 +781,16 @@ export const MODULES: ModuleMeta[] = [
         type: 'select-async',
         required: true,
         master: 'setting:LOGBOOK_INSPEKSI_KEBERSIHAN:SETTING:Petugas'
+      },
+      {
+        name: 'lampiran',
+        label: 'Foto Inspeksi (opsional)',
+        type: 'file',
+        required: false,
+        uploadKind: 'maintenance',
+        accept: 'application/pdf,image/png,image/jpeg',
+        maxSizeMb: 2,
+        placeholder: 'Pilih foto (maks 2 MB)'
       }
     ]
   },
@@ -842,7 +868,17 @@ export const MODULES: ModuleMeta[] = [
         required: true,
         master: 'setting:LOG_INSPEKSI_PERAWATAN:SETTING:PIC'
       },
-      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
+      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false },
+      {
+        name: 'lampiran',
+        label: 'Foto Inspeksi (opsional)',
+        type: 'file',
+        required: false,
+        uploadKind: 'maintenance',
+        accept: 'application/pdf,image/png,image/jpeg',
+        maxSizeMb: 2,
+        placeholder: 'Pilih foto (maks 2 MB)'
+      }
     ]
   },
   // Modul "Upload Dokumen" dihapus (Improvement v1.1 §4) — tabel Turso `dokumen` tetap

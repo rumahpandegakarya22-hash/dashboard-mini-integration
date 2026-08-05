@@ -51,7 +51,25 @@ export const submitPengeluaran: SubmitHandler = async (values, ctx) => {
     }
   }
 
-  const lampiranWarning = await saveLampiran(values, ctx, `Nota Pengeluaran — ${keterangan} (${tanggal})`, 'Admin');
+  /* Nomor nota YYMM-Divisi-NNN. Urutan diambil dari id_dokumen terakhir dengan
+     prefix yang sama, jadi penomorannya hidup di data — bukan cuma di nama berkas.
+     Dua submit bersamaan pada divisi & bulan yang sama bisa menghasilkan nomor
+     kembar; yang kalah gagal di PRIMARY KEY dan muncul sebagai warning, bukan
+     diam-diam menimpa. */
+  const divisi = required(values.divisi, 'Divisi Pengeluar Biaya');
+  const prefixNota = `NOTA-${tanggal.slice(2, 4)}${tanggal.slice(5, 7)}-${divisi}`;
+  const urut = await db.execute({
+    sql: `SELECT id_dokumen FROM dokumen WHERE id_dokumen LIKE ? ORDER BY id_dokumen DESC LIMIT 1`,
+    args: [`${prefixNota}-%`]
+  });
+  const terakhir = parseInt(String(urut.rows[0]?.id_dokumen ?? '').slice(-3), 10) || 0;
+  const nomorNota = `${prefixNota}-${String(Math.min(terakhir + 1, 999)).padStart(3, '0')}`;
+
+  const lampiranWarning = await saveLampiran(values, ctx, `Nota Pengeluaran — ${keterangan} (${tanggal})`, 'Admin', {
+    idDokumen: nomorNota,
+    // Prefix 'NOTA-' hanya penanda di database; nama berkasnya sudah diawali jenis.
+    penamaan: { jenis: 'Nota', idDocs: nomorNota.replace(/^NOTA-/, '') }
+  });
 
   return {
     target: 'Turso → jurnal_transaksi',

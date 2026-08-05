@@ -24,7 +24,11 @@ export async function saveLampiran(
   ctx: SubmitContext,
   judul: string,
   role: string,
-  opts?: { field?: string; penamaan?: { jenis: string; idPenghuni: string; idDocs?: string } }
+  opts?: {
+    field?: string;
+    idDokumen?: string;
+    penamaan?: { jenis: string; idDocs?: string; idPenghuni?: string };
+  }
 ): Promise<string | undefined> {
   const { field = 'lampiran', penamaan } = opts ?? {};
   const url = String(values[field] ?? '').trim();
@@ -35,7 +39,8 @@ export async function saveLampiran(
      pembeda nama field, id_dokumen keduanya identik dan INSERT kedua kena
      PRIMARY KEY constraint. */
   const pembeda = field === 'lampiran' ? '' : `-${field.replace(/^lampiran/i, '').toUpperCase()}`;
-  const idDokumen = `DOC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${ctx.requestId.slice(0, 8)}${pembeda}`;
+  const idDokumen =
+    opts?.idDokumen || `DOC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${ctx.requestId.slice(0, 8)}${pembeda}`;
 
   const peringatanRename = penamaan
     ? await renameDokumenDrive(url, namaFileDokumen({ ...penamaan, idDocs: penamaan.idDocs || idDokumen }))
@@ -82,8 +87,14 @@ export interface InsertConfig {
    *  (lihat db/schema/000_existing_snapshot.sql). Kolom yang tidak disebut
    *  dibiarkan DEFAULT/NULL. */
   buildRow: (values: Record<string, unknown>) => Record<string, string | number | null>;
-  /** Sama seperti AppendConfig.lampiran — metadata upload disimpan ke tabel `dokumen`. */
-  lampiran?: { judul: (values: Record<string, unknown>) => string; role: string };
+  /** Sama seperti AppendConfig.lampiran — metadata upload disimpan ke tabel `dokumen`.
+   *  `penamaan` opsional: dipakai untuk menyeragamkan nama berkas di Drive. Menerima
+   *  rowid hasil INSERT supaya bisa dipakai sebagai kode unik yang merujuk barisnya. */
+  lampiran?: {
+    judul: (values: Record<string, unknown>) => string;
+    role: string;
+    penamaan?: (values: Record<string, unknown>, rowId?: number) => { jenis: string; idDocs: string };
+  };
 }
 
 /**
@@ -109,7 +120,11 @@ export function createInsertHandler(cfg: InsertConfig): SubmitHandler {
       args: cols.map((c) => row[c])
     });
     const rowId = res.lastInsertRowid != null ? Number(res.lastInsertRowid) : undefined;
-    const warning = cfg.lampiran ? await saveLampiran(values, ctx, cfg.lampiran.judul(values), cfg.lampiran.role) : undefined;
+    const warning = cfg.lampiran
+      ? await saveLampiran(values, ctx, cfg.lampiran.judul(values), cfg.lampiran.role, {
+          penamaan: cfg.lampiran.penamaan?.(values, rowId)
+        })
+      : undefined;
     return { target: cfg.target, row: rowId, data: values, warning };
   };
 }

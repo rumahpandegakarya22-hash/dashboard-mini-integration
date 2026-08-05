@@ -20,7 +20,23 @@ export const inspeksiKebersihanInsertCfg: InsertConfig = {
     temuan: String(values.temuan ?? '').trim(),
     tindak_lanjut: String(values.tindakLanjut ?? '').trim(),
     petugas: required(values.petugas, 'Petugas')
-  })
+  }),
+  /* Foto inspeksi: YYMMDD-(Kategori Inspeksi)-(kode unik). Kode unik memakai
+     rowid barisnya sendiri, jadi berkas di Drive bisa dilacak ke catatannya.
+     Kategori modul ini tetap 'Kebersihan' — formnya tidak punya field kategori. */
+  lampiran: {
+    judul: (v) => `Inspeksi Kebersihan — ${String(v.area ?? '')} (${String(v.tanggal ?? '')})`,
+    role: 'Inspeksi',
+    penamaan: (v, rowId) => ({
+      jenis: 'Foto Inspeksi',
+      idDocs: `${kodeTanggal(String(v.tanggal ?? ''))}-Kebersihan-${String(rowId ?? 0).padStart(3, '0')}`
+    })
+  }
 };
+
+/** 'YYYY-MM-DD' → 'YYMMDD' untuk penomoran berkas inspeksi. */
+export function kodeTanggal(iso: string): string {
+  return iso.replace(/-/g, '').slice(2);
+}
 
 export const submitInspeksiKebersihan = createInsertHandler(inspeksiKebersihanInsertCfg);

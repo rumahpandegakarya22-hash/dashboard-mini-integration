@@ -124,7 +124,11 @@ export const submitPerawatanPreventif: SubmitHandler = async (values, ctx) => {
     refTiket: idTiket,
     createdBy: ctx.user.username
   });
-  const lampiranWarning = await saveLampiran(values, ctx, `Perawatan Preventif — ${fasilitasItem} (${idTiket})`, 'Maintenance');
+  // ID Docs = nomor tiketnya sendiri, jadi berkas di Drive tertaut ke baris
+  // maintenance_pm tanpa penomoran baru yang harus dijaga terpisah.
+  const lampiranWarning = await saveLampiran(values, ctx, `Perawatan Preventif — ${fasilitasItem} (${idTiket})`, 'Maintenance', {
+    penamaan: { jenis: 'Foto Preventif', idDocs: idTiket }
+  });
 
   return {
     target: `Turso → maintenance_pm (${idTiket})`,
@@ -173,7 +177,9 @@ export const submitPerbaikanKorektif: SubmitHandler = async (values, ctx) => {
     refTiket: idTiket,
     createdBy: ctx.user.username
   });
-  const lampiranWarning = await saveLampiran(values, ctx, `Perbaikan Korektif — ${lokasiItem} (${idTiket})`, 'Maintenance');
+  const lampiranWarning = await saveLampiran(values, ctx, `Perbaikan Korektif — ${lokasiItem} (${idTiket})`, 'Maintenance', {
+    penamaan: { jenis: 'Foto Korektif', idDocs: idTiket }
+  });
 
   return {
     target: `Turso → maintenance_cm (${idTiket})`,
