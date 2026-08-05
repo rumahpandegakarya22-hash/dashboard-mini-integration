@@ -6,7 +6,7 @@
 // Contoh (pakai kredensial produksi lokal):
 //   node scripts/uji-drive.mjs D:/kost-tiga-dara/.env.local
 //
-// Butuh: GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, DRIVE_FOLDER_PEMBAYARAN.
+// Butuh: GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, DRIVE_FOLDER_INVOICE_SEWA.
 // Folder harus di-share ke service account (atau SA jadi anggota Shared Drive).
 import dotenv from "dotenv";
 import { google } from "googleapis";
@@ -17,9 +17,9 @@ dotenv.config({ path: envPath });
 
 const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const key = (process.env.GOOGLE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
-const folder = process.env.DRIVE_FOLDER_PEMBAYARAN;
+const folder = process.env.DRIVE_FOLDER_INVOICE_SEWA;
 if (!email || !key || !folder) {
-  console.error("Env belum lengkap (GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_PRIVATE_KEY / DRIVE_FOLDER_PEMBAYARAN).");
+  console.error("Env belum lengkap (GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_PRIVATE_KEY / DRIVE_FOLDER_INVOICE_SEWA).");
   process.exit(1);
 }
 
