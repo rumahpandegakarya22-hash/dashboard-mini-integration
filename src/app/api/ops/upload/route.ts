@@ -27,6 +27,10 @@ const KIND_FOLDERS: Record<string, string | undefined> = {
   'maintenance': process.env.DRIVE_FOLDER_MAINTENANCE,
   'penghuni': process.env.DRIVE_FOLDER_PENGHUNI,
   'kontrak': process.env.DRIVE_FOLDER_KONTRAK,
+  // Bukti bayar dipisah per jenis; kalau env pecahannya belum diisi, jatuh ke
+  // folder gabungan yang lama supaya unggahan tidak mati saat transisi.
+  'pembayaran-dp': process.env.DRIVE_FOLDER_PEMBAYARAN_DP || process.env.DRIVE_FOLDER_PEMBAYARAN,
+  'pembayaran-sewa': process.env.DRIVE_FOLDER_PEMBAYARAN_SEWA || process.env.DRIVE_FOLDER_PEMBAYARAN,
   'pembayaran': process.env.DRIVE_FOLDER_PEMBAYARAN,
   'nota': process.env.DRIVE_FOLDER_NOTA,
   'feedback': process.env.DRIVE_FOLDER_FEEDBACK

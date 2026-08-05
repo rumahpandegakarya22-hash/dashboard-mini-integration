@@ -191,6 +191,10 @@ export const MODULES: ModuleMeta[] = [
         type: 'file',
         required: false,
         uploadKind: 'pembayaran',
+        // Folder Drive bukti bayar terpisah DP vs Sewa. showIf menahan field ini
+        // sampai Jenis Pembayaran dipilih — tanpa itu tujuan foldernya belum jelas.
+        uploadKindFrom: 'jenisPembayaran',
+        showIf: { field: 'jenisPembayaran', equals: ['DP', 'Sewa'] },
         accept: 'application/pdf,image/png,image/jpeg',
         maxSizeMb: 2,
         placeholder: 'Pilih foto/pdf (maks 2 MB)'

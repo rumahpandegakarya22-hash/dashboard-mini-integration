@@ -325,7 +325,7 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
                 </span>
               )}
             </label>
-            {renderField(f, values[f.name] ?? '', (v) => update(f.name, v), optionsFor(f))}
+            {renderField(f, values[f.name] ?? '', (v) => update(f.name, v), optionsFor(f), f.uploadKindFrom ? String(values[f.uploadKindFrom] ?? '') : undefined)}
             {f.helpText && <p className="help">{f.helpText}</p>}
           </>
         );
@@ -419,7 +419,17 @@ function isVisible(f: FieldDef, values: Record<string, string>): boolean {
  * Field upload: file dipilih → langsung diunggah ke /api/upload (Drive via
  * service account) → value field = URL Drive (disimpan ke database saat submit).
  */
-function FileField({ f, value, onChange }: { f: FieldDef; value: string; onChange: (v: string) => void }) {
+function FileField({
+  f,
+  value,
+  onChange,
+  kindExtra
+}: {
+  f: FieldDef;
+  value: string;
+  onChange: (v: string) => void;
+  kindExtra?: string;
+}) {
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState('');
   const [fileSize, setFileSize] = useState<number | undefined>(undefined);
@@ -439,7 +449,9 @@ function FileField({ f, value, onChange }: { f: FieldDef; value: string; onChang
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('kind', f.uploadKind || '');
+      // uploadKindFrom: folder tujuan mengikuti nilai field lain (mis. DP vs Sewa).
+      const kind = kindExtra ? `${f.uploadKind || ''}-${kindExtra.toLowerCase()}` : f.uploadKind || '';
+      fd.append('kind', kind);
       const res = await fetch('/api/ops/upload', { method: 'POST', body: fd });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Upload gagal.');
@@ -477,7 +489,7 @@ function FileField({ f, value, onChange }: { f: FieldDef; value: string; onChang
   );
 }
 
-function renderField(f: FieldDef, value: string, onChange: (v: string) => void, asyncOptions?: FieldOption[]) {
+function renderField(f: FieldDef, value: string, onChange: (v: string) => void, asyncOptions?: FieldOption[], kindExtra?: string) {
   const onInputChange = (e: ChangeEl) => onChange(e.target.value);
 
   switch (f.type) {
@@ -508,7 +520,7 @@ function renderField(f: FieldDef, value: string, onChange: (v: string) => void, 
     case 'time':
       return <input id={f.name} name={f.name} type="time" value={value} onChange={onInputChange} />;
     case 'file':
-      return <FileField f={f} value={value} onChange={onChange} />;
+      return <FileField f={f} value={value} onChange={onChange} kindExtra={kindExtra} />;
     case 'select':
     case 'select-async': {
       const isAsync = f.type === 'select-async';

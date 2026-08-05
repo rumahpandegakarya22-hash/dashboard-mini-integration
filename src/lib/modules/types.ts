@@ -24,6 +24,12 @@ export interface FieldDef {
   showIf?: { field: string; equals: string | string[] }; // tampilkan field ini hanya jika field lain bernilai tertentu
   // (mis. { field: 'jenisPembayaran', equals: 'Sewa' }). Field yg disembunyikan tidak divalidasi/dikirim.
   uploadKind?: string; // type=file: kunci folder Drive tujuan di /api/upload (mis. 'work-order'); value field = URL Drive hasil upload
+  /* type=file: folder tujuan ditentukan nilai field LAIN, bukan tetap. Kind yang
+     dikirim jadi `${uploadKind}-${nilai field itu, huruf kecil}` — mis. uploadKind
+     'pembayaran' + jenisPembayaran 'DP' → 'pembayaran-dp'. Dipakai saat satu form
+     bisa mengunggah ke folder berbeda tergantung pilihan pengguna. Pasangkan dgn
+     showIf supaya field unggah baru muncul setelah field acuannya terisi. */
+  uploadKindFrom?: string;
   accept?: string; // type=file: atribut accept input (mis. 'image/jpeg,image/png')
   maxSizeMb?: number; // type=file: batas ukuran (default 2 MB)
 }
