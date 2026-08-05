@@ -23,7 +23,9 @@ const AKUN = {
   pendapatanDimuka: 2105,
   pendapatanSewa: 4101,
   denda: 4102,
-  depositPenghuni: 2104
+  depositPenghuni: 2104,
+  hutangPajak: 2106,
+  bebanDiskon: 5129
 };
 
 const KATEGORI = 'Operasional';
@@ -68,24 +70,89 @@ export type InputJurnalSewa = {
   totalSewa: number;
   totalListrik: number;
   totalDenda: number;
+  diskon: number;
+  pajak: number;
   grandTotal: number;
 };
+
+/**
+ * Baris penerimaan uang, dipakai Sewa maupun DP. Sisi kredit "penampung" berbeda
+ * (2105 utk sewa, 2104 utk DP) tapi cara diskon & pajak diperlakukan sama:
+ *
+ *   Debit kas          / Kredit penampung  = subtotal - diskon
+ *   Debit Beban Diskon / Kredit penampung  = diskon      <- bulan pertama
+ *   Debit kas          / Kredit Hutang Pajak = pajak
+ *
+ * Hasilnya: kredit ke penampung berjumlah subtotal — sama persis dengan total
+ * baris pengakuan yang mendebitnya, jadi tidak ada sisa mengendap. Debit ke kas
+ * berjumlah (subtotal - diskon + pajak) = grand total, yaitu uang yang benar-benar
+ * masuk. Pajak tidak menyentuh akun pendapatan karena itu titipan untuk disetor.
+ */
+function barisPenerimaan(p: {
+  kodeKas: number;
+  penampung: number;
+  subtotal: number;
+  diskon: number;
+  pajak: number;
+  tanggalBayar: string;
+  tanggalDiskon: string;
+  keteranganUtama: string;
+  keteranganEkor: string;
+}): BarisJurnal[] {
+  const baris: BarisJurnal[] = [
+    {
+      tanggal: p.tanggalBayar,
+      debit: p.kodeKas,
+      kredit: p.penampung,
+      nominal: p.subtotal - p.diskon,
+      keterangan: p.keteranganUtama,
+      kategori: KATEGORI
+    }
+  ];
+
+  // Diskon dibebankan SEKALIGUS di bulan pertama, bukan dicicil per bulan.
+  if (p.diskon > 0) {
+    baris.push({
+      tanggal: p.tanggalDiskon,
+      debit: AKUN.bebanDiskon,
+      kredit: p.penampung,
+      nominal: p.diskon,
+      keterangan: `Diskon ${p.keteranganEkor}`,
+      kategori: KATEGORI
+    });
+  }
+
+  if (p.pajak > 0) {
+    baris.push({
+      tanggal: p.tanggalBayar,
+      debit: p.kodeKas,
+      kredit: AKUN.hutangPajak,
+      nominal: p.pajak,
+      keterangan: `Pajak dipungut ${p.keteranganEkor}`,
+      kategori: KATEGORI
+    });
+  }
+
+  return baris;
+}
 
 /**
  * Baris jurnal untuk satu pembayaran Sewa: 1 baris terima uang + baris pengakuan
  * per bulan (sewa & listrik dipisah, mengikuti bentuk keterangan lama) + denda.
  */
 export function barisJurnalSewa(p: InputJurnalSewa): BarisJurnal[] {
-  const baris: BarisJurnal[] = [
-    {
-      tanggal: p.tanggalBayar,
-      debit: p.kodeKas,
-      kredit: AKUN.pendapatanDimuka,
-      nominal: p.grandTotal,
-      keterangan: `Terima sewa ${p.jumlahBulan} bln dimuka ${p.nama} KTD ${p.noKamar}`,
-      kategori: KATEGORI
-    }
-  ];
+  const subtotal = p.totalSewa + p.totalListrik + p.totalDenda;
+  const baris = barisPenerimaan({
+    kodeKas: p.kodeKas,
+    penampung: AKUN.pendapatanDimuka,
+    subtotal,
+    diskon: p.diskon,
+    pajak: p.pajak,
+    tanggalBayar: p.tanggalBayar,
+    tanggalDiskon: p.periodeAwal, // bulan pertama periode sewa
+    keteranganUtama: `Terima sewa ${p.jumlahBulan} bln dimuka ${p.nama} KTD ${p.noKamar}`,
+    keteranganEkor: `sewa ${p.nama} KTD ${p.noKamar}`
+  });
 
   const sewaPerBulan = Math.round(p.totalSewa / p.jumlahBulan);
   const listrikPerBulan = Math.round(p.totalListrik / p.jumlahBulan);
@@ -140,16 +207,19 @@ export function barisJurnalDp(p: {
   nama: string;
   noKamar: string;
   tanggalBayar: string;
-  grandTotal: number;
+  subtotal: number;
+  diskon: number;
+  pajak: number;
 }): BarisJurnal[] {
-  return [
-    {
-      tanggal: p.tanggalBayar,
-      debit: p.kodeKas,
-      kredit: AKUN.depositPenghuni,
-      nominal: p.grandTotal,
-      keterangan: `Terima DP ${p.nama} KTD ${p.noKamar}`,
-      kategori: KATEGORI
-    }
-  ];
+  return barisPenerimaan({
+    kodeKas: p.kodeKas,
+    penampung: AKUN.depositPenghuni,
+    subtotal: p.subtotal,
+    diskon: p.diskon,
+    pajak: p.pajak,
+    tanggalBayar: p.tanggalBayar,
+    tanggalDiskon: p.tanggalBayar, // DP tidak punya periode; diskon jatuh di tanggal bayar
+    keteranganUtama: `Terima DP ${p.nama} KTD ${p.noKamar}`,
+    keteranganEkor: `DP ${p.nama} KTD ${p.noKamar}`
+  });
 }

@@ -142,19 +142,16 @@ async function siapkanJurnal(
     };
   }
 
-  // Diskon & pajak belum pernah terjadi di data produksi, jadi pembagiannya ke
-  // baris pengakuan belum punya aturan yang teruji. Daripada menebak dan
-  // menyisakan selisih di akun 2105, jurnalnya dilewati dan diberitahukan.
-  if (Number(raw.diskon) > 0 || Number(raw.pajak) > 0) {
-    return {
-      baris: [],
-      peringatanJurnal: 'Jurnal TIDAK dibuat otomatis karena ada diskon/pajak — aturan pembagiannya belum ditetapkan. Input jurnal manual.'
-    };
-  }
+  const umum = {
+    kodeKas,
+    nama: String(raw.nama),
+    noKamar: String(raw.noKamar),
+    tanggalBayar,
+    diskon: Math.round(raw.diskon || 0),
+    pajak: Math.round(raw.pajak || 0)
+  };
 
-  const umum = { kodeKas, nama: String(raw.nama), noKamar: String(raw.noKamar), tanggalBayar, grandTotal: Math.round(raw.grandTotal) };
-
-  if (jenisPembayaran === 'DP') return { baris: barisJurnalDp(umum) };
+  if (jenisPembayaran === 'DP') return { baris: barisJurnalDp({ ...umum, subtotal: Math.round(raw.subtotal) }) };
 
   return {
     baris: barisJurnalSewa({
@@ -163,7 +160,8 @@ async function siapkanJurnal(
       jumlahBulan: Number(raw.lamaSewa),
       totalSewa: Math.round(raw.totalSewa),
       totalListrik: Math.round(raw.totalListrik),
-      totalDenda: Math.round(raw.totalDenda)
+      totalDenda: Math.round(raw.totalDenda),
+      grandTotal: Math.round(raw.grandTotal)
     })
   };
 }
