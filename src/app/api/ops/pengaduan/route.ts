@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   const semua = req.nextUrl.searchParams.get('filter') === 'semua';
   const res = await turso().execute({
-    sql: `SELECT id_complain, id_penghuni, category, title, description, status,
+    sql: `SELECT id_complain, id_penghuni, tipe, category, title, description, status,
                  reported_at, resolved_at, response_note, responded_by, responded_at
           FROM tenant_complain
           ${semua ? '' : `WHERE status IN (${STATUS_TERBUKA.map(() => '?').join(', ')})`}
