@@ -30,7 +30,9 @@ export default function ChartTooltip() {
   const activeRef = useRef<Element | null>(null);
 
   useEffect(() => {
-    const PAD = 14;
+    // Jarak tooltip ke pointer. 14px terasa jauh saat dipakai (UAT #5);
+    // 6px masih cukup agar kursor tidak menutupi teksnya.
+    const PAD = 6;
 
     const onOver = (e: Event) => {
       const target = e.target as Element;
