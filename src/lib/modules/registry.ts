@@ -729,7 +729,7 @@ export const MODULES: ModuleMeta[] = [
         label: 'Bahan',
         type: 'select-async',
         required: true,
-        master: 'inventory-materials',
+        master: 'inventory-materials:Fasilitas Umum',
         // Tanpa ini label dropdown jatuh ke masterValue ('id') — yang tampil
         // angka, bukan nama bahan (lihat DynamicForm: lKey = masterLabel || vKey).
         masterLabel: 'label',
@@ -749,7 +749,7 @@ export const MODULES: ModuleMeta[] = [
         label: 'Bahan',
         type: 'select-async',
         required: true,
-        master: 'inventory-materials',
+        master: 'inventory-materials:Kebersihan',
         // Tanpa ini label dropdown jatuh ke masterValue ('id') — yang tampil
         // angka, bukan nama bahan (lihat DynamicForm: lKey = masterLabel || vKey).
         masterLabel: 'label',

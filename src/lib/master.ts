@@ -505,13 +505,17 @@ export async function getMasterData(type: string): Promise<unknown> {
      `inventory-materials` = seluruh bahan; `inventory-materials:<kategori>`
      = disaring kategori.
 
-     Modul pemakaian stok sekarang memakai bentuk TANPA kategori. Sebelumnya
-     Cleaning dikunci ke "Kebersihan" dan Maintenance ke "Perawatan Kamar",
-     padahal kategori yang benar-benar ada di DB cuma "Kebersihan" dan
-     "Fasilitas Umum" — dropdown Maintenance karena itu selalu kosong, tanpa
-     satu pun pesan error. Menyaring pakai string yang ditulis manual di dua
-     tempat berbeda memang rapuh: kategori diganti nama di app Inventory,
-     dropdown di sini mati diam-diam. */
+     Nilai kategori yang BENAR-BENAR ada di DB Inventory (diverifikasi 5 Agt
+     2026): "Kebersihan" (5 bahan) dan "Fasilitas Umum" (17 bahan). Dulu
+     Maintenance disaring ke "Perawatan Kamar" yang tidak pernah ada, jadi
+     dropdownnya selalu kosong tanpa pesan error; penyaringan lalu dimatikan
+     total sehingga kedua modul menampilkan semua bahan. Sekarang disaring lagi
+     dengan nilai yang benar.
+
+     Tetap rapuh secara desain: kategori ditulis manual di registry dan hanya
+     hidup di DB Inventory. Kalau namanya diganti di sana, dropdown di sini
+     kosong lagi tanpa error — cek `SELECT DISTINCT category FROM materials`
+     saat itu terjadi. */
   if (type.startsWith('inventory-materials')) {
     const category = type.startsWith('inventory-materials:')
       ? type.slice('inventory-materials:'.length)
