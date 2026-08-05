@@ -110,7 +110,11 @@ export const submitCheckout: SubmitHandler = async (values, ctx) => {
     await updateRoomStatus(kamar, 'Kosong');
     await invalidateTenantsCache();
 
-    const lampiranWarning = await saveLampiran(values, ctx, `Checkout — ${penghuni} (${tanggalCheckout})`, 'Admin');
+    // Lampiran checkout = foto kondisi kamar. Tidak punya nomor sendiri, jadi ID
+    // Docs-nya memakai id_dokumen bentukan saveLampiran.
+    const lampiranWarning = await saveLampiran(values, ctx, `Checkout — ${penghuni} (${tanggalCheckout})`, 'Admin', {
+      penamaan: { jenis: 'Kondisi Kamar', idPenghuni }
+    });
     const tunggakanWarning =
       adaTunggakan === 'Ya' ? `Penghuni masih punya tunggakan Rp${nominalTunggakan.toLocaleString('id-ID')}.` : undefined;
 
