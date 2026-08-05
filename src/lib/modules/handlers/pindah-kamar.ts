@@ -1,6 +1,7 @@
 import { turso } from '../../core/turso';
 import { withLock } from '../../core/redis';
 import { parseDateISO, required } from '../../core/validate';
+import { invalidateTenantsCache, updateRoomStatus } from '../../master';
 import type { SubmitHandler } from '../types';
 
 /**
@@ -85,11 +86,23 @@ export const submitPindahKamar: SubmitHandler = async (values, ctx) => {
       'write'
     );
 
+    /* Status kamar ikut diperbarui — sebelumnya sengaja dilewati dan hanya
+       diberi peringatan, tapi hasilnya kamar lama tetap "Terisi" dan kamar baru
+       tetap "Kosong" setelah penghuni pindah (temuan UAT #5). Best-effort:
+       perpindahannya sudah tercatat, gagal di sini cukup jadi warning. */
+    let peringatanKamar: string | undefined;
+    try {
+      await updateRoomStatus(kamarLama, 'Kosong');
+      await updateRoomStatus(kamarBaru, 'Terisi');
+      await invalidateTenantsCache();
+    } catch (e: any) {
+      peringatanKamar = `Perpindahan tercatat, tapi status kamar gagal diperbarui — ubah manual: ${e?.message || 'unknown error'}`;
+    }
+
     return {
       target: `Turso → rooms_transfer (${idTransfer})`,
       data: { ...values, idTransfer, kamarLama, nama },
-      warning:
-        'Status kamar di tabel kamar TIDAK diubah otomatis (dikelola dashboard) — pastikan status kamar lama/baru diperbarui bila perlu.'
+      warning: peringatanKamar
     };
   });
 };

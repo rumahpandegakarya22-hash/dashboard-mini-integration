@@ -31,14 +31,24 @@ import http from 'node:http';
 import { google } from 'googleapis';
 import { GMAIL_SCOPE } from '../src/lib/core/google';
 
+/* Mode kedua: `npx tsx scripts/gmail-token.ts --drive` menghasilkan
+   GOOGLE_REFRESH_TOKEN (scope drive + spreadsheets), BUKAN token Gmail.
+   Perlu karena service account TIDAK BISA menulis berkas ke Drive —
+   "Service Accounts do not have storage quota". Unggah bukti bayar, dokumen
+   penghuni, dan arsip invoice semuanya butuh jalur OAuth ini. */
+const MODE_DRIVE = process.argv.includes('--drive');
+const SCOPES_DRIVE = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets'];
+
 const PORT = 53682;
 const REDIRECT = `http://localhost:${PORT}`;
 
 async function main() {
-  const clientId = process.env.GMAIL_OAUTH_CLIENT_ID;
-  const clientSecret = process.env.GMAIL_OAUTH_CLIENT_SECRET;
+  // Boleh memakai OAuth client yang SAMA untuk kedua mode; yang beda cuma scope
+  // dan nama env hasilnya.
+  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.GMAIL_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.GMAIL_OAUTH_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
-    console.error('GMAIL_OAUTH_CLIENT_ID / GMAIL_OAUTH_CLIENT_SECRET belum ada di .env.local — lihat langkah 1-4 di komentar file ini.');
+    console.error('CLIENT_ID / CLIENT_SECRET belum ada di .env.local — lihat langkah 1-4 di komentar file ini.');
     process.exit(1);
   }
 
@@ -46,7 +56,7 @@ async function main() {
   const url = oauth.generateAuthUrl({
     access_type: 'offline', // wajib, kalau tidak Google tidak mengembalikan refresh token
     prompt: 'consent', // paksa consent supaya refresh token selalu ikut, bukan hanya saat otorisasi pertama
-    scope: [GMAIL_SCOPE]
+    scope: MODE_DRIVE ? SCOPES_DRIVE : [GMAIL_SCOPE]
   });
 
   console.log('\nBuka URL ini di browser, login dengan akun Gmail PENGIRIM invoice:\n');
