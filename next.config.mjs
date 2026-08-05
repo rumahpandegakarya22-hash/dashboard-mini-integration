@@ -21,6 +21,15 @@ const nextConfig = {
   },
 
   /**
+   * @sparticuz/chromium membawa binary Chromium di folder bin/. Bundler Next
+   * memindahkan file JS-nya sehingga path relatif ke bin/ ikut bergeser, dan di
+   * Vercel muncul: 'The input directory "/var/task/node_modules/@sparticuz/
+   * chromium/bin" does not exist'. Dua paket ini WAJIB dibiarkan sebagai
+   * dependency eksternal (tidak di-bundle) agar path-nya tetap utuh.
+   */
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+
+  /**
    * Kompatibilitas transisi (§5.3): Mini App pindah dari akar ke prefix /ops.
    * 308 Permanent Redirect mempertahankan method & body, jadi bookmark lama,
    * shortcut PWA yang sudah terpasang di HP staf, dan tautan yang beredar di
