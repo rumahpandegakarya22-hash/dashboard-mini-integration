@@ -59,7 +59,11 @@ async function main() {
     scope: MODE_DRIVE ? SCOPES_DRIVE : [GMAIL_SCOPE]
   });
 
-  console.log('\nBuka URL ini di browser, login dengan akun Gmail PENGIRIM invoice:\n');
+  console.log(
+    MODE_DRIVE
+      ? '\nBuka URL ini di browser, login dengan akun yang punya akses ke Shared Drive (folder DRIVE_FOLDER_*):\n'
+      : '\nBuka URL ini di browser, login dengan akun Gmail PENGIRIM invoice:\n',
+  );
   console.log(url);
   console.log('\nMenunggu otorisasi...');
 
@@ -70,8 +74,12 @@ async function main() {
     process.exit(1);
   }
 
+  // Nama env ikut mode: --drive menghasilkan GOOGLE_REFRESH_TOKEN (Drive+Sheets),
+  // default menghasilkan GMAIL_OAUTH_REFRESH_TOKEN (gmail.send). Dulu di-hardcode
+  // GMAIL_ sehingga token Drive gampang salah tempel.
+  const namaEnv = MODE_DRIVE ? 'GOOGLE_REFRESH_TOKEN' : 'GMAIL_OAUTH_REFRESH_TOKEN';
   console.log('\nBerhasil. Tempel baris ini ke .env.local dan ke Environment Variables di Vercel:\n');
-  console.log(`GMAIL_OAUTH_REFRESH_TOKEN=${tokens.refresh_token}\n`);
+  console.log(`${namaEnv}=${tokens.refresh_token}\n`);
 }
 
 /** Server sekali pakai: tangkap ?code= dari redirect, balas halaman penutup, lalu mati. */

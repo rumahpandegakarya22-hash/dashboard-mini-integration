@@ -362,6 +362,26 @@ const penghuniBaruEdit: CustomEditCfg = {
     // statusBooking bisa berubah jadi/dari Check-in/Check-out di sini → trigger DB bisa ubah
     // active_tenant, jadi cache dropdown penghuni harus ikut dibersihkan.
     await invalidateTenantsCache();
+
+    /* Jalur check-in kedua (selain form Penghuni Baru): pendaftaran yang sudah
+       di-review jadi 'Konfirmasi' diubah ke 'Check-in' dari layar ini. Trigger DB
+       membuat baris occupancy_history & active_tenant tapi tidak tahu kolom
+       tambahan_listrik, jadi nilainya disalin dari booking di sini — kalau tidak,
+       invoice penghuni itu tidak menagih listrik sama sekali tanpa pemberitahuan. */
+    if (statusBooking === 'Check-in') {
+      await turso().execute({
+        sql: `UPDATE occupancy_history SET tambahan_listrik = (SELECT b.tambahan_listrik FROM booking b WHERE b.no_booking = ?)
+              WHERE id_penghuni = (SELECT b.id_penghuni FROM booking b WHERE b.no_booking = ?)
+                AND tambahan_listrik IS NULL`,
+        args: [ref, ref]
+      });
+      await turso().execute({
+        sql: `UPDATE active_tenant SET tambahan_listrik = (SELECT b.tambahan_listrik FROM booking b WHERE b.no_booking = ?)
+              WHERE id_penghuni = (SELECT b.id_penghuni FROM booking b WHERE b.no_booking = ?)
+                AND tambahan_listrik IS NULL`,
+        args: [ref, ref]
+      });
+    }
     return 'Catatan: status kamar TIDAK diubah otomatis dari edit — kalau kamarnya diganti, sesuaikan status kamar manual.';
   }
 };
