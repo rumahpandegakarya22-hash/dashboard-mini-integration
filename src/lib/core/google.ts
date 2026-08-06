@@ -19,9 +19,11 @@ import { google } from 'googleapis';
  * dinyalakan dan dimatikan tanpa deploy ulang: cukup set/hapus tiga env OAuth.
  * Rollback ke service account = hapus GOOGLE_REFRESH_TOKEN.
  *
- * Refresh token WAJIB dibuat dengan dua scope sekaligus — `drive` dan
- * `spreadsheets` — karena klien di bawah ini melayani Drive maupun Sheets
- * (Sheets masih dipakai handler pembayaran-sewa untuk tabel harga invoice).
+ * Refresh token dibuat lewat `npx tsx scripts/gmail-token.ts --drive` dengan
+ * scope `drive` + `spreadsheets`. Sejak 4 Agt 2026 TIDAK ADA modul yang membaca
+ * Google Sheets lagi (harga kamar, penghuni, dan listrik semuanya dari Turso);
+ * scope spreadsheets tetap diikutkan supaya token tidak perlu dibuat ulang
+ * kalau suatu saat dibutuhkan.
  *
  * Pengiriman invoice lewat Gmail TIDAK ikut di sini: kredensialnya berdiri
  * sendiri (GMAIL_OAUTH_*, lihat gmailClient di bawah). Alasannya, jalur yang

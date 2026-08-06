@@ -12,6 +12,9 @@ next-env.d.
 docs/golden-*.json
 docs/formulas-dump.json
 
+# Backup database Turso — berisi PII penghuni nyata, disimpan lokal saja.
+backups/
+
 # Knowledge graph graphify — hasil turunan, bisa dibangun ulang dengan /graphify.
 # Ikut mengutip isi dokumen internal (termasuk SETUP/ABOUT_ME.md), jadi tidak di-commit.
 graphify-out/
