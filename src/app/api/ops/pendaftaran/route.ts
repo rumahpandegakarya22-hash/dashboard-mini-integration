@@ -139,9 +139,18 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
+  /* Tambahan listrik menempel ke penghuni, tapi saat review baris penghuninya
+     belum ada (baru dibuat trigger ketika status jadi 'Check-in'). Disimpan di
+     booking dulu; handler Penghuni Baru menyalinnya ke occupancy_history &
+     active_tenant saat check-in dicatat. */
+  const listrikRaw = Number(body.tambahanListrik ?? 0);
+  const tambahanListrik = Number.isFinite(listrikRaw) && listrikRaw > 0 ? Math.round(listrikRaw) : null;
+
   const res = await db.execute({
-    sql: 'UPDATE booking SET status_booking = ?, alasan_cancel = ? WHERE no_booking = ?',
-    args: [STATUS_REVIEW[aksi], aksi === 'tolak' ? alasan : null, noBooking]
+    sql: `UPDATE booking SET status_booking = ?, alasan_cancel = ?,
+            tambahan_listrik = COALESCE(?, tambahan_listrik)
+          WHERE no_booking = ?`,
+    args: [STATUS_REVIEW[aksi], aksi === 'tolak' ? alasan : null, tambahanListrik, noBooking]
   });
   if (res.rowsAffected === 0) return NextResponse.json({ error: 'Booking tidak ditemukan.' }, { status: 404 });
 
@@ -152,7 +161,7 @@ export async function PATCH(req: NextRequest) {
     action: 'UPDATE',
     target: `Turso → booking (${noBooking})`,
     oldData: sebelum.rows[0],
-    newData: { status_booking: STATUS_REVIEW[aksi], alasan_cancel: aksi === 'tolak' ? alasan : null },
+    newData: { status_booking: STATUS_REVIEW[aksi], alasan_cancel: aksi === 'tolak' ? alasan : null, tambahan_listrik: tambahanListrik },
     durationSec: (Date.now() - t0) / 1000,
     status: 'sukses'
   });

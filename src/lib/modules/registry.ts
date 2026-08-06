@@ -66,6 +66,13 @@ export const MODULES: ModuleMeta[] = [
         required: true,
         helpText: 'Sesuai harga kamar & durasi (lihat label kamar); bisa disesuaikan jika ada nego.'
       },
+      {
+        name: 'tambahanListrik',
+        label: 'Tambahan Listrik / bulan (Rp)',
+        type: 'number',
+        required: false,
+        helpText: 'Untuk barang elektronik yang dibawa penghuni (kulkas, rice cooker, dsb). Kosongkan/0 kalau tidak ada.'
+      },
       { name: 'statusBooking', label: 'Status Booking', type: 'select-async', required: true, master: 'status-booking' },
       { name: 'sumberLeads', label: 'Sumber Leads', type: 'select-async', required: true, master: 'sumber-leads' },
       { name: 'catatan', label: 'Catatan', type: 'textarea', required: false },

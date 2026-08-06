@@ -159,6 +159,26 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
     // Drive tetap bisa ditelusuri.
     const idPenghuni = statusDb === 'Check-in' ? (await resolveOccupancyId(kamarId)) || noBooking : noBooking;
 
+    /* Tambahan listrik menempel ke PENGHUNI (migrasi 004), sedangkan baris
+       occupancy_history & active_tenant dibuat trigger check-in — trigger itu
+       tidak tahu kolomnya. Jadi diisi di sini, setelah barisnya ada. Hanya
+       relevan saat status Check-in; booking yang belum masuk belum punya baris. */
+    const tambahanListrik = values.tambahanListrik ? parseRupiah(values.tambahanListrik as string | number) : 0;
+    // Selalu disimpan di booking — jadi nilainya tidak hilang untuk booking yang
+    // belum check-in, dan bisa disalin saat check-in menyusul.
+    if (tambahanListrik > 0) {
+      await turso().execute({ sql: 'UPDATE booking SET tambahan_listrik = ? WHERE no_booking = ?', args: [tambahanListrik, noBooking] });
+    }
+    if (statusDb === 'Check-in' && tambahanListrik > 0 && idPenghuni !== noBooking) {
+      await turso().batch(
+        [
+          { sql: 'UPDATE occupancy_history SET tambahan_listrik = ? WHERE id_penghuni = ?', args: [tambahanListrik, idPenghuni] },
+          { sql: 'UPDATE active_tenant SET tambahan_listrik = ? WHERE id_penghuni = ?', args: [tambahanListrik, idPenghuni] }
+        ],
+        'write'
+      );
+    }
+
     const warningIdentitas = await saveLampiran(values, ctx, `Penghuni Baru — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin', {
       penamaan: { idPenghuni, jenis: String(values.jenisDokumen ?? 'Identitas') }
     });

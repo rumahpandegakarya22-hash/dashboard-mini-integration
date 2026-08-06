@@ -43,6 +43,9 @@ export default function ReviewPendaftaranPanel() {
   const [info, setInfo] = useState('');
   const [semua, setSemua] = useState(false);
   const [alasan, setAlasan] = useState<Record<string, string>>({});
+  // Tambahan listrik dari barang elektronik penghuni — dicatat saat review,
+  // disalin ke penghuni saat check-in.
+  const [listrik, setListrik] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
 
   async function load(filterSemua = semua) {
@@ -73,7 +76,12 @@ export default function ReviewPendaftaranPanel() {
       const res = await fetch('/api/ops/pendaftaran', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ noBooking: p.noBooking, aksi, alasan: alasan[p.noBooking] ?? '' })
+        body: JSON.stringify({
+          noBooking: p.noBooking,
+          aksi,
+          alasan: alasan[p.noBooking] ?? '',
+          tambahanListrik: Number(listrik[p.noBooking] ?? 0) || 0
+        })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Gagal memproses.');
@@ -230,6 +238,17 @@ export default function ReviewPendaftaranPanel() {
 
             {p.status === 'Pending' && (
               <>
+                <div className="field" style={{ marginTop: 12 }}>
+                  <label htmlFor={`listrik-${p.noBooking}`}>Tambahan Listrik / bulan (Rp)</label>
+                  <input
+                    id={`listrik-${p.noBooking}`}
+                    type="number"
+                    min={0}
+                    value={listrik[p.noBooking] ?? ''}
+                    placeholder="Kosongkan kalau tidak bawa barang elektronik"
+                    onChange={(e) => setListrik((prev) => ({ ...prev, [p.noBooking]: e.target.value }))}
+                  />
+                </div>
                 <div className="field" style={{ marginTop: 12 }}>
                   <label htmlFor={`tolak-${p.noBooking}`}>Alasan penolakan</label>
                   <input
