@@ -373,13 +373,18 @@ export async function getInvoiceSewaMaster(): Promise<InvoiceSewaMaster> {
   return cached('invoice-sewa', fetchInvoiceSewaMasterUncached);
 }
 
-/** Listrik/bulan per No Kamar — kolom Turso `kamar.listrik` (Wave 1 migrasi
- *  Sheets → Turso; dulu DATABASE_PENGHUNI/DATA kolom "Listrik").
- *  Kamar tanpa nilai listrik sengaja TIDAK dimasukkan ke map, sama seperti
- *  perilaku lama saat selnya kosong. */
+/** Listrik tambahan/bulan, dikunci ke PENGHUNI yang sedang menempati kamar
+ *  (`active_tenant.tambahan_listrik`), bukan ke kamarnya.
+ *
+ *  Biaya ini timbul dari barang elektronik milik penghuni, jadi ikut orangnya:
+ *  saat ia keluar, penghuni berikutnya mulai dari nol, bukan mewarisi tagihan.
+ *  Dulu tersimpan di `kamar.listrik` — kolom itu masih ada tapi TIDAK dibaca.
+ *
+ *  Map tetap ber-key No Kamar karena pemanggilnya (preview invoice) hanya tahu
+ *  nomor kamar. Penghuni tanpa nilai listrik sengaja tidak masuk map. */
 async function fetchListrikByKamarUncached(): Promise<Record<string, number>> {
   const res = await turso().execute(
-    'SELECT no_kamar, listrik FROM kamar WHERE listrik IS NOT NULL AND listrik != 0'
+    'SELECT no_kamar, tambahan_listrik AS listrik FROM active_tenant WHERE tambahan_listrik IS NOT NULL AND tambahan_listrik != 0'
   );
   const map: Record<string, number> = {};
   for (const r of res.rows) {
