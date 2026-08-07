@@ -35,6 +35,17 @@ export default function VerifikasiBuktiPanel() {
   const [info, setInfo] = useState('');
   const [semua, setSemua] = useState(false);
   const [alasan, setAlasan] = useState<Record<string, string>>({});
+  /* Rekening tujuan tidak diketahui dari bukti yang diunggah penghuni, jadi
+     admin memilihnya di sini. Tanpa ini jurnal tidak bisa dibuat. */
+  const [kas, setKas] = useState<Record<string, string>>({});
+  const [opsiKas, setOpsiKas] = useState<{ id: string; label: string }[]>([]);
+
+  useEffect(() => {
+    fetch('/api/ops/master/kaslist')
+      .then((r) => r.json())
+      .then((j) => setOpsiKas(Array.isArray(j.data) ? j.data : []))
+      .catch(() => setOpsiKas([]));
+  }, []);
   const [busy, setBusy] = useState<string | null>(null);
 
   async function load(filterSemua = semua) {
@@ -65,7 +76,7 @@ export default function VerifikasiBuktiPanel() {
       const res = await fetch('/api/ops/verifikasi-bukti', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: b.id, aksi, alasan: alasan[b.id] ?? '' })
+        body: JSON.stringify({ id: b.id, aksi, alasan: alasan[b.id] ?? '', akunKasBank: kas[b.id] ?? '' })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Gagal memproses.');
@@ -210,6 +221,22 @@ export default function VerifikasiBuktiPanel() {
 
             {b.status === 'Menunggu' ? (
               <>
+                <div className="field" style={{ marginTop: 12 }}>
+                  <label htmlFor={`kas-${b.id}`}>Rekening / Kas Tujuan</label>
+                  <select
+                    id={`kas-${b.id}`}
+                    value={kas[b.id] ?? ''}
+                    onChange={(e) => setKas((p) => ({ ...p, [b.id]: e.target.value }))}
+                  >
+                    <option value="">— pilih supaya jurnal ikut dibuat —</option>
+                    {opsiKas.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="help">Uang bukti ini masuk ke mana. Kalau dikosongkan, pembayaran tetap tercatat tapi jurnalnya harus diinput manual.</p>
+                </div>
                 <div className="field" style={{ marginTop: 12 }}>
                   <label htmlFor={`alasan-${b.id}`}>Alasan penolakan</label>
                   <input

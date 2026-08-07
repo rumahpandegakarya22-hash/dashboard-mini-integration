@@ -4,6 +4,7 @@ import { canAccess } from '@/lib/core/roles';
 import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
 import { getPenghuniByIds, labelPenghuni, urlBerkas } from '@/lib/teman-rara';
+import { barisJurnalDp, barisJurnalSewa, kodeAkunKas } from '@/lib/jurnal';
 
 /**
  * Verifikasi bukti bayar yang diunggah penghuni lewat aplikasi Teman Rara.
@@ -137,12 +138,12 @@ export async function PATCH(req: NextRequest) {
      diambil dari invoice yang sudah tertaut ke bukti ini, jadi tidak ada angka
      yang diketik dua kali.
 
-     JURNAL sengaja TIDAK dibuat: bukti unggahan penghuni tidak memberi tahu
-     uangnya masuk ke akun kas/bank yang mana, dan menebaknya berarti salah
-     akun di pembukuan. Dikembalikan sebagai peringatan agar admin mencatat
-     jurnalnya sendiri. */
+     Jurnal ikut dibuat HANYA kalau admin memilih akun kas/bank tujuan di panel
+     — bukti unggahan penghuni tidak menyebutkannya, dan menebak berarti salah
+     akun di pembukuan. Kalau tidak dipilih, payment tetap tercatat dan admin
+     diberi peringatan. */
   let peringatan: string | undefined;
-  if (aksi === 'verifikasi') peringatan = await catatPembayaran(id, user.username);
+  if (aksi === 'verifikasi') peringatan = await catatPembayaran(id, user.username, String(body.akunKasBank ?? '').trim());
 
   await writeAudit({
     requestId: `bukti-${id}-${Date.now()}`,
@@ -161,7 +162,7 @@ export async function PATCH(req: NextRequest) {
 
 /** Buat baris `payment` dari invoice yang tertaut ke bukti. Idempoten: kalau
  *  baris untuk nomor invoice itu sudah ada, tidak melakukan apa-apa. */
-async function catatPembayaran(idBukti: string, username: string): Promise<string | undefined> {
+async function catatPembayaran(idBukti: string, username: string, akunKasBank: string): Promise<string | undefined> {
   const db = turso();
   try {
     const b = (
@@ -177,8 +178,8 @@ async function catatPembayaran(idBukti: string, username: string): Promise<strin
     const inv = (
       await db.execute(
         sewaId
-          ? { sql: 'SELECT no_inv, id_penghuni, periode_awal, periode_akhir, grand_total, tanggal_pembayaran FROM invoice_sewa WHERE id = ?', args: [sewaId] }
-          : { sql: 'SELECT no_inv, id_penghuni, tanggal_pembayaran AS periode_awal, NULL AS periode_akhir, grand_total, tanggal_pembayaran FROM invoice_dp WHERE id = ?', args: [dpId] }
+          ? { sql: 'SELECT * FROM invoice_sewa WHERE id = ?', args: [sewaId] }
+          : { sql: 'SELECT *, tanggal_pembayaran AS periode_awal, NULL AS periode_akhir FROM invoice_dp WHERE id = ?', args: [dpId] }
       )
     ).rows[0] as any;
     if (!inv) return 'Invoice yang tertaut ke bukti ini tidak ditemukan — pembayaran TIDAK dicatat otomatis.';
@@ -202,7 +203,41 @@ async function catatPembayaran(idBukti: string, username: string): Promise<strin
         `Dari verifikasi bukti bayar penghuni oleh ${username}`
       ]
     });
-    return `Pembayaran ${inv.no_inv} tercatat otomatis. Jurnal BELUM dibuat — bukti tidak menyebut akun kas/bank tujuan, catat jurnalnya manual.`;
+    if (!akunKasBank) {
+      return `Pembayaran ${inv.no_inv} tercatat otomatis. Jurnal BELUM dibuat — akun kas/bank tujuan tidak dipilih, catat jurnalnya manual.`;
+    }
+    const kodeKas = await kodeAkunKas(akunKasBank);
+    if (!kodeKas) {
+      return `Pembayaran ${inv.no_inv} tercatat. Jurnal TIDAK dibuat: akun "${akunKasBank}" tidak ada di COA grup Kas & Bank.`;
+    }
+    const umum = {
+      kodeKas,
+      nama: String(inv.nama ?? ''),
+      noKamar: String(inv.no_kamar ?? ''),
+      tanggalBayar: String(inv.tanggal_pembayaran ?? new Date().toISOString().slice(0, 10)),
+      diskon: Number(inv.diskon ?? 0),
+      pajak: Number(inv.pajak ?? 0)
+    };
+    const baris = sewaId
+      ? barisJurnalSewa({
+          ...umum,
+          periodeAwal: String(inv.periode_awal ?? umum.tanggalBayar),
+          jumlahBulan: Number(inv.jumlah_bulan ?? 1) || 1,
+          totalSewa: Number(inv.total_sewa ?? 0),
+          totalListrik: Number(inv.total_listrik ?? 0),
+          totalDenda: Number(inv.total_denda ?? 0),
+          grandTotal: Number(inv.grand_total ?? 0)
+        })
+      : barisJurnalDp({ ...umum, subtotal: Number(inv.subtotal ?? inv.grand_total ?? 0) });
+    await db.batch(
+      baris.map((b) => ({
+        sql: `INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori)
+              VALUES (?,?,?,?,?,?)`,
+        args: [b.tanggal, b.debit, b.kredit, b.nominal, b.keterangan, b.kategori]
+      })),
+      'write'
+    );
+    return `Pembayaran ${inv.no_inv} tercatat & jurnal dibuat (${baris.length} baris) ke akun ${akunKasBank}.`;
   } catch (e: any) {
     console.error('[verifikasi-bukti] gagal catat payment:', e?.message);
     return `Bukti diverifikasi, tapi pencatatan pembayaran otomatis gagal (${e?.message || 'unknown'}) — input manual lewat modul Pembayaran Sewa.`;
