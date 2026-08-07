@@ -132,6 +132,18 @@ export async function PATCH(req: NextRequest) {
     args: [...args, id]
   });
 
+  /* "Bukti Sah" = pembayaran diakui, jadi baris `payment` dibuat di sini —
+     admin tidak perlu mengetik ulang lewat modul Pembayaran Sewa. Datanya
+     diambil dari invoice yang sudah tertaut ke bukti ini, jadi tidak ada angka
+     yang diketik dua kali.
+
+     JURNAL sengaja TIDAK dibuat: bukti unggahan penghuni tidak memberi tahu
+     uangnya masuk ke akun kas/bank yang mana, dan menebaknya berarti salah
+     akun di pembukuan. Dikembalikan sebagai peringatan agar admin mencatat
+     jurnalnya sendiri. */
+  let peringatan: string | undefined;
+  if (aksi === 'verifikasi') peringatan = await catatPembayaran(id, user.username);
+
   await writeAudit({
     requestId: `bukti-${id}-${Date.now()}`,
     user,
@@ -144,5 +156,55 @@ export async function PATCH(req: NextRequest) {
     status: 'sukses'
   });
 
-  return NextResponse.json({ ok: true, id, aksi });
+  return NextResponse.json({ ok: true, id, aksi, peringatan });
+}
+
+/** Buat baris `payment` dari invoice yang tertaut ke bukti. Idempoten: kalau
+ *  baris untuk nomor invoice itu sudah ada, tidak melakukan apa-apa. */
+async function catatPembayaran(idBukti: string, username: string): Promise<string | undefined> {
+  const db = turso();
+  try {
+    const b = (
+      await db.execute({
+        sql: 'SELECT id_penghuni, invoice_sewa_id, invoice_dp_id FROM tr_payment_proof WHERE id = ?',
+        args: [idBukti]
+      })
+    ).rows[0] as any;
+    const sewaId = b?.invoice_sewa_id ? Number(b.invoice_sewa_id) : null;
+    const dpId = b?.invoice_dp_id ? Number(b.invoice_dp_id) : null;
+    if (!sewaId && !dpId) return 'Bukti ini tidak tertaut ke invoice mana pun — pembayaran TIDAK dicatat otomatis, input lewat modul Pembayaran Sewa.';
+
+    const inv = (
+      await db.execute(
+        sewaId
+          ? { sql: 'SELECT no_inv, id_penghuni, periode_awal, periode_akhir, grand_total, tanggal_pembayaran FROM invoice_sewa WHERE id = ?', args: [sewaId] }
+          : { sql: 'SELECT no_inv, id_penghuni, tanggal_pembayaran AS periode_awal, NULL AS periode_akhir, grand_total, tanggal_pembayaran FROM invoice_dp WHERE id = ?', args: [dpId] }
+      )
+    ).rows[0] as any;
+    if (!inv) return 'Invoice yang tertaut ke bukti ini tidak ditemukan — pembayaran TIDAK dicatat otomatis.';
+
+    const sudah = await db.execute({ sql: 'SELECT 1 FROM payment WHERE id_payment = ? LIMIT 1', args: [String(inv.no_inv)] });
+    if (sudah.rows.length) return undefined; // sudah pernah dicatat, aman diklik ulang
+
+    await db.execute({
+      sql: `INSERT INTO payment
+              (id_payment, id_penghuni, invoice_dp_id, invoice_sewa_id, periode_awal, periode_akhir, amount, payment_date, status, notes)
+            VALUES (?,?,?,?,?,?,?,?,'Paid',?)`,
+      args: [
+        String(inv.no_inv),
+        String(inv.id_penghuni ?? b.id_penghuni),
+        dpId,
+        sewaId,
+        inv.periode_awal ?? null,
+        inv.periode_akhir ?? null,
+        Number(inv.grand_total ?? 0),
+        inv.tanggal_pembayaran ?? new Date().toISOString().slice(0, 10),
+        `Dari verifikasi bukti bayar penghuni oleh ${username}`
+      ]
+    });
+    return `Pembayaran ${inv.no_inv} tercatat otomatis. Jurnal BELUM dibuat — bukti tidak menyebut akun kas/bank tujuan, catat jurnalnya manual.`;
+  } catch (e: any) {
+    console.error('[verifikasi-bukti] gagal catat payment:', e?.message);
+    return `Bukti diverifikasi, tapi pencatatan pembayaran otomatis gagal (${e?.message || 'unknown'}) — input manual lewat modul Pembayaran Sewa.`;
+  }
 }

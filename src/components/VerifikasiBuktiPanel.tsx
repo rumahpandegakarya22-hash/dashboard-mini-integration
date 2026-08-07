@@ -71,7 +71,7 @@ export default function VerifikasiBuktiPanel() {
       if (!res.ok) throw new Error(json.error || 'Gagal memproses.');
       setInfo(
         aksi === 'verifikasi'
-          ? `Bukti dari ${b.penghuni} ditandai sah. Pencatatan pembayarannya lewat form di atas.`
+          ? json.peringatan || `Bukti dari ${b.penghuni} ditandai sah dan pembayarannya sudah tercatat otomatis.`
           : aksi === 'tolak'
             ? `Bukti dari ${b.penghuni} ditolak.`
             : `Keputusan atas bukti ${b.penghuni} dibatalkan — kembali ke antrean.`
