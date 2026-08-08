@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
 import { SignOutButton } from '@clerk/nextjs';
 import { ROLE_NAV } from '@/config/dashboard-nav';
 import type { DashboardRole } from '@/config/dashboard-access';
@@ -16,7 +17,7 @@ import {
   IconSidebar,
   IconMenu,
   IconCaret,
-  IconLock,
+  IconGear,
   IconLogout
 } from './icons';
 
@@ -118,14 +119,15 @@ export default function DashboardShell({
               </span>
               Mini App Ops
             </a>
-            {/* Inventory Stock sejajar Mini App Ops: keduanya app terpisah yang
-                dipakai akun yang sama, bukan halaman data Dashboard. */}
-            <a className="nav-link" href="/inventory">
-              <span className="caret">
-                <IconCaret />
-              </span>
-              Inventory Stock
-            </a>
+            {/* Inventory Stock: hanya untuk role yang memang mengelola stok */}
+            {role !== 'marketing' && role !== 'sales' && (
+              <a className="nav-link" href="/inventory">
+                <span className="caret">
+                  <IconCaret />
+                </span>
+                Inventory Stock
+              </a>
+            )}
           </div>
         )}
 
@@ -134,12 +136,12 @@ export default function DashboardShell({
           <div className="side-user__meta">
             <b>{userName || r.label}</b>
             <small>
-              Masuk sebagai {role}
+               {role}
               {tfaEnabled ? ' · 2FA' : ''}
             </small>
           </div>
           <Link href="/dashboard/akun" className="side-logout" id="securityBtn" aria-label="Akun & Keamanan" title="Akun & Keamanan">
-            <IconLock />
+            <IconGear />
           </Link>
           <SignOutButton redirectUrl="/login">
             <button className="side-logout" id="logoutBtn" aria-label="Keluar" title="Keluar">
@@ -149,16 +151,6 @@ export default function DashboardShell({
         </div>
       </aside>
 
-      {/*
-        BUG DITEMUKAN & DIPERBAIKI (lihat docs/PENYIMPANGAN.md G10): wrapper
-        `.main` ini sempat hilang dari port awal. Tanpa dia, `.topbar` &
-        `.content` jadi grid-item LANGSUNG milik `.app` (bukan anak `.main`),
-        dan grid 2-kolom `.app` (lihat theme-dashboard.css) menaruhnya lewat
-        auto-placement row-major: topbar di row1-col2, content di
-        row2-COL1 — persis di bawah sidebar, nyempil ke lebar kolom sidebar.
-        Verbatim struktur `render()` app.js: sidebar, lalu `.main` (berisi
-        topbar+content), lalu scrim — tiga anak `.app`, bukan empat/lima.
-      */}
       <div className="main">
         <header className="topbar">
           <button className="topbar__icon menu-toggle" id="menuToggle" aria-label="Menu" onClick={() => setNavOpen((o) => !o)}>
@@ -209,7 +201,17 @@ export default function DashboardShell({
               </div>
             </div>
           )}
-          {children}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={`${view}::${period}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.22, ease: [0.22, 0.61, 0.36, 1] }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
 

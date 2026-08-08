@@ -1,37 +1,3 @@
-/* ============================================================
-   theme-dashboard.css — identitas visual Dashboard Kost Tiga Dara
-   ("iOS 26 Liquid Glass" dark, aksen mint, palet Owner crimson, desktop-first).
-
-   PORT dari public/styles.css repo Dashboard lama (Fase 4 migrasi).
-   Ditransformasi MEKANIS lewat skrip: hanya SELECTOR yang diubah agar ter-scope
-   ke [data-app="dashboard"]. TIDAK SATU PUN NILAI DEKLARASI DISENTUH (§4 & R8).
-
-   Pemetaan selector yang dilakukan:
-     :root                    -> [data-app='dashboard']
-     body / html              -> [data-app='dashboard']
-     body.theme-light X       -> :root[data-theme='light'] [data-app='dashboard'] X
-     body:not(.theme-light) X -> :root:not([data-theme='light']) [data-app='dashboard'] X
-     body[data-role="owner"]  -> [data-app='dashboard'][data-role="owner"]
-     <lainnya>                -> [data-app='dashboard'] <lainnya>
-   @keyframes dan at-rule lain (@media, @supports) dibiarkan utuh.
-
-   Tema light Dashboard lama memakai kelas body.theme-light + localStorage
-   'ktd-theme'; kini dipetakan ke mekanisme data-theme milik Mini App (§4.3),
-   sehingga satu ThemeToggle melayani kedua sisi.
-
-   CATATAN token: beberapa nama token bertabrakan dengan theme-ops.css tetapi
-   BERBEDA SEMANTIK — mis. --glass-blur di sini panjang (30px) sedangkan di ops
-   berupa filter (blur(22px) saturate(1.8)); --r-sm 14px vs 10px. Aman karena
-   keduanya ter-scope terpisah, tetapi berarti cita-cita §4.1 "satu kontrak nama
-   token" belum sepenuhnya tercapai. Tidak diseragamkan di sini karena akan
-   mengubah nilai visual (dilarang R8).
-   ============================================================ */
-
-/* =========================================================================
-   Kost Management Dashboard — Figma → Code
-   Dark, multi-role admin dashboard (Admin/Keuangan, Marketing, Operasional,
-   Owner, Sales). Desktop-first, responsive. All theming via CSS variables.
-   ========================================================================= */
 
 /* ----------------------------- Design tokens ---------------------------- */
 [data-app='dashboard'] {
@@ -223,7 +189,7 @@
 }
 [data-app='dashboard'] .side-user .avatar { width: 30px; height: 30px; font-size: 11px; }
 [data-app='dashboard'] .side-user__meta { min-width: 0; line-height: 1.25; }
-[data-app='dashboard'] .side-user__meta b { font-size: 12.5px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-app='dashboard'] .side-user__meta b { font-size: 12.5px; font-weight: 600; display: block; overflow-wrap: break-word; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 [data-app='dashboard'] .side-user__meta small { font-size: 11px; color: var(--text-3); text-transform: capitalize; }
 [data-app='dashboard'] .side-logout {
   margin-left: auto; width: 28px; height: 28px; border-radius: 8px; flex: none;
@@ -1262,7 +1228,7 @@
   display: flex; flex-direction: column; padding: 8px;
   background: var(--card-2); border: 1px solid var(--border-2); border-radius: 12px;
   box-shadow: 0 20px 54px rgba(0,0,0,.42);
-  -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(40 px) saturate(160%); backdrop-filter: blur(40 px) saturate(160%);
   color: var(--text); font-size: 12.5px;
 }
 :root[data-theme='light'] [data-app='dashboard'] .colfilter-menu { background: rgba(255,255,255,.94); }
@@ -1278,7 +1244,7 @@
 }
 [data-app='dashboard'] .cfm-item:hover { background: var(--card); }
 [data-app='dashboard'] .cfm-item input { accent-color: var(--brand); flex: 0 0 auto; }
-[data-app='dashboard'] .cfm-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-app='dashboard'] .cfm-item span { overflow-wrap: break-word; word-break: break-word; line-height: 1.35; }
 [data-app='dashboard'] .cfm-all { font-weight: 600; border-bottom: 1px solid var(--border); padding-bottom: 7px; margin-bottom: 2px; }
 [data-app='dashboard'] .cfm-empty { font-size: 12px; color: var(--text-3); padding: 10px; text-align: center; }
 [data-app='dashboard'] .cfm-foot { display: flex; gap: 8px; justify-content: flex-end; padding-top: 7px; border-top: 1px solid var(--border); }

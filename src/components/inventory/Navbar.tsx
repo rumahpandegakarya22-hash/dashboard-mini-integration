@@ -5,16 +5,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Package, 
-  ShoppingCart, 
-  Activity, 
-  ClipboardList, 
-  Sliders, 
-  ArrowLeft, 
-  Menu, 
+  Package,
+  ShoppingCart,
+  Activity,
+  ClipboardList,
+  Sliders,
+  ArrowLeft,
+  Menu,
   X,
   User,
-  ShieldCheck
+  ShieldCheck,
+  Wrench
 } from "lucide-react";
 
 /** Identitas yang dipakai chrome Inventory. Dulu MockUser dari app lama; kini
@@ -74,6 +75,7 @@ export default function Navbar() {
   const navigation = [
     { name: "Dashboard", href: "/inventory", icon: ClipboardList, roles: ["OWNER", "STAFF"] },
     { name: "Daftar Bahan", href: "/inventory/materials", icon: Package, roles: ["OWNER", "STAFF"] },
+    { name: "Daftar Alat", href: "/inventory/alat", icon: Wrench, roles: ["OWNER", "STAFF"] },
     { name: "Pembelian (+)", href: "/inventory/purchases", icon: ShoppingCart, roles: ["OWNER", "STAFF"] },
     { name: "Pemakaian (-)", href: "/inventory/usages", icon: Activity, roles: ["OWNER", "STAFF"] },
     { name: "Koreksi Stok", href: "/inventory/corrections", icon: Sliders, roles: ["OWNER"] },

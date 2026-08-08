@@ -198,6 +198,15 @@ export interface PembayaranRow {
   keterangan: string;
 }
 
+/** Baris tabel Transaksi (pendapatan non-sewa + pengeluaran). */
+export interface TransaksiRow {
+  tanggal: string;
+  namaTx: string;
+  jenisTx: string;
+  jumlah: string;
+  keterangan: string;
+}
+
 /** Seluruh data dashboard hasil hidrasi satu kali dari /api/dashboard/sheets. */
 export interface DashboardData {
   penghuni: Penghuni[];
@@ -216,4 +225,5 @@ export interface DashboardData {
   stats: Stats;
   tempo: Tempo | null;
   pembayaran: PembayaranRow[];
+  transaksi: TransaksiRow[];
 }

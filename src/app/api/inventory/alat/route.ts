@@ -1,21 +1,16 @@
 import { NextResponse } from 'next/server';
-import { listMaterials, createMaterial, updateMaterial } from '@/lib/inventory-admin';
+import { listAlat, createAlat, updateAlat, seedAlatIfEmpty } from '@/lib/inventory-admin';
 import { requireInventoryAuth, requireOwner, isResponse } from '@/lib/inventory-api-guard';
 
-export async function GET(req: Request) {
+export async function GET() {
   const a = await requireInventoryAuth();
   if (isResponse(a)) return a;
   try {
-    const search = (new URL(req.url).searchParams.get('search') || '').toLowerCase();
-    const all = await listMaterials();
-    const materials = search
-      ? all.filter(
-          (m) => m.name.toLowerCase().includes(search) || m.category.toLowerCase().includes(search)
-        )
-      : all;
-    return NextResponse.json({ materials });
+    await seedAlatIfEmpty();
+    const alat = await listAlat();
+    return NextResponse.json({ alat });
   } catch (e: any) {
-    console.error('[api/inventory/materials] GET:', e?.message);
+    console.error('[api/inventory/alat] GET:', e?.message);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -27,14 +22,12 @@ export async function POST(req: Request) {
   if (forbidden) return forbidden;
   try {
     const b = await req.json();
-    const id = await createMaterial({
-      name: String(b.name ?? ''),
-      category: String(b.category ?? ''),
-      unit: String(b.unit ?? ''),
-      currentStock: parseFloat(b.currentStock) || 0,
-      minStock: parseFloat(b.minStock) || 0,
-      description: String(b.description ?? ''),
-      kondisi: String(b.kondisi ?? ''),
+    const id = await createAlat({
+      nama: String(b.nama ?? ''),
+      kategori: String(b.kategori ?? ''),
+      kondisi: String(b.kondisi ?? 'Baru'),
+      jumlah: parseInt(b.jumlah) || 1,
+      catatan: String(b.catatan ?? ''),
       by: a.user.username
     });
     return NextResponse.json({ success: true, id });
@@ -50,14 +43,13 @@ export async function PUT(req: Request) {
   if (forbidden) return forbidden;
   try {
     const b = await req.json();
-    await updateMaterial({
+    await updateAlat({
       id: Number(b.id),
-      name: String(b.name ?? ''),
-      category: String(b.category ?? ''),
-      unit: String(b.unit ?? ''),
-      minStock: parseFloat(b.minStock) || 0,
-      description: String(b.description ?? ''),
-      kondisi: String(b.kondisi ?? ''),
+      nama: String(b.nama ?? ''),
+      kategori: String(b.kategori ?? ''),
+      kondisi: String(b.kondisi ?? 'Baru'),
+      jumlah: parseInt(b.jumlah) || 1,
+      catatan: String(b.catatan ?? ''),
       by: a.user.username
     });
     return NextResponse.json({ success: true });

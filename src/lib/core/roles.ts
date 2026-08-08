@@ -28,6 +28,7 @@ export const MODULE_ACCESS: Record<string, Role[]> = {
   'pindah-kamar': ['staff_admin'],
   'checkout': ['staff_admin'],
   'pengeluaran': ['staff_admin'],
+  'pendapatan-non-sewa': ['staff_admin'],
   'feedback': ['staff_admin'],
   'survey': ['staff_sales'],
   'leads': ['staff_marketing'],

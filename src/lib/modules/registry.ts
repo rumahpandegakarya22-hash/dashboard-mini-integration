@@ -304,6 +304,17 @@ export const MODULES: ModuleMeta[] = [
     ]
   },
   {
+    id: 'pendapatan-non-sewa',
+    title: 'Pencatatan Pendapatan',
+    ready: true,
+    fields: [
+      { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
+      { name: 'namaTransaksi', label: 'Nama Transaksi', type: 'text', required: true, placeholder: 'Contoh: Biaya laundry, Titipan parkir' },
+      { name: 'jumlah', label: 'Jumlah Nominal', type: 'number', required: true },
+      { name: 'keterangan', label: 'Keterangan', type: 'textarea', required: false }
+    ]
+  },
+  {
     id: 'pengeluaran',
     title: 'Pencatatan Pengeluaran',
     ready: true,

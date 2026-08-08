@@ -24,6 +24,8 @@ interface Material {
   unit: string;
   currentStock: number;
   minStock: number;
+  description: string;
+  kondisi: string;
 }
 
 export default function MaterialsPage() {
@@ -44,6 +46,8 @@ export default function MaterialsPage() {
     unit: "pcs",
     currentStock: "0",
     minStock: "5",
+    description: "",
+    kondisi: ""
   });
   const [formError, setFormError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -83,6 +87,8 @@ export default function MaterialsPage() {
       unit: "pcs",
       currentStock: "0",
       minStock: "5",
+      description: "",
+      kondisi: ""
     });
     setFormError("");
     setSuccessMsg("");
@@ -97,6 +103,8 @@ export default function MaterialsPage() {
       unit: material.unit,
       currentStock: String(material.currentStock),
       minStock: String(material.minStock),
+      description: material.description || "",
+      kondisi: material.kondisi || ""
     });
     setFormError("");
     setSuccessMsg("");
@@ -118,6 +126,8 @@ export default function MaterialsPage() {
           unit: formData.unit,
           currentStock: parseFloat(formData.currentStock),
           minStock: parseFloat(formData.minStock),
+          description: formData.description,
+          kondisi: formData.kondisi,
         }),
       });
 
@@ -154,6 +164,8 @@ export default function MaterialsPage() {
           category: formData.category,
           unit: formData.unit,
           minStock: parseFloat(formData.minStock),
+          description: formData.description,
+          kondisi: formData.kondisi,
         }),
       });
 
@@ -250,9 +262,16 @@ export default function MaterialsPage() {
                   <div>
                     {/* Category Tag & Edit Button */}
                     <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] font-bold text-accent uppercase tracking-widest bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-full">
-                        {item.category}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-bold text-accent uppercase tracking-widest bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-full">
+                          {item.category}
+                        </span>
+                        {item.kondisi && (
+                          <span className="text-[10px] font-bold text-stone-500 uppercase tracking-widest bg-stone-100 border border-stone-200 px-2.5 py-1 rounded-full">
+                            {item.kondisi}
+                          </span>
+                        )}
+                      </div>
                       {isOwner && (
                         <button
                           onClick={() => handleOpenEdit(item)}
@@ -410,6 +429,28 @@ export default function MaterialsPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Kondisi</label>
+                  <OriginSelect
+                    ariaLabel="Kondisi"
+                    value={formData.kondisi || "Baru"}
+                    onChange={(v) => setFormData({...formData, kondisi: v})}
+                    options={[{ value: "Baru", label: "Baru" }, { value: "Bekas", label: "Bekas" }]}
+                    className="px-4 py-3 rounded-xl glass-input text-sm bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Deskripsi</label>
+                  <textarea
+                    rows={2}
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    placeholder="Keterangan tambahan (opsional)"
+                    className="w-full px-4 py-3 rounded-xl glass-input text-sm resize-none"
+                  />
+                </div>
+
                 <div className="pt-4 flex justify-end gap-3">
                   <button
                     type="button"
@@ -535,6 +576,28 @@ export default function MaterialsPage() {
                       className="w-full px-4 py-3 rounded-xl glass-input text-sm"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Kondisi</label>
+                  <OriginSelect
+                    ariaLabel="Kondisi"
+                    value={formData.kondisi || "Baru"}
+                    onChange={(v) => setFormData({...formData, kondisi: v})}
+                    options={[{ value: "Baru", label: "Baru" }, { value: "Bekas", label: "Bekas" }]}
+                    className="px-4 py-3 rounded-xl glass-input text-sm bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-taupe-dark uppercase tracking-wider mb-2">Deskripsi</label>
+                  <textarea
+                    rows={2}
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    placeholder="Keterangan tambahan (opsional)"
+                    className="w-full px-4 py-3 rounded-xl glass-input text-sm resize-none"
+                  />
                 </div>
 
                 <div className="pt-4 flex justify-end gap-3">

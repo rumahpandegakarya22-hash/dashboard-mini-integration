@@ -597,10 +597,14 @@ export function computeTempo(
  * Urutan mengikuti `loadLiveData()`: tempo dihitung setelah payments & occupants
  * siap, lalu rooms/stats memakai hasil tempo (tunggakan/jatuh tempo menang).
  */
-export function hydrateDashboard(sheets: SheetsOut): DashboardData {
+export function hydrateDashboard(
+  sheets: SheetsOut,
+  opts?: { tursoPayments?: PaymentRaw[]; transaksi?: import('./types').TransaksiRow[] }
+): DashboardData {
   const penghuni = hydratePenghuni(sheets);
   const logbook = hydrateLogbook(sheets);
-  const payments = hydratePayments(sheets);
+  // Pakai Turso payments kalau ada (sumber primer), fallback ke Sheets untuk kompatibilitas.
+  const payments = opts?.tursoPayments ?? hydratePayments(sheets);
   const leads = hydrateLeads(sheets);
   const survey = hydrateSurvey(sheets);
   const booking = hydrateBooking(sheets);
@@ -615,6 +619,7 @@ export function hydrateDashboard(sheets: SheetsOut): DashboardData {
 
   return {
     penghuni, logbook, payments, leads, survey, booking, tiket, vendor, kamar,
-    dokumen, occupants, retention, rooms, stats, tempo, pembayaran
+    dokumen, occupants, retention, rooms, stats, tempo, pembayaran,
+    transaksi: opts?.transaksi ?? []
   };
 }

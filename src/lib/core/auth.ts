@@ -365,6 +365,15 @@ export async function listDashboardUsers(): Promise<DashboardAdminUserRow[]> {
 
 async function findByUsername(username: string): Promise<User | null> {
   const client = await clerkClient();
+  // Kalau username adalah Clerk user ID (user_xxx), pakai getUser langsung — getUserList
+  // dengan filter username tidak akan menemukan user yang login pakai OAuth (tanpa username).
+  if (String(username).startsWith('user_')) {
+    try {
+      return await client.users.getUser(username);
+    } catch {
+      return null;
+    }
+  }
   const list = await client.users.getUserList({ username: [String(username || '')] });
   return (list.data || [])[0] || null;
 }

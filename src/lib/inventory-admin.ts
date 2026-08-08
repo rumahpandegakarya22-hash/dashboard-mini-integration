@@ -26,11 +26,56 @@ export interface MaterialRow {
   unit: string;
   currentStock: number;
   minStock: number;
+  description: string;
+  kondisi: string;
+}
+
+export interface AlatRow {
+  id: number;
+  nama: string;
+  kategori: string;
+  kondisi: string;
+  jumlah: number;
+  catatan: string;
+}
+
+// Migrasi lazy — jalankan sekali per proses saat kolom belum ada.
+let _materialSchemaReady = false;
+async function ensureMaterialColumns(): Promise<void> {
+  if (_materialSchemaReady) return;
+  const c = getInventoryClient();
+  for (const sql of [
+    'ALTER TABLE materials ADD COLUMN description TEXT',
+    "ALTER TABLE materials ADD COLUMN kondisi TEXT NOT NULL DEFAULT ''"
+  ]) {
+    try { await c.execute(sql); } catch { /* kolom sudah ada */ }
+  }
+  _materialSchemaReady = true;
+}
+
+let _alatSchemaReady = false;
+async function ensureAlatTable(): Promise<void> {
+  if (_alatSchemaReady) return;
+  const c = getInventoryClient();
+  await c.execute(
+    `CREATE TABLE IF NOT EXISTS alat_inventaris (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nama TEXT NOT NULL,
+      kategori TEXT NOT NULL DEFAULT '',
+      kondisi TEXT NOT NULL DEFAULT 'Baru',
+      jumlah INTEGER NOT NULL DEFAULT 1,
+      catatan TEXT,
+      created_at INTEGER DEFAULT (unixepoch()),
+      updated_at INTEGER DEFAULT (unixepoch())
+    )`
+  );
+  _alatSchemaReady = true;
 }
 
 export async function listMaterials(): Promise<MaterialRow[]> {
+  await ensureMaterialColumns();
   const rs = await getInventoryClient().execute(
-    'SELECT id, name, category, unit, current_stock, min_stock FROM materials ORDER BY name'
+    'SELECT id, name, category, unit, current_stock, min_stock, description, kondisi FROM materials ORDER BY name'
   );
   return rs.rows.map((r: any) => ({
     id: Number(r.id),
@@ -38,7 +83,9 @@ export async function listMaterials(): Promise<MaterialRow[]> {
     category: String(r.category),
     unit: String(r.unit),
     currentStock: Number(r.current_stock),
-    minStock: Number(r.min_stock)
+    minStock: Number(r.min_stock),
+    description: String(r.description ?? ''),
+    kondisi: String(r.kondisi ?? '')
   }));
 }
 
@@ -48,8 +95,11 @@ export async function createMaterial(p: {
   unit: string;
   currentStock: number;
   minStock: number;
+  description?: string;
+  kondisi?: string;
   by: string;
 }): Promise<number> {
+  await ensureMaterialColumns();
   const name = p.name.trim();
   const category = p.category.trim();
   const unit = p.unit.trim();
@@ -60,9 +110,9 @@ export async function createMaterial(p: {
   if (dup.rows.length > 0) throw new Error(`Bahan "${name}" sudah ada.`);
 
   const ins = await c.execute({
-    sql: `INSERT INTO materials (name, category, unit, current_stock, min_stock)
-          VALUES (?, ?, ?, ?, ?) RETURNING id`,
-    args: [name, category, unit, p.currentStock || 0, p.minStock || 0]
+    sql: `INSERT INTO materials (name, category, unit, current_stock, min_stock, description, kondisi)
+          VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+    args: [name, category, unit, p.currentStock || 0, p.minStock || 0, p.description || '', p.kondisi || '']
   });
   const id = Number(ins.rows[0].id);
   await logActivity(
@@ -84,8 +134,11 @@ export async function updateMaterial(p: {
   category: string;
   unit: string;
   minStock: number;
+  description?: string;
+  kondisi?: string;
   by: string;
 }): Promise<void> {
+  await ensureMaterialColumns();
   const name = p.name.trim();
   const category = p.category.trim();
   const unit = p.unit.trim();
@@ -102,11 +155,78 @@ export async function updateMaterial(p: {
   }
 
   await c.execute({
-    sql: 'UPDATE materials SET name = ?, category = ?, unit = ?, min_stock = ? WHERE id = ?',
-    args: [name, category, unit, p.minStock || 0, p.id]
+    sql: 'UPDATE materials SET name = ?, category = ?, unit = ?, min_stock = ?, description = ?, kondisi = ? WHERE id = ?',
+    args: [name, category, unit, p.minStock || 0, p.description || '', p.kondisi || '', p.id]
   });
   await logActivity(c, `Mengubah detail bahan baku: ${lama} menjadi ${name} — oleh ${p.by}`, `material_${p.id}`);
   invalidateInventoryCache();
+}
+
+// ---- Alat Inventaris CRUD ----
+
+export async function listAlat(): Promise<AlatRow[]> {
+  await ensureAlatTable();
+  const c = getInventoryClient();
+  const rs = await c.execute('SELECT id, nama, kategori, kondisi, jumlah, catatan FROM alat_inventaris ORDER BY nama');
+  return rs.rows.map((r: any) => ({
+    id: Number(r.id),
+    nama: String(r.nama),
+    kategori: String(r.kategori ?? ''),
+    kondisi: String(r.kondisi ?? 'Baru'),
+    jumlah: Number(r.jumlah ?? 1),
+    catatan: String(r.catatan ?? '')
+  }));
+}
+
+export async function createAlat(p: { nama: string; kategori?: string; kondisi: string; jumlah: number; catatan?: string; by: string }): Promise<number> {
+  await ensureAlatTable();
+  const nama = p.nama.trim();
+  if (!nama) throw new Error('Nama alat wajib diisi.');
+  const c = getInventoryClient();
+  const ins = await c.execute({
+    sql: `INSERT INTO alat_inventaris (nama, kategori, kondisi, jumlah, catatan) VALUES (?, ?, ?, ?, ?) RETURNING id`,
+    args: [nama, p.kategori || '', p.kondisi || 'Baru', p.jumlah || 1, p.catatan || null]
+  });
+  const id = Number(ins.rows[0].id);
+  await logActivity(c, `Tambah alat inventaris: ${nama} — oleh ${p.by}`, `alat_${id}`);
+  return id;
+}
+
+export async function updateAlat(p: { id: number; nama: string; kategori?: string; kondisi: string; jumlah: number; catatan?: string; by: string }): Promise<void> {
+  await ensureAlatTable();
+  const nama = p.nama.trim();
+  if (!nama) throw new Error('Nama alat wajib diisi.');
+  const c = getInventoryClient();
+  await c.execute({
+    sql: 'UPDATE alat_inventaris SET nama = ?, kategori = ?, kondisi = ?, jumlah = ?, catatan = ?, updated_at = unixepoch() WHERE id = ?',
+    args: [nama, p.kategori || '', p.kondisi || 'Baru', p.jumlah || 1, p.catatan || null, p.id]
+  });
+  await logActivity(c, `Ubah alat inventaris #${p.id}: ${nama} — oleh ${p.by}`, `alat_${p.id}`);
+}
+
+const ALAT_SEED = [
+  { nama: 'Sarung tangan', jumlah: 2 }, { nama: 'Tespen', jumlah: 1 }, { nama: 'Tang', jumlah: 2 },
+  { nama: 'Obeng', jumlah: 2 }, { nama: 'Gunting', jumlah: 1 }, { nama: 'Kunci Inggris', jumlah: 1 },
+  { nama: 'Gunting tanaman', jumlah: 1 }, { nama: 'Senter', jumlah: 2 }, { nama: 'Meteran 10m', jumlah: 1 },
+  { nama: 'Spidol Snowman', jumlah: 1 }, { nama: 'Penggaris', jumlah: 1 }, { nama: 'Mata Gergaji', jumlah: 1 },
+  { nama: 'Palu', jumlah: 1 }, { nama: 'Sapu', jumlah: 2 }, { nama: 'Serok/Pengki', jumlah: 2 },
+  { nama: 'Pel', jumlah: 2 }, { nama: 'Serok/Pengki Air', jumlah: 2 }, { nama: 'Troli', jumlah: 2 },
+  { nama: 'Kanebo', jumlah: 3 }, { nama: 'Sikat WC', jumlah: 4 }, { nama: 'Sikat Kamar Mandi', jumlah: 4 },
+  { nama: 'Kemoceng', jumlah: 1 }, { nama: 'Tangga', jumlah: 2 }, { nama: 'Bor Bosch', jumlah: 1 }
+];
+
+/** Seed data alat ke tabel kosong. Dipanggil dari API GET saat tabel baru dibuat. */
+export async function seedAlatIfEmpty(): Promise<void> {
+  await ensureAlatTable();
+  const c = getInventoryClient();
+  const count = await c.execute('SELECT COUNT(*) as n FROM alat_inventaris');
+  if (Number((count.rows[0] as any).n) > 0) return;
+  for (const a of ALAT_SEED) {
+    await c.execute({
+      sql: `INSERT INTO alat_inventaris (nama, kondisi, jumlah) VALUES (?, 'Baru', ?)`,
+      args: [a.nama, a.jumlah]
+    });
+  }
 }
 
 /**

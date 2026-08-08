@@ -4,21 +4,16 @@ import { useState } from 'react';
 import Table from '@/components/ui/Table';
 import { COLS } from '@/config/dashboard-cols';
 import { pembayaranNames, filterPembayaran } from '@/lib/dashboard/views/pages';
-import type { PembayaranRow } from '@/lib/dashboard/views/types';
+import type { PembayaranRow, TransaksiRow } from '@/lib/dashboard/views/types';
 import OriginSelect from '@/components/ui/OriginSelect';
-
-/* PORT dari `pagePembayaran()` public/app.js.
-
-   Dropdown filter nama penghuni dipertahankan; baris sudah urut terbaru→terlama
-   dari `computeTempo()`. Di sumber, filter disimpan di variabel global
-   `PAY_FILTER` dan memicu render ulang seluruh halaman lewat listener
-   `document.addEventListener('change', …)`; di sini cukup state lokal. */
 
 export default function PembayaranPage({
   pembayaran,
+  transaksi,
   period
 }: {
   pembayaran: PembayaranRow[];
+  transaksi: TransaksiRow[];
   period: string;
 }) {
   const [nama, setNama] = useState('');
@@ -44,6 +39,10 @@ export default function PembayaranPage({
         </div>
       )}
       <Table title="DATA PEMBAYARAN" cols={COLS.pembayaran} data={rows} periodLabel={period} />
+
+      <div style={{ marginTop: '32px' }}>
+        <Table title="TRANSAKSI" cols={COLS.transaksi} data={transaksi} periodLabel={period} />
+      </div>
     </>
   );
 }

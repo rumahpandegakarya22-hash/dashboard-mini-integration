@@ -72,7 +72,9 @@ export interface DokumenTableRow {
 export function dokumenRows(dokumen: DokumenRow[], role: string): DokumenTableRow[] {
   const rl = String(role).toLowerCase();
   if (!dokumen || !dokumen.length) return [];
-  const list = rl === 'owner' ? dokumen : dokumen.filter((d) => (d.role || '').toLowerCase() === rl);
+  const base = rl === 'owner' ? dokumen : dokumen.filter((d) => (d.role || '').toLowerCase() === rl);
+  // Hapus dokumen bertitel "Logbook" / "Log …" — diisi langsung lewat WebApp
+  const list = base.filter((d) => !/logbook/i.test(d.name) && !/^log\s/i.test(d.name.trim()));
   return list.map((d) => ({
     id: d.id,
     nama: d.name,

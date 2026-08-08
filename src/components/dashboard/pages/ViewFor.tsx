@@ -53,7 +53,7 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
     case 'pembayaran':
       return (
         <Reveal tier={0}>
-          <PembayaranPage pembayaran={d.pembayaran} period={period} />
+          <PembayaranPage pembayaran={d.pembayaran} transaksi={d.transaksi} period={period} />
         </Reveal>
       );
 

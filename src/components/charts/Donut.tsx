@@ -45,6 +45,7 @@ export default function Donut({ segments, center }: DonutProps) {
         cy={cy}
         r={r}
         fill="none"
+        style={{ pointerEvents: 'all' }}
         stroke={s.color}
         strokeWidth={sw}
         strokeLinecap="butt"
@@ -64,7 +65,7 @@ export default function Donut({ segments, center }: DonutProps) {
 
   return (
     <div className="donut__chart">
-      <svg viewBox={`0 0 ${size} ${size}`}>
+      <svg viewBox={`0 0 ${size} ${size}`} style={{ pointerEvents: 'all' }}>
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--rail)" strokeWidth={sw} opacity=".3" />
         {rings}
       </svg>

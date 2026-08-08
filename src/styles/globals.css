@@ -91,12 +91,7 @@ svg {
   }
 }
 
-/* ============ Skeleton shimmer (bersama lintas app) ============
-   Mekanisme (keyframe + animasi) satu-satunya di sini; warna gradien per-app
-   ada di theme-*.css lewat `background-image` supaya token tidak bocor lintas
-   [data-app]. Dulu ops punya keyframe sendiri yang salah tulis (selector
-   di-nest di dalam @keyframes — CSS tidak valid, jadi animasinya tidak pernah
-   jalan); disatukan & diperbaiki di sini. */
+/* ============ Skeleton shimmer ============ */
 .skeleton {
   background-size: 200% 100%;
   background-repeat: no-repeat;
