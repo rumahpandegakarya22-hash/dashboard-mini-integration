@@ -31,13 +31,20 @@ import http from 'node:http';
 import { google } from 'googleapis';
 import { GMAIL_SCOPE } from '../src/lib/core/google';
 
-/* Mode kedua: `npx tsx scripts/gmail-token.ts --drive` menghasilkan
-   GOOGLE_REFRESH_TOKEN (scope drive + spreadsheets), BUKAN token Gmail.
-   Perlu karena service account TIDAK BISA menulis berkas ke Drive —
-   "Service Accounts do not have storage quota". Unggah bukti bayar, dokumen
-   penghuni, dan arsip invoice semuanya butuh jalur OAuth ini. */
+/* Tiga mode:
+     (default)  → scope gmail.send saja        → GMAIL_OAUTH_REFRESH_TOKEN
+     --drive    → scope drive + spreadsheets    → GOOGLE_REFRESH_TOKEN
+     --all      → drive + spreadsheets + gmail  → GOOGLE_REFRESH_TOKEN (SEMUA sekaligus)
+
+   Pakai --all kalau tidak mau repot dua token: satu refresh token memegang
+   semua akses (unggah Drive + kirim invoice). Aplikasi otomatis memakainya untuk
+   Gmail juga (lihat gmailClient di core/google.ts). Ini yang dianjurkan — dua
+   token terpisah gampang tertukar (drive dipaste ke slot gmail = 'insufficient
+   authentication scopes' saat kirim invoice). */
 const MODE_DRIVE = process.argv.includes('--drive');
-const SCOPES_DRIVE = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets'];
+const MODE_ALL = process.argv.includes('--all');
+const DRIVE = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets'];
+const SCOPES_DRIVE = MODE_ALL ? [...DRIVE, GMAIL_SCOPE] : DRIVE;
 
 const PORT = 53682;
 const REDIRECT = `http://localhost:${PORT}`;
@@ -56,7 +63,7 @@ async function main() {
   const url = oauth.generateAuthUrl({
     access_type: 'offline', // wajib, kalau tidak Google tidak mengembalikan refresh token
     prompt: 'consent', // paksa consent supaya refresh token selalu ikut, bukan hanya saat otorisasi pertama
-    scope: MODE_DRIVE ? SCOPES_DRIVE : [GMAIL_SCOPE]
+    scope: MODE_DRIVE || MODE_ALL ? SCOPES_DRIVE : [GMAIL_SCOPE]
   });
 
   console.log(
@@ -77,7 +84,7 @@ async function main() {
   // Nama env ikut mode: --drive menghasilkan GOOGLE_REFRESH_TOKEN (Drive+Sheets),
   // default menghasilkan GMAIL_OAUTH_REFRESH_TOKEN (gmail.send). Dulu di-hardcode
   // GMAIL_ sehingga token Drive gampang salah tempel.
-  const namaEnv = MODE_DRIVE ? 'GOOGLE_REFRESH_TOKEN' : 'GMAIL_OAUTH_REFRESH_TOKEN';
+  const namaEnv = MODE_DRIVE || MODE_ALL ? 'GOOGLE_REFRESH_TOKEN' : 'GMAIL_OAUTH_REFRESH_TOKEN';
   console.log('\nBerhasil. Tempel baris ini ke .env.local dan ke Environment Variables di Vercel:\n');
   console.log(`${namaEnv}=${tokens.refresh_token}\n`);
 }

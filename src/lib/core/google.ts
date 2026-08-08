@@ -67,23 +67,39 @@ export function driveClient() {
 export const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.send';
 
 export function gmailTersedia(): boolean {
-  return Boolean(
-    process.env.GMAIL_OAUTH_CLIENT_ID && process.env.GMAIL_OAUTH_CLIENT_SECRET && process.env.GMAIL_OAUTH_REFRESH_TOKEN
-  );
+  const punyaGmailDedicated =
+    process.env.GMAIL_OAUTH_CLIENT_ID && process.env.GMAIL_OAUTH_CLIENT_SECRET && process.env.GMAIL_OAUTH_REFRESH_TOKEN;
+  // Token GOOGLE_* yang dibuat dengan --all juga memegang gmail.send, jadi bisa
+  // dipakai kirim invoice tanpa kredensial Gmail terpisah.
+  return Boolean(punyaGmailDedicated || oauthTersedia());
 }
 
 /**
- * Klien Gmail dengan kredensial OAuth TERPISAH dari sheetsClient/driveClient.
- * Refresh token-nya dibuat lewat `npx tsx scripts/gmail-token.ts` dan hanya
- * memegang scope gmail.send — tidak bisa membaca inbox, tidak menyentuh Drive.
+ * Klien Gmail. Dua sumber kredensial, dipilih otomatis:
+ *   1. GMAIL_OAUTH_* — token khusus scope gmail.send.
+ *   2. GOOGLE_* — token utama, KALAU dibuat dengan `--all` (drive + spreadsheets
+ *      + gmail.send). Jalur ini yang dianjurkan: satu token untuk semua, tidak
+ *      ada dua token yang bisa tertukar.
+ *
+ * Kalau token GOOGLE_* dipakai tapi TIDAK punya scope gmail.send, Gmail menolak
+ * saat kirim dengan "insufficient authentication scopes" — regenerate dengan
+ * `npx tsx scripts/gmail-token.ts --all`.
  */
 export function gmailClient() {
   if (!gmailTersedia()) {
-    throw new Error('Kredensial Gmail belum diisi (GMAIL_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN) — jalankan scripts/gmail-token.ts.');
+    throw new Error(
+      'Kredensial Gmail belum ada — jalankan `npx tsx scripts/gmail-token.ts --all` lalu isi GOOGLE_REFRESH_TOKEN.'
+    );
   }
   if (!_gmail) {
-    const auth = new google.auth.OAuth2(process.env.GMAIL_OAUTH_CLIENT_ID, process.env.GMAIL_OAUTH_CLIENT_SECRET);
-    auth.setCredentials({ refresh_token: process.env.GMAIL_OAUTH_REFRESH_TOKEN });
+    const pakaiDedicated = Boolean(process.env.GMAIL_OAUTH_REFRESH_TOKEN);
+    const auth = new google.auth.OAuth2(
+      pakaiDedicated ? process.env.GMAIL_OAUTH_CLIENT_ID : process.env.GOOGLE_CLIENT_ID,
+      pakaiDedicated ? process.env.GMAIL_OAUTH_CLIENT_SECRET : process.env.GOOGLE_CLIENT_SECRET
+    );
+    auth.setCredentials({
+      refresh_token: pakaiDedicated ? process.env.GMAIL_OAUTH_REFRESH_TOKEN : process.env.GOOGLE_REFRESH_TOKEN
+    });
     _gmail = google.gmail({ version: 'v1', auth });
   }
   return _gmail;
