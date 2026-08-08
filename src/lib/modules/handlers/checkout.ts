@@ -110,6 +110,17 @@ export const submitCheckout: SubmitHandler = async (values, ctx) => {
     await updateRoomStatus(kamar, 'Kosong');
     await invalidateTenantsCache();
 
+    // Kalau checkout ini menuntaskan pengajuan dari Teman Rara (panel Acc
+    // Checkout mengarahkan ke modul ini), tandai pengajuannya 'Selesai'.
+    // Best-effort: checkout sudah tercatat, gagal menandai cukup diabaikan.
+    await db
+      .execute({
+        sql: `UPDATE tr_checkout_request SET status = 'Selesai', processed_by = ?, processed_at = CURRENT_TIMESTAMP
+              WHERE id_penghuni = ? AND status = 'Disetujui'`,
+        args: [ctx.user.username, idPenghuni]
+      })
+      .catch(() => undefined);
+
     // Lampiran checkout = foto kondisi kamar. Tidak punya nomor sendiri, jadi ID
     // Docs-nya memakai id_dokumen bentukan saveLampiran.
     const lampiranWarning = await saveLampiran(values, ctx, `Checkout — ${penghuni} (${tanggalCheckout})`, 'Admin', {

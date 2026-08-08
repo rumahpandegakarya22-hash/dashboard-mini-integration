@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import PengaduanPanel from './PengaduanPanel';
 import ReviewPendaftaranPanel from './ReviewPendaftaranPanel';
 import VerifikasiBuktiPanel from './VerifikasiBuktiPanel';
+import PengajuanPanel from './PengajuanPanel';
 
 /**
  * Panel tugas pengelola yang menempel di bawah form modul tertentu.
@@ -19,7 +20,9 @@ import VerifikasiBuktiPanel from './VerifikasiBuktiPanel';
 const PANEL: Record<string, () => React.ReactNode> = {
   feedback: () => <PengaduanPanel />,
   'pembayaran-sewa': () => <VerifikasiBuktiPanel />,
-  'penghuni-baru': () => <ReviewPendaftaranPanel />
+  'penghuni-baru': () => <ReviewPendaftaranPanel />,
+  'pindah-kamar': () => <PengajuanPanel jenis="pindah" />,
+  checkout: () => <PengajuanPanel jenis="checkout" />
 };
 
 export default function ModulePanel({ moduleId }: { moduleId: string }) {
