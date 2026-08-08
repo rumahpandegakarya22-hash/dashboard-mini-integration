@@ -34,13 +34,16 @@ logika yang sudah teruji, supaya tidak ada dua tempat yang menulis tabel sama.
 
 ## Yang masih perlu diputuskan sebelum ngoding
 
-1. **Data yang diisi pengelola saat menandai selesai.** Checkout butuh
-   pengembalian deposit, kondisi kamar, ada/tidaknya tunggakan — penghuni tidak
-   mengisi itu. Apakah formnya muncul di panel, atau pengelola diarahkan ke
-   modul Checkout yang sudah ada dengan data terisi otomatis?
-2. **Pindah kamar & harga.** Kamar baru bisa beda tarif. Apakah pindah kamar
-   memicu penyesuaian harga sewa berjalan, atau harga lama tetap sampai periode
-   habis?
+1. ~~Data checkout~~ — DIPUTUSKAN 8 Agt 2026: pengelola **diarahkan ke modul
+   Checkout yang sudah ada**, dengan penghuni/kamar/tanggal terisi otomatis dari
+   pengajuan. Panel tidak menduplikasi form deposit & kondisi kamar. Artinya
+   panel cukup mengirim pengelola ke `/ops/m/checkout` dengan query prefill, dan
+   status `tr_checkout_request` jadi 'Selesai' setelah modul itu submit.
+2. ~~Pindah kamar & harga~~ — DIPUTUSKAN 8 Agt 2026: **tarif kamar baru berlaku
+   mulai periode sewa BERIKUTNYA**; harga lama tetap sampai periode berjalan
+   habis. Jadi pindah kamar TIDAK menyentuh invoice/payment periode berjalan —
+   cukup memindahkan kamarnya. Tarif baru otomatis terpakai saat pembayaran
+   berikutnya karena harga dibaca dari `kamar` milik kamar yang ditempati.
 3. ~~Kolom status~~ — SUDAH ADA, tidak perlu migrasi. Kedua tabel punya
    `status`, `response_note`, `processed_by`, `processed_at`, dengan CHECK:
    `status IN ('Menunggu','Disetujui','Ditolak','Dibatalkan','Selesai')`.
