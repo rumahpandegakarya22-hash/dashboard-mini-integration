@@ -184,27 +184,50 @@ async function catatPembayaran(idBukti: string, username: string, akunKasBank: s
     ).rows[0] as any;
     if (!inv) return 'Invoice yang tertaut ke bukti ini tidak ditemukan — pembayaran TIDAK dicatat otomatis.';
 
-    const sudah = await db.execute({ sql: 'SELECT 1 FROM payment WHERE id_payment = ? LIMIT 1', args: [String(inv.no_inv)] });
-    if (sudah.rows.length) return undefined; // sudah pernah dicatat, aman diklik ulang
+    const tglBayar = String(inv.tanggal_pembayaran ?? new Date().toISOString().slice(0, 10));
+    // Nama tabel ditentukan dari sewaId/dpId (bukan input) → aman diinterpolasi.
+    const tabelInvoice = sewaId ? 'invoice_sewa' : 'invoice_dp';
+    const invoiceId = sewaId ?? dpId;
 
-    await db.execute({
-      sql: `INSERT INTO payment
-              (id_payment, id_penghuni, invoice_dp_id, invoice_sewa_id, periode_awal, periode_akhir, amount, payment_date, status, notes)
-            VALUES (?,?,?,?,?,?,?,?,'Paid',?)`,
-      args: [
-        String(inv.no_inv),
-        String(inv.id_penghuni ?? b.id_penghuni),
-        dpId,
-        sewaId,
-        inv.periode_awal ?? null,
-        inv.periode_akhir ?? null,
-        Number(inv.grand_total ?? 0),
-        inv.tanggal_pembayaran ?? new Date().toISOString().slice(0, 10),
-        `Dari verifikasi bukti bayar penghuni oleh ${username}`
-      ]
+    const sudah = await db.execute({ sql: 'SELECT 1 FROM payment WHERE id_payment = ? LIMIT 1', args: [String(inv.no_inv)] });
+    const paymentBaru = sudah.rows.length === 0;
+
+    /* Stempel `tanggal_pembayaran` di invoice = SATU-SATUNYA yang dibaca Teman
+       Rara untuk status "Lunas". Selalu dijalankan (idempoten via WHERE), termasuk
+       untuk bukti yang baris payment-nya sudah terlanjur tercatat tapi invoicenya
+       belum distempel — tanpa ini tagihan penghuni tak pernah berubah jadi Lunas.
+       Payment + stempel invoice dijalankan atomik. */
+    const ops: { sql: string; args: (string | number | null)[] }[] = [];
+    if (paymentBaru) {
+      ops.push({
+        sql: `INSERT INTO payment
+                (id_payment, id_penghuni, invoice_dp_id, invoice_sewa_id, periode_awal, periode_akhir, amount, payment_date, status, notes)
+              VALUES (?,?,?,?,?,?,?,?,'Paid',?)`,
+        args: [
+          String(inv.no_inv),
+          String(inv.id_penghuni ?? b.id_penghuni),
+          dpId,
+          sewaId,
+          inv.periode_awal ?? null,
+          inv.periode_akhir ?? null,
+          Number(inv.grand_total ?? 0),
+          tglBayar,
+          `Dari verifikasi bukti bayar penghuni oleh ${username}`
+        ]
+      });
+    }
+    ops.push({
+      sql: `UPDATE ${tabelInvoice} SET tanggal_pembayaran = ? WHERE id = ? AND (tanggal_pembayaran IS NULL OR tanggal_pembayaran = '')`,
+      args: [tglBayar, invoiceId]
     });
+    await db.batch(ops, 'write');
+
+    // Payment sudah pernah dicatat sebelumnya → cukup stempel invoicenya, jurnal
+    // jangan diulang (sudah dibuat saat pencatatan pertama, atau diinput manual).
+    if (!paymentBaru) return `Invoice ${inv.no_inv} ditandai lunas. Pembayaran sudah tercatat sebelumnya — jurnal tidak diulang.`;
+
     if (!akunKasBank) {
-      return `Pembayaran ${inv.no_inv} tercatat otomatis. Jurnal BELUM dibuat — akun kas/bank tujuan tidak dipilih, catat jurnalnya manual.`;
+      return `Pembayaran ${inv.no_inv} tercatat & invoice ditandai lunas. Jurnal BELUM dibuat — akun kas/bank tujuan tidak dipilih, catat jurnalnya manual.`;
     }
     const kodeKas = await kodeAkunKas(akunKasBank);
     if (!kodeKas) {
@@ -214,7 +237,7 @@ async function catatPembayaran(idBukti: string, username: string, akunKasBank: s
       kodeKas,
       nama: String(inv.nama ?? ''),
       noKamar: String(inv.no_kamar ?? ''),
-      tanggalBayar: String(inv.tanggal_pembayaran ?? new Date().toISOString().slice(0, 10)),
+      tanggalBayar: tglBayar,
       diskon: Number(inv.diskon ?? 0),
       pajak: Number(inv.pajak ?? 0)
     };
@@ -237,7 +260,7 @@ async function catatPembayaran(idBukti: string, username: string, akunKasBank: s
       })),
       'write'
     );
-    return `Pembayaran ${inv.no_inv} tercatat & jurnal dibuat (${baris.length} baris) ke akun ${akunKasBank}.`;
+    return `Pembayaran ${inv.no_inv} tercatat, invoice ditandai lunas & jurnal dibuat (${baris.length} baris) ke akun ${akunKasBank}.`;
   } catch (e: any) {
     console.error('[verifikasi-bukti] gagal catat payment:', e?.message);
     return `Bukti diverifikasi, tapi pencatatan pembayaran otomatis gagal (${e?.message || 'unknown'}) — input manual lewat modul Pembayaran Sewa.`;

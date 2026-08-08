@@ -12,12 +12,18 @@ const nextConfig = {
   },
 
   /**
-   * File font invoice dibaca lewat fs saat render PDF. Next tidak bisa
-   * mendeteksi pembacaan itu secara statis, jadi tanpa baris ini font-nya tidak
-   * ikut terbawa ke bundle serverless dan PDF di produksi jatuh ke font bawaan.
+   * Dua hal yang dibaca lewat fs, bukan lewat import, sehingga file tracing Next
+   * tidak melihatnya dan membuangnya dari bundle serverless:
+   *
+   *  - font invoice → tanpa ini PDF di produksi jatuh ke font bawaan
+   *  - binary Chromium (.br/.tar di bin/) → tanpa ini muncul error
+   *    'The input directory .../@sparticuz/chromium/bin does not exist'.
+   *    serverExternalPackages di bawah saja TIDAK cukup: itu hanya mencegah
+   *    paketnya di-bundle, tidak membuat isi bin/ ikut ter-deploy. Terbukti 8
+   *    Agt 2026 — error yang sama masih muncul setelah fix pertama.
    */
   outputFileTracingIncludes: {
-    '/**': ['./src/lib/invoice/fonts/**']
+    '/**': ['./src/lib/invoice/fonts/**', './node_modules/@sparticuz/chromium/bin/**']
   },
 
   /**
