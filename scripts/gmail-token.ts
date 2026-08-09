@@ -43,7 +43,7 @@ import { GMAIL_SCOPE } from '../src/lib/core/google';
    authentication scopes' saat kirim invoice). */
 const MODE_DRIVE = process.argv.includes('--drive');
 const MODE_ALL = process.argv.includes('--all');
-const DRIVE = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets'];
+const DRIVE = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/spreadsheets'];
 const SCOPES_DRIVE = MODE_ALL ? [...DRIVE, GMAIL_SCOPE] : DRIVE;
 
 const PORT = 53682;
