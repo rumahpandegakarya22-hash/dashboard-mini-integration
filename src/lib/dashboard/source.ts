@@ -28,7 +28,7 @@ import { computeAll, type DbRow, type DbTables } from './compute';
 import { SHEET_MAP } from './sheet-map';
 
 /** Daftar tabel yang dibaca dashboard — verbatim dari server/turso.js. */
-export const TABLES = [
+const TABLES = [
   'kamar',
   'booking',
   'leads',

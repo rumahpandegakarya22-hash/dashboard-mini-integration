@@ -19,8 +19,8 @@ import { driveClient, withRetry } from './core/google';
    nama sementara, lalu diganti di sini ketika semuanya sudah pasti.
    ========================================================================== */
 
-export const JENIS_DOKUMEN = ['KTP', 'SIM', 'KK', 'Kontrak'] as const;
-export type JenisDokumen = (typeof JENIS_DOKUMEN)[number];
+const JENIS_DOKUMEN = ['KTP', 'SIM', 'KK', 'Kontrak'] as const;
+type JenisDokumen = (typeof JENIS_DOKUMEN)[number];
 
 /**
  * Buang karakter yang menyulitkan di nama berkas Drive.
@@ -46,7 +46,7 @@ export function namaFileDokumen(p: { jenis: string; idDocs: string; idPenghuni?:
 }
 
 /** Ambil fileId dari webViewLink Drive (bentuknya .../file/d/<id>/view atau ?id=<id>). */
-export function fileIdDariUrl(url: string): string | null {
+function fileIdDariUrl(url: string): string | null {
   return (/\/d\/([A-Za-z0-9_-]{20,})/.exec(url) || /[?&]id=([A-Za-z0-9_-]{20,})/.exec(url) || [])[1] ?? null;
 }
 

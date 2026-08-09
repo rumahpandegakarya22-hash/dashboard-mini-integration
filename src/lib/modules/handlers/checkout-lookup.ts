@@ -4,7 +4,7 @@ import { toISODateFlexible } from '../../core/validate';
 import { resolveOccupancyId } from './helpers';
 import type { AutoFillHandler } from '../types';
 
-export interface CheckoutDefaults {
+interface CheckoutDefaults {
   tglMasuk: string; // '' kalau tidak ditemukan otomatis
   adaTunggakan: 'Ya' | 'Tidak' | ''; // '' = tidak bisa dihitung (tidak ada riwayat pembayaran)
   nominalTunggakan: number;
@@ -20,7 +20,7 @@ export interface CheckoutDefaults {
  * Kalau sumber data belum lengkap, `note` berisi langkah konkret dan field dikembalikan kosong
  * supaya admin sadar harus isi manual (bukan diam-diam salah).
  */
-export async function computeCheckoutDefaults(penghuniLabel: string, tanggalCheckoutISO: string): Promise<CheckoutDefaults> {
+async function computeCheckoutDefaults(penghuniLabel: string, tanggalCheckoutISO: string): Promise<CheckoutDefaults> {
   const tenant = await getTenantByLabel(penghuniLabel);
   if (!tenant) {
     return { tglMasuk: '', adaTunggakan: '', nominalTunggakan: 0, note: `Penghuni "${penghuniLabel}" tidak ditemukan di Database Penghuni.` };

@@ -11,7 +11,7 @@ export interface SparklineProps {
   color?: string;
 }
 
-export function sparklinePath(series: number[]): string {
+function sparklinePath(series: number[]): string {
   const s = Array.isArray(series) && series.length > 1 ? series.map(Number) : [0, 0];
   const w = 120;
   const h = 34;

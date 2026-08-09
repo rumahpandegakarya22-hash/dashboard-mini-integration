@@ -15,13 +15,6 @@ export const BarStopsWarm = () => (
   </>
 );
 
-export const BarStopsCool = () => (
-  <>
-    <stop offset="0%" stopColor="#6fb1e5" />
-    <stop offset="100%" stopColor="#8a6fae" />
-  </>
-);
-
 /** Bar Owner: palet brand (dusty rose → charcoal), bukan biru. */
 export const BarStopsOwner = () => (
   <>

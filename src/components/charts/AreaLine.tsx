@@ -8,7 +8,7 @@
 import { motion } from 'framer-motion';
 import { fmtNum } from '@/lib/dashboard/format';
 
-export const LINE_COLORS = ['var(--teal)', 'var(--text-2)', '#e0a13a'];
+const LINE_COLORS =['var(--teal)', 'var(--text-2)', '#e0a13a'];
 
 export interface AreaLineProps {
   seriesList: number[][] | number[];

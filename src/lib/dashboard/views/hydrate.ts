@@ -43,24 +43,14 @@ import type {
 
 /* ----------------------------------------------------- konstanta (verbatim) */
 
-export const PRICE: Record<string, string> = {
+const PRICE: Record<string, string> = {
   Eco: 'Rp850.000',
   Classic: 'Rp1.200.000',
   Comfy: 'Rp1.600.000'
 };
 
-export const ROOM_TYPE = (no: number): string =>
+const ROOM_TYPE = (no: number): string =>
   no >= 29 ? 'Comfy' : no >= 17 && no <= 19 ? 'Classic' : 'Eco';
-
-export const KOST_CLASS: Record<string, string> = {
-  Aktif: 'k-aktif',
-  'Booking (DP)': 'k-booking',
-  Lunas: 'k-lunas',
-  'Belum Lunas': 'k-belum',
-  Tunggakan: 'k-tunggak',
-  'Masa Sewa Berakhir': 'k-habis',
-  Kosong: 'k-kosong'
-};
 
 /* ------------------------------------------------- util deteksi (verbatim) */
 

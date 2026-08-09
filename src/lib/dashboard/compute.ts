@@ -41,7 +41,7 @@
 export type DbRow = Record<string, any>;
 export type DbTables = Record<string, DbRow[]>;
 
-export interface ComputeCtx {
+interface ComputeCtx {
   coaByKode?: Record<string, DbRow>;
 }
 
@@ -50,7 +50,7 @@ export interface ComputeCtx {
    dikunci dari spreadsheet. Setelah menjalankan `npx tsx scripts/dump-formulas.ts`
    di komputer (dengan service account), ganti nilai di sini agar 100% identik.
    ------------------------------------------------------------------------- */
-export const FORMULA_CONFIG = {
+const FORMULA_CONFIG = {
   /* Tier harga kamar per tipe [LOOKUP dari data migrasi — 3 tipe diketahui].
      harga_bulan & tier lain seluruhnya ditentukan oleh tipe_kamar di sumber.
      Tambahkan entri baru bila ada tipe kamar baru. */
@@ -144,7 +144,7 @@ const isBlank = (v: any): boolean => v === null || v === undefined || String(v).
 const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
 
 /* EDATE(tanggal, n): tambah n bulan, clamp ke akhir bulan. "YYYY-MM-DD". */
-export function edate(iso: any, months: any): any {
+function edate(iso: any, months: any): any {
   if (isBlank(iso)) return iso;
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso).trim());
   if (!m) return iso;
@@ -162,7 +162,7 @@ export function edate(iso: any, months: any): any {
 }
 
 /* Selisih hari kalender (b - a). */
-export function dayDiff(aIso: any, bIso: any): number | null {
+function dayDiff(aIso: any, bIso: any): number | null {
   const a = Date.parse(aIso + 'T00:00:00Z');
   const b = Date.parse(bIso + 'T00:00:00Z');
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
@@ -308,7 +308,7 @@ function computeJurnal(r: DbRow, ctx: ComputeCtx): DbRow {
 }
 
 /* Peta nama tabel → fungsi compute. */
-export const COMPUTERS: Record<string, (r: DbRow, ctx: ComputeCtx) => DbRow> = {
+const COMPUTERS: Record<string, (r: DbRow, ctx: ComputeCtx) => DbRow> = {
   kamar: computeKamar,
   booking: computeBooking,
   content: computeContent,
@@ -331,7 +331,7 @@ export const FORMULA_COLUMNS: Record<string, string[]> = {
   jurnal_transaksi: ['kategori']
 };
 
-export function computeRow(table: string, row: DbRow, ctx?: ComputeCtx): DbRow {
+function computeRow(table: string, row: DbRow, ctx?: ComputeCtx): DbRow {
   const fn = COMPUTERS[table];
   return fn ? fn(row, ctx || {}) : { ...row };
 }

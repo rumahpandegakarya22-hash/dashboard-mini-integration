@@ -35,9 +35,6 @@ export const COLS: Record<string, TableCol[]> = {
     vendorOps: [{key:"name",label:"Nama Vendor"},{key:"kategori",label:"Kategori"},{key:"kontak",label:"Nomor Telepon"},{key:"hasil",label:"Hasil"},{key:"aksi",label:"WhatsApp"}],
     leads:  [{key:"check",label:""},{key:"id",label:"ID"},{key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"asal",label:"Asal"},{key:"tanggal",label:"Tanggal"},{key:"status",label:"Status"}],
     tiket:  [{key:"check",label:""},{key:"id",label:"ID"},{key:"pekerjaan",label:"Pekerjaan"},{key:"jenis",label:"Jenis"},{key:"lokasi",label:"Lokasi"},{key:"tanggal",label:"Tanggal"},{key:"status",label:"Status"}],
-    // Logbook Operasional (sesuai desain)
-    logInspeksi: [{key:"name",label:"Tanggal"},{key:"item",label:"Item"},{key:"lokasi",label:"Lokasi"},{key:"kategori",label:"Kategori"},{key:"status",label:"Prioritas"}],
-    logPerbaikan: [{key:"id",label:"ID"},{key:"name",label:"PIC"},{key:"project",label:"Project"},{key:"prioritas",label:"Prioritas"},{key:"biaya",label:"Biaya"},{key:"status",label:"Status"}],
     // Stok Inventory (monitoring dari app Inventory Stock — integrasi 3 app)
     stokMenipis: [{key:"name",label:"Bahan"},{key:"category",label:"Kategori"},{key:"stok",label:"Stok"},{key:"min",label:"Stok Min"},{key:"kurang",label:"Kurang"}],
     stokTerpakai: [{key:"name",label:"Bahan"},{key:"jumlah",label:"Total Dipakai"},{key:"frekuensi",label:"Transaksi"},{key:"biaya",label:"Total Biaya"}],

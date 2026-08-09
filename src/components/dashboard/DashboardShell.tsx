@@ -12,7 +12,6 @@ import ChartTooltip from '@/components/charts/ChartTooltip';
 import PeriodFilter from './PeriodFilter';
 import {
   IconHome,
-  IconSearch,
   IconRefresh,
   IconSidebar,
   IconMenu,
@@ -59,7 +58,6 @@ export default function DashboardShell({
   view,
   crumb,
   hasOpsAccess,
-  isDash,
   period,
   from,
   to,
@@ -173,13 +171,6 @@ export default function DashboardShell({
           </nav>
 
           <div className="topbar__right">
-            <label className="search">
-              <span>
-                <IconSearch />
-              </span>
-              <input type="text" id="globalSearch" placeholder="Search" />
-              <kbd>⌘ /</kbd>
-            </label>
             <ThemeToggle />
             <button
               className="topbar__icon"
@@ -194,13 +185,6 @@ export default function DashboardShell({
         </header>
 
         <main className="content">
-          {isDash && (
-            <div className="page-head">
-              <div className="seg">
-                <button className="is-active">Overview</button>
-              </div>
-            </div>
-          )}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={`${view}::${period}`}

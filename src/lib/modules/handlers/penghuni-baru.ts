@@ -19,26 +19,6 @@ function normalizeStatusBooking(v: string): string {
   return STATUS_BOOKING_DB[v.trim().toLowerCase()] ?? v.trim();
 }
 
-// Kolom B:M sheet "Log Booking" (Log Sales). Kolom A (No. Booking) & H (Tgl Keluar Est.) = FORMULA,
-// tidak ditulis. Header DIKONFIRMASI live 8 Jul (bukan tebakan lagi) — TIDAK ada kolom Upload
-// KTP/Kontrak (link file, kalau nanti dibangun, masuk ke kolom Catatan sesuai PRD §7), tapi ADA
-// kolom "Alasan Cancel" yang sebelumnya tidak diketahui.
-const HEADER_RANGE = "'Log Booking'!B1:M1";
-const EXPECTED_HEADERS = [
-  'Tanggal Booking',
-  'Nama Penyewa',
-  'No. HP',
-  'Kamar',
-  'Tgl Masuk',
-  'Durasi (bulan)',
-  'Tgl Keluar (Est.)',
-  'Harga Disepakati (Rp)',
-  'Status Booking',
-  'Alasan Cancel',
-  'Sumber Leads',
-  'Catatan'
-];
-
 const DURATIONS = [1, 2, 3, 6, 9, 12];
 
 function addDays(iso: string, days: number): Date {

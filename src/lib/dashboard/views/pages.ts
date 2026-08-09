@@ -20,7 +20,7 @@ import { fmtNum } from '../format';
 /* ------------------------------------------------------------ logbook ---- */
 
 /** Divisi logbook yang boleh dilihat tiap role — verbatim LOG_DIVISI_BY_ROLE. */
-export const LOG_DIVISI_BY_ROLE: Record<string, string[] | null> = {
+const LOG_DIVISI_BY_ROLE: Record<string, string[] | null> = {
   owner: null, // null = semua divisi
   admin: ['Admin', 'Keuangan'],
   marketing: ['Marketing'],
@@ -51,10 +51,10 @@ const DIVISI_LABEL: Record<string, string> = {
   sales: 'Sales'
 };
 
-export const divLabel = (r: unknown): string =>
+const divLabel =(r: unknown): string =>
   DIVISI_LABEL[String(r || '').toLowerCase()] || (r ? String(r) : '—');
 
-export interface DokumenTableRow {
+interface DokumenTableRow {
   id: string;
   nama: string;
   name: string;

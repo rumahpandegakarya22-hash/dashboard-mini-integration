@@ -11,12 +11,8 @@
   --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
   --t-fast: 150ms;
   --t-med: 220ms;
-  --z-dropdown: 10;
-  --z-sticky: 20;
   --z-chrome: 30;
   --z-backdrop: 40;
-  --z-sheet: 50;
-  --z-toast: 60;
 }
 
 @media (prefers-color-scheme: dark) {
