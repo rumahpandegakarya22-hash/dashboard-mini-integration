@@ -37,11 +37,15 @@ function bersih(v: string): string {
 }
 
 /**
- * `idPenghuni` opsional: dokumen operasional (nota pengeluaran, foto maintenance,
- * foto inspeksi) tidak melekat ke penghuni mana pun, jadi namanya berhenti di ID Docs.
+ * `idPenghuni` & `namaLengkap` opsional: dokumen operasional tidak melekat ke penghuni.
+ *
+ * Format dokumen penghuni (jika ada namaLengkap): `jenis-idPenghuni-namaLengkap`
+ * Format operasional (tanpa namaLengkap): `jenis-idDocs-idPenghuni`
  */
-export function namaFileDokumen(p: { jenis: string; idDocs: string; idPenghuni?: string; ekstensi?: string }): string {
-  const bagian = [bersih(p.jenis), bersih(p.idDocs), bersih(p.idPenghuni ?? '')].filter(Boolean).join('-');
+export function namaFileDokumen(p: { jenis: string; idDocs?: string; idPenghuni?: string; namaLengkap?: string; ekstensi?: string }): string {
+  const bagian = p.namaLengkap
+    ? [bersih(p.jenis), bersih(p.idPenghuni ?? ''), bersih(p.namaLengkap)].filter(Boolean).join('-')
+    : [bersih(p.jenis), bersih(p.idDocs ?? ''), bersih(p.idPenghuni ?? '')].filter(Boolean).join('-');
   return p.ekstensi ? `${bagian}.${p.ekstensi.replace(/^\./, '')}` : bagian;
 }
 

@@ -26,8 +26,10 @@ export async function kirimInvoice(noInv: string, jenis: 'DP' | 'Sewa'): Promise
 
     const html = jenis === 'Sewa' ? renderInvoiceSewa(inv as any) : renderInvoiceDp(inv as any);
     const pdf = await htmlKePdf(html);
-    // Nomor invoice memuat '/' yang tidak sah di nama file — diganti '-'.
-    const namaFile = `Invoice ${inv.no_inv.replace(/\//g, '-')}.pdf`;
+    // Format: NoInv-IdPenghuni-NamaLengkap.pdf (karakter tidak sah diganti '-')
+    const sanitize = (v: string) => String(v ?? '').replace(/[/\\:*?"<>|]+/g, '-').trim();
+    const bagian = [sanitize(inv.no_inv), sanitize(inv.id_penghuni ?? ''), sanitize(inv.nama)].filter(Boolean).join('-');
+    const namaFile = `${bagian}.pdf`;
 
     await kirimEmail({
       to: inv.email,

@@ -20,6 +20,7 @@ import {
   Sparkles,
   Store,
   TrendingUp,
+  UserCog,
   UserRoundPlus,
   UsersRound,
   Wallet,
@@ -79,7 +80,8 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
 export const NAV_TEMAN_RARA: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/ops/admin/pengumuman', label: 'Pengumuman', icon: Megaphone },
   { href: '/ops/admin/wifi', label: 'Kredensial WiFi', icon: Wifi },
-  { href: '/ops/admin/akun-penghuni', label: 'Akun Penghuni', icon: UsersRound }
+  { href: '/ops/admin/akun-penghuni', label: 'Akun Penghuni', icon: UsersRound },
+  { href: '/ops/admin/penghuni', label: 'Ubah Data Penghuni', icon: UserCog }
 ];
 
 /** Halaman admin Landing Page — terpisah karena Marketing juga perlu akses (bukan hanya canKelola). */

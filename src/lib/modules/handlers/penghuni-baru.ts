@@ -160,11 +160,11 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
     }
 
     const warningIdentitas = await saveLampiran(values, ctx, `Penghuni Baru — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin', {
-      penamaan: { idPenghuni, jenis: String(values.jenisDokumen ?? 'Identitas') }
+      penamaan: { idPenghuni, jenis: 'ID', namaLengkap: namaPenyewa }
     });
     const warningKontrak = await saveLampiran(values, ctx, `Kontrak Sewa — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin', {
       field: 'lampiranKontrak',
-      penamaan: { idPenghuni, jenis: 'Kontrak' }
+      penamaan: { idPenghuni, jenis: 'Kontrak', namaLengkap: namaPenyewa }
     });
 
     return {

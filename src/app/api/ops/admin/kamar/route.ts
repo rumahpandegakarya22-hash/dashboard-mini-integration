@@ -37,6 +37,7 @@ export async function GET() {
     `SELECT tipe_kamar,
             COUNT(*) AS jumlah_kamar,
             MIN(harga_bulan) AS harga_bulan,
+            MIN(harga_2bulan) AS harga_2bulan,
             MIN(harga_3bulan) AS harga_3bulan,
             MIN(harga_6bulan) AS harga_6bulan,
             MIN(harga_9bulan) AS harga_9bulan,
@@ -53,14 +54,14 @@ export async function GET() {
     return {
       tipe: String(r.tipe_kamar),
       jumlahKamar: Number(r.jumlah_kamar ?? 0),
-      // true = antar-kamar setipe harganya sempat berbeda (data tidak konsisten)
       tidakSeragam: Number(r.variasi_harga ?? 1) > 1,
       hargaBulan,
+      harga2bulan: Number(r.harga_2bulan ?? 0),
       harga3bulan: Number(r.harga_3bulan ?? 0),
       harga6bulan: Number(r.harga_6bulan ?? 0),
       harga9bulan: Number(r.harga_9bulan ?? 0),
       hargaTahun: Number(r.harga_tahun ?? 0),
-      dp: Math.round(hargaBulan / 2) // turunan, hanya untuk ditampilkan
+      dp: Math.round(hargaBulan / 2)
     };
   });
 

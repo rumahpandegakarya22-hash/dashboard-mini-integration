@@ -2,6 +2,7 @@ import { turso } from '../core/turso';
 
 export type InvoiceSewa = {
   no_inv: string;
+  id_penghuni: string | null;
   nama: string;
   email: string | null;
   tanggal_pembayaran: string | null;
@@ -25,6 +26,7 @@ export type InvoiceSewa = {
 
 export type InvoiceDp = {
   no_inv: string;
+  id_penghuni: string | null;
   nama: string;
   email: string | null;
   tanggal_pembayaran: string | null;
@@ -47,7 +49,7 @@ export type InvoiceDp = {
  */
 export async function getInvoiceSewa(noInv: string): Promise<InvoiceSewa | null> {
   const res = await turso().execute({
-    sql: `SELECT no_inv, nama, email, tanggal_pembayaran, periode_awal, periode_akhir, no_kamar, tipe_kamar,
+    sql: `SELECT no_inv, id_penghuni, nama, email, tanggal_pembayaran, periode_awal, periode_akhir, no_kamar, tipe_kamar,
                  jumlah_bulan, jumlah_denda, harga_sewa, tambahan_listrik, denda, total_sewa, total_listrik,
                  total_denda, diskon, pajak, subtotal, grand_total
           FROM invoice_sewa WHERE no_inv = ? ORDER BY id DESC LIMIT 1`,
@@ -58,7 +60,7 @@ export async function getInvoiceSewa(noInv: string): Promise<InvoiceSewa | null>
 
 export async function getInvoiceDp(noInv: string): Promise<InvoiceDp | null> {
   const res = await turso().execute({
-    sql: `SELECT no_inv, nama, email, tanggal_pembayaran, no_kamar, tipe_kamar, jumlah,
+    sql: `SELECT no_inv, id_penghuni, nama, email, tanggal_pembayaran, no_kamar, tipe_kamar, jumlah,
                  harga_kamar, subtotal, pajak, diskon, grand_total
           FROM invoice_dp WHERE no_inv = ? ORDER BY id DESC LIMIT 1`,
     args: [noInv]

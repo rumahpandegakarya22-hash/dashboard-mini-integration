@@ -27,7 +27,7 @@ export async function saveLampiran(
   opts?: {
     field?: string;
     idDokumen?: string;
-    penamaan?: { jenis: string; idDocs?: string; idPenghuni?: string };
+    penamaan?: { jenis: string; idDocs?: string; idPenghuni?: string; namaLengkap?: string };
   }
 ): Promise<string | undefined> {
   const { field = 'lampiran', penamaan } = opts ?? {};

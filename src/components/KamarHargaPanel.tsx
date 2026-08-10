@@ -8,6 +8,7 @@ interface TipeRow {
   jumlahKamar: number;
   tidakSeragam: boolean;
   hargaBulan: number;
+  harga2bulan: number;
   harga3bulan: number;
   harga6bulan: number;
   harga9bulan: number;
@@ -18,6 +19,7 @@ interface TipeRow {
 /** Kolom DB ← field form. Urutan = urutan tampil. */
 const TIER: { key: keyof TipeRow; kolom: string; label: string; bulan: number }[] = [
   { key: 'hargaBulan', kolom: 'harga_bulan', label: '1 bulan', bulan: 1 },
+  { key: 'harga2bulan', kolom: 'harga_2bulan', label: '2 bulan', bulan: 2 },
   { key: 'harga3bulan', kolom: 'harga_3bulan', label: '3 bulan', bulan: 3 },
   { key: 'harga6bulan', kolom: 'harga_6bulan', label: '6 bulan', bulan: 6 },
   { key: 'harga9bulan', kolom: 'harga_9bulan', label: '9 bulan', bulan: 9 },

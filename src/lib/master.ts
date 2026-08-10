@@ -307,6 +307,7 @@ export interface InvoiceSewaMaster {
 /** Durasi sewa yang punya kolom tarif sendiri di tabel `kamar`. */
 export const DURASI_TIER: { bulan: number; kolom: string }[] = [
   { bulan: 1, kolom: 'harga_bulan' },
+  { bulan: 2, kolom: 'harga_2bulan' },
   { bulan: 3, kolom: 'harga_3bulan' },
   { bulan: 6, kolom: 'harga_6bulan' },
   { bulan: 9, kolom: 'harga_9bulan' },
@@ -328,7 +329,7 @@ export const DURASI_TIER: { bulan: number; kolom: string }[] = [
  */
 async function fetchInvoiceSewaMasterUncached(): Promise<InvoiceSewaMaster> {
   const kamarRes = await turso().execute(
-    `SELECT no_kamar, tipe_kamar, harga_bulan, harga_3bulan, harga_6bulan, harga_9bulan, harga_tahun
+    `SELECT no_kamar, tipe_kamar, harga_bulan, harga_2bulan, harga_3bulan, harga_6bulan, harga_9bulan, harga_tahun
      FROM kamar ORDER BY no_kamar`
   );
 
@@ -341,13 +342,6 @@ async function fetchInvoiceSewaMasterUncached(): Promise<InvoiceSewaMaster> {
       const total = Number((r as Record<string, unknown>)[kolom] ?? 0);
       if (total > 0) harga[tipe][bulan] = Math.round(total / bulan);
     }
-    // 2 bulan TIDAK punya kolom tarif sendiri (arahan 2026-08-02): per-bulannya
-    // dipatok SAMA dgn tarif per-bulan paket 3 bulan (harga_3bulan / 3), bukan
-    // tarif 1 bulan biasa — supaya penyewa 2 bulan tetap dapat rate diskon
-    // paket 3 bulan. Sama seperti DP yang juga sengaja tidak disimpan sendiri
-    // (selalu diturunkan) — kalau nanti Owner ganti harga_3bulan, tarif 2 bulan
-    // ikut berubah otomatis, tidak ada kolom terpisah yang bisa basi.
-    if (harga[tipe][3] > 0) harga[tipe][2] = harga[tipe][3];
   }
 
   const tenantRes = await turso().execute(
@@ -363,7 +357,7 @@ async function fetchInvoiceSewaMasterUncached(): Promise<InvoiceSewaMaster> {
     tipe: String(r.tipe_kamar ?? '').trim()
   }));
 
-  const durasiOptions = Array.from(new Set([2, ...DURASI_TIER.map((d) => d.bulan)]))
+  const durasiOptions = DURASI_TIER.map((d) => d.bulan)
     .filter((b) => Object.values(harga).some((h) => h[b] > 0))
     .sort((a, b) => a - b);
   return { penghuni, durasiOptions, harga };
