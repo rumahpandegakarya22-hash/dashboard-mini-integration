@@ -53,7 +53,7 @@ export default function MaterialsPage() {
   const [successMsg, setSuccessMsg] = useState("");
 
   const categories = ["Kebersihan", "Dapur & Konsumsi", "Perawatan Kamar", "Fasilitas Umum", "Lainnya"];
-  const units = ["pcs", "botol", "kg", "liter", "pack", "roll", "dus"];
+  const units = ["pcs", "botol", "kg", "liter", "m", "pack", "roll", "dus"];
 
   const loadData = async () => {
     try {
