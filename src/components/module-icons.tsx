@@ -48,6 +48,7 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   'pemakaian-stok-cleaning': PackageMinus,
   'pemakaian-stok-maintenance': PackageMinus,
   'daily-task': ListTodo,
+  'aktivitas-finansial': ReceiptText,
   'tambah-vendor': Store,
   'tambah-waiting-list': ClipboardPlus
 };
@@ -61,7 +62,7 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Umum', ids: ['daily-task'] },
   {
     label: 'Administrasi',
-    ids: ['penghuni-baru', 'pembayaran-sewa', 'pindah-kamar', 'checkout', 'pengeluaran', 'feedback']
+    ids: ['penghuni-baru', 'pembayaran-sewa', 'pindah-kamar', 'checkout', 'aktivitas-finansial', 'feedback']
   },
   { label: 'Sales', ids: ['survey', 'tambah-waiting-list'] },
   { label: 'Marketing', ids: ['leads', 'konten', 'promosi'] },
