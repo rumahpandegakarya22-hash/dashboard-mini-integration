@@ -722,6 +722,20 @@
   overflow-x: auto;
 }
 
+[data-app='ops'] .data-table {
+  width: 100%; border-collapse: collapse; font-size: 0.875rem;
+}
+[data-app='ops'] .data-table th {
+  text-align: left; padding: 8px 12px; font-size: 0.75rem; font-weight: 600;
+  color: var(--ink-2); border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+[data-app='ops'] .data-table td {
+  padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle;
+  color: var(--ink-1);
+}
+[data-app='ops'] .data-table tr:last-child td { border-bottom: none; }
+[data-app='ops'] .data-table tr:hover td { background: var(--brand-tint); }
+
 [data-app='ops'] .row-click {
   cursor: pointer;
   transition: background var(--t-fast) var(--ease-out);

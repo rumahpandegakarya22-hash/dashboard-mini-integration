@@ -508,6 +508,8 @@ export function computeTempo(
   if (payments.length) {
     const payPill = (s: string): Pill => {
       if (/paid|lunas/i.test(s)) return { t: 'Lunas', c: 's-complete' };
+      if (/overdue|tunggakan/i.test(s)) return { t: 'Tunggakan', c: 's-rejected' };
+      if (/jatuh tempo/i.test(s)) return { t: 'Jatuh Tempo', c: 's-pending' };
       if (/pend|menunggu/i.test(s)) return { t: 'Menunggu', c: 's-pending' };
       return { t: s || 'Tertunda', c: 's-pending' };
     };
@@ -611,27 +613,9 @@ export function hydrateDashboard(
   const tempo = opts?.tursoTempo ?? sheetTempo;
   const { rooms, stats } = computeRoomsAndStats(penghuni, kamar, tempo);
 
-  // Synthetic rows: tagihan yang belum dibayar (jatuh tempo & tunggakan) ditambahkan ke pembayaran.
-  let pembayaran = calcPembayaran;
-  if (opts?.tursoTempo?.list?.length) {
-    const synRows: PembayaranRow[] = opts.tursoTempo.list
-      .filter((e) => e.idPenghuni)
-      .map((e) => ({
-        check: false,
-        tanggal: e.tempo || '',
-        _t: parseDate(e.tempo),
-        idPenghuni: e.idPenghuni || '',
-        nama: e.nama,
-        name: e.nama,
-        jenisTx: e._s <= 0 ? { t: 'Tunggakan', c: 's-rejected' } : { t: 'Jatuh Tempo', c: 's-pending' },
-        namaTx: '',
-        jumlah: '',
-        keterangan: ''
-      }));
-    pembayaran = [...synRows, ...calcPembayaran].sort(
-      (a, b) => (b._t ? b._t.getTime() : -1) - (a._t ? a._t.getTime() : -1)
-    );
-  }
+  // Semua status (Lunas, Tunggakan, Jatuh Tempo, Menunggu) sudah ada di calcPembayaran
+  // langsung dari invoice_sewa — tidak perlu synthetic rows dari tursoTempo lagi.
+  const pembayaran = calcPembayaran;
 
   return {
     penghuni, logbook, payments, leads, survey, booking, tiket, vendor, kamar,

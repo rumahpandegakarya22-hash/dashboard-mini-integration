@@ -184,9 +184,11 @@ export default function Table({
   const sorted = useMemo(() => {
     if (!sort) return filtered;
     const key = cols[sort.i].key;
+    // Kolom tanggal: pakai nilai ISO mentah supaya "2024-08-10" > "2024-08-01".
+    const isDate = DATE_KEYS.has(key);
     return [...filtered].sort((a, b) => {
-      const ta = cellText(a, key);
-      const tb = cellText(b, key);
+      const ta = isDate ? String(a[key] ?? '') : cellText(a, key);
+      const tb = isDate ? String(b[key] ?? '') : cellText(b, key);
       return sort.dir === 'asc'
         ? ta.localeCompare(tb, 'id', { numeric: true })
         : tb.localeCompare(ta, 'id', { numeric: true });
@@ -198,7 +200,11 @@ export default function Table({
   const pageRows = sorted.slice((curPage - 1) * pageSize, curPage * pageSize);
 
   const toggleSort = (i: number) =>
-    setSort((s) => (s && s.i === i ? { i, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { i, dir: 'asc' }));
+    setSort((s) => {
+      if (s && s.i === i) return { i, dir: s.dir === 'asc' ? 'desc' : 'asc' };
+      // Kolom tanggal: klik pertama = terbaru → terlama (desc).
+      return { i, dir: DATE_KEYS.has(cols[i].key) ? 'desc' : 'asc' };
+    });
 
   const distinct = (i: number) =>
     [...new Set(data.map((r) => cellText(r, cols[i].key)))].filter((x) => x !== '').sort((a, b) => a.localeCompare(b, 'id', { numeric: true }));
@@ -255,37 +261,41 @@ export default function Table({
                     )}
                     {openFilter === i && (
                       <div className="colfilter-menu">
-                        {distinct(i).map((val) => {
-                          const set = colFilter[i] || new Set<string>();
-                          const on = set.has(val.toLowerCase());
-                          return (
-                            <label key={val}>
-                              <input
-                                type="checkbox"
-                                checked={on}
-                                onChange={() => {
-                                  const next = new Set(set);
-                                  if (on) next.delete(val.toLowerCase());
-                                  else next.add(val.toLowerCase());
-                                  setColFilter((f) => ({ ...f, [i]: next }));
-                                  setPage(1);
-                                }}
-                              />
-                              {val}
-                            </label>
-                          );
-                        })}
-                        <button
-                          type="button"
-                          className="cfm-apply"
-                          onClick={() => {
-                            setColFilter((f) => ({ ...f, [i]: new Set() }));
-                            setOpenFilter(null);
-                            setPage(1);
-                          }}
-                        >
-                          Reset
-                        </button>
+                        <div className="cfm-list">
+                          {distinct(i).map((val) => {
+                            const set = colFilter[i] || new Set<string>();
+                            const on = set.has(val.toLowerCase());
+                            return (
+                              <label key={val} className="cfm-item">
+                                <input
+                                  type="checkbox"
+                                  checked={on}
+                                  onChange={() => {
+                                    const next = new Set(set);
+                                    if (on) next.delete(val.toLowerCase());
+                                    else next.add(val.toLowerCase());
+                                    setColFilter((f) => ({ ...f, [i]: next }));
+                                    setPage(1);
+                                  }}
+                                />
+                                <span>{val}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <div className="cfm-foot">
+                          <button
+                            type="button"
+                            className="cfm-apply"
+                            onClick={() => {
+                              setColFilter((f) => ({ ...f, [i]: new Set() }));
+                              setOpenFilter(null);
+                              setPage(1);
+                            }}
+                          >
+                            Reset
+                          </button>
+                        </div>
                       </div>
                     )}
                   </th>

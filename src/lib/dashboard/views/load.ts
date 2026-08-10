@@ -80,32 +80,37 @@ export async function loadDashboardData(
   return { data, finance, txGrid, range, configured: true, inventory, waitingList };
 }
 
-/** Baca semua payment dari Turso + JOIN active_tenant untuk nama penghuni. */
+/** Baca semua invoice dari Turso (invoice_sewa), termasuk yang belum dibayar. */
 async function loadTursoPayments(): Promise<PaymentRaw[]> {
   try {
     const db = turso();
     const rs = await db.execute(
-      `SELECT p.id_penghuni, p.id_payment, p.periode_awal, p.periode_akhir, p.amount,
-              p.payment_date, p.status, p.notes,
-              at.nama_lengkap
-       FROM payment p
-       LEFT JOIN active_tenant at ON at.id_penghuni = p.id_penghuni
-       ORDER BY p.payment_date DESC`
+      `SELECT id_penghuni, no_inv, periode_awal, periode_akhir, grand_total,
+              tanggal_pembayaran, nama,
+              CASE
+                WHEN tanggal_pembayaran IS NOT NULL THEN 'Paid'
+                WHEN periode_akhir < date('now') THEN 'Overdue'
+                WHEN periode_akhir <= date('now', '+7 days') THEN 'Jatuh Tempo'
+                ELSE 'Pending'
+              END AS status_computed
+       FROM invoice_sewa
+       WHERE id_penghuni IS NOT NULL
+       ORDER BY COALESCE(tanggal_pembayaran, periode_akhir) DESC, id DESC`
     );
     return rs.rows.map((r: any) => ({
       idP: String(r.id_penghuni ?? ''),
-      inv: String(r.id_payment ?? ''),
+      inv: String(r.no_inv ?? ''),
       awal: String(r.periode_awal ?? ''),
       akhir: String(r.periode_akhir ?? ''),
-      amount: String(r.amount ?? ''),
-      tgl: String(r.payment_date ?? ''),
+      amount: String(r.grand_total ?? 0),
+      tgl: String(r.tanggal_pembayaran ?? ''),
       metode: '',
-      status: String(r.status ?? ''),
-      notes: String(r.notes ?? ''),
-      nama: String(r.nama_lengkap ?? '')
+      status: String(r.status_computed ?? 'Pending'),
+      notes: '',
+      nama: String(r.nama ?? '')
     }));
   } catch (e) {
-    console.error('[dashboard] gagal baca Turso payment:', e);
+    console.error('[dashboard] gagal baca invoice_sewa:', e);
     return [];
   }
 }
@@ -120,10 +125,10 @@ async function loadTursoTempo(): Promise<Tempo | null> {
     const db = turso();
     const rs = await db.execute(
       `SELECT at.nama_lengkap, at.no_hp, at.id_penghuni,
-              MAX(p.periode_akhir) AS max_akhir
+              MAX(inv.periode_akhir) AS max_akhir
        FROM active_tenant at
-       LEFT JOIN payment p ON p.id_penghuni = at.id_penghuni
-                          AND p.periode_akhir IS NOT NULL
+       LEFT JOIN invoice_sewa inv ON inv.id_penghuni = at.id_penghuni
+                                 AND inv.periode_akhir IS NOT NULL
        GROUP BY at.id_penghuni, at.nama_lengkap, at.no_hp`
     );
     if (!rs.rows.length) return null;
@@ -180,7 +185,7 @@ async function loadTransaksi(): Promise<TransaksiRow[]> {
 
     const [incRows, expRows] = await Promise.all([
       db.execute(`SELECT tanggal, nama_transaksi, jumlah, keterangan FROM income_non_rent ORDER BY tanggal DESC`),
-      db.execute(`SELECT tanggal, keterangan, nominal FROM jurnal_transaksi ORDER BY tanggal DESC LIMIT 500`)
+      db.execute(`SELECT tanggal, keterangan, nominal FROM jurnal_transaksi WHERE keterangan NOT LIKE 'Pengakuan%' ORDER BY tanggal DESC LIMIT 500`)
     ]);
 
     const income: TransaksiRow[] = incRows.rows.map((r: any) => ({

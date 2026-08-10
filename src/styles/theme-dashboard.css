@@ -1226,7 +1226,7 @@
 [data-app='dashboard'] .colfilter-menu {
   position: fixed; z-index: 300; width: 224px; max-height: 340px;
   display: flex; flex-direction: column; padding: 8px;
-  background: var(--card-2); border: 1px solid var(--border-2); border-radius: 12px;
+  background: rgba(28,30,42,.88); border: 1px solid var(--border-2); border-radius: 12px;
   box-shadow: 0 20px 54px rgba(0,0,0,.42);
   -webkit-backdrop-filter: blur(40px) saturate(160%); backdrop-filter: blur(40px) saturate(160%);
   color: var(--text); font-size: 12.5px;
