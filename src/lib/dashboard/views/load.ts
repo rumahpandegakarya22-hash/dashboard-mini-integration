@@ -196,13 +196,16 @@ async function loadTransaksi(): Promise<TransaksiRow[]> {
       keterangan: String(r.keterangan ?? '')
     }));
 
-    const expense: TransaksiRow[] = expRows.rows.map((r: any) => ({
-      tanggal: String(r.tanggal ?? ''),
-      namaTx: String(r.keterangan ?? ''),
-      jenisTx: 'Pengeluaran',
-      jumlah: `Rp${Math.round(Number(r.nominal) || 0).toLocaleString('id-ID')}`,
-      keterangan: String(r.keterangan ?? '')
-    }));
+    const expense: TransaksiRow[] = expRows.rows.map((r: any) => {
+      const ket = String(r.keterangan ?? '');
+      return {
+        tanggal: String(r.tanggal ?? ''),
+        namaTx: ket,
+        jenisTx: /^(terima sewa|diskon sewa|pelunasan)/i.test(ket) ? 'Pendapatan' : 'Pengeluaran',
+        jumlah: `Rp${Math.round(Number(r.nominal) || 0).toLocaleString('id-ID')}`,
+        keterangan: ket
+      };
+    });
 
     return [...income, ...expense].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
   } catch (e) {

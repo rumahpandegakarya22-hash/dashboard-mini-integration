@@ -613,9 +613,32 @@ export function hydrateDashboard(
   const tempo = opts?.tursoTempo ?? sheetTempo;
   const { rooms, stats } = computeRoomsAndStats(penghuni, kamar, tempo);
 
-  // Semua status (Lunas, Tunggakan, Jatuh Tempo, Menunggu) sudah ada di calcPembayaran
-  // langsung dari invoice_sewa — tidak perlu synthetic rows dari tursoTempo lagi.
-  const pembayaran = calcPembayaran;
+  // Tambah baris Jatuh Tempo/Tunggakan untuk tenant yang belum punya invoice baru
+  // (invoice_sewa hanya dibuat saat payment dikonfirmasi, bukan pre-generated).
+  let pembayaran = calcPembayaran;
+  const tempoList = opts?.tursoTempo?.list;
+  if (tempoList?.length) {
+    const coveredIds = new Set(
+      calcPembayaran
+        .filter((r) => (r.jenisTx as Pill).c === 's-rejected' || (r.jenisTx as Pill).t === 'Jatuh Tempo')
+        .map((r) => r.idPenghuni)
+    );
+    const synthetic: PembayaranRow[] = tempoList
+      .filter((e) => e.idPenghuni && !coveredIds.has(e.idPenghuni))
+      .map((e) => ({
+        check: false,
+        tanggal: '',
+        _t: null,
+        idPenghuni: e.idPenghuni!,
+        nama: e.nama,
+        name: e.nama,
+        jenisTx: e._s <= 0 ? { t: 'Tunggakan', c: 's-rejected' } : { t: 'Jatuh Tempo', c: 's-pending' },
+        namaTx: '—',
+        jumlah: '—',
+        keterangan: e.sisa
+      }));
+    if (synthetic.length) pembayaran = [...synthetic, ...calcPembayaran];
+  }
 
   return {
     penghuni, logbook, payments, leads, survey, booking, tiket, vendor, kamar,
