@@ -41,7 +41,7 @@ export const COLS: Record<string, TableCol[]> = {
     stokTerpakai: [{key:"name",label:"Bahan"},{key:"jumlah",label:"Total Dipakai"},{key:"frekuensi",label:"Transaksi"},{key:"biaya",label:"Total Biaya"}],
     // Transaksi non-sewa: pendapatan (income_non_rent) + pengeluaran (jurnal_transaksi)
     transaksi: [
-      {key:"tanggal",label:"Tanggal"},{key:"namaTx",label:"Nama Transaksi"},
+      {key:"tanggal",label:"Tanggal"},{key:"jenisTx",label:"Jenis"},{key:"namaTx",label:"Nama Transaksi"},
       {key:"jumlah",label:"Jumlah Nominal"},{key:"keterangan",label:"Keterangan"},
     ],
     // Daftar Prospek/Survey — Nomor WA (teks) + kolom Pertimbangan + Aksi (tombol WA)
