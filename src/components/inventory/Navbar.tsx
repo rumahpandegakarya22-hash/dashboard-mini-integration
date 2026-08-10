@@ -58,10 +58,10 @@ export default function Navbar() {
 
   if (loading) {
     return (
-      <header className="sticky top-0 w-full z-50 glass-panel border-b px-6 py-4 flex justify-between items-center h-16">
+      <header className="sticky top-0 w-full z-50 glass-panel border-b px-6 py-3 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-accent/15 border border-accent/25 animate-pulse" />
-          <div className="w-32 h-4 rounded bg-sand/60 animate-pulse" />
+          <div className="w-24 h-8 rounded bg-sand/60 animate-pulse" />
         </div>
         <div className="w-24 h-8 rounded bg-sand/60 animate-pulse" />
       </header>
@@ -85,22 +85,21 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 w-full z-50 glass-panel border-b border-sand/70 transition-all duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <Link href="/inventory" className="flex items-center gap-2 group">
-              <div className="p-2 rounded-xl bg-accent shadow-lg group-hover:scale-105 transition-all duration-300">
-                <Package className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-extrabold text-lg text-ink tracking-wide">
-                Tiga Dara Inventory
-              </span>
-            </Link>
-          </div>
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-5">
+        <div className="flex items-center justify-between py-2 gap-3">
+          {/* Brand — dua baris */}
+          <Link href="/inventory" className="flex items-center gap-2 group shrink-0">
+            <div className="p-1.5 rounded-xl bg-accent shadow-lg group-hover:scale-105 transition-all duration-300">
+              <Package className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="font-extrabold text-sm text-ink tracking-wide">Tiga Dara</span>
+              <span className="font-semibold text-xs text-taupe-dark tracking-wider">Inventory</span>
+            </div>
+          </Link>
 
-          {/* Desktop Navigation — pil aktif meluncur antar item (shared layoutId),
-              padanan "sidebar" untuk chrome nav Inventory yang berbentuk topbar. */}
-          <div className="hidden lg:flex items-center space-x-1">
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center flex-wrap gap-0.5 flex-1 justify-center">
             {navigation.map((item) => {
               if (!item.roles.includes(user.role)) return null;
               const isActive = pathname === item.href;
@@ -108,7 +107,7 @@ export default function Navbar() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`relative flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${
+                  className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors duration-200 whitespace-nowrap ${
                     isActive
                       ? "text-accent"
                       : "text-stone-700 hover:bg-blush/30 hover:text-ink border border-transparent"
@@ -121,18 +120,18 @@ export default function Navbar() {
                       className="absolute inset-0 rounded-xl bg-accent/10 border border-accent/20"
                     />
                   )}
-                  <item.icon className="h-4 w-4 relative" />
+                  <item.icon className="h-3.5 w-3.5 relative shrink-0" />
                   <span className="relative">{item.name}</span>
                 </Link>
               );
             })}
           </div>
 
-          {/* User Profile & Logout */}
-          <div className="hidden lg:flex items-center gap-4">
-            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-sand/40 border border-sand/70">
+          {/* User Profile & Dashboard link */}
+          <div className="hidden lg:flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-sand/40 border border-sand/70">
               <div className="p-1 rounded-lg bg-accent/10 text-accent">
-                {isOwner ? <ShieldCheck className="h-4 w-4 text-accent" /> : <User className="h-4 w-4" />}
+                {isOwner ? <ShieldCheck className="h-3.5 w-3.5 text-accent" /> : <User className="h-3.5 w-3.5" />}
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-xs font-semibold text-ink leading-tight">{user.name}</span>
@@ -141,13 +140,13 @@ export default function Navbar() {
                 </span>
               </div>
             </div>
-            
+
             <a
               href="/dashboard"
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-accent bg-accent/10 border border-accent/25 hover:bg-accent/15 transition-all duration-300"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-accent bg-accent/10 border border-accent/25 hover:bg-accent/15 transition-all duration-300 whitespace-nowrap"
               title="Kembali ke Dashboard"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
               Dashboard
             </a>
           </div>
