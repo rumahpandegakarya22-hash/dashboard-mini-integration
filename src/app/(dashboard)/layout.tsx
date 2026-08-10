@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getAuthState } from '@/lib/core/auth';
 import { guardDashboard } from '@/lib/core/routing';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 
 /**
  * Layout route group Dashboard — gating namespace `role`/`status` (§5.2).
@@ -20,6 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div data-app="dashboard" data-role={s.dashboardUser!.role}>
       {children}
+      <ChartTooltip />
     </div>
   );
 }

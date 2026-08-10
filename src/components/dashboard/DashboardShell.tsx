@@ -8,7 +8,6 @@ import { ROLE_NAV } from '@/config/dashboard-nav';
 import type { DashboardRole } from '@/config/dashboard-access';
 import { initials } from '@/lib/dashboard/format';
 import ThemeToggle from '@/components/ui/ThemeToggle';
-import ChartTooltip from '@/components/charts/ChartTooltip';
 import PeriodFilter from './PeriodFilter';
 import {
   IconHome,
@@ -201,8 +200,6 @@ export default function DashboardShell({
 
       {/* scrim drawer mobile — verbatim dari app.js */}
       <div id="scrim" className="scrim" onClick={() => setNavOpen(false)} />
-
-      <ChartTooltip />
     </div>
   );
 }
