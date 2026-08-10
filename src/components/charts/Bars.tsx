@@ -64,10 +64,13 @@ export default function Bars({ cats, vals, gradId, gradStops, unit }: BarsProps)
                 width={bw}
                 rx={bw / 2}
                 fill={`url(#${gradId})`}
-                style={{ transformOrigin: `${x + bw / 2}px ${padT + ch}px` }}
+                style={{ transformOrigin: `${x + bw / 2}px ${padT + ch}px`, pointerEvents: 'all' }}
                 initial={{ y: padT + ch, height: 0 }}
                 animate={{ y, height: bh }}
                 transition={{ duration: 0.7, delay: i * 0.05, ease: [0.22, 0.61, 0.36, 1] }}
+                data-tip-label={cats[i]}
+                data-tip-value={fmtNum(v, unit)}
+                data-tip-color="var(--brand)"
               />
               <motion.text
                 className="chart-val"

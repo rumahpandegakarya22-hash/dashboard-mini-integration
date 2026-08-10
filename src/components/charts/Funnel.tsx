@@ -34,6 +34,10 @@ export default function Funnel({ stages }: { stages: FunnelStage[] }) {
             <motion.polygon
               key={i}
               fill={COLORS[i % COLORS.length]}
+              data-tip-label={s.label || `Stage ${i + 1}`}
+              data-tip-value={String(s.value)}
+              data-tip-color={COLORS[i % COLORS.length]}
+              style={{ pointerEvents: 'all' }}
               initial={{ points: flat }}
               animate={{ points: `${x0},${y} ${x0 + topW},${y} ${x1 + botW},${y + seg - 4} ${x1},${y + seg - 4}` }}
               transition={{ duration: 0.55, delay: i * 0.06, ease: [0.22, 0.61, 0.36, 1] }}

@@ -38,12 +38,14 @@ export default function ChartTooltip() {
       const target = e.target as Element;
       const t = target?.closest?.('[data-tip-label]');
       if (!t) return;
+      const me = e as MouseEvent;
       activeRef.current = t;
       setTip({
         label: t.getAttribute('data-tip-label') || '',
         value: t.getAttribute('data-tip-value') || '',
         color: t.getAttribute('data-tip-color') || 'currentColor'
       });
+      setPos({ x: me.clientX + PAD, y: me.clientY + PAD });
     };
 
     const onMove = (e: MouseEvent) => {
