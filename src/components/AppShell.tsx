@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
 import { motion } from 'framer-motion';
 import { ChevronLeft, House, LoaderCircle, LogOut, Menu, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
-import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_LANDING_PAGE, moduleIcon } from './module-icons';
+import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, moduleIcon } from './module-icons';
 
 /** Item sidebar dengan pil aktif yang meluncur (layoutId bersama) — pola
  * manuarora700: satu elemen `motion` dipindah antar item lewat shared layout
@@ -64,12 +64,14 @@ interface Props {
   hasDashboardAccess?: boolean;
   /** Marketing + Owner dapat mengelola konten landing page. */
   canLandingPage?: boolean;
+  /** Owner, Admin, Sales — melihat riwayat pembayaran per penghuni. */
+  canRiwayatBayar?: boolean;
   modules: NavModule[];
   children: React.ReactNode;
 }
 
 export default function AppShell({ userName, roleLabel, isOwner, canKelola,
-  hasDashboardAccess, canLandingPage, modules, children }: Props) {
+  hasDashboardAccess, canLandingPage, canRiwayatBayar, modules, children }: Props) {
   const pathname = usePathname();
   const { signOut } = useClerk();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -185,6 +187,15 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
               <div className="side-group-label">Marketing Admin</div>
               <SideLink href={NAV_LANDING_PAGE.href} active={pathname.startsWith(NAV_LANDING_PAGE.href)} icon={NAV_LANDING_PAGE.icon}>
                 {NAV_LANDING_PAGE.label}
+              </SideLink>
+            </div>
+          )}
+
+          {canRiwayatBayar && (
+            <div>
+              <div className="side-group-label">Laporan</div>
+              <SideLink href={NAV_RIWAYAT_BAYAR.href} active={pathname.startsWith(NAV_RIWAYAT_BAYAR.href)} icon={NAV_RIWAYAT_BAYAR.icon}>
+                {NAV_RIWAYAT_BAYAR.label}
               </SideLink>
             </div>
           )}

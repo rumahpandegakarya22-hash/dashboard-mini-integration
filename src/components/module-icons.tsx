@@ -11,6 +11,7 @@ import {
   FileCog,
   Globe,
   Hammer,
+  History,
   LayoutGrid,
   ListTodo,
   Megaphone,
@@ -86,3 +87,6 @@ export const NAV_TEMAN_RARA: { href: string; label: string; icon: LucideIcon }[]
 
 /** Halaman admin Landing Page — terpisah karena Marketing juga perlu akses (bukan hanya canKelola). */
 export const NAV_LANDING_PAGE = { href: '/ops/admin/landing-page', label: 'Landing Page', icon: Globe };
+
+/** Riwayat Pembayaran — owner, staff_admin, staff_sales. */
+export const NAV_RIWAYAT_BAYAR = { href: '/ops/admin/riwayat-pembayaran', label: 'Riwayat Pembayaran', icon: History };
