@@ -5,6 +5,8 @@ import { loadDashboardData } from '@/lib/dashboard/views/load';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import OverviewFor from '@/components/dashboard/overviews/OverviewFor';
 
+export const dynamic = 'force-dynamic';
+
 /** Overview per role — halaman default `/dashboard`. */
 export default async function DashboardPage({
   searchParams

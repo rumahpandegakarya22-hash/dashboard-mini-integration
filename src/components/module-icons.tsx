@@ -6,8 +6,10 @@ import {
   Clapperboard,
   ClipboardCheck,
   ClipboardList,
+  ClipboardPlus,
   DoorOpen,
   FileCog,
+  Globe,
   Hammer,
   LayoutGrid,
   ListTodo,
@@ -16,6 +18,7 @@ import {
   PackageMinus,
   ReceiptText,
   Sparkles,
+  Store,
   TrendingUp,
   UserRoundPlus,
   UsersRound,
@@ -44,7 +47,9 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   'wo-cleaning': FileCog,
   'pemakaian-stok-cleaning': PackageMinus,
   'pemakaian-stok-maintenance': PackageMinus,
-  'daily-task': ListTodo
+  'daily-task': ListTodo,
+  'tambah-vendor': Store,
+  'tambah-waiting-list': ClipboardPlus
 };
 
 export function moduleIcon(id: string): LucideIcon {
@@ -58,9 +63,9 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
     label: 'Administrasi',
     ids: ['penghuni-baru', 'pembayaran-sewa', 'pindah-kamar', 'checkout', 'pengeluaran', 'feedback']
   },
-  { label: 'Sales', ids: ['survey'] },
+  { label: 'Sales', ids: ['survey', 'tambah-waiting-list'] },
   { label: 'Marketing', ids: ['leads', 'konten', 'promosi'] },
-  { label: 'Maintenance', ids: ['perawatan-preventif', 'perbaikan-korektif', 'pemakaian-stok-maintenance'] },
+  { label: 'Maintenance', ids: ['perawatan-preventif', 'perbaikan-korektif', 'pemakaian-stok-maintenance', 'tambah-vendor'] },
   { label: 'Inspeksi', ids: ['inspeksi-kebersihan', 'inspeksi-fasilitas', 'wo-inspeksi'] },
   { label: 'Cleaning', ids: ['wo-cleaning', 'pemakaian-stok-cleaning'] }
 ];
@@ -75,3 +80,6 @@ export const NAV_TEMAN_RARA: { href: string; label: string; icon: LucideIcon }[]
   { href: '/ops/admin/wifi', label: 'Kredensial WiFi', icon: Wifi },
   { href: '/ops/admin/akun-penghuni', label: 'Akun Penghuni', icon: UsersRound }
 ];
+
+/** Halaman admin Landing Page — terpisah karena Marketing juga perlu akses (bukan hanya canKelola). */
+export const NAV_LANDING_PAGE = { href: '/ops/admin/landing-page', label: 'Landing Page', icon: Globe };

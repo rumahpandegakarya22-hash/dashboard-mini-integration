@@ -5,6 +5,7 @@ import { getJoblist, joblistDivisi } from '@/lib/joblist';
 import HomeGreeting from '@/components/HomeGreeting';
 import HomeMenu from '@/components/HomeMenu';
 import Joblist from '@/components/Joblist';
+import PendingAnnouncement from '@/components/PendingAnnouncement';
 
 export default async function HomePage() {
   const user = await getSessionUser();
@@ -26,6 +27,7 @@ export default async function HomePage() {
   return (
     <>
       <HomeGreeting userName={user.name} roleLabel={ROLE_LABEL[user.role]} />
+      <PendingAnnouncement role={user.role} />
       <Joblist rows={joblistRows} divisi={divisi} />
       <HomeMenu
         isOwner={user.role === 'owner'}

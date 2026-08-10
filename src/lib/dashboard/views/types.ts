@@ -54,6 +54,7 @@ export interface PaymentRaw {
   metode: string;
   status: string;
   notes: string;
+  nama?: string;
 }
 
 /** Pil status bergaya `{t,c}` — dipakai renderer sel tabel. */
@@ -177,6 +178,7 @@ export interface TempoEntry {
   tempo: string;
   sisa: string;
   _s: number;
+  idPenghuni?: string;
 }
 
 export interface Tempo {
@@ -205,6 +207,18 @@ export interface TransaksiRow {
   jenisTx: string;
   jumlah: string;
   keterangan: string;
+}
+
+export interface WaitingListRow {
+  id: string;
+  name: string;
+  wa: string;
+  tipe: string;
+  rencanaTanggal: string;
+  budgetMax: string;
+  status: string;
+  keterangan: string;
+  aksi: string;
 }
 
 /** Seluruh data dashboard hasil hidrasi satu kali dari /api/dashboard/sheets. */

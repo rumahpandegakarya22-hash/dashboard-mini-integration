@@ -25,6 +25,7 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
     <div data-app="ops">
       <AppShell userName={user.name} roleLabel={ROLE_LABEL[user.role]} isOwner={user.role === 'owner'}
         canKelola={user.role === 'owner' || user.role === 'staff_admin'}
+        canLandingPage={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_marketing'}
         hasDashboardAccess={!!s.dashboardUser} modules={visible}>
         {children}
       </AppShell>

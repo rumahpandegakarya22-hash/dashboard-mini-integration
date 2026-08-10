@@ -23,30 +23,36 @@ export const COLS: Record<string, TableCol[]> = {
     ],
     penghuniSales: [{key:"kamar",label:"No Kamar"},{key:"panggil",label:"Nama Panggilan"},{key:"jenis",label:"Jenis Kamar"},{key:"tempo",label:"Tanggal Jatuh Tempo"},{key:"hp",label:"No HP Penghuni"},{key:"aksi",label:"WhatsApp"}],
     pembayaran: [
-      {key:"check",label:""},{key:"tanggal",label:"Tanggal"},{key:"idPenghuni",label:"ID Penghuni"},
-      {key:"name",label:"Nama"},{key:"jenisTx",label:"Jenis Transaksi"},
-      {key:"namaTx",label:"Nama Transaksi"},{key:"jumlah",label:"Jumlah"},{key:"keterangan",label:"Keterangan"},
+      {key:"tanggal",label:"Tanggal"},{key:"idPenghuni",label:"ID Penghuni"},
+      {key:"name",label:"Nama"},{key:"jenisTx",label:"Status"},
+      {key:"namaTx",label:"No Invoice"},{key:"jumlah",label:"Jumlah"},{key:"keterangan",label:"Keterangan"},
     ],
     dokumen: [{key:"id",label:"ID Docs"},{key:"name",label:"Judul"},{key:"open",label:"Link"}],
     dokumenOwner: [{key:"id",label:"ID Docs"},{key:"name",label:"Judul"},{key:"divisi",label:"Divisi"},{key:"open",label:"Link"}],
+    dokumenOps: [{key:"id",label:"ID Docs"},{key:"name",label:"Judul"},{key:"divisi",label:"Divisi"},{key:"open",label:"Link"}],
     logbook: [{key:"tanggal",label:"Tanggal"},{key:"name",label:"Task"},{key:"pic",label:"PIC"},{key:"divisi",label:"Divisi"},{key:"deadline",label:"Deadline"},{key:"logStatus",label:"Status"}],
     jatuhTempo: [{key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"tempo",label:"Jatuh Tempo"},{key:"sisa",label:"Sisa Hari"},{key:"tagihan",label:"Tagihan"}],
-    vendor: [{key:"name",label:"Nama Vendor"},{key:"kategori",label:"Kategori"},{key:"kontak",label:"Nomor Telepon"},{key:"hasil",label:"Hasil"}],
+    vendor: [{key:"name",label:"Nama Vendor"},{key:"kategori",label:"Kategori"},{key:"kontak",label:"Nomor Telepon"},{key:"hasil",label:"Hasil"},{key:"aksi",label:"WhatsApp"}],
     vendorOps: [{key:"name",label:"Nama Vendor"},{key:"kategori",label:"Kategori"},{key:"kontak",label:"Nomor Telepon"},{key:"hasil",label:"Hasil"},{key:"aksi",label:"WhatsApp"}],
-    leads:  [{key:"check",label:""},{key:"id",label:"ID"},{key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"asal",label:"Asal"},{key:"tanggal",label:"Tanggal"},{key:"status",label:"Status"}],
-    tiket:  [{key:"check",label:""},{key:"id",label:"ID"},{key:"pekerjaan",label:"Pekerjaan"},{key:"jenis",label:"Jenis"},{key:"lokasi",label:"Lokasi"},{key:"tanggal",label:"Tanggal"},{key:"status",label:"Status"}],
+    leads:  [{key:"id",label:"ID"},{key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"asal",label:"Asal"},{key:"tanggal",label:"Tanggal"},{key:"status",label:"Status"}],
+    tiket:  [{key:"id",label:"ID"},{key:"pekerjaan",label:"Pekerjaan"},{key:"jenis",label:"Jenis"},{key:"lokasi",label:"Lokasi"},{key:"tanggal",label:"Tanggal"},{key:"status",label:"Status"}],
     // Stok Inventory (monitoring dari app Inventory Stock — integrasi 3 app)
     stokMenipis: [{key:"name",label:"Bahan"},{key:"category",label:"Kategori"},{key:"stok",label:"Stok"},{key:"min",label:"Stok Min"},{key:"kurang",label:"Kurang"}],
     stokTerpakai: [{key:"name",label:"Bahan"},{key:"jumlah",label:"Total Dipakai"},{key:"frekuensi",label:"Transaksi"},{key:"biaya",label:"Total Biaya"}],
     // Transaksi non-sewa: pendapatan (income_non_rent) + pengeluaran (jurnal_transaksi)
     transaksi: [
       {key:"tanggal",label:"Tanggal"},{key:"namaTx",label:"Nama Transaksi"},
-      {key:"jenisTx",label:"Jenis Transaksi"},{key:"jumlah",label:"Jumlah Nominal"},
-      {key:"keterangan",label:"Keterangan"},
+      {key:"jumlah",label:"Jumlah Nominal"},{key:"keterangan",label:"Keterangan"},
     ],
     // Daftar Prospek/Survey — Nomor WA (teks) + kolom Pertimbangan + Aksi (tombol WA)
     prospek: [
-    {key:"check",label:""},{key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"pertimbangan",label:"Pertimbangan"},
+    {key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"pertimbangan",label:"Pertimbangan"},
     {key:"asal",label:"Asal"},{key:"tanggal",label:"Tanggal"},{key:"aksi",label:"Aksi"},
+  ],
+    waitingList: [
+    {key:"id",label:"ID"},{key:"name",label:"Nama"},{key:"wa",label:"No WhatsApp"},
+    {key:"tipe",label:"Tipe Kamar"},{key:"rencanaTanggal",label:"Rencana Masuk"},
+    {key:"budgetMax",label:"Budget Maks"},{key:"status",label:"Status"},
+    {key:"keterangan",label:"Keterangan"},{key:"aksi",label:"WhatsApp"},
   ],
 };

@@ -287,6 +287,11 @@ export default function MaterialsPage() {
                     <h3 className="text-lg font-bold text-ink tracking-wide mb-2 truncate">
                       {item.name}
                     </h3>
+                    {item.description && (
+                      <p className="text-xs text-taupe-dark font-medium leading-relaxed">
+                        {item.description}
+                      </p>
+                    )}
                   </div>
 
                   {/* Stock status indicator */}

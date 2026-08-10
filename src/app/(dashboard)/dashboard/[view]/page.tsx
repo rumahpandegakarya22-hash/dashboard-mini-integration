@@ -6,6 +6,8 @@ import DashboardShell from '@/components/dashboard/DashboardShell';
 import OverviewFor, { type OverviewKey } from '@/components/dashboard/overviews/OverviewFor';
 import ViewFor from '@/components/dashboard/pages/ViewFor';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Halaman per view. `config/dashboard-nav.ts` adalah sumber tunggal untuk
  * sidebar SEKALIGUS guard: view yang tidak terdaftar untuk role pemanggil → 404,

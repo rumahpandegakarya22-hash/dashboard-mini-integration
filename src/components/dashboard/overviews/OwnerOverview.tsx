@@ -19,6 +19,8 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
   const hasFin = !!F && F.nBuckets >= 1;
   const moveIn = monthlyCount(filterByPeriod(penghuni, 'masuk', period, from, to), 'masuk');
 
+  const tiketAktif = data.tiket.filter((t) => !/complete/i.test(t.status?.t || '')).length;
+
   const cards: StatCardData[] = [
     { label: 'Pendapatan Kotor', value: fmtRpShort(F ? F.pendapatanKotor : 0), spark: F ? F.cashSeries : [], bg: G.ownPrimary, onDark: true },
     { label: 'Laba Bersih', value: fmtRpShort(F ? F.labaBersih : 0), spark: F ? F.labaSeries : [], bg: G.ownPrimary, onDark: true },
@@ -26,6 +28,7 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
     { label: 'OPEX', value: fmtRpShort(F ? F.beban : 0), spark: F ? F.expSeries : [], bg: G.ownGray, onDark: true },
     { label: 'Kamar Kosong', value: String(stats.kosong ?? 0), spark: moveIn, bg: G.ownGray, onDark: true },
     { label: 'Kamar Isi', value: String(stats.occupied ?? 0), spark: moveIn, bg: G.ownRose, onDark: true },
+    { label: 'Tiket Aktif', value: String(tiketAktif), spark: [], bg: G.ownGray, onDark: true },
     // Total diskon yang diberikan pada periode aktif (akun Beban Diskon).
     { label: 'Total Diskon', value: fmtRpShort(F ? F.diskonTotal : 0), spark: F ? F.diskonSeries : [], bg: G.ownGray, onDark: true }
   ];
@@ -54,7 +57,7 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
 
   return (
     <div className="view">
-      <StatGrid cards={cards} cols={7} />
+      <StatGrid cards={cards} cols={8} />
 
       <Reveal tier={1} className="grid row-2 mt">
         {hasFin && lsc ? (

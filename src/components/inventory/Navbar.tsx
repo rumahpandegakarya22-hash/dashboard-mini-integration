@@ -93,7 +93,7 @@ export default function Navbar() {
                 <Package className="h-5 w-5 text-white" />
               </div>
               <span className="font-extrabold text-lg text-ink tracking-wide">
-                KostInventory
+                Tiga Dara Inventory
               </span>
             </Link>
           </div>

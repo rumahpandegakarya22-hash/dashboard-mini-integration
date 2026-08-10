@@ -506,11 +506,14 @@ export function computeTempo(
 
   let pembayaran: PembayaranRow[] = [];
   if (payments.length) {
-    const payPill = (s: string): Pill =>
-      /paid|lunas/i.test(s) ? { t: s || 'Paid', c: 's-complete' } : { t: s || 'Pending', c: 's-pending' };
+    const payPill = (s: string): Pill => {
+      if (/paid|lunas/i.test(s)) return { t: 'Lunas', c: 's-complete' };
+      if (/pend|menunggu/i.test(s)) return { t: 'Menunggu', c: 's-pending' };
+      return { t: s || 'Tertunda', c: 's-pending' };
+    };
     pembayaran = payments
       .map((x) => {
-        const nm = (occById[x.idP] || ({} as OccupantRow)).nama || '';
+        const nm = x.nama || (occById[x.idP] || ({} as OccupantRow)).nama || '';
         return {
           check: false,
           tanggal: x.tgl || '',
@@ -519,15 +522,9 @@ export function computeTempo(
           nama: nm,
           name: nm,
           jenisTx: payPill(x.status),
-          namaTx: x.inv || 'Tagihan sewa',
+          namaTx: x.inv || '',
           jumlah: 'Rp' + (parseInt(String(x.amount).replace(/[^0-9]/g, ''), 10) || 0).toLocaleString('id-ID'),
-          keterangan: [
-            [x.awal, x.akhir].filter(Boolean).map(fmtDateID).join(' s.d. '),
-            x.metode,
-            x.notes
-          ]
-            .filter(Boolean)
-            .join(' · ')
+          keterangan: [x.awal, x.akhir].filter(Boolean).map(fmtDateID).join(' s.d. ')
         };
       })
       .sort((a, b) => (b._t ? b._t.getTime() : -1) - (a._t ? a._t.getTime() : -1));
@@ -589,7 +586,11 @@ export function computeTempo(
  */
 export function hydrateDashboard(
   sheets: SheetsOut,
-  opts?: { tursoPayments?: PaymentRaw[]; transaksi?: import('./types').TransaksiRow[] }
+  opts?: {
+    tursoPayments?: PaymentRaw[];
+    transaksi?: import('./types').TransaksiRow[];
+    tursoTempo?: import('./types').Tempo | null;
+  }
 ): DashboardData {
   const penghuni = hydratePenghuni(sheets);
   const logbook = hydrateLogbook(sheets);
@@ -604,8 +605,33 @@ export function hydrateDashboard(
   const dokumen = hydrateDokumen(sheets);
   const { occupants, retention } = hydrateHistorical(sheets);
 
-  const { tempo, pembayaran } = computeTempo(payments, occupants, penghuni);
+  const { tempo: sheetTempo, pembayaran: calcPembayaran } = computeTempo(payments, occupants, penghuni);
+  // tursoTempo (dari active_tenant JOIN payment) lebih akurat: occupancy_history bisa kosong
+  // untuk penghuni lama yang check-in sebelum trigger ditambahkan.
+  const tempo = opts?.tursoTempo ?? sheetTempo;
   const { rooms, stats } = computeRoomsAndStats(penghuni, kamar, tempo);
+
+  // Synthetic rows: tagihan yang belum dibayar (jatuh tempo & tunggakan) ditambahkan ke pembayaran.
+  let pembayaran = calcPembayaran;
+  if (opts?.tursoTempo?.list?.length) {
+    const synRows: PembayaranRow[] = opts.tursoTempo.list
+      .filter((e) => e.idPenghuni)
+      .map((e) => ({
+        check: false,
+        tanggal: e.tempo || '',
+        _t: parseDate(e.tempo),
+        idPenghuni: e.idPenghuni || '',
+        nama: e.nama,
+        name: e.nama,
+        jenisTx: e._s <= 0 ? { t: 'Tunggakan', c: 's-rejected' } : { t: 'Jatuh Tempo', c: 's-pending' },
+        namaTx: '',
+        jumlah: '',
+        keterangan: ''
+      }));
+    pembayaran = [...synRows, ...calcPembayaran].sort(
+      (a, b) => (b._t ? b._t.getTime() : -1) - (a._t ? a._t.getTime() : -1)
+    );
+  }
 
   return {
     penghuni, logbook, payments, leads, survey, booking, tiket, vendor, kamar,

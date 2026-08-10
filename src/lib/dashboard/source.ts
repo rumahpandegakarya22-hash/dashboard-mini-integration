@@ -50,7 +50,7 @@ const TABLES = [
 export type SheetGrid = (string | number | null)[][];
 export type SheetsOut = Record<string, SheetGrid>;
 
-const TTL = 60 * 1000; // cache 60 detik
+const TTL = 10 * 1000; // cache 10 detik
 let cache: { at: number; tables: DbTables | null; sheets: SheetsOut | null } = {
   at: 0,
   tables: null,

@@ -382,11 +382,6 @@ export default function AlatPage() {
                       <span className="text-[10px] font-bold text-accent uppercase tracking-widest bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-full">
                         {item.kategori}
                       </span>
-                      {item.kondisi && (
-                        <span className="text-[10px] font-bold text-stone-500 uppercase tracking-widest bg-stone-100 border border-stone-200 px-2.5 py-1 rounded-full">
-                          {item.kondisi}
-                        </span>
-                      )}
                     </div>
                     {isOwner && (
                       <button

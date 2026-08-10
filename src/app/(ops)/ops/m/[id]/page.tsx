@@ -5,7 +5,7 @@ import { getSessionUser } from '@/lib/core/auth';
 import { canAccess } from '@/lib/core/roles';
 import { MODULES } from '@/lib/modules/registry';
 import { isEditable } from '@/lib/modules/edit';
-import { punyaPanel } from '@/lib/modules/panel';
+import { punyaPanel, panelFirst } from '@/lib/modules/panel';
 import { moduleIcon } from '@/components/module-icons';
 import Accordion from '@/components/Accordion';
 import DynamicForm from '@/components/DynamicForm';
@@ -70,23 +70,24 @@ export default async function ModulePage({
       {mod.ready && mod.fields ? (
         <>
           {punyaPanel(mod.id) ? (
-            // Modul dengan panel review: form input bukan lagi alasan utama
-            // halaman ini dibuka, jadi dilipat supaya antrean kerja yang
-            // terlihat lebih dulu. Isinya tetap di DOM — lihat Accordion.
-            <Accordion
-              title={`Input ${mod.title.split(' & ')[0]} Manual`}
-              subtitle="Untuk yang dicatat langsung oleh staf, bukan dari aplikasi penghuni"
-            >
-              <div className="form-col">
-                <DynamicForm
-                  moduleId={mod.id}
-                  fields={mod.fields}
-                  hasPreview={mod.hasPreview}
-                  autoFillTrigger={mod.autoFillTrigger}
-                  initialValues={Object.keys(initialValues).length > 0 ? initialValues : undefined}
-                />
-              </div>
-            </Accordion>
+            <>
+              {panelFirst(mod.id) && <ModulePanel moduleId={mod.id} />}
+              <Accordion
+                title={`Input ${mod.title.split(' & ')[0]} Manual`}
+                subtitle="Untuk yang dicatat langsung oleh staf, bukan dari aplikasi penghuni"
+              >
+                <div className="form-col">
+                  <DynamicForm
+                    moduleId={mod.id}
+                    fields={mod.fields}
+                    hasPreview={mod.hasPreview}
+                    autoFillTrigger={mod.autoFillTrigger}
+                    initialValues={Object.keys(initialValues).length > 0 ? initialValues : undefined}
+                  />
+                </div>
+              </Accordion>
+              {!panelFirst(mod.id) && <ModulePanel moduleId={mod.id} />}
+            </>
           ) : (
             <div className="form-col">
               <DynamicForm
@@ -98,7 +99,7 @@ export default async function ModulePage({
               />
             </div>
           )}
-          <ModulePanel moduleId={mod.id} />
+          {!punyaPanel(mod.id) && <ModulePanel moduleId={mod.id} />}
         </>
       ) : (
         <div className="card success-card">

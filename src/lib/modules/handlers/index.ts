@@ -18,6 +18,9 @@ import { submitDailyTask } from './daily-task';
 import { submitWoInspeksi, submitWoCleaning } from './work-order';
 import { submitPemakaianStokCleaning, submitPemakaianStokMaintenance } from './pemakaian-stok';
 import { submitPendapatanNonSewa } from './pendapatan-non-sewa';
+import { submitAktivitasFinansial } from './aktivitas-finansial';
+import { submitTambahVendor } from './tambah-vendor';
+import { submitTambahWaitingList } from './tambah-waiting-list';
 
 /**
  * Handler konkret per modul, ditambahkan modul-per-modul (Tahap 3: penghuni-baru,
@@ -48,7 +51,10 @@ export const HANDLERS: Record<string, SubmitHandler> = {
   'wo-cleaning': submitWoCleaning,
   'pemakaian-stok-cleaning': submitPemakaianStokCleaning,
   'pemakaian-stok-maintenance': submitPemakaianStokMaintenance,
-  'pendapatan-non-sewa': submitPendapatanNonSewa
+  'pendapatan-non-sewa': submitPendapatanNonSewa,
+  'aktivitas-finansial': submitAktivitasFinansial,
+  'tambah-vendor': submitTambahVendor,
+  'tambah-waiting-list': submitTambahWaitingList
 };
 
 /** Handler preview (hitung tanpa efek samping) — cuma modul dgn ModuleMeta.hasPreview:true perlu entry di sini. */

@@ -71,6 +71,7 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
       { id: 'prospek', label: 'Daftar Prospek', group: 'page', crumb: 'Daftar Prospek' },
       { id: 'penghuni', label: 'Daftar Penghuni', group: 'page', crumb: 'Daftar Penghuni' },
       { id: 'kamar', label: 'Data Kamar', group: 'page', crumb: 'Data Kamar' },
+      { id: 'waiting-list', label: 'Waiting List', group: 'page', crumb: 'Waiting List' },
       { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
     ]
   },
@@ -87,6 +88,8 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
       { id: 'kamar', label: 'Data Kamar', group: 'page', crumb: 'Data Kamar' },
       { id: 'pembayaran', label: 'Data Pembayaran', group: 'page', crumb: 'Data Pembayaran' },
       { id: 'vendor', label: 'Daftar Vendor', group: 'page', crumb: 'Daftar Vendor' },
+      { id: 'tiket', label: 'Daftar Tiket', group: 'page', crumb: 'Daftar Tiket' },
+      { id: 'waiting-list', label: 'Waiting List', group: 'page', crumb: 'Waiting List' },
       { id: 'stok', label: 'Stok Inventory', group: 'dash', crumb: 'Stok Inventory' },
       { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
     ]

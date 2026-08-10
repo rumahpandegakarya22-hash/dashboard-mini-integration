@@ -198,10 +198,7 @@ export const MODULES: ModuleMeta[] = [
         type: 'file',
         required: false,
         uploadKind: 'pembayaran',
-        // Folder Drive bukti bayar terpisah DP vs Sewa. showIf menahan field ini
-        // sampai Jenis Pembayaran dipilih — tanpa itu tujuan foldernya belum jelas.
         uploadKindFrom: 'jenisPembayaran',
-        showIf: { field: 'jenisPembayaran', equals: ['DP', 'Sewa'] },
         accept: 'application/pdf,image/png,image/jpeg',
         maxSizeMb: 2,
         placeholder: 'Pilih foto/pdf (maks 2 MB)'
@@ -306,25 +303,38 @@ export const MODULES: ModuleMeta[] = [
   {
     id: 'pendapatan-non-sewa',
     title: 'Pencatatan Pendapatan',
-    ready: true,
-    fields: [
-      { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
-      { name: 'namaTransaksi', label: 'Nama Transaksi', type: 'text', required: true, placeholder: 'Contoh: Biaya laundry, Titipan parkir' },
-      { name: 'jumlah', label: 'Jumlah Nominal', type: 'number', required: true },
-      { name: 'keterangan', label: 'Keterangan', type: 'textarea', required: false }
-    ]
+    ready: false,
+    fields: []
   },
   {
     id: 'pengeluaran',
     title: 'Pencatatan Pengeluaran',
+    ready: false,
+    fields: []
+  },
+  {
+    id: 'aktivitas-finansial',
+    title: 'Aktivitas Finansial',
     ready: true,
     fields: [
       { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
+      {
+        name: 'jenisAktivitas',
+        label: 'Jenis Aktivitas',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'Pengeluaran', label: 'Pengeluaran' },
+          { value: 'Pemasukan', label: 'Pemasukan' }
+        ]
+      },
+      // === Fields Pengeluaran ===
       {
         name: 'tipeAkun',
         label: 'Tipe Akun',
         type: 'select',
         required: true,
+        showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' },
         options: [
           { value: 'Aset', label: 'Aset' },
           { value: 'Kontra Aset', label: 'Kontra Aset' },
@@ -335,46 +345,42 @@ export const MODULES: ModuleMeta[] = [
           { value: 'Beban', label: 'Beban' },
           { value: 'Beban Non-Operasional', label: 'Beban Non-Operasional' }
         ],
-        helpText: 'Beban = operasional (tunai atau pemakaian stok); Beban Non-Operasional = penyusutan.'
+        helpText: 'Beban = operasional; Beban Non-Operasional = penyusutan, kerugian.'
       },
       {
-        name: 'akunDebit',
-        label: 'Kategori Pengeluaran',
+        name: 'akunTujuan',
+        label: 'COA Tujuan (Akun Debit)',
         type: 'select-async',
         required: true,
+        showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' },
         master: 'accounts',
         masterValue: 'nama',
         masterLabel: 'label',
         dependsOn: 'tipeAkun',
         filterBy: 'tipe',
-        helpText: 'Pilih Tipe Akun dulu, lalu akun yang sesuai muncul di sini.'
+        helpText: 'Akun yang didebet: beban, aset, atau kontra akun yang bertambah.'
       },
       {
-        name: 'dibayarDari',
-        label: 'Dibayar Dari',
+        name: 'akunSumber',
+        label: 'COA Sumber (Kas/Bank yang Dipakai)',
         type: 'select-async',
         required: true,
+        showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' },
         master: 'sumber-dana',
         masterValue: 'id',
         masterLabel: 'label',
         dependsOn: 'tipeAkun',
         filterBy: 'tipe',
-        helpText:
-          'Tunai → pilih kas/bank. Pemakaian bahan dari stok → pilih akun Stok-nya. Penyusutan → pilih Akumulasi Penyusutan.'
+        helpText: 'Akun yang dikredit: sumber dana pembayaran (kas, bank, atau stok).'
       },
-      { name: 'nominal', label: 'Nominal', type: 'number', required: true },
-      {
-        name: 'keterangan',
-        label: 'Keterangan',
-        type: 'text',
-        required: true,
-        placeholder: 'Contoh: Beli galon - Toko Sumber Rejeki'
-      },
+      { name: 'nominal', label: 'Nominal (Rp)', type: 'number', required: true, showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' } },
+      { name: 'keterangan', label: 'Keterangan', type: 'text', required: true, showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' }, placeholder: 'Contoh: Beli galon - Toko Sumber Rejeki' },
       {
         name: 'kategori',
         label: 'Kategori',
         type: 'select',
         required: true,
+        showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' },
         options: [
           { value: 'Operasional', label: 'Operasional' },
           { value: 'Non-operasional', label: 'Non-operasional' }
@@ -385,6 +391,7 @@ export const MODULES: ModuleMeta[] = [
         label: 'Divisi Pengeluar Biaya',
         type: 'select',
         required: true,
+        showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' },
         options: [
           { value: 'Admin', label: 'Admin' },
           { value: 'Cleaning', label: 'Cleaning' },
@@ -397,14 +404,49 @@ export const MODULES: ModuleMeta[] = [
         helpText: 'Dipakai untuk penomoran nota: YYMM-Divisi-urutan.'
       },
       {
-        name: 'lampiran',
+        name: 'lampiranPengeluaran',
         label: 'Nota/Bukti (foto/pdf, opsional)',
         type: 'file',
         required: false,
+        showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' },
         uploadKind: 'nota',
         accept: 'application/pdf,image/png,image/jpeg',
         maxSizeMb: 2,
         placeholder: 'Pilih foto/pdf (maks 2 MB)'
+      },
+      // === Fields Pemasukan ===
+      {
+        name: 'namaTransaksi',
+        label: 'Nama Transaksi',
+        type: 'text',
+        required: true,
+        showIf: { field: 'jenisAktivitas', equals: 'Pemasukan' },
+        placeholder: 'Contoh: Biaya laundry, Titipan parkir, Jual aset'
+      },
+      {
+        name: 'jumlah',
+        label: 'Jumlah Nominal (Rp)',
+        type: 'number',
+        required: true,
+        showIf: { field: 'jenisAktivitas', equals: 'Pemasukan' }
+      },
+      {
+        name: 'akunTujuanPemasukan',
+        label: 'COA Tujuan (Kas/Bank yang Menerima)',
+        type: 'select-async',
+        required: false,
+        showIf: { field: 'jenisAktivitas', equals: 'Pemasukan' },
+        master: 'kaslist',
+        masterValue: 'id',
+        masterLabel: 'label',
+        helpText: 'Akun kas/bank yang menerima dana — untuk pembukuan ganda (PSAK).'
+      },
+      {
+        name: 'keteranganPemasukan',
+        label: 'Keterangan',
+        type: 'textarea',
+        required: false,
+        showIf: { field: 'jenisAktivitas', equals: 'Pemasukan' }
       }
     ]
   },
@@ -897,6 +939,54 @@ export const MODULES: ModuleMeta[] = [
         maxSizeMb: 2,
         placeholder: 'Pilih foto (maks 2 MB)'
       }
+    ]
+  },
+  {
+    id: 'tambah-vendor',
+    title: 'Tambah Vendor',
+    ready: true,
+    fields: [
+      { name: 'nama_vendor', label: 'Nama Vendor', type: 'text', required: true, placeholder: 'Nama lengkap vendor/toko' },
+      {
+        name: 'kategori',
+        label: 'Kategori',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'Elektrikal dan Elektronik', label: 'Elektrikal dan Elektronik' },
+          { value: 'Sanitasi dan Plumbing', label: 'Sanitasi dan Plumbing' },
+          { value: 'Sipil dan Bangunan', label: 'Sipil dan Bangunan' },
+          { value: 'Furniture dan Interior', label: 'Furniture dan Interior' },
+          { value: 'Fasum dan Keamanan', label: 'Fasum dan Keamanan' },
+          { value: 'Lainnya', label: 'Lainnya' }
+        ]
+      },
+      { name: 'nomor_telp', label: 'Nomor Telepon', type: 'text', required: true, placeholder: '08xxxxxxxxxx' },
+      { name: 'hasil', label: 'Catatan / Penilaian', type: 'textarea', required: false, placeholder: 'Kualitas kerja, harga, pengalaman, dsb.' }
+    ]
+  },
+  {
+    id: 'tambah-waiting-list',
+    title: 'Tambah Waiting List',
+    ready: true,
+    fields: [
+      { name: 'nama', label: 'Nama', type: 'text', required: true, placeholder: 'Nama lengkap calon penghuni' },
+      { name: 'nomor_whatsapp', label: 'Nomor WhatsApp', type: 'text', required: true, placeholder: '08xxxxxxxxxx' },
+      { name: 'tipe', label: 'Tipe Kamar Diminati', type: 'text', required: false, placeholder: 'Contoh: kamar AC, standard' },
+      { name: 'rencana_tanggal', label: 'Rencana Tanggal Masuk', type: 'date', required: false },
+      { name: 'budget_max', label: 'Budget Maksimal (Rp)', type: 'number', required: false },
+      {
+        name: 'status',
+        label: 'Status',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'Menunggu', label: 'Menunggu' },
+          { value: 'Dihubungi', label: 'Dihubungi' },
+          { value: 'Closed', label: 'Closed' }
+        ]
+      },
+      { name: 'keterangan', label: 'Keterangan', type: 'textarea', required: false }
     ]
   },
   // Modul "Upload Dokumen" dihapus (Improvement v1.1 §4) — tabel Turso `dokumen` tetap

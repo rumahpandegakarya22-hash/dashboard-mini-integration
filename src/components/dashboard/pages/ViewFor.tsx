@@ -112,7 +112,10 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
       );
 
     case 'dokumen': {
-      const cols = role === 'owner' ? COLS.dokumenOwner : COLS.dokumen;
+      const cols =
+        role === 'owner' ? COLS.dokumenOwner :
+        role === 'operasional' ? COLS.dokumenOps :
+        COLS.dokumen;
       return (
         <Reveal tier={0}>
           <DataTablePage
@@ -174,6 +177,18 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
         </Reveal>
       );
     }
+
+    case 'waiting-list':
+      return (
+        <Reveal tier={0}>
+          <DataTablePage
+            title="WAITING LIST"
+            cols={COLS.waitingList}
+            data={loaded.waitingList}
+            period={period}
+          />
+        </Reveal>
+      );
 
     default:
       return null;
