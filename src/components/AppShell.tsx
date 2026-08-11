@@ -10,8 +10,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
 import { motion } from 'framer-motion';
-import { ChevronLeft, House, LoaderCircle, LogOut, Menu, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
-import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, moduleIcon } from './module-icons';
+import { ChevronLeft, House, LoaderCircle, LogOut, Menu, Settings, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
+import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, NAV_PENGATURAN, NAV_PENGHUNI, moduleIcon } from './module-icons';
 
 /** Item sidebar dengan pil aktif yang meluncur (layoutId bersama) — pola
  * manuarora700: satu elemen `motion` dipindah antar item lewat shared layout
@@ -81,21 +81,18 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
   useEffect(() => setNavOpen(false), [pathname]);
 
   const isHome = pathname === '/ops';
-  // Khusus halaman kelola user. Dipersempit dari '/ops/admin' sejak ada halaman
-  // admin lain di bawah prefix yang sama — kalau tidak, semuanya ikut tersorot.
-  const isAdmin = pathname.startsWith('/ops/admin/users');
   const isAccount = pathname.startsWith('/ops/account');
   const activeModule = modules.find((m) => pathname === `/ops/m/${m.id}`);
-  const activeKelola = NAV_TEMAN_RARA.find((n) => pathname.startsWith(n.href));
+  // Cari judul halaman admin aktif dari semua nav admin
+  const allAdminNav = [...NAV_TEMAN_RARA, ...NAV_PENGATURAN, NAV_PENGHUNI, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR];
+  const activeAdminPage = allAdminNav.find((n) => pathname.startsWith(n.href));
   const topTitle = isHome
     ? 'Kost Tiga Dara'
-    : activeKelola
-      ? activeKelola.label
-      : isAdmin
-        ? 'Kelola User'
-        : isAccount
-          ? 'Keamanan Akun'
-          : activeModule?.title ?? 'Kost Tiga Dara';
+    : activeAdminPage
+      ? activeAdminPage.label
+      : isAccount
+        ? 'Keamanan Akun'
+        : activeModule?.title ?? 'Kost Tiga Dara';
   const initial = (userName.trim()[0] || '?').toUpperCase();
 
   const groups = DIVISION_GROUPS.map((g) => ({
@@ -131,6 +128,7 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
             Beranda
           </SideLink>
 
+          {/* Ubah Data Penghuni di bawah grup Administrasi */}
           {groups.map((g) => (
             <div key={g.label}>
               {groups.length > 1 && <div className="side-group-label">{g.label}</div>}
@@ -143,27 +141,14 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
                   </SideLink>
                 );
               })}
-            </div>
-          ))}
-
-          {isOwner && (
-            <div>
-              <div className="side-group-label">Admin</div>
-              {/* Satu pintu kelola akun: panel gabungan di Dashboard mengatur
-                  role Ops DAN Dashboard sekaligus. Panel lokal Ops hanya jadi
-                  cadangan untuk Owner yang belum punya akses Dashboard. */}
-              {hasDashboardAccess ? (
-                <a href="/dashboard/akun" className="side-item">
-                  <Users size={18} />
-                  Kelola User
-                </a>
-              ) : (
-                <SideLink href="/ops/admin/users" active={isAdmin} icon={Users}>
-                  Kelola User
+              {/* Ubah Data Penghuni tampil setelah grup Administrasi */}
+              {g.label === 'Administrasi' && canKelola && (
+                <SideLink href={NAV_PENGHUNI.href} active={pathname.startsWith(NAV_PENGHUNI.href)} icon={NAV_PENGHUNI.icon}>
+                  {NAV_PENGHUNI.label}
                 </SideLink>
               )}
             </div>
-          )}
+          ))}
 
           {canKelola && (
             <div>
@@ -197,6 +182,18 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
               <SideLink href={NAV_RIWAYAT_BAYAR.href} active={pathname.startsWith(NAV_RIWAYAT_BAYAR.href)} icon={NAV_RIWAYAT_BAYAR.icon}>
                 {NAV_RIWAYAT_BAYAR.label}
               </SideLink>
+            </div>
+          )}
+
+          {/* BARU: grup Pengaturan */}
+          {canKelola && (
+            <div>
+              <div className="side-group-label">Pengaturan</div>
+              {NAV_PENGATURAN.filter((n) => !n.ownerOnly || isOwner).map((n) => (
+                <SideLink key={n.href} href={n.href} active={pathname.startsWith(n.href)} icon={n.icon}>
+                  {n.label}
+                </SideLink>
+              ))}
             </div>
           )}
 
@@ -283,10 +280,10 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
             <House size={20} />
             Beranda
           </Link>
-          {isOwner && (
-            <Link href="/ops/admin/users" className={isAdmin ? 'dock-item active' : 'dock-item'}>
-              <Users size={20} />
-              Admin
+          {canKelola && (
+            <Link href="/ops/admin/deposit" className={pathname.startsWith('/ops/admin') ? 'dock-item active' : 'dock-item'}>
+              <Settings size={20} />
+              Pengaturan
             </Link>
           )}
           <Link href="/ops/account" className={isAccount ? 'dock-item active' : 'dock-item'}>

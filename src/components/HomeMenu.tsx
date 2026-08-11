@@ -2,20 +2,20 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Tag, Users } from 'lucide-react';
-import { DIVISION_GROUPS, NAV_TEMAN_RARA, moduleIcon } from './module-icons';
+import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_PENGATURAN, NAV_PENGHUNI, NAV_RIWAYAT_BAYAR, NAV_LANDING_PAGE, moduleIcon } from './module-icons';
 import type { NavModule } from './AppShell';
 
 interface Props {
   isOwner: boolean;
-  /** Owner atau Staff Admin — pemegang tugas pengelola sisi penghuni. */
   canKelola: boolean;
+  canLandingPage?: boolean;
+  canRiwayatBayar?: boolean;
   modules: NavModule[];
 }
 
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
-export default function HomeMenu({ isOwner, canKelola, modules }: Props) {
+export default function HomeMenu({ isOwner, canKelola, canLandingPage, canRiwayatBayar, modules }: Props) {
   const groups = DIVISION_GROUPS.map((g) => ({
     label: g.label,
     items: g.ids.map((id) => modules.find((m) => m.id === id)).filter((m): m is NavModule => !!m)
@@ -60,12 +60,14 @@ export default function HomeMenu({ isOwner, canKelola, modules }: Props) {
               <ModuleCard key={m.id} id={m.id} title={m.title} href={`/ops/m/${m.id}`} icon={moduleIcon(m.id)} />
             ))}
           </div>
+          {g.label === 'Administrasi' && canKelola && (
+            <div className="module-grid" style={{ marginTop: 8 }}>
+              <ModuleCard id="penghuni" title={NAV_PENGHUNI.label} href={NAV_PENGHUNI.href} icon={NAV_PENGHUNI.icon} />
+            </div>
+          )}
         </section>
       ))}
 
-      {/* Dock mobile hanya muat 4 slot dan sidebar baru muncul di >=900px, jadi
-          grid inilah satu-satunya jalan ke halaman ini dari HP — sama seperti
-          "Kelola Harga Kamar" di bawah. */}
       {canKelola && (
         <section aria-label="Teman Rara">
           <h2 className="section-title">Teman Rara</h2>
@@ -73,40 +75,38 @@ export default function HomeMenu({ isOwner, canKelola, modules }: Props) {
             {NAV_TEMAN_RARA.map((n) => (
               <ModuleCard key={n.href} id={n.href} title={n.label} href={n.href} icon={n.icon} />
             ))}
+            {canLandingPage && (
+              <ModuleCard id="landing-page" title={NAV_LANDING_PAGE.label} href={NAV_LANDING_PAGE.href} icon={NAV_LANDING_PAGE.icon} />
+            )}
           </div>
         </section>
       )}
 
-      {isOwner && (
-        <section aria-label="Admin">
-          <h2 className="section-title">Admin</h2>
+      {!canKelola && canLandingPage && (
+        <section aria-label="Marketing Admin">
+          <h2 className="section-title">Marketing Admin</h2>
           <div className="module-grid">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: 0.3, ease: EASE }}
-              whileTap={{ scale: 0.97 }}
-            >
-              <Link href="/ops/admin/users" className="module-card border-beam">
-                <span className="icon-tile" aria-hidden>
-                  <Users size={20} />
-                </span>
-                <span className="module-card-title">Kelola User</span>
-              </Link>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: 0.33, ease: EASE }}
-              whileTap={{ scale: 0.97 }}
-            >
-              <Link href="/ops/admin/kamar" className="module-card border-beam">
-                <span className="icon-tile" aria-hidden>
-                  <Tag size={20} />
-                </span>
-                <span className="module-card-title">Kelola Harga Kamar</span>
-              </Link>
-            </motion.div>
+            <ModuleCard id="landing-page" title={NAV_LANDING_PAGE.label} href={NAV_LANDING_PAGE.href} icon={NAV_LANDING_PAGE.icon} />
+          </div>
+        </section>
+      )}
+
+      {canKelola && (
+        <section aria-label="Pengaturan">
+          <h2 className="section-title">Pengaturan</h2>
+          <div className="module-grid">
+            {NAV_PENGATURAN.filter((n) => !n.ownerOnly || isOwner).map((n) => (
+              <ModuleCard key={n.href} id={n.href} title={n.label} href={n.href} icon={n.icon} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {canRiwayatBayar && (
+        <section aria-label="Laporan">
+          <h2 className="section-title">Laporan</h2>
+          <div className="module-grid">
+            <ModuleCard id="riwayat-pembayaran" title={NAV_RIWAYAT_BAYAR.label} href={NAV_RIWAYAT_BAYAR.href} icon={NAV_RIWAYAT_BAYAR.icon} />
           </div>
         </section>
       )}

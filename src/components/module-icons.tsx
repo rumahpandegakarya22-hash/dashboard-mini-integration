@@ -11,6 +11,7 @@ import {
   FileCog,
   Globe,
   Hammer,
+  HandCoins,
   History,
   LayoutGrid,
   ListTodo,
@@ -20,9 +21,11 @@ import {
   ReceiptText,
   Sparkles,
   Store,
+  Tag,
   TrendingUp,
   UserCog,
   UserRoundPlus,
+  Users,
   UsersRound,
   Wallet,
   Wifi,
@@ -80,9 +83,7 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
  */
 export const NAV_TEMAN_RARA: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/ops/admin/pengumuman', label: 'Pengumuman', icon: Megaphone },
-  { href: '/ops/admin/wifi', label: 'Kredensial WiFi', icon: Wifi },
-  { href: '/ops/admin/akun-penghuni', label: 'Akun Penghuni', icon: UsersRound },
-  { href: '/ops/admin/penghuni', label: 'Ubah Data Penghuni', icon: UserCog }
+  { href: '/ops/admin/akun-penghuni', label: 'Akun Penghuni', icon: UsersRound }
 ];
 
 /** Halaman admin Landing Page — terpisah karena Marketing juga perlu akses (bukan hanya canKelola). */
@@ -90,3 +91,14 @@ export const NAV_LANDING_PAGE = { href: '/ops/admin/landing-page', label: 'Landi
 
 /** Riwayat Pembayaran — owner, staff_admin, staff_sales. */
 export const NAV_RIWAYAT_BAYAR = { href: '/ops/admin/riwayat-pembayaran', label: 'Riwayat Pembayaran', icon: History };
+
+/** Halaman Setting Deposit + Kelola Kamar/User — hanya untuk owner/staff_admin (Pengaturan). */
+export const NAV_PENGATURAN: { href: string; label: string; icon: LucideIcon; ownerOnly?: true }[] = [
+  { href: '/ops/admin/wifi', label: 'Kredensial WiFi', icon: Wifi },
+  { href: '/ops/admin/deposit', label: 'Setting Deposit', icon: HandCoins },
+  { href: '/ops/admin/kamar', label: 'Kelola Harga Kamar', icon: Tag, ownerOnly: true },
+  { href: '/ops/admin/users', label: 'Kelola User', icon: Users, ownerOnly: true }
+];
+
+/** Ubah Data Penghuni — dipindah dari Teman Rara ke area Administrasi. */
+export const NAV_PENGHUNI = { href: '/ops/admin/penghuni', label: 'Ubah Data Penghuni', icon: UserCog };
