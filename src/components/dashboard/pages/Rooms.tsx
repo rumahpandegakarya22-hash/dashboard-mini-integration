@@ -6,11 +6,6 @@ import { ROOM_BADGE, ROOM_FILTERS } from '@/lib/dashboard/views/pages';
 import { digits } from '@/lib/dashboard/format';
 import type { RoomRow } from '@/lib/dashboard/views/types';
 
-/* PORT VERBATIM dari `rooms(variant)` public/app.js.
-
-   Varian "ops" menampilkan tombol Hubungi (WhatsApp) di kaki kartu; varian
-   default menampilkan harga per bulan. Filter chip status kamar di-port jadi
-   state React — di sumber ia menyembunyikan kartu lewat atribut data-status. */
 
 export default function Rooms({ rooms, variant }: { rooms: RoomRow[]; variant?: 'ops' }) {
   const [filter, setFilter] = useState('Semua');

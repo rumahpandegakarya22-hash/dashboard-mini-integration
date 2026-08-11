@@ -5,26 +5,6 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ChevronDown } from 'lucide-react';
 
-/**
- * Dropdown bergaya OriginUI (21st.dev @originui) sebagai pengganti `<select>`
- * native, yang popup-nya tidak bisa dianimasikan.
- *
- * Versi ini memakai kelas CSS (styles/origin-ui.css), bukan Tailwind, karena
- * Tailwind di repo ini hanya aktif untuk (inventory). Padanan Tailwind-nya ada
- * di components/inventory/OriginSelect.tsx.
- *
- * Animasi masuk/keluar disalin dari sumber: fade-in-0 + zoom-in-95 +
- * slide-in-from-top-2, durasi 150ms ease-[0.4,0,0.2,1].
- *
- * Menu di-portal ke <body> (position: fixed, posisi dihitung manual dari
- * getBoundingClientRect trigger) — BUKAN lagi position:absolute mengikuti alur
- * dokumen. Dulu popup ini nempel di dalam .ou-select (position:relative) biasa,
- * jadi kalau field-nya duduk di dalam container yang overflow:auto (mis. .modal
- * di Modal.tsx, max-height:86vh), popupnya kepotong batas scroll leluhur itu —
- * tidak terlihat penuh. `data-app` di-deteksi dari leluhur trigger krn seluruh
- * token warna origin-ui.css terikat ke atribut itu (sama seperti alasan Modal.tsx
- * memasang data-app di pembungkus portalnya sendiri).
- */
 
 export interface OriginOption {
   value: string;

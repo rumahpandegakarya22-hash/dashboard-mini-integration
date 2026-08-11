@@ -18,22 +18,6 @@ interface Kamar {
 
 type Draft = { ssid: string; password: string; catatan: string };
 
-/**
- * Kredensial WiFi per kamar, disajikan bento: 30 kartu ringkas yang bisa
- * dipindai sekaligus, dan detail satu kamar dibuka di modal.
- *
- * Sebelumnya semua kamar merender form penuh sekaligus — 30 kamar × 3 input +
- * tombol, jadi menemukan satu kamar berarti menggulir melewati puluhan kolom
- * isian yang tidak sedang disentuh.
- *
- * Tombol Simpan & Hapus sengaja hanya ada di dalam modal: aksinya mengubah
- * kredensial yang dipakai penghuni, dan tombol semacam itu tidak pantas
- * berjajar puluhan di layar ringkasan.
- *
- * Password ditampilkan tertutup — bukan karena pengelola tidak boleh melihat
- * (justru itu tugasnya), tapi supaya tidak terpampang saat layar dibuka di
- * depan orang lain.
- */
 export default function WifiPanel() {
   const [data, setData] = useState<Kamar[] | null>(null);
   const [error, setError] = useState('');
@@ -132,7 +116,7 @@ export default function WifiPanel() {
         <div className="banner warn" style={{ marginBottom: 12 }}>
           <CircleAlert size={16} />
           <span>
-            {belumDiisi} kamar belum punya kredensial WiFi — penghuninya melihat kartu WiFi kosong di aplikasi.
+            {belumDiisi} kamar belum punya akses WiFi. penghuni tidak melihat username dan password di aplikasi.
           </span>
         </div>
       )}

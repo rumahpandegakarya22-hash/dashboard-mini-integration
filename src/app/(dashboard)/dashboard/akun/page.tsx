@@ -5,22 +5,7 @@ import DashboardShell from '@/components/dashboard/DashboardShell';
 import TotpSettings from '@/components/TotpSettings';
 import UnifiedUserAdmin from '@/components/dashboard/UnifiedUserAdmin';
 
-/**
- * Akun & Keamanan — PORT dari modal `openSecurityModal()` public/app.js
- * (`renderTfa` + `renderOwnerUsers`).
- *
- * Perbedaan yang disengaja: di app.js ini MODAL yang dibuka dari ikon gembok;
- * di sini halaman ber-URL sendiri (`/dashboard/akun`) supaya bisa di-bookmark,
- * di-back, dan di-deep-link. Ikon gembok di sidebar menautkannya.
- *
- * `renderPassword()` TIDAK di-port: ganti password di app.js memanggil
- * `clerk.user.updatePassword()` langsung. Di app terpadu, pengelolaan password
- * (termasuk ganti & lupa password) ditangani komponen Clerk pada layar auth —
- * satu jalur, bukan dua. Dicatat di docs/MIGRASI.md.
- *
- * TotpSettings dipakai bersama dengan sisi Ops: secret TOTP memang satu untuk
- * kedua app (§5.2), jadi mengaktifkan 2FA di sini berlaku juga di /ops.
- */
+
 export default async function DashboardAkunPage({
   searchParams
 }: {
@@ -53,8 +38,7 @@ export default async function DashboardAkunPage({
             Autentikasi Dua Faktor <small>(Google Authenticator)</small>
           </h3>
           <p className="muted" style={{ marginBottom: 10 }}>
-            Satu kali scan QR berlaku untuk Dashboard maupun Mini App Operasional — keduanya memakai
-            secret yang sama.
+            Satu kali scan QR berlaku untuk Dashboard maupun Mini App Operasional.
           </p>
           <TotpSettings initialEnrolled={s.totpEnrolled} />
         </div>

@@ -2,12 +2,6 @@ import { SignOutButton } from '@clerk/nextjs';
 import { Hourglass } from 'lucide-react';
 import AnimatedAuthCard from '@/components/ui/AnimatedAuthCard';
 
-/**
- * Wajib dinamis: CSP memakai nonce per-request, dan Next hanya bisa menyuntikkan
- * nonce ke <script> saat render server. Halaman statis dibuat saat build ketika
- * header request belum ada — script-nya jadi tanpa nonce, terblokir CSP, dan
- * halaman blank total. Lihat src/lib/core/csp.ts.
- */
 export const dynamic = 'force-dynamic';
 
 
@@ -20,9 +14,7 @@ export default function PendingPage() {
         </span>
         <h2>Menunggu Persetujuan</h2>
         <p className="muted">
-          Akun kamu sudah terdaftar tapi belum diaktifkan. Hubungi Owner untuk approve akun &amp; menentukan
-          role kamu — akses Dashboard dan Mini App Operasional diberikan terpisah, jadi sebutkan yang kamu
-          butuhkan. Setelah disetujui, login lagi dan kamu langsung bisa masuk.
+          Akun kamu sudah terdaftar. Hubungi Owner untuk approval akun.
         </p>
         <SignOutButton redirectUrl="/login">
           <button type="button" className="btn" style={{ marginTop: 6 }}>

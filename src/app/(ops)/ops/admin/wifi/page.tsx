@@ -31,7 +31,7 @@ export default async function AdminWifiPage() {
         </span>
         <div>
           <h1 style={{ fontSize: '1.375rem' }}>Kredensial WiFi</h1>
-          <p className="page-head-sub">Nama jaringan &amp; password yang dilihat penghuni per kamar</p>
+          <p className="page-head-sub">Username &amp; password internet</p>
         </div>
       </header>
       <WifiPanel />

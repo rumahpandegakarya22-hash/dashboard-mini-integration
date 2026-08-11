@@ -131,7 +131,7 @@ export default function LogsPage() {
           <div>
             <h1 className="text-3xl font-extrabold text-ink tracking-tight">Log Aktivitas Sistem</h1>
             <p className="text-taupe-dark text-sm mt-1 font-medium">
-              Riwayat kronologis seluruh tindakan audit dalam sistem (Khusus tingkat kewenangan <span className="text-accent font-bold">OWNER</span>).
+              Riwayat kronologis seluruh tindakan dalam sistem.
             </p>
           </div>
 

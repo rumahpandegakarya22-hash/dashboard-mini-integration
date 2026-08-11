@@ -70,7 +70,7 @@ export default function PengajuanPanel({ jenis }: { jenis: 'pindah' | 'checkout'
       if (!res.ok) throw new Error(json.error || 'Gagal memproses.');
       setInfo(
         aksi === 'setuju'
-          ? `Pengajuan ${p.penghuni} disetujui — sekarang On Process.`
+          ? `Pengajuan ${p.penghuni} disetujui.`
           : aksi === 'tolak'
             ? `Pengajuan ${p.penghuni} ditolak.`
             : json.peringatan

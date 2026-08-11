@@ -1,8 +1,5 @@
 'use client';
 
-/* PORT VERBATIM dari `donut()` public/app.js (Fase 4).
-   Kaidah viz dipertahankan: butt-cap (tanpa cap bulat yang mendistorsi
-   proporsi) + celah keliling konstan 2px, bukan celah per-segmen. */
 
 import { motion } from 'framer-motion';
 
@@ -10,7 +7,6 @@ export interface DonutSegment {
   label?: string;
   value: number;
   color: string;
-  /** Nilai tampilan pengganti `value` di tooltip (mis. sudah diformat rupiah). */
   disp?: string | number;
 }
 
@@ -56,7 +52,7 @@ export default function Donut({ segments, center }: DonutProps) {
         data-tip-color={s.color}
         initial={{ strokeDasharray: `0 ${C}` }}
         animate={{ strokeDasharray: `${draw} ${C - draw}` }}
-        transition={{ duration: 0.9, delay: i * 0.08, ease: [0.22, 0.61, 0.36, 1] }}
+        transition={{ duration: 0.9, delay: i * 0.1, ease: [0.22, 0.61, 0.36, 1] }}
       />
     );
     offset += len;

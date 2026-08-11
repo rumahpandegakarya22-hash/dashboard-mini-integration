@@ -5,17 +5,6 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
-/**
- * Modal berbasis portal.
- *
- * Di-render ke `document.body`, bukan di tempatnya dipanggil: pemanggilnya
- * duduk di dalam `.content` yang punya max-width dan stacking context sendiri,
- * jadi modal yang dirender di situ akan ikut terkurung kolom itu.
- *
- * `[data-app="ops"]` ikut dipasang di pembungkusnya karena seluruh token visual
- * theme-ops.css terikat ke atribut tersebut — di luar subtree app, modal akan
- * tampil tanpa gaya sama sekali.
- */
 export default function Modal({
   open,
   title,
@@ -37,8 +26,6 @@ export default function Modal({
     };
     document.addEventListener('keydown', onKey);
 
-    // Kunci scroll halaman di belakang: tanpa ini, menggulir di dalam modal
-    // ikut menggeser konten di baliknya begitu ujung daftar tercapai.
     const overflowLama = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
@@ -53,15 +40,7 @@ export default function Modal({
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    // `data-app` dipasang di pembungkus TERPISAH, bukan di .modal-backdrop itu
-    // sendiri: seluruh aturan theme-ops.css berbentuk `[data-app='ops'] .kelas`
-    // yang menuntut hubungan turunan. Kalau kedua atribut menempel di satu
-    // elemen, aturannya tidak cocok dan modal kehilangan position/z-index-nya —
-    // ia berhenti melayang dan hanya menumpuk di akhir halaman.
     <div data-app="ops">
-      {/* AnimatePresence membungkus SELURUH kondisi `open`, bukan early-return
-          di atas — supaya animasi exit sempat diputar sebelum modal lepas
-          dari DOM (early-return lama langsung unmount tanpa transisi). */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -71,8 +50,7 @@ export default function Modal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             onClick={(e) => {
-              // Hanya klik pada latar yang menutup — klik di dalam panel ikut
-              // ter-bubble ke sini kalau tidak dibedakan.
+
               if (e.target === e.currentTarget) onClose();
             }}
           >

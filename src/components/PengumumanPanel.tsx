@@ -21,11 +21,6 @@ const LABEL_TIPE: Record<Tipe, string> = { announcement: 'Pengumuman', rule: 'Pe
 
 const KOSONG = { tipe: 'announcement' as Tipe, judul: '', isi: '', urutan: 0 };
 
-/**
- * Kelola papan informasi yang dibaca penghuni di aplikasi Teman Rara.
- * Membuat entri baru selalu mengirim push; mengedit hanya mengirim bila
- * dicentang, supaya perbaikan salah ketik tidak membangunkan seisi kost.
- */
 export default function PengumumanPanel() {
   const [data, setData] = useState<Entri[] | null>(null);
   const [error, setError] = useState('');
@@ -70,7 +65,7 @@ export default function PengumumanPanel() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Gagal menyimpan.');
-      setInfo(json.peringatan || (editId ? 'Perubahan tersimpan.' : 'Pengumuman terbit dan notifikasi dikirim.'));
+      setInfo(json.peringatan || (editId ? 'Perubahan tersimpan.' : 'Pengumuman terbit dan push notifikasi dikirim.'));
       reset();
       await load();
     } catch (e: any) {
@@ -129,8 +124,8 @@ export default function PengumumanPanel() {
             value={form.tipe}
             onChange={(v) => setForm({ ...form, tipe: v as Tipe })}
             options={[
-              { value: 'announcement', label: 'Pengumuman — tampil di daftar pengumuman' },
-              { value: 'rule', label: 'Peraturan — tampil di beranda penghuni' }
+              { value: 'announcement', label: 'Pengumuman tampil di daftar pengumuman' },
+              { value: 'rule', label: 'Peraturan  tampil di beranda penghuni' }
             ]}
           />
         </div>
@@ -171,7 +166,7 @@ export default function PengumumanPanel() {
             value={form.urutan}
             onChange={(e) => setForm({ ...form, urutan: Number(e.target.value) })}
           />
-          <p className="help">Angka kecil tampil lebih dulu. Berpengaruh pada Peraturan; Pengumuman selalu urut terbaru.</p>
+          <p className="help">Angka kecil urutan teratas pada Peraturan. Pengumuman selalu urut terbaru.</p>
         </div>
 
         {editId && (
@@ -184,7 +179,7 @@ export default function PengumumanPanel() {
                 style={{ width: 'auto', minHeight: 0 }}
                 onChange={(e) => setKirimNotif(e.target.checked)}
               />
-              Kirim ulang notifikasi ke penghuni
+              Kirim ulang notifikasi 
             </label>
             <p className="help">Hanya terkirim kalau judul atau isinya benar-benar berubah.</p>
           </div>
@@ -215,7 +210,7 @@ export default function PengumumanPanel() {
       {data?.length === 0 && (
         <div className="card">
           <p className="muted" style={{ margin: 0 }}>
-            Papan informasi masih kosong. Penghuni belum punya pengumuman atau peraturan untuk dibaca.
+            Papan informasi masih kosong.
           </p>
         </div>
       )}

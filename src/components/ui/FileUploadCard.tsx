@@ -4,15 +4,6 @@ import { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, Trash2, UploadCloud } from 'lucide-react';
 
-/**
- * Port FileUploadCard (21st.dev @ravikatiyar162) versi CSS
- * (styles/origin-ui.css) — drag & drop, badge ekstensi, ukuran terformat,
- * baris berkas yang masuk dari kiri lalu keluar dengan layout animation.
- *
- * Bedanya dengan sumber: state upload dikendalikan pemanggil lewat props
- * (`fileName`, `uploading`, `done`), karena di Ops berkasnya langsung diunggah
- * ke /api/ops/upload begitu dipilih — bukan menunggu form disubmit.
- */
 
 export function formatFileSize(b: number) {
   if (b === 0) return '0 KB';
@@ -46,7 +37,6 @@ export default function FileUploadCard({
   judul?: string;
   deskripsi?: string;
   petunjuk?: string;
-  /** Berkas yang sedang/sudah diunggah. null bila belum ada. */
   berkas: { nama: string; ukuran?: number } | null;
   uploading?: boolean;
   done?: boolean;

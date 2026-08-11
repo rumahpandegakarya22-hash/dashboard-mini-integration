@@ -2,17 +2,6 @@
 
 import OriginSelect from './OriginSelect';
 
-/* PORT dari `repage()` public/app.js (Fase 4).
-
-   Versi lama memanipulasi DOM langsung (menyembunyikan <tr> di luar halaman);
-   di sini paginasi jadi state React dan hanya baris halaman aktif yang dirender.
-   MARKUP & KELAS dipertahankan (.pager, .pager-size, .pager-info, data-pg)
-   sehingga CSS hasil port berlaku tanpa perubahan.
-
-   Perilaku yang dipertahankan persis: jendela maksimal 5 nomor halaman di
-   sekitar halaman aktif, tombol «/‹/›/» dengan status disabled di ujung, pilihan
-   10/20/30 baris, dan teks "<n> data". */
-
 export const PAGE_SIZES = [10, 20, 30];
 
 export interface PaginationProps {

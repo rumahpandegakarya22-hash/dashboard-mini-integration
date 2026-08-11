@@ -1,11 +1,5 @@
 'use client';
 
-/* PORT VERBATIM dari `statCard()` / `statGrid()` public/app.js (Fase 4).
-
-   Aturan warna tren dipertahankan apa adanya: HIJAU #13a05f = kenaikan,
-   MERAH #e23d3d = penurunan — konsisten lintas seluruh scorecard. Garis di
-   dalam kartu adalah sparkline DATA asli, bukan ornamen dekoratif. */
-
 import { useEffect, useState } from 'react';
 import { motion, animate } from 'framer-motion';
 import Sparkline from '@/components/charts/Sparkline';

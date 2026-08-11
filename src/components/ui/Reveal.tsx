@@ -2,12 +2,7 @@
 
 import { motion } from 'framer-motion';
 
-/* Stagger antar-tier untuk intro Dashboard (item 4 UAT): elemen paling atas
-   (stat card) muncul duluan, lalu tier berikutnya (chart), lalu tabel — tiap
-   tier mulai 0.1s setelah tier sebelumnya. Dipakai membungkus BLOK, bukan
-   elemen individual — animasi per-elemen di dalam blok (mis. path SVG chart)
-   tetap jalan sendiri. */
-export const TIER_DELAY = 0.1;
+export const TIER_DELAY = 0.15;
 
 export default function Reveal({
   tier = 0,

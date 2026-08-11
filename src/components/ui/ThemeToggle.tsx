@@ -2,26 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-/* PORT dari toggle tema `#themeToggle` public/app.js (Fase 4), disatukan ke
-   mekanisme `data-theme` milik Mini App sesuai §4.3.
-
-   Pemetaan yang dipakai (dan alasannya):
-     - Key localStorage `ktd-theme` DIPERTAHANKAN, sehingga preferensi tema
-       pengguna dashboard yang sudah ada ikut terbawa setelah cutover.
-     - Nilai 'light' memasang atribut `data-theme="light"` di <html>; nilai
-       'dark' memasangnya sebagai "dark".
-     - Dashboard: tanpa atribut = gelap (token dasarnya gelap, hanya
-       :root[data-theme='light'] yang menimpa) — sama dengan default lama.
-     - Ops: tanpa atribut = ikut prefers-color-scheme, persis seperti sebelumnya.
-
-   Skrip anti-kedip ada di app/layout.tsx; komponen ini hanya menangani interaksi.
-
-   Tampilannya sekarang memakai SkyToggle (21st.dev @ravikatiyar162): matahari
-   yang bergeser jadi bulan, awan turun, bintang naik. Markup & CSS-nya disalin
-   apa adanya ke styles/sky-toggle.css — satu-satunya nilai yang diubah adalah
-   `--toggle-size` (30px → 14px), karena ukuran aslinya ~168px terlalu besar
-   untuk topbar. */
-
 export const THEME_KEY = 'ktd-theme';
 export type Theme = 'light' | 'dark';
 
@@ -48,7 +28,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     try {
       localStorage.setItem(THEME_KEY, next);
     } catch {
-      /* mode privat / storage diblokir — tema tetap berlaku untuk sesi ini */
+
     }
     setTheme(next);
   };

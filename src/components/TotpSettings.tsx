@@ -58,7 +58,7 @@ export default function TotpSettings({ initialEnrolled }: { initialEnrolled: boo
       setEnrolled(true);
       setSetup(null);
       setCode('');
-      setDone('2FA aktif. Mulai sekarang, setiap login baru akan diminta kode Google Authenticator.');
+      setDone('2FA aktif.Setiap login baru akan diminta kode Google Authenticator.');
       router.refresh();
     } catch (err: any) {
       setError(err.message);

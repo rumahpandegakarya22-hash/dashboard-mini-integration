@@ -5,25 +5,6 @@ import { DASHBOARD_ROLES, type DashboardRole } from '@/config/dashboard-access';
 import { ROLE_LABEL, type Role as OpsRole } from '@/lib/core/roles';
 import OriginSelect from '@/components/ui/OriginSelect';
 
-/* Kelola Akun GABUNGAN (§5.2, Fase 5 langkah 1).
-
-   Melebur dua panel yang sebelumnya terpisah — `renderOwnerUsers()` Dashboard
-   dan `UserAdminPanel` Ops — menjadi satu tabel dengan DUA KOLOM PERSETUJUAN:
-   akses Dashboard dan akses Ops, masing-masing dengan role & status sendiri.
-
-   Kenapa dua kolom, bukan satu: §5.1 sengaja mempertahankan dua namespace
-   otorisasi. Owner bisa memberi seseorang akses Ops tanpa akses Dashboard, dan
-   sebaliknya. Menyatukannya jadi satu taksonomi adalah keputusan kebijakan
-   bisnis, bukan teknis — di luar scope migrasi.
-
-   Sumber data: kedua endpoint yang sudah ada dipakai apa adanya
-   (`/api/dashboard/users` dan `/api/ops/admin/users`), digabung di klien
-   berdasarkan `username`. Tidak dibuat endpoint gabungan baru supaya masing-
-   masing sisi tetap satu-satunya otoritas atas namespace-nya.
-
-   Akses parsial ditangani: Owner yang hanya memiliki salah satu sisi akan
-   mendapat 403 dari sisi lain; kolomnya ditampilkan nonaktif dengan keterangan,
-   bukan error yang menutup seluruh halaman. */
 
 interface DashRow {
   username: string;
@@ -127,8 +108,7 @@ export default function UnifiedUserAdmin() {
         Kelola Akun <small>(Owner — Dashboard &amp; Ops)</small>
       </h3>
       <p className="muted" style={{ marginBottom: 10 }}>
-        Akses Dashboard dan Ops diberikan <b>terpisah</b>: seseorang bisa punya salah satu, keduanya, atau
-        belum sama sekali.
+        Autorisasi Akses Dashboard dan Ops diberikan terpisah.
       </p>
       {dashErr && <p style={{ color: 'var(--amber)' }}>Dashboard: {dashErr}</p>}
       {opsErr && <p style={{ color: 'var(--amber)' }}>Ops: {opsErr}</p>}

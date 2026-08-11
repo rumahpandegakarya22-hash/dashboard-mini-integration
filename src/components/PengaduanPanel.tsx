@@ -21,12 +21,6 @@ interface Aduan {
   foto: string[];
 }
 
-/**
- * Hanya dua varian badge yang ada di theme-ops.css (`prio-badge` dan
- * `.hot`), jadi yang ditonjolkan cuma "belum disentuh sama sekali". Teks
- * statusnya selalu ikut tampil, jadi warna tidak pernah jadi satu-satunya
- * pembeda.
- */
 const KELAS_STATUS: Record<StatusPengaduan, string> = {
   Menunggu: 'prio-badge hot',
   Diproses: 'prio-badge',
@@ -34,14 +28,6 @@ const KELAS_STATUS: Record<StatusPengaduan, string> = {
   Dibatalkan: 'prio-badge'
 };
 
-/**
- * Panel "Pengaduan Penghuni" di bawah form modul Feedback: daftar pengaduan yang
- * masuk dari aplikasi Teman Rara, lengkap dengan foto bukti, plus aksi ubah
- * status & tulis tanggapan.
- *
- * Form input Feedback di atasnya TIDAK digantikan — itu jalur untuk feedback
- * yang dilaporkan lisan ke staf, yang tidak punya asal-usul di aplikasi penghuni.
- */
 export default function PengaduanPanel() {
   const [data, setData] = useState<Aduan[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -73,8 +59,6 @@ export default function PengaduanPanel() {
 
   useEffect(() => {
     load(false);
-    // Sekali saat panel dipasang; perubahan filter memuat ulang lewat handler-nya.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function simpan(a: Aduan) {
@@ -224,7 +208,7 @@ export default function PengaduanPanel() {
                   placeholder="Ditulis untuk penghuni — jelaskan tindakan atau alasannya."
                   onChange={(e) => ubah(a.id, { tanggapan: e.target.value })}
                 />
-                <p className="help">Tampil di aplikasi Teman Rara milik pelapor.</p>
+                <p className="help">Tampil di aplikasi Teman Rara.</p>
               </div>
 
               <button

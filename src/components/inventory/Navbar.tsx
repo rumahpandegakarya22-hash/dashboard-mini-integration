@@ -40,9 +40,6 @@ export default function Navbar() {
           const data = await res.json();
           setUser(data.user);
         } else {
-          // Sesi Clerk boleh jadi ada, tapi akun ini belum diundang/dikenali di
-          // aplikasi (lihat syncAppUser() di authHelper.ts). Jangan biarkan tetap
-          // di shell aplikasi — usir ke /login supaya tidak "terlihat" masuk.
           setUser(null);
           router.replace("/login");
         }
@@ -76,8 +73,8 @@ export default function Navbar() {
     { name: "Dashboard", href: "/inventory", icon: ClipboardList, roles: ["OWNER", "STAFF"] },
     { name: "Daftar Bahan", href: "/inventory/materials", icon: Package, roles: ["OWNER", "STAFF"] },
     { name: "Daftar Alat", href: "/inventory/alat", icon: Wrench, roles: ["OWNER", "STAFF"] },
-    { name: "Pembelian (+)", href: "/inventory/purchases", icon: ShoppingCart, roles: ["OWNER", "STAFF"] },
-    { name: "Pemakaian (-)", href: "/inventory/usages", icon: Activity, roles: ["OWNER", "STAFF"] },
+    { name: "Pembelian", href: "/inventory/purchases", icon: ShoppingCart, roles: ["OWNER", "STAFF"] },
+    { name: "Pemakaian", href: "/inventory/usages", icon: Activity, roles: ["OWNER", "STAFF"] },
     { name: "Koreksi Stok", href: "/inventory/corrections", icon: Sliders, roles: ["OWNER"] },
     { name: "Laporan Opname", href: "/inventory/opname", icon: ClipboardList, roles: ["OWNER"] },
     { name: "Log Aktivitas", href: "/inventory/logs", icon: Activity, roles: ["OWNER"] },

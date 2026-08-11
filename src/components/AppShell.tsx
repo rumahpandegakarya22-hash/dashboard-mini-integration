@@ -266,12 +266,7 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
           </div>
         </header>
 
-        {/* Semua halaman mengalir mengikuti lebar layar. Kolom nyaman-baca
-            640px tidak lagi dipasang di sini melainkan per-blok lewat
-            `.form-col`, karena yang butuh dibatasi hanya form — daftar data
-            justru rugi kalau dikurung (satu kolom kurus + lorong kosong di
-            kanan). Satu-satunya pengecualian: halaman tanpa daftar apa pun,
-            di mana pembatas kolomnya sudah melekat di isinya sendiri. */}
+       
         <main className="content content--wide">{children}</main>
 
         {/* ---- Dock kaca (mobile) ---- */}

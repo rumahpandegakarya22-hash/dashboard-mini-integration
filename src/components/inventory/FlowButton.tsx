@@ -2,19 +2,6 @@
 
 import { ArrowRight } from 'lucide-react';
 
-/**
- * Port FlowButton (21st.dev @xubohuah). Mekanika animasinya disalin persis —
- * durasi 600/800ms, easing cubic-bezier yang sama, panah masuk dari kiri &
- * keluar ke kanan, lingkaran yang memuai jadi 220px, radius yang berubah dan
- * `active:scale-[0.95]`.
- *
- * Warnanya dipetakan ke palet Inventory: sumber memakai #111111 di atas tombol
- * transparan, di sini tombolnya sudah bg-accent sehingga lingkarannya memakai
- * accent-dark — efeknya jadi riak yang mengisi tombol.
- *
- * `arrows`: tombol yang sudah punya ikon sendiri memakai "right" supaya panah
- * kiri tidak menimpa ikon itu.
- */
 
 export type FlowArrows = 'both' | 'right' | 'none';
 

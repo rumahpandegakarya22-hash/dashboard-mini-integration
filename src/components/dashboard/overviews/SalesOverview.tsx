@@ -1,8 +1,4 @@
-/* PORT VERBATIM dari `salesOverview()` public/app.js (Fase 4 langkah 4).
 
-   Catatan penting yang dipertahankan dari sumber: scorecard Sales adalah metrik
-   current/agregat sehingga TANPA filter periode (data booking/leads bisa lintas
-   tahun). Hanya grafik tren yang ikut periode. */
 
 import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
 import Reveal from '@/components/ui/Reveal';
@@ -41,7 +37,7 @@ export default function SalesOverview({ data, period, range }: OverviewProps) {
     { label: 'Cancellation Rate', value: cancelRate + ' %', spark: bookSpark, bg: G.saleRed },
     { label: 'Conversion Rate', value: convRate + ' %', spark: survSpark, bg: G.saleGold },
     { label: 'Retention Rate', value: retention ? retention.rate + ' %' : '—', spark: [], bg: G.salePeach },
-    { label: 'AVG Durasi Sewa', value: avgDurTxt, spark: [], bg: G.salePink },
+    { label: 'Rata-Rata Sewa', value: avgDurTxt, spark: [], bg: G.salePink },
     { label: 'Kamar Isi', value: String(stats.occupied ?? 0), spark: [], bg: G.saleGold }
   ];
 
@@ -109,7 +105,7 @@ export default function SalesOverview({ data, period, range }: OverviewProps) {
                 ]}
               />
               <div className="funnel-stats">
-                <div><span>Leads masuk</span><b>{nLeads}</b></div>
+                <div><span>Leads</span><b>{nLeads}</b></div>
                 <div><span>Survey</span><b>{nSurvey}</b></div>
                 <div><span>Booking</span><b>{nBooking}</b></div>
                 <div><span>Kontrak</span><b>{kontrak}</b></div>

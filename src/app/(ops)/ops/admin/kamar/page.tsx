@@ -31,7 +31,7 @@ export default async function AdminKamarPage() {
         </span>
         <div>
           <h1 style={{ fontSize: '1.375rem' }}>Kelola Harga Kamar</h1>
-          <p className="page-head-sub">Tarif sewa per tipe &amp; durasi — dipakai invoice sewa dan DP</p>
+          <p className="page-head-sub">Tarif sewa per tipe &amp; durasi </p>
         </div>
       </header>
       {/* Editor tarif = form, jadi ditahan di kolom nyaman-baca. */}

@@ -76,11 +76,6 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Cleaning', ids: ['wo-cleaning', 'pemakaian-stok-cleaning'] }
 ];
 
-/**
- * Halaman pengelola untuk data yang berasal dari aplikasi penghuni Teman Rara.
- * Bukan modul form, jadi tidak masuk MODULES registry — didaftarkan di sini agar
- * sidebar (AppShell) dan grid beranda (HomeMenu) memakai daftar yang sama.
- */
 export const NAV_TEMAN_RARA: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/ops/admin/pengumuman', label: 'Pengumuman', icon: Megaphone },
   { href: '/ops/admin/akun-penghuni', label: 'Akun Penghuni', icon: UsersRound }

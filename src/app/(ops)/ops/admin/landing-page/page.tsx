@@ -33,7 +33,7 @@ export default async function AdminLandingPage() {
         </span>
         <div>
           <h1 style={{ fontSize: '1.375rem' }}>Landing Page</h1>
-          <p className="page-head-sub">Kelola konten yang ditampilkan di halaman utama website</p>
+          <p className="page-head-sub">Kelola konten yang ditampilkan di website</p>
         </div>
       </header>
       <LandingPageAdmin />

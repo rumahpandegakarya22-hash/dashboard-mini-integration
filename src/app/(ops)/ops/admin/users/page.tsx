@@ -31,7 +31,7 @@ export default async function AdminUsersPage() {
         </span>
         <div>
           <h1 style={{ fontSize: '1.375rem' }}>Kelola User</h1>
-          <p className="page-head-sub">Approve akun baru, atur role, nonaktifkan akses</p>
+          <p className="page-head-sub">Approval akun baru, atur role dan nonaktifkan akses</p>
         </div>
       </header>
       <UserAdminPanel currentUserId={user.id} />

@@ -1,9 +1,4 @@
-/* Overview Stok Inventory — menggantikan drilldown dua tabel yang lama.
 
-   Angkanya ringkasan posisi TERKINI, bukan per periode: stok adalah saldo, dan
-   memfilternya dengan filter periode dashboard akan menghasilkan angka yang
-   terlihat resmi tapi tidak berarti. Karena itu prop `period` hanya diteruskan
-   ke tabel untuk teks empty-state. */
 
 import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
 import Reveal from '@/components/ui/Reveal';

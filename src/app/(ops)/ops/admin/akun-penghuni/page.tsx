@@ -31,7 +31,7 @@ export default async function AdminAkunPenghuniPage() {
         </span>
         <div>
           <h1 style={{ fontSize: '1.375rem' }}>Akun Teman Rara</h1>
-          <p className="page-head-sub">Cegah akun ganda per kamar &amp; akun eks-penghuni yang belum dicabut</p>
+          <p className="page-head-sub">Cegah double akun per kamar &amp; akun eks-penghuni yang belum dicabut</p>
         </div>
       </header>
       <AkunPenghuniPanel />

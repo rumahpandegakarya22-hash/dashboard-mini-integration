@@ -31,7 +31,7 @@ export default async function AdminPenghuniPage() {
         </span>
         <div>
           <h1 style={{ fontSize: '1.375rem' }}>Ubah Data Penghuni</h1>
-          <p className="page-head-sub">Klik kartu penghuni untuk membuka dan mengedit datanya</p>
+          <p className="page-head-sub">Klik kartu penghuni untuk edit data</p>
         </div>
       </header>
       <PenghuniPanel />

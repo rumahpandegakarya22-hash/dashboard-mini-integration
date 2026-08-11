@@ -2,11 +2,6 @@
 
 import { motion } from 'framer-motion';
 
-/**
- * Kartu sign-in animasi masuk — dipakai bersama seluruh layar auth
- * ((auth)/login, sign-up, 2fa, pending), yang sudah disatukan lewat
- * satu identitas visual Ops (lihat (auth)/layout.tsx).
- */
 export default function AnimatedAuthCard({
   children,
   className = 'center-card'

@@ -2,15 +2,6 @@
 
 import { ArrowRight } from 'lucide-react';
 
-/**
- * Port FlowButton (21st.dev @xubohuah) versi CSS (styles/origin-ui.css) —
- * dipakai di Ops & Dashboard yang tidak memakai Tailwind. Padanan Tailwind-nya
- * ada di components/inventory/FlowButton.tsx.
- *
- * `arrows`: tombol yang sudah punya ikon sendiri memakai "right" supaya panah
- * kiri tidak menimpa ikon itu.
- */
-
 export type FlowArrows = 'both' | 'right' | 'none';
 
 export default function FlowButton({

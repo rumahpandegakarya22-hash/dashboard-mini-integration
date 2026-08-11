@@ -1,6 +1,4 @@
-/* PORT VERBATIM dari objek ikon `I` public/app.js (Fase 4).
-   Path SVG disalin apa adanya agar bentuk ikon identik dengan dashboard lama.
-   Hanya ikon yang benar-benar dipakai shell yang ikut di-port. */
+
 
 const S = {
   viewBox: '0 0 24 24',

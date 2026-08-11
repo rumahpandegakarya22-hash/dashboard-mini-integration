@@ -1,0 +1,18 @@
+Revisi 10_8_26
+
+
+Mini App
+
+1. Tambah Menu "Tambah Vendor" di Role Maintenance dan Owner
+2. Tambah Menu Tambah Waiting List di Role Sales dan Owner. 
+3. Tambah Menu Landing Page di Role Owner dan Marketing. Untuk menyetting konten di Landing Page. Table yang digunakan Landing page di database berjudul landing_....... . Buat semua setting data di Menu Landing Page. Implementasi Form Setting landing page seperti form menu lainnya!
+4. Tambahkan field upload bukti pembayaran (opsional) di form input manual menu Pembayaran dan Verifikasi. 
+5. Pindahkan pengajuan checkout dan pindah kamar ke atas form pada masing masing menu dan buat announcement di beranda jika ada pengajuan berlaku untuk menu Feedback dan Pengaduan juga. 
+
+
+Dashboard
+
+1. Tambah Pages Waiting List di Sidebar untuk Role Owner dan Sales. 
+2. Didalam Pages Waiting List, Tampilkan semua data kolom dalam bentuk table. 
+
+

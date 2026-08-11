@@ -225,7 +225,7 @@ export default function UsagesPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-ink tracking-tight">Input Pemakaian Bahan</h1>
           <p className="text-taupe-dark text-sm mt-1 font-medium">
-            Catat pemakaian bahan baku operasional kost harian untuk mengurangi jumlah stok secara otomatis.
+            Catat pemakaian bahan baku operasional kost.
           </p>
         </div>
 

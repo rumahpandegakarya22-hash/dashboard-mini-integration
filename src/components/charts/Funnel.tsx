@@ -1,6 +1,5 @@
 'use client';
 
-/* PORT VERBATIM dari `funnel()` public/app.js (Fase 4). */
 
 import { motion } from 'framer-motion';
 
@@ -40,7 +39,7 @@ export default function Funnel({ stages }: { stages: FunnelStage[] }) {
               style={{ pointerEvents: 'all' }}
               initial={{ points: flat }}
               animate={{ points: `${x0},${y} ${x0 + topW},${y} ${x1 + botW},${y + seg - 4} ${x1},${y + seg - 4}` }}
-              transition={{ duration: 0.55, delay: i * 0.06, ease: [0.22, 0.61, 0.36, 1] }}
+              transition={{ duration: 0.55, delay: i * 0.1, ease: [0.22, 0.61, 0.36, 1] }}
             />
           );
         })}

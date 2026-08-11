@@ -1,8 +1,5 @@
 'use client';
 
-/* PORT VERBATIM dari `barChart()` public/app.js (Fase 4).
-   Sumbu Y dinamis dari data; headroom 1.18× dipertahankan; label nilai di atas
-   tiap batang. Parameter `_legacyY` versi lama sudah tak dipakai dan tidak ikut. */
 
 import { motion } from 'framer-motion';
 import { fmtNum, niceTicks } from '@/lib/dashboard/format';

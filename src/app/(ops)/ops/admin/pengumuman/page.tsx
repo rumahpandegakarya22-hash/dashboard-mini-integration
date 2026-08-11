@@ -31,7 +31,7 @@ export default async function AdminPengumumanPage() {
         </span>
         <div>
           <h1 style={{ fontSize: '1.375rem' }}>Pengumuman &amp; Peraturan</h1>
-          <p className="page-head-sub">Papan informasi yang dibaca penghuni di aplikasi Teman Rara</p>
+          <p className="page-head-sub">Submit dan Edit Pengumuman untuk Aplikasi Teman Rara</p>
         </div>
       </header>
       <PengumumanPanel />

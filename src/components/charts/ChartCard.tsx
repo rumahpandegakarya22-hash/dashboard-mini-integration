@@ -1,6 +1,3 @@
-/* PORT dari `chartCard()` / `chartLegend()` / `emptyChart()` / `emptyCard()`
-   public/app.js (Fase 4). Markup & nama kelas dipertahankan agar CSS ter-port
-   berlaku tanpa perubahan. */
 
 export interface LegendItem {
   /** warna */

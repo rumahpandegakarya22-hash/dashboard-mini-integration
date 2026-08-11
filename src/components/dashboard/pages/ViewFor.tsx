@@ -14,11 +14,6 @@ import InventoryOverview from '../overviews/InventoryOverview';
 import type { DashboardPageData } from '@/lib/dashboard/views/load';
 import type { DashboardRole } from '@/config/dashboard-access';
 
-/* Pemetaan view → isi halaman data. Padanan properti `render:` objek ROLES
-   public/app.js untuk view bergrup "page".
-
-   Semua tabel memakai data hasil hidrasi apa adanya — TANPA fallback sintetis
-   (§4.7). Sumber kosong → tabel menampilkan empty-state. */
 
 export interface ViewForProps {
   view: string;

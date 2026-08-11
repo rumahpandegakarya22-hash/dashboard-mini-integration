@@ -17,7 +17,7 @@ export default function HomeGreeting({ userName, roleLabel }: { userName: string
         <h1>
           {greeting}, {userName}
         </h1>
-        <p className="page-head-sub">{roleLabel} · pilih modul untuk mulai input</p>
+        <p className="page-head-sub">{roleLabel}</p>
       </div>
     </header>
   );

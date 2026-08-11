@@ -1,8 +1,4 @@
-/* PORT VERBATIM dari `waBtn()` / `openBtn()` / `tagihanBtn()` public/app.js.
 
-   `safeUrl()` tetap dipakai di openBtn — React TIDAK memblokir skema
-   `javascript:` pada href, jadi guard ini wajib dipertahankan meski `esc()`
-   sudah tidak diperlukan. */
 
 import { digits, safeUrl } from '@/lib/dashboard/format';
 

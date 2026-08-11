@@ -1,10 +1,4 @@
-/* PORT VERBATIM dari `donutBlock()` public/app.js (Fase 4).
 
-   Kaidah viz yang dipertahankan persis:
-   - segmen diurut besar→kecil,
-   - bila >6 segmen, 5 teratas ditahan dan sisanya digabung jadi "Lainnya",
-   - center donut = TOTAL (the whole), bukan nilai segmen terbesar,
-   - periode tanpa data → empty-state, BUKAN donut palsu. */
 
 import Donut from '@/components/charts/Donut';
 import { EmptyCard } from '@/components/charts/ChartCard';

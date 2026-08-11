@@ -1,0 +1,15 @@
+Revisi Kost-tiga-dara
+
+Jangan ubah apapun selain yang kuminta. 
+
+Dashboard
+
+
+Mini App
+
+Inventory Stock 
+
+1. Belum ada deskripsi di card Daftar Bahan Baku (hanya ada di input tambah bahan). Seharusnya Deskripsi juga ditampilkan pada Card bahan baku di Pages Daftar Bahan baku. Letak Deskripsi di Bawah nama Alat dan diatas garis pemisah dengan menggunakan weigth yang sama dengan tulisan "Stok terkini"
+2. Status Baru/Bekas seharusnya di Daftar Bahan baku Bukan di Daftar Alat Inventaris. 
+3. Ubah Nama KostInventory Menjadi Tiga Dara Inventory
+ 

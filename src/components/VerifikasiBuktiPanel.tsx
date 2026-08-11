@@ -23,11 +23,6 @@ interface Bukti {
 
 const rupiah = (n: number) => `Rp${n.toLocaleString('id-ID')}`;
 
-/**
- * Antrean bukti bayar dari aplikasi penghuni. Memverifikasi di sini TIDAK
- * mencatat pembayaran — itu tetap lewat form di atas panel ini, karena form
- * itulah yang menerbitkan invoice dan menulis jurnal.
- */
 export default function VerifikasiBuktiPanel() {
   const [data, setData] = useState<Bukti[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,8 +30,6 @@ export default function VerifikasiBuktiPanel() {
   const [info, setInfo] = useState('');
   const [semua, setSemua] = useState(false);
   const [alasan, setAlasan] = useState<Record<string, string>>({});
-  /* Rekening tujuan tidak diketahui dari bukti yang diunggah penghuni, jadi
-     admin memilihnya di sini. Tanpa ini jurnal tidak bisa dibuat. */
   const [kas, setKas] = useState<Record<string, string>>({});
   const [opsiKas, setOpsiKas] = useState<{ id: string; label: string }[]>([]);
 
@@ -65,7 +58,6 @@ export default function VerifikasiBuktiPanel() {
 
   useEffect(() => {
     load(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function proses(b: Bukti, aksi: 'verifikasi' | 'tolak' | 'batal') {
@@ -82,7 +74,7 @@ export default function VerifikasiBuktiPanel() {
       if (!res.ok) throw new Error(json.error || 'Gagal memproses.');
       setInfo(
         aksi === 'verifikasi'
-          ? json.peringatan || `Bukti dari ${b.penghuni} ditandai sah dan pembayarannya sudah tercatat otomatis.`
+          ? json.peringatan || `Bukti dari ${b.penghuni} ditandai sah dan pembayarannya tercatat otomatis.`
           : aksi === 'tolak'
             ? `Bukti dari ${b.penghuni} ditolak.`
             : `Keputusan atas bukti ${b.penghuni} dibatalkan — kembali ke antrean.`
@@ -235,7 +227,7 @@ export default function VerifikasiBuktiPanel() {
                       </option>
                     ))}
                   </select>
-                  <p className="help">Uang bukti ini masuk ke mana. Kalau dikosongkan, pembayaran tetap tercatat tapi jurnalnya harus diinput manual.</p>
+                  <p className="help">Pilih Rekening Tujuan Pembayaran.</p>
                 </div>
                 <div className="field" style={{ marginTop: 12 }}>
                   <label htmlFor={`alasan-${b.id}`}>Alasan penolakan</label>

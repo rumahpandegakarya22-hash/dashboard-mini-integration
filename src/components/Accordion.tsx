@@ -4,16 +4,6 @@ import { useId, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 
-/**
- * Accordion satu bagian.
- *
- * Dibangun dari <button> + aria-expanded, bukan <details>/<summary>: isinya
- * mengandung form dengan tombol dan input, dan perilaku default <summary>
- * (klik di mana pun menutup bagian) menabrak itu.
- *
- * Isi TIDAK dilepas dari DOM saat tertutup — dibungkus `hidden` — supaya nilai
- * yang sudah diketik di form tidak hilang begitu bagiannya dilipat.
- */
 export default function Accordion({
   title,
   subtitle,
@@ -41,14 +31,8 @@ export default function Accordion({
           {title}
           {subtitle && <span className="accordion-sub">{subtitle}</span>}
         </span>
-        {/* Rotasi chevron sudah ditangani CSS lewat [data-open] di .accordion —
-            tidak dobel dianimasi di sini supaya tidak numpuk jadi 360°. */}
         <ChevronDown size={20} className="accordion-chevron" aria-hidden />
       </button>
-      {/* Wrapper luar HANYA mengurus tinggi (0 <-> auto) + overflow; padding
-          tetap di .accordion-body bagian dalam supaya tidak ikut "mengempis"
-          jadi sliver setinggi padding saat tertutup. Isi TIDAK dilepas dari
-          DOM saat tertutup — form di dalamnya jangan kehilangan nilai. */}
       <motion.div
         inert={!open || undefined}
         initial={false}

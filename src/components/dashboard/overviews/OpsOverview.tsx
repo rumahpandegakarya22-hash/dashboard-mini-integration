@@ -1,9 +1,3 @@
-/* PORT VERBATIM dari `opsOverview()` public/app.js (Fase 4 langkah 4).
-
-   Response Time (jam) = Tgl Lapor − Tgl Kerusakan; Resolution Time (hari) =
-   Tgl Selesai − Tgl Kerusakan. Keduanya dihitung per tiket saat hidrasi
-   (_respJam/_resolHari); di sini dirata-ratakan pada periode. Bila tak ada
-   sumbernya, nilainya "—" — BUKAN angka dummy. */
 
 import { StatGrid, StatCard, type StatCardData } from '@/components/ui/StatCard';
 import Reveal from '@/components/ui/Reveal';

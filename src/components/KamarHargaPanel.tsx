@@ -112,11 +112,11 @@ export default function KamarHargaPanel() {
 
       <div className="card">
         <p className="muted" style={{ marginBottom: 4 }}>
-          Harga berlaku <b>per tipe kamar</b> — menyimpan akan menimpa semua kamar bertipe sama.
+          Harga berlaku <b>per tipe kamar</b>.
           Angka yang dimasukkan adalah <b>total untuk seluruh durasi</b>, bukan per bulan.
         </p>
         <p className="muted">
-          <b>DP otomatis 50%</b> dari tarif 1 bulan — tidak perlu (dan tidak bisa) diisi manual.
+          <b>DP otomatis 50%</b> dari tarif 1 bulan.
         </p>
       </div>
 

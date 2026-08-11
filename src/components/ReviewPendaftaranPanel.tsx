@@ -28,14 +28,6 @@ function Baris({ label, nilai }: { label: string; nilai: string }) {
   );
 }
 
-/**
- * Review pendaftaran mandiri dari aplikasi Teman Rara. Menampilkan data diri
- * lengkap yang selama ini hanya ada di tabel `tr_pendaftaran` dan tidak pernah
- * muncul di layar mana pun.
- *
- * Konfirmasi di sini BUKAN check-in — statusnya berhenti di 'Konfirmasi'.
- * Check-in tetap lewat alurnya sendiri karena memicu pembentukan data penghuni.
- */
 export default function ReviewPendaftaranPanel() {
   const [data, setData] = useState<Pendaftar[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -65,7 +57,6 @@ export default function ReviewPendaftaranPanel() {
 
   useEffect(() => {
     load(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function proses(p: Pendaftar, aksi: 'konfirmasi' | 'tolak') {
@@ -87,7 +78,7 @@ export default function ReviewPendaftaranPanel() {
       if (!res.ok) throw new Error(json.error || 'Gagal memproses.');
       setInfo(
         aksi === 'konfirmasi'
-          ? `Pendaftaran ${p.identitas.namaLengkap} dikonfirmasi. Check-in tetap dicatat lewat alurnya sendiri saat penghuni benar-benar masuk.`
+          ? `Pendaftaran ${p.identitas.namaLengkap} dikonfirmasi. Check-in tetap dicatat saat penghuni benar-benar masuk.`
           : `Pendaftaran ${p.identitas.namaLengkap} dibatalkan.`
       );
       await load();

@@ -1,8 +1,4 @@
-/* Pemetaan role/view → komponen overview.
 
-   Di app.js pemetaan ini hidup di properti `render:` objek ROLES. Di sini
-   dipisah dari config navigasi supaya `config/dashboard-nav.ts` tetap data murni
-   yang bisa diimpor Server Component tanpa menyeret komponen UI. */
 
 import AdminOverview from './AdminOverview';
 import MarketingOverview from './MarketingOverview';

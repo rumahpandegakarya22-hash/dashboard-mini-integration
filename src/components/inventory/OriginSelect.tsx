@@ -4,22 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ChevronDown } from 'lucide-react';
 
-/**
- * Dropdown bergaya OriginUI (21st.dev @originui) sebagai pengganti `<select>`
- * native, yang popup-nya tidak bisa dianimasikan.
- *
- * Yang disalin dari sumber:
- *   - Panel: rounded-lg, min-w-40, p-1, border 1px, shadow-lg shadow-black/5
- *   - Item: rounded-md, px-2 py-1.5, text-sm, gap-2, transition-colors
- *   - Indikator terpilih: span absolut left-2, kotak 3.5, ikon Check h-4 w-4
- *   - Masuk/keluar: fade-in-0 + zoom-in-95 + slide-in-from-top-2
- *
- * Yang sengaja BEDA: OriginUI memakai token shadcn (bg-popover, focus:bg-accent).
- * Di app ini `accent` adalah merah #C92D31 — kalau dipakai sebagai latar item
- * hover, kontras teksnya jadi rusak. Jadi warnanya dipetakan ke palet Inventory
- * (putih / sand / ink) dengan peran yang sama.
- */
-
 export interface OriginOption {
   value: string;
   label: string;

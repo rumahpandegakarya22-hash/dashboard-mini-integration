@@ -13,19 +13,6 @@ interface Entry {
   values: Record<string, string>;
 }
 
-/**
- * Fitur "Edit Data" per modul: pilih entri terakhir → form yang sama terisi
- * nilai lama → simpan menimpa entri itu (bukan menambah baris baru).
- *
- * Dulu ini panel yang selalu menempel di bawah form, jadi setiap halaman modul
- * punya dua form beruntun dan daftar entri mendorong isi halaman memanjang.
- * Sekarang pemicunya satu tombol di samping judul halaman, isinya pindah ke
- * modal — halaman modul kembali berisi satu form saja.
- *
- * Daftar entri dirender sebagai TABEL, bukan daftar tombol: label entri
- * memuat beberapa ruas (tanggal, nama, status) yang di layar lebar lebih mudah
- * dipindai berkolom.
- */
 export default function EditPanel({ moduleId, fields }: { moduleId: string; fields: FieldDef[] }) {
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState<Entry[] | null>(null);
@@ -55,9 +42,6 @@ export default function EditPanel({ moduleId, fields }: { moduleId: string; fiel
     }
   }
 
-  // Label entri dirangkai handler dengan pemisah " · " — dipecah kembali di
-  // sini supaya bisa jadi kolom tabel. Jumlah ruas tiap modul berbeda, jadi
-  // lebar kolom dibiarkan menyesuaikan isi.
   const kolom = (e: Entry) => e.label.split('·').map((s) => s.trim());
   const jumlahKolom = Math.max(1, ...(entries ?? []).map((e) => kolom(e).length));
 

@@ -61,7 +61,7 @@ export default function AkunPenghuniPanel() {
   }, []);
 
   async function proses(a: Akun, aksi: 'cabut' | 'pulihkan') {
-    if (aksi === 'cabut' && !confirm(`Cabut akun ${a.nama}? Dia akan langsung kehilangan akses ke aplikasi Teman Rara.`)) {
+    if (aksi === 'cabut' && !confirm(`Cabut akun ${a.nama}? Penghuni akan tidak bisa mengakses Teman Rara.`)) {
       return;
     }
     setBusy(a.idPenghuni);
@@ -129,7 +129,7 @@ export default function AkunPenghuniPanel() {
           <CircleAlert size={16} />
           <span>
             {ringkasan.ganda > 0 && `${ringkasan.ganda} akun berbagi kamar yang sama. `}
-            {ringkasan.yatim > 0 && `${ringkasan.yatim} akun masih aktif padahal pemiliknya sudah tidak tinggal di sini.`}
+            {ringkasan.yatim > 0 && `${ringkasan.yatim} akun masih aktif , pemilik sudah checkout.`}
           </span>
         </div>
       )}
@@ -153,7 +153,7 @@ export default function AkunPenghuniPanel() {
       {tampil?.length === 0 && (
         <div className="card">
           <p className="muted" style={{ margin: 0 }}>
-            {hanyaMasalah ? 'Tidak ada akun bermasalah. Rapi.' : 'Belum ada penghuni yang mengklaim akun Teman Rara.'}
+            {hanyaMasalah ? 'Tidak ada akun bermasalah.' : 'Belum ada penghuni yang mengklaim akun Teman Rara.'}
           </p>
         </div>
       )}
@@ -200,12 +200,12 @@ export default function AkunPenghuniPanel() {
 
                   {a.ganda && (
                     <p style={{ fontSize: '0.875rem', marginTop: 10 }}>
-                      Kamar {a.noKamar} punya lebih dari satu akun aktif — cabut yang bukan penghuni sekarang.
+                      Kamar {a.noKamar} punya lebih dari satu akun.
                     </p>
                   )}
                   {a.yatim && (
                     <p style={{ fontSize: '0.875rem', marginTop: 10 }}>
-                      Sudah tidak tercatat sebagai penghuni aktif (kemungkinan sudah check-out), tapi akunnya masih hidup.
+                      Sudah tidak tercatat sebagai penghuni aktif, tapi akunnya masih hidup.
                     </p>
                   )}
 

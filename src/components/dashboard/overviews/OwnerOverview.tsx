@@ -1,6 +1,3 @@
-/* PORT VERBATIM dari `ownerOverview()` public/app.js (Fase 4 langkah 4).
-   Keuangan dihitung ULANG untuk periode yang dipilih, jadi scorecard, line, dan
-   donut ikut berubah saat filter periode diganti. */
 
 import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
 import Reveal from '@/components/ui/Reveal';
@@ -29,7 +26,6 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
     { label: 'Kamar Kosong', value: String(stats.kosong ?? 0), spark: moveIn, bg: G.ownGray, onDark: true },
     { label: 'Kamar Isi', value: String(stats.occupied ?? 0), spark: moveIn, bg: G.ownRose, onDark: true },
     { label: 'Tiket Aktif', value: String(tiketAktif), spark: [], bg: G.ownGray, onDark: true },
-    // Total diskon yang diberikan pada periode aktif (akun Beban Diskon).
     { label: 'Total Diskon', value: fmtRpShort(F ? F.diskonTotal : 0), spark: F ? F.diskonSeries : [], bg: G.ownGray, onDark: true }
   ];
 

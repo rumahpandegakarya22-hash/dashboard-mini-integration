@@ -92,7 +92,7 @@ export default function CorrectionsPage() {
     setSuccessMsg("");
 
     if (user?.role !== "OWNER") {
-      setFormError("Akses ditolak: Hanya OWNER yang dapat melakukan koreksi stok manual.");
+      setFormError("Akses ditolak: Hanya OWNER yang dapat melakukan stock opname.");
       return;
     }
 
@@ -158,7 +158,7 @@ export default function CorrectionsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-ink tracking-tight">Koreksi Jumlah Stok</h1>
           <p className="text-taupe-dark text-sm mt-1 font-medium">
-            Sesuaikan jumlah stok secara manual jika ditemukan kehilangan, kerusakan, atau selisih fisik (Khusus peran <span className="text-accent font-bold">OWNER</span>).
+            Sesuaikan jumlah stok secara manual jika ada kehilangan, kerusakan, atau selisih fisik.
           </p>
         </div>
 

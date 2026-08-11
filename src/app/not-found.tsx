@@ -15,7 +15,7 @@ export default function NotFound() {
         <div className="center-card card">
           <h2>Halaman tidak ditemukan</h2>
           <p className="muted">
-            Alamat yang kamu buka tidak ada, atau kamu tidak punya akses ke bagian itu.
+            Alamat yang yang dituju tidak ada.
           </p>
           <Link href="/" className="btn" style={{ marginTop: 10 }}>
             Kembali

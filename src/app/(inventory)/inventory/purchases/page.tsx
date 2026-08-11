@@ -199,7 +199,7 @@ export default function PurchasesPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-ink tracking-tight">Input Pembelian Bahan</h1>
           <p className="text-taupe-dark text-sm mt-1 font-medium">
-            Catat setiap pembelanjaan barang operasional kost untuk meningkatkan stok secara otomatis.
+            Catat setiap pembelanjaan barang operasional kost.
           </p>
         </div>
 

@@ -7,13 +7,6 @@ import { PERIODS } from '@/config/dashboard-nav';
 import { GlassDateField } from '@/components/ui/GlassCalendar';
 import { IconCal, IconCaret } from './icons';
 
-/* PORT dari `periodFilter()` public/app.js (Fase 4).
-
-   Perbedaan yang disengaja (§2.3): periode tidak lagi disimpan di state global
-   `cur`, melainkan di **searchParams** — sehingga tampilan ter-filter bisa
-   di-bookmark dan di-share, dan Server Component bisa membacanya langsung.
-   Markup & kelas (.side-period, .period-toggle, .period-menu, .period-opt,
-   .period-custom) dipertahankan agar CSS hasil port berlaku. */
 
 export default function PeriodFilter({
   period,

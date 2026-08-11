@@ -1,5 +1,4 @@
-/* PORT VERBATIM dari `marketingOverview()` public/app.js (Fase 4 langkah 4).
-   CAC tetap "—" seperti di sumber: belum ada data biaya marketing. */
+
 
 import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
 import Reveal from '@/components/ui/Reveal';
@@ -34,7 +33,6 @@ export default function MarketingOverview({ data, period, from, to, range }: Ove
     { label: 'Survey', value: String(nSurvey), spark: survSpark, bg: G.mkSurvey, onDark: true },
     { label: 'Konversi Leads-Survey', value: konv + ' %', spark: survSpark, bg: G.mkConv },
     { label: 'Unit Tersewa', value: String(stats.occupied ?? 0), spark: moveIn, bg: G.mkUnit },
-    // butuh data biaya marketing → belum ada
     { label: 'CAC', value: '—', spark: leadSpark, bg: G.mkCac }
   ];
 

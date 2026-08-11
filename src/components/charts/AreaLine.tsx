@@ -1,9 +1,6 @@
 'use client';
 
-/* PORT VERBATIM dari `lineChart()` public/app.js (Fase 4).
-   Multi-seri (2–3) dengan marker; sumbu Y dinamis dan MENDUKUNG NILAI NEGATIF
-   (dipakai Laba Bersih). Seri ke-2 bergaris putus-putus, seri ke-1 diberi area
-   gradien — sama persis seperti versi lama. */
+
 
 import { motion } from 'framer-motion';
 import { fmtNum } from '@/lib/dashboard/format';

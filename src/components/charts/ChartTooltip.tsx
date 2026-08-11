@@ -2,20 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-/* PORT dari `setupChartTooltip()` public/app.js (Fase 4).
-
-   Perilaku dipertahankan: delegasi event di level dokumen membaca atribut
-   data-tip-* dari elemen SVG mana pun (segmen donut, titik line chart), lalu
-   menampilkan callout yang mengikuti kursor dan membalik posisi saat mepet tepi
-   viewport (padding 14px — nilai dari sumber).
-
-   Perbedaan implementasi: versi lama menyuntik <div> ke document.body dan
-   mengisinya via innerHTML. Di sini tooltip dirender React dan isinya masuk
-   sebagai teks, bukan HTML — menutup jalur injeksi kalau suatu saat ada label
-   yang berasal dari data pengguna. Tampilan & kelas CSS (.chart-tip,
-   .chart-tip__dot, .chart-tip__lab) tidak berubah.
-
-   Pasang SEKALI saja di shell dashboard. */
 
 interface TipState {
   label: string;
@@ -32,7 +18,7 @@ export default function ChartTooltip() {
   useEffect(() => {
     // Jarak tooltip ke pointer. 14px terasa jauh saat dipakai (UAT #5);
     // 6px masih cukup agar kursor tidak menutupi teksnya.
-    const PAD = 6;
+    const PAD = 8;
 
     const onOver = (e: Event) => {
       const target = e.target as Element;

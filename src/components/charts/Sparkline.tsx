@@ -1,8 +1,5 @@
 'use client';
 
-/* PORT VERBATIM dari `sparkline()` public/app.js (Fase 4).
-   Geometri, kurva Catmull-Rom→Bezier, dan pembulatan 1 desimal dipertahankan
-   persis agar path SVG yang dihasilkan identik piksel dengan versi lama. */
 
 import { motion } from 'framer-motion';
 
@@ -49,7 +46,7 @@ export default function Sparkline({ series, color }: SparklineProps) {
         strokeLinejoin="round"
         initial={{ pathLength: 0, opacity: 0 }}
         animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 0.61, 0.36, 1] }}
+        transition={{ duration: 1, ease: [0.22, 0.61, 0.36, 1] }}
       />
     </svg>
   );

@@ -4,16 +4,6 @@ import { useMemo, useState } from 'react';
 import Pagination from './Pagination';
 import { fmtDateID, fmtHP, initials } from '@/lib/dashboard/format';
 
-/* PORT dari `table()` + `wireTable()` public/app.js (Fase 4).
-
-   Perilaku yang dipertahankan: sort per kolom (localeCompare 'id' numeric),
-   pencarian tabel, filter per kolom lewat tombol corong, paginasi, dan
-   empty-state yang menyebut periode aktif.
-
-   Perbedaan implementasi: versi lama menyaring/mengurutkan dengan memindahkan
-   node <tr> dan menyetel display:none; di sini semuanya turunan state React dan
-   hanya baris halaman aktif yang dirender. Nama kelas & struktur markup
-   dipertahankan agar CSS hasil port berlaku apa adanya. */
 
 export interface TableCol {
   key: string;

@@ -8,15 +8,6 @@ import ViewFor from '@/components/dashboard/pages/ViewFor';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Halaman per view. `config/dashboard-nav.ts` adalah sumber tunggal untuk
- * sidebar SEKALIGUS guard: view yang tidak terdaftar untuk role pemanggil → 404,
- * jadi tidak ada halaman yang bocor lewat URL tebakan (§8.2).
- *
- * View bergrup "dash" (Owner: sales/marketing/admin/operasional) merender
- * overview divisi terkait — sama seperti properti `render:` objek ROLES lama.
- * View bergrup "page" (tabel data) di-port pada bagian berikutnya langkah 4.
- */
 export default async function DashboardViewPage({
   params,
   searchParams
@@ -53,9 +44,7 @@ export default async function DashboardViewPage({
       from={sp.from}
       to={sp.to}
     >
-      {/* `stok` bergrup "dash" supaya muncul di seksi Dashboards sidebar, tapi
-          isinya bukan overview per divisi — sumber datanya DB Inventory, bukan
-          hidrasi Turso utama. Karena itu tetap dirender lewat ViewFor. */}
+      
       {isDash && view !== 'stok' ? (
         <OverviewFor which={view as OverviewKey} loaded={loaded} period={period} from={sp.from} to={sp.to} />
       ) : (

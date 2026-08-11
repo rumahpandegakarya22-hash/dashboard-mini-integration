@@ -19,19 +19,6 @@ import {
   IconLogout
 } from './icons';
 
-/* PORT dari `buildSidebar()` + `buildTopbar()` + `pageHead()` public/app.js
-   (Fase 4 langkah 3). Struktur markup & seluruh nama kelas dipertahankan
-   (.app, .sidebar, .brand, .side-section, .nav-link, .side-user, .topbar,
-   .crumbs, .content, .page-head) agar CSS hasil port berlaku apa adanya.
-
-   Perbedaan yang disengaja:
-   - Navigasi memakai <Link> App Router, bukan <a href="#"> + state `cur.page`;
-     halaman kini punya URL sendiri sehingga bisa di-bookmark & di-back (§2.3).
-   - Toggle tema dipisah ke komponen ThemeToggle bersama (dipakai ops juga).
-   - Tombol notifikasi & layar penuh DIHAPUS (UAT #3). Keduanya memang tidak
-     pernah punya handler, baik di app.js maupun di port ini.
-   - `#refreshBtn` memuat ulang route (router.refresh lewat reload) — di sumber
-     ia memanggil loadLiveData(); padanan terdekat di App Router. */
 
 export interface DashboardShellProps {
   role: DashboardRole;

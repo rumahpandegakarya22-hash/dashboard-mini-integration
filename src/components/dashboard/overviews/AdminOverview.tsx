@@ -1,9 +1,3 @@
-/* PORT VERBATIM dari `adminOverview()` public/app.js (Fase 4 langkah 4).
-
-   Catatan port: fallback "Sisa Hari dari tab PENGHUNI" untuk Daftar Jatuh Tempo
-   DIPERTAHANKAN — itu bukan data demo, melainkan jalur cadangan sah ketika tabel
-   `payment` belum terhidrasi. Yang tidak ikut di-port hanyalah pembangkit baris
-   fiktif (lihat docs/MIGRASI.md §4.7). */
 
 import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
 import Reveal from '@/components/ui/Reveal';
@@ -32,7 +26,6 @@ export default function AdminOverview({ data, finance: F, period, from, to }: Ov
     { label: 'Kamar Kosong', value: String(stats.kosong ?? 0), spark: moveIn, bg: G.adminOlive, onDark: true },
     { label: 'Tunggakan', value: String(stats.tunggakan ?? 0), spark: tempoSpark, bg: G.adminDarkO, onDark: true },
     { label: 'Jatuh Tempo', value: String(stats.jatuhTempo ?? 0), spark: tempoSpark, bg: G.adminDarkG, onDark: true },
-    // Total diskon yang diberikan pada periode aktif (akun Beban Diskon).
     { label: 'Total Diskon', value: fmtRpShort(F ? F.diskonTotal : 0), spark: F ? F.diskonSeries : [], bg: G.adminOlive, onDark: true }
   ];
 

@@ -3,12 +3,6 @@
 import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 
-/**
- * Transisi halaman bersama seluruh sub-app (Dashboard/Ops/Inventory).
- * Pola "scale-without-limits": scale+fade masuk saat route berganti.
- * Dipasang lewat `template.tsx` per route group — Next me-remount
- * template setiap navigasi, jadi animasi masuk berjalan tiap pindah halaman.
- */
 export default function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 

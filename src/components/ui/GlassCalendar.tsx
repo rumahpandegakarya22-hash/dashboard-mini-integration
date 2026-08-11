@@ -4,18 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
-/**
- * Port GlassCalendar (21st.dev @ravikatiyar162).
- *
- * Dua catatan penting:
- *  1. Komponen aslinya STRIP MINGGUAN horizontal, bukan date picker. Karena di
- *     sini dipakai menggantikan `<input type="date">`, grid bulanan ditambahkan.
- *  2. Tailwind di repo ini hanya aktif untuk route group (inventory) — lihat
- *     tailwind.config.ts. Jadi gayanya ditulis sebagai CSS biasa di
- *     styles/glass-calendar.css (kelas `.glass-cal*`), bukan utilitas Tailwind.
- *     Nilai visualnya tetap disalin dari sumber.
- */
-
 const DOW = ['M', 'S', 'S', 'R', 'K', 'J', 'S'];
 const BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -162,10 +150,6 @@ export function GlassDateField({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
-  // Popup di-portal ke <body> (position: fixed, posisi dihitung manual) — dulu
-  // position:absolute mengikuti alur dokumen, jadi kalau field ini duduk dekat
-  // dasar container yang overflow:auto (mis. .modal di Modal.tsx, max-height:86vh),
-  // popupnya kepotong batas scroll leluhur itu, tidak terlihat penuh.
   useEffect(() => {
     if (!open) return;
     const update = () => {
