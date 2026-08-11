@@ -101,12 +101,12 @@ export async function POST(req: Request) {
     kondisiKamarId = Number(res.lastInsertRowid);
   }
 
-  // Insert foto jika ada (item_no=1 sebagai placeholder — schema NOT NULL)
+  // Insert foto jika ada (item_no NULL = foto umum kamar, bukan per-item)
   if (fotos && fotos.length > 0) {
     for (const url of fotos) {
       await turso().execute({
         sql: `INSERT INTO kondisi_kamar_foto (kondisi_kamar_id, fase, item_no, url, created_at)
-              VALUES (?, 'awal', 1, ?, CURRENT_TIMESTAMP)`,
+              VALUES (?, 'awal', NULL, ?, CURRENT_TIMESTAMP)`,
         args: [kondisiKamarId, url],
       });
     }
