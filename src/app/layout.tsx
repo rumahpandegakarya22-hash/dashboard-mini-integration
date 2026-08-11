@@ -7,7 +7,7 @@ import '@/styles/sky-toggle.css';
 import '@/styles/glass-calendar.css';
 import '@/styles/origin-ui.css';
 import type { Metadata, Viewport } from 'next';
-import { Inter, Outfit } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import { ClerkProvider } from '@clerk/nextjs';
 import Providers from '@/components/Providers';
@@ -25,14 +25,6 @@ const inter = Inter({
   variable: '--font-inter'
 });
 
-/** Font khas app Inventory Stock — self-hosted, menggantikan <link> Google Fonts
- *  di globals.css app lama. Hanya dipakai di subtree [data-app="inventory"]. */
-const outfit = Outfit({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
-  display: 'swap',
-  variable: '--font-outfit'
-});
 
 export const metadata: Metadata = {
   title: 'Kost Tiga Dara',
@@ -54,7 +46,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
-      <html lang="id" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
+      <html lang="id" className={`${inter.variable}`} suppressHydrationWarning>
         <body>
           <Script id="ktd-theme-init" strategy="beforeInteractive">
             {`try{var t=localStorage.getItem('ktd-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}`}

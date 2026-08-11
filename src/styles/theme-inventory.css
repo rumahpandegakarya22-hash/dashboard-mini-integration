@@ -9,11 +9,16 @@
    Utilitas Tailwind-nya sendiri lihat tailwind.config.ts (preflight mati).
    ============================================================ */
 
+/* Outfit dimuat via CSS @import agar tidak bergantung pada modul Turbopack internal
+   (@vercel/turbopack-next/internal/font/google/font) yang menyebabkan build gagal. */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 [data-app='inventory'] {
+  --font-outfit: 'Outfit', ui-sans-serif, system-ui, sans-serif;
   --background: #f8f6f2;
   --foreground: #292524;
   /* Dipakai `.border-beam` (globals.css) — sama dengan warna accent Tailwind
