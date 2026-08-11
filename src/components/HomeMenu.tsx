@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_PENGATURAN, NAV_PENGHUNI, NAV_RIWAYAT_BAYAR, NAV_LANDING_PAGE, moduleIcon } from './module-icons';
+import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_PENGATURAN, NAV_PENGHUNI, NAV_RIWAYAT_BAYAR, NAV_LANDING_PAGE, NAV_CHECKIN, NAV_CHECKOUT, moduleIcon } from './module-icons';
 import type { NavModule } from './AppShell';
 
 interface Props {
@@ -10,12 +10,13 @@ interface Props {
   canKelola: boolean;
   canLandingPage?: boolean;
   canRiwayatBayar?: boolean;
+  canInspeksi?: boolean;
   modules: NavModule[];
 }
 
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
-export default function HomeMenu({ isOwner, canKelola, canLandingPage, canRiwayatBayar, modules }: Props) {
+export default function HomeMenu({ isOwner, canKelola, canLandingPage, canRiwayatBayar, canInspeksi, modules }: Props) {
   const groups = DIVISION_GROUPS.map((g) => ({
     label: g.label,
     items: g.ids.map((id) => modules.find((m) => m.id === id)).filter((m): m is NavModule => !!m)
@@ -107,6 +108,28 @@ export default function HomeMenu({ isOwner, canKelola, canLandingPage, canRiwaya
           <h2 className="section-title">Laporan</h2>
           <div className="module-grid">
             <ModuleCard id="riwayat-pembayaran" title={NAV_RIWAYAT_BAYAR.label} href={NAV_RIWAYAT_BAYAR.href} icon={NAV_RIWAYAT_BAYAR.icon} />
+          </div>
+        </section>
+      )}
+
+      {canInspeksi && (
+        <section aria-label="Check-in">
+          <h2 className="section-title">Check-in</h2>
+          <div className="module-grid">
+            {NAV_CHECKIN.filter((n) => !n.adminOnly || canKelola).map((n) => (
+              <ModuleCard key={n.href} id={n.href} title={n.label} href={n.href} icon={n.icon} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {canInspeksi && (
+        <section aria-label="Check-out">
+          <h2 className="section-title">Check-out</h2>
+          <div className="module-grid">
+            {NAV_CHECKOUT.filter((n) => !n.adminOnly || canKelola).map((n) => (
+              <ModuleCard key={n.href} id={n.href} title={n.label} href={n.href} icon={n.icon} />
+            ))}
           </div>
         </section>
       )}

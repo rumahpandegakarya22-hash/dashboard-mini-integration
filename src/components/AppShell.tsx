@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
 import { motion } from 'framer-motion';
 import { ChevronLeft, House, LoaderCircle, LogOut, Menu, Settings, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
-import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, NAV_PENGATURAN, NAV_PENGHUNI, moduleIcon } from './module-icons';
+import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, NAV_PENGATURAN, NAV_PENGHUNI, NAV_CHECKIN, NAV_CHECKOUT, moduleIcon } from './module-icons';
 
 /** Item sidebar dengan pil aktif yang meluncur (layoutId bersama) — pola
  * manuarora700: satu elemen `motion` dipindah antar item lewat shared layout
@@ -66,12 +66,14 @@ interface Props {
   canLandingPage?: boolean;
   /** Owner, Admin, Sales — melihat riwayat pembayaran per penghuni. */
   canRiwayatBayar?: boolean;
+  /** Owner, Admin, Inspeksi — akses form Pre-Check In & Pre-Check Out. */
+  canInspeksi?: boolean;
   modules: NavModule[];
   children: React.ReactNode;
 }
 
 export default function AppShell({ userName, roleLabel, isOwner, canKelola,
-  hasDashboardAccess, canLandingPage, canRiwayatBayar, modules, children }: Props) {
+  hasDashboardAccess, canLandingPage, canRiwayatBayar, canInspeksi, modules, children }: Props) {
   const pathname = usePathname();
   const { signOut } = useClerk();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -84,7 +86,7 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
   const isAccount = pathname.startsWith('/ops/account');
   const activeModule = modules.find((m) => pathname === `/ops/m/${m.id}`);
   // Cari judul halaman admin aktif dari semua nav admin
-  const allAdminNav = [...NAV_TEMAN_RARA, ...NAV_PENGATURAN, NAV_PENGHUNI, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR];
+  const allAdminNav = [...NAV_TEMAN_RARA, ...NAV_PENGATURAN, NAV_PENGHUNI, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, ...NAV_CHECKIN, ...NAV_CHECKOUT];
   const activeAdminPage = allAdminNav.find((n) => pathname.startsWith(n.href));
   const topTitle = isHome
     ? 'Kost Tiga Dara'
@@ -182,6 +184,28 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
               <SideLink href={NAV_RIWAYAT_BAYAR.href} active={pathname.startsWith(NAV_RIWAYAT_BAYAR.href)} icon={NAV_RIWAYAT_BAYAR.icon}>
                 {NAV_RIWAYAT_BAYAR.label}
               </SideLink>
+            </div>
+          )}
+
+          {canInspeksi && (
+            <div>
+              <div className="side-group-label">Check-in</div>
+              {NAV_CHECKIN.filter((n) => !n.adminOnly || canKelola).map((n) => (
+                <SideLink key={n.href} href={n.href} active={pathname.startsWith(n.href)} icon={n.icon}>
+                  {n.label}
+                </SideLink>
+              ))}
+            </div>
+          )}
+
+          {canInspeksi && (
+            <div>
+              <div className="side-group-label">Check-out</div>
+              {NAV_CHECKOUT.filter((n) => !n.adminOnly || canKelola).map((n) => (
+                <SideLink key={n.href} href={n.href} active={pathname.startsWith(n.href)} icon={n.icon}>
+                  {n.label}
+                </SideLink>
+              ))}
             </div>
           )}
 

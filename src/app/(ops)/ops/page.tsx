@@ -34,6 +34,7 @@ export default async function HomePage() {
         canKelola={user.role === 'owner' || user.role === 'staff_admin'}
         canLandingPage={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_marketing'}
         canRiwayatBayar={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_sales'}
+        canInspeksi={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_inspeksi'}
         modules={visible}
       />
     </>

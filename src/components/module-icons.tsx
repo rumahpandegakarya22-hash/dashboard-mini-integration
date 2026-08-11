@@ -67,7 +67,7 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Umum', ids: ['daily-task'] },
   {
     label: 'Administrasi',
-    ids: ['penghuni-baru', 'pembayaran-sewa', 'pindah-kamar', 'checkout', 'aktivitas-finansial', 'feedback']
+    ids: ['pembayaran-sewa', 'pindah-kamar', 'checkout', 'aktivitas-finansial', 'feedback']
   },
   { label: 'Sales', ids: ['survey', 'tambah-waiting-list'] },
   { label: 'Marketing', ids: ['leads', 'konten', 'promosi'] },
@@ -97,3 +97,14 @@ export const NAV_PENGATURAN: { href: string; label: string; icon: LucideIcon; ow
 
 /** Ubah Data Penghuni — dipindah dari Teman Rara ke area Administrasi. */
 export const NAV_PENGHUNI = { href: '/ops/admin/penghuni', label: 'Ubah Data Penghuni', icon: UserCog };
+
+/** Navigasi grup Check-in — owner, staff_admin, staff_inspeksi. */
+export const NAV_CHECKIN: { href: string; label: string; icon: LucideIcon; adminOnly?: true }[] = [
+  { href: '/ops/admin/pre-checkin', label: 'Pre-Check In Form', icon: ClipboardCheck },
+  { href: '/ops/m/penghuni-baru', label: 'Penghuni Baru & Review', icon: UserRoundPlus, adminOnly: true },
+];
+
+/** Navigasi grup Check-out — owner, staff_admin, staff_inspeksi. */
+export const NAV_CHECKOUT: { href: string; label: string; icon: LucideIcon; adminOnly?: true }[] = [
+  { href: '/ops/admin/pre-checkout', label: 'Pre-Check Out Form', icon: ClipboardList },
+];
