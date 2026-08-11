@@ -3,6 +3,7 @@
 
 import {
   ArrowLeftRight,
+  BarChart3,
   CalendarCheck,
   CheckSquare,
   Clapperboard,
@@ -107,6 +108,9 @@ export const NAV_CHECKIN: { href: string; label: string; icon: LucideIcon; admin
   { href: '/ops/admin/approval-checkin', label: 'Approval Check-in', icon: CheckSquare, adminOnly: true },
   { href: '/ops/m/penghuni-baru', label: 'Penghuni Baru & Review', icon: UserRoundPlus, adminOnly: true },
 ];
+
+/** Laporan Keuangan PSAK — owner, staff_admin, staff_sales. */
+export const NAV_LAPORAN_KEUANGAN = { href: '/ops/admin/laporan-keuangan', label: 'Laporan Keuangan', icon: BarChart3 };
 
 /** Navigasi grup Check-out — owner, staff_admin, staff_inspeksi. */
 export const NAV_CHECKOUT: { href: string; label: string; icon: LucideIcon; adminOnly?: true }[] = [

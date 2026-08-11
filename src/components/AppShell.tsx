@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
 import { motion } from 'framer-motion';
 import { ChevronLeft, House, LoaderCircle, LogOut, Menu, Settings, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
-import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, NAV_PENGATURAN, NAV_PENGHUNI, NAV_CHECKIN, NAV_CHECKOUT, moduleIcon } from './module-icons';
+import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, NAV_PENGATURAN, NAV_PENGHUNI, NAV_CHECKIN, NAV_CHECKOUT, NAV_LAPORAN_KEUANGAN, moduleIcon } from './module-icons';
 
 /** Item sidebar dengan pil aktif yang meluncur (layoutId bersama) — pola
  * manuarora700: satu elemen `motion` dipindah antar item lewat shared layout
@@ -86,7 +86,7 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
   const isAccount = pathname.startsWith('/ops/account');
   const activeModule = modules.find((m) => pathname === `/ops/m/${m.id}`);
   // Cari judul halaman admin aktif dari semua nav admin
-  const allAdminNav = [...NAV_TEMAN_RARA, ...NAV_PENGATURAN, NAV_PENGHUNI, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, ...NAV_CHECKIN, ...NAV_CHECKOUT];
+  const allAdminNav = [...NAV_TEMAN_RARA, ...NAV_PENGATURAN, NAV_PENGHUNI, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, NAV_LAPORAN_KEUANGAN, ...NAV_CHECKIN, ...NAV_CHECKOUT];
   const activeAdminPage = allAdminNav.find((n) => pathname.startsWith(n.href));
   const topTitle = isHome
     ? 'Kost Tiga Dara'
@@ -183,6 +183,9 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
               <div className="side-group-label">Laporan</div>
               <SideLink href={NAV_RIWAYAT_BAYAR.href} active={pathname.startsWith(NAV_RIWAYAT_BAYAR.href)} icon={NAV_RIWAYAT_BAYAR.icon}>
                 {NAV_RIWAYAT_BAYAR.label}
+              </SideLink>
+              <SideLink href={NAV_LAPORAN_KEUANGAN.href} active={pathname.startsWith(NAV_LAPORAN_KEUANGAN.href)} icon={NAV_LAPORAN_KEUANGAN.icon}>
+                {NAV_LAPORAN_KEUANGAN.label}
               </SideLink>
             </div>
           )}

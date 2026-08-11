@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_PENGATURAN, NAV_PENGHUNI, NAV_RIWAYAT_BAYAR, NAV_LANDING_PAGE, NAV_CHECKIN, NAV_CHECKOUT, moduleIcon } from './module-icons';
+import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_PENGATURAN, NAV_PENGHUNI, NAV_RIWAYAT_BAYAR, NAV_LAPORAN_KEUANGAN, NAV_LANDING_PAGE, NAV_CHECKIN, NAV_CHECKOUT, moduleIcon } from './module-icons';
 import type { NavModule } from './AppShell';
 
 interface Props {
@@ -108,6 +108,7 @@ export default function HomeMenu({ isOwner, canKelola, canLandingPage, canRiwaya
           <h2 className="section-title">Laporan</h2>
           <div className="module-grid">
             <ModuleCard id="riwayat-pembayaran" title={NAV_RIWAYAT_BAYAR.label} href={NAV_RIWAYAT_BAYAR.href} icon={NAV_RIWAYAT_BAYAR.icon} />
+            <ModuleCard id="laporan-keuangan" title={NAV_LAPORAN_KEUANGAN.label} href={NAV_LAPORAN_KEUANGAN.href} icon={NAV_LAPORAN_KEUANGAN.icon} />
           </div>
         </section>
       )}
