@@ -39,33 +39,58 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
   }
 
+  const VALID_KONDISI = new Set(['Baik', 'Perlu Perbaikan', 'Rusak', 'N/A']);
+
   type ItemKey = `item${string}`;
   const body = await req.json() as {
-    kk_id: number;
+    kk_id?: number | null;
+    id_penghuni?: string;
+    no_kamar?: number | string;
+    nama_penghuni?: string;
     items: Record<ItemKey, string>;
     catatan_akhir: string;
     tanggal_cek_akhir: string;
     pic: string;
   };
 
-  const { kk_id, items, catatan_akhir, tanggal_cek_akhir, pic } = body;
+  const { kk_id, id_penghuni, no_kamar, nama_penghuni, items, catatan_akhir, tanggal_cek_akhir, pic } = body;
+
+  for (const val of Object.values(items)) {
+    if (!VALID_KONDISI.has(val)) {
+      return NextResponse.json({ error: 'Nilai item kondisi tidak valid.' }, { status: 400 });
+    }
+  }
 
   const itemArgs = ITEM_COLS_AKHIR.map((col) => {
     const key = col.replace('_akhir', '') as ItemKey;
     return items[key] ?? 'Baik';
   });
 
-  const res = await turso().execute({
-    sql: `UPDATE kondisi_kamar SET
-            ${ITEM_COLS_AKHIR.map((c) => `${c}=?`).join(', ')},
-            catatan_akhir=?, tanggal_cek_akhir=?, pic=?,
-            status_checkout='Menunggu', updated_at=CURRENT_TIMESTAMP
-          WHERE id=? AND status_checkout NOT IN ('Menunggu','Disetujui')`,
-    args: [...itemArgs, catatan_akhir, tanggal_cek_akhir, pic, kk_id],
-  });
-
-  if (res.rowsAffected === 0) {
-    return NextResponse.json({ error: 'Sudah diajukan atau disetujui' }, { status: 409 });
+  if (kk_id != null) {
+    const res = await turso().execute({
+      sql: `UPDATE kondisi_kamar SET
+              ${ITEM_COLS_AKHIR.map((c) => `${c}=?`).join(', ')},
+              catatan_akhir=?, tanggal_cek_akhir=?, pic=?,
+              status_checkout='Menunggu', updated_at=CURRENT_TIMESTAMP
+            WHERE id=? AND status_checkout NOT IN ('Menunggu','Disetujui')`,
+      args: [...itemArgs, catatan_akhir, tanggal_cek_akhir, pic, kk_id],
+    });
+    if (res.rowsAffected === 0) {
+      return NextResponse.json({ error: 'Sudah diajukan atau disetujui' }, { status: 409 });
+    }
+  } else {
+    if (!id_penghuni || !no_kamar || !nama_penghuni) {
+      return NextResponse.json({ error: 'id_penghuni, no_kamar, dan nama_penghuni wajib untuk penghuni tanpa data kondisi.' }, { status: 400 });
+    }
+    const id_kamar = `KTD-${no_kamar}`;
+    await turso().execute({
+      sql: `INSERT INTO kondisi_kamar
+              (id_kamar, no_kamar, id_penghuni, nama_penghuni,
+               ${ITEM_COLS_AKHIR.join(', ')},
+               catatan_akhir, tanggal_cek_akhir, pic, status_checkin, status_checkout, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ${ITEM_COLS_AKHIR.map(() => '?').join(', ')}, ?, ?, ?, 'Disetujui', 'Menunggu', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      args: [id_kamar, no_kamar, id_penghuni, nama_penghuni, ...itemArgs, catatan_akhir, tanggal_cek_akhir, pic],
+    });
   }
 
   return NextResponse.json({ ok: true });

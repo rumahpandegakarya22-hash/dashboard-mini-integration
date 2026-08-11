@@ -179,8 +179,14 @@ export default function KondisiKamarPanel({ fase }: Props) {
     setFotoUploading(true);
     setFotoUrl(null);
     try {
+      if (file.size > 2 * 1024 * 1024) {
+        setSubmitError('Ukuran foto melebihi 2 MB.');
+        setFotoUploading(false);
+        return;
+      }
       const fd = new FormData();
       fd.append('file', file);
+      fd.append('kind', 'kondisi-kamar');
       const res = await fetch('/api/ops/upload', { method: 'POST', body: fd });
       const data = await res.json() as { url?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Gagal mengunggah foto.');
@@ -216,12 +222,11 @@ export default function KondisiKamarPanel({ fase }: Props) {
           ...(fotoUrl ? { fotos: [fotoUrl] } : {}),
         };
       } else {
-        if (selected.kk_id == null) {
-          setSubmitError('Data kondisi kamar tidak ditemukan. Hubungi admin.');
-          return;
-        }
         body = {
-          kk_id: selected.kk_id,
+          kk_id: selected.kk_id ?? undefined,
+          id_penghuni: selected.id_penghuni,
+          no_kamar: selected.no_kamar,
+          nama_penghuni: selected.nama,
           items: formItems,
           catatan_akhir: catatan,
           tanggal_cek_akhir: tanggal,
@@ -439,8 +444,8 @@ export default function KondisiKamarPanel({ fase }: Props) {
                 <FileUploadCard
                   judul="Foto Kondisi Kamar"
                   deskripsi="Unggah foto kondisi kamar saat check-in"
-                  petunjuk="Format: JPG, PNG, WEBP. Maks 10 MB."
-                  accept="image/*"
+                  petunjuk="Format: JPG atau PNG. Maks 2 MB."
+                  accept="image/jpeg,image/png"
                   berkas={fotoFile ? { nama: fotoFile.name, ukuran: fotoFile.size } : null}
                   uploading={fotoUploading}
                   done={fotoUrl !== null}

@@ -63,15 +63,15 @@ export async function POST(req: Request) {
     id?: number;
     fase?: 'awal' | 'akhir';
     action?: 'setujui' | 'tolak';
-    by?: string;
   };
-  const { id, fase, action, by } = body;
+  const { id, fase, action } = body;
 
-  if (!id || (fase !== 'awal' && fase !== 'akhir') || (action !== 'setujui' && action !== 'tolak') || !by) {
+  if (!id || (fase !== 'awal' && fase !== 'akhir') || (action !== 'setujui' && action !== 'tolak')) {
     return NextResponse.json({ error: 'Parameter tidak lengkap' }, { status: 400 });
   }
 
   const newStatus = action === 'setujui' ? 'Disetujui' : 'Ditolak';
+  const by = user.name;
 
   let sql: string;
   if (fase === 'awal') {

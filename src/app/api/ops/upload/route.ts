@@ -32,7 +32,8 @@ const KIND_FOLDERS: Record<string, string | undefined> = {
   'pembayaran-dp': process.env.DRIVE_FOLDER_INVOICE_DP,
   'pembayaran-sewa': process.env.DRIVE_FOLDER_INVOICE_SEWA,
   'nota': process.env.DRIVE_FOLDER_NOTA,
-  'feedback': process.env.DRIVE_FOLDER_FEEDBACK
+  'feedback': process.env.DRIVE_FOLDER_FEEDBACK,
+  'kondisi-kamar': process.env.DRIVE_FOLDER_KONDISI_KAMAR,
 };
 
 export async function POST(req: NextRequest) {

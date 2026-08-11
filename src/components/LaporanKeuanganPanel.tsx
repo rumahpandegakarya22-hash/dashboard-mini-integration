@@ -108,21 +108,21 @@ export default function LaporanKeuanganPanel() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Banner sukses/error */}
       {error && (
-        <div className="alert alert-error" role="alert">
+        <div className="banner error" role="alert">
           {error}
           <button onClick={() => setError(null)} aria-label="Tutup" style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>×</button>
         </div>
       )}
       {success && (
-        <div className="alert alert-success" role="status">
+        <div className="banner info" role="status">
           {success}
           <button onClick={() => setSuccess(null)} aria-label="Tutup" style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>×</button>
         </div>
       )}
 
       {/* Setting email */}
-      <div className="card">
-        <h2 className="card-title" style={{ marginBottom: 12 }}>Email Tujuan Laporan</h2>
+      <div className="bento-card">
+        <h2 style={{ fontWeight: 600, fontSize: '1em', marginBottom: 12 }}>Email Tujuan Laporan</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             type="email"
@@ -133,7 +133,7 @@ export default function LaporanKeuanganPanel() {
             style={{ flex: 1, minWidth: 220 }}
           />
           <button
-            className="btn btn-secondary"
+            className="btn secondary"
             onClick={() => void simpanEmail()}
             disabled={savingEmail}
           >
@@ -146,8 +146,8 @@ export default function LaporanKeuanganPanel() {
       </div>
 
       {/* Picker periode + tombol generate */}
-      <div className="card">
-        <h2 className="card-title" style={{ marginBottom: 12 }}>Generate Laporan</h2>
+      <div className="bento-card">
+        <h2 style={{ fontWeight: 600, fontSize: '1em', marginBottom: 12 }}>Generate Laporan</h2>
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', fontWeight: 600, marginBottom: 6, fontSize: '0.9em' }}>
             Periode
@@ -164,7 +164,7 @@ export default function LaporanKeuanganPanel() {
           {JENIS_LIST.map(({ jenis, label }) => (
             <button
               key={jenis}
-              className="btn btn-primary"
+              className="btn"
               onClick={() => void generate(jenis)}
               disabled={generating !== null || !periodeInput}
             >
@@ -180,8 +180,8 @@ export default function LaporanKeuanganPanel() {
       </div>
 
       {/* Riwayat laporan */}
-      <div className="card">
-        <h2 className="card-title" style={{ marginBottom: 12 }}>Riwayat Laporan</h2>
+      <div className="bento-card">
+        <h2 style={{ fontWeight: 600, fontSize: '1em', marginBottom: 12 }}>Riwayat Laporan</h2>
         <div style={{ overflowX: 'auto' }}>
           <table className="table" style={{ width: '100%', fontSize: '0.9em' }}>
             <thead>
@@ -215,7 +215,7 @@ export default function LaporanKeuanganPanel() {
                     <td>{r.created_at.slice(0, 16).replace('T', ' ')}</td>
                     <td>
                       {r.drive_url ? (
-                        <a href={r.drive_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-secondary">
+                        <a href={r.drive_url} target="_blank" rel="noopener noreferrer" className="btn secondary">
                           Buka File
                         </a>
                       ) : (

@@ -58,6 +58,12 @@ export async function POST(req: NextRequest) {
   if (!periode || !jenis) {
     return NextResponse.json({ error: 'periode dan jenis wajib diisi.' }, { status: 400 });
   }
+  if (!/^\d{4}-\d{2}$/.test(periode)) {
+    return NextResponse.json({ error: 'Format periode tidak valid. Gunakan YYYY-MM.' }, { status: 400 });
+  }
+  if (!['Cashflow', 'LabaRugi', 'Neraca'].includes(jenis)) {
+    return NextResponse.json({ error: 'Jenis laporan tidak valid.' }, { status: 400 });
+  }
 
   const [yearStr, monthStr] = periode.split('-');
   const year = parseInt(yearStr, 10);

@@ -66,6 +66,13 @@ export async function POST(req: Request) {
     fotos,
   } = body;
 
+  const VALID_KONDISI = new Set(['Baik', 'Perlu Perbaikan', 'Rusak', 'N/A']);
+  for (const val of Object.values(items)) {
+    if (!VALID_KONDISI.has(val)) {
+      return NextResponse.json({ error: 'Nilai item kondisi tidak valid.' }, { status: 400 });
+    }
+  }
+
   // Build item args in order item01..item26
   const itemArgs = ITEM_COLS_AWAL.map((col) => {
     const key = col.replace('_awal', '') as ItemKey;
