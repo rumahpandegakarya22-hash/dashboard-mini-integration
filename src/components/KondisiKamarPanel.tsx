@@ -134,6 +134,10 @@ export default function KondisiKamarPanel({ fase }: Props) {
   const [fotoUploading, setFotoUploading] = useState(false);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
 
+  // foto per-item (key item → url) + status upload per item
+  const [itemFotos, setItemFotos] = useState<Record<string, string>>({});
+  const [itemFotoBusy, setItemFotoBusy] = useState<Record<string, boolean>>({});
+
   const apiPath = fase === 'awal' ? '/api/ops/admin/pre-checkin' : '/api/ops/admin/pre-checkout';
 
   const load = useCallback(async () => {
@@ -166,6 +170,8 @@ export default function KondisiKamarPanel({ fase }: Props) {
     setFotoFile(null);
     setFotoUrl(null);
     setFotoUploading(false);
+    setItemFotos({});
+    setItemFotoBusy({});
     setSubmitError(null);
   }
 
@@ -203,11 +209,36 @@ export default function KondisiKamarPanel({ fase }: Props) {
     setFotoUrl(null);
   }
 
+  async function handleItemFotoPick(key: string, file: File) {
+    if (file.size > 2 * 1024 * 1024) {
+      setSubmitError('Ukuran foto melebihi 2 MB.');
+      return;
+    }
+    setItemFotoBusy((b) => ({ ...b, [key]: true }));
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('kind', 'kondisi-kamar');
+      const res = await fetch('/api/ops/upload', { method: 'POST', body: fd });
+      const data = await res.json() as { url?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Gagal mengunggah foto.');
+      if (data.url) setItemFotos((f) => ({ ...f, [key]: data.url! }));
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : 'Gagal mengunggah foto.');
+    } finally {
+      setItemFotoBusy((b) => ({ ...b, [key]: false }));
+    }
+  }
+
   async function handleSubmit() {
     if (!selected) return;
     setSaving(true);
     setSubmitError(null);
     try {
+      const item_fotos = KONDISI_ITEMS
+        .filter((it) => itemFotos[it.key])
+        .map((it) => ({ item_no: it.no, url: itemFotos[it.key] }));
+
       let body: Record<string, unknown>;
       if (fase === 'awal') {
         body = {
@@ -220,6 +251,7 @@ export default function KondisiKamarPanel({ fase }: Props) {
           tanggal_cek_awal: tanggal,
           pic,
           ...(fotoUrl ? { fotos: [fotoUrl] } : {}),
+          ...(item_fotos.length ? { item_fotos } : {}),
         };
       } else {
         body = {
@@ -231,6 +263,7 @@ export default function KondisiKamarPanel({ fase }: Props) {
           catatan_akhir: catatan,
           tanggal_cek_akhir: tanggal,
           pic,
+          ...(item_fotos.length ? { item_fotos } : {}),
         };
       }
 
@@ -281,8 +314,10 @@ export default function KondisiKamarPanel({ fase }: Props) {
         <div className="bento-grid">
           {[0, 1, 2].map((i) => (
             <div key={i} className="bento-card">
-              <div className="skeleton" style={{ height: 18, width: '60%' }} />
-              <div className="skeleton" style={{ height: 14, width: '40%', marginTop: 8 }} />
+              <div className="bento-body" style={{ paddingTop: 16 }}>
+                <div className="skeleton" style={{ height: 18, width: '60%' }} />
+                <div className="skeleton" style={{ height: 14, width: '40%', marginTop: 8 }} />
+              </div>
             </div>
           ))}
         </div>
@@ -302,7 +337,7 @@ export default function KondisiKamarPanel({ fase }: Props) {
           const disabled = row.status === 'Menunggu' || row.status === 'Disetujui';
           return (
             <div key={`${row.id_penghuni}-${row.no_kamar}`} className="bento-card border-beam">
-              <div className="bento-head" style={{ pointerEvents: 'none' }}>
+              <div className="bento-head static">
                 <span className="icon-tile" aria-hidden>
                   <ClipboardCheck size={18} />
                 </span>
@@ -323,7 +358,7 @@ export default function KondisiKamarPanel({ fase }: Props) {
                   {badge.label}
                 </span>
               </div>
-              <div style={{ marginTop: 10 }}>
+              <div className="bento-body">
                 <button
                   type="button"
                   className="btn"
@@ -369,6 +404,9 @@ export default function KondisiKamarPanel({ fase }: Props) {
                     <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>
                       Kondisi
                     </th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>
+                      Foto
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -395,6 +433,34 @@ export default function KondisiKamarPanel({ fase }: Props) {
                             </option>
                           ))}
                         </select>
+                      </td>
+                      <td style={{ padding: '5px 8px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)', whiteSpace: 'nowrap' }}>
+                        {itemFotos[key] ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <a href={itemFotos[key]} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.78rem' }}>Lihat</a>
+                            {!isReadonly && (
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                style={{ padding: '2px 6px', fontSize: '0.72rem' }}
+                                onClick={() => setItemFotos((f) => { const n = { ...f }; delete n[key]; return n; })}
+                              >
+                                Hapus
+                              </button>
+                            )}
+                          </span>
+                        ) : (
+                          <label className="btn secondary" style={{ padding: '3px 8px', fontSize: '0.72rem', cursor: isReadonly ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, opacity: isReadonly ? 0.5 : 1 }}>
+                            {itemFotoBusy[key] ? <LoaderCircle size={12} className="spin" /> : 'Upload'}
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png"
+                              hidden
+                              disabled={isReadonly || itemFotoBusy[key]}
+                              onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleItemFotoPick(key, f); e.target.value = ''; }}
+                            />
+                          </label>
+                        )}
                       </td>
                     </tr>
                   ))}

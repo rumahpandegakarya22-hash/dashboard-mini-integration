@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { History } from 'lucide-react';
 import { getSessionUser } from '@/lib/core/auth';
 import RiwayatPembayaranPanel from '@/components/RiwayatPembayaranPanel';
 
@@ -10,9 +11,15 @@ export default async function RiwayatPembayaranPage() {
   if (!user || !ALLOWED.has(user.role)) redirect('/ops');
 
   return (
-    <div className="form-col">
-      <h1 className="page-title">Riwayat Pembayaran Per Penghuni</h1>
+    <>
+      <header className="page-head">
+        <span className="icon-tile lg" aria-hidden><History size={24} /></span>
+        <div>
+          <h1 style={{ fontSize: '1.375rem' }}>Riwayat Pembayaran</h1>
+          <p className="page-head-sub">Riwayat pembayaran per penghuni</p>
+        </div>
+      </header>
       <RiwayatPembayaranPanel />
-    </div>
+    </>
   );
 }

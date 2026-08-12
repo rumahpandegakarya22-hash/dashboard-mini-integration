@@ -214,13 +214,22 @@ export default function LaporanKeuanganPanel() {
                     <td style={{ fontFamily: 'monospace', fontSize: '0.85em' }}>{r.nama_file}</td>
                     <td>{r.created_at.slice(0, 16).replace('T', ' ')}</td>
                     <td>
-                      {r.drive_url ? (
-                        <a href={r.drive_url} target="_blank" rel="noopener noreferrer" className="btn secondary">
-                          Buka File
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <a
+                          href={`/api/ops/admin/laporan-keuangan/pdf?periode=${encodeURIComponent(r.periode)}&jenis=${encodeURIComponent(r.jenis)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn"
+                          style={{ padding: '4px 10px', fontSize: '0.8em' }}
+                        >
+                          Unduh PDF
                         </a>
-                      ) : (
-                        <span className="muted" style={{ fontSize: '0.85em' }}>Tidak tersedia</span>
-                      )}
+                        {r.drive_url && (
+                          <a href={r.drive_url} target="_blank" rel="noopener noreferrer" className="btn secondary" style={{ padding: '4px 10px', fontSize: '0.8em' }}>
+                            Buka Drive
+                          </a>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

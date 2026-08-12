@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { CircleAlert, LoaderCircle, Trash2, Plus, Save } from 'lucide-react';
+import { CircleAlert, LoaderCircle, Trash2, Plus, Save, Pencil, X } from 'lucide-react';
 
 /* ── Tipe Data ─────────────────────────────────────────────────────────── */
 
@@ -28,6 +28,43 @@ async function apiCall(method: string, body: object) {
   return json;
 }
 
+/* ── Field ─────────────────────────────────────────────────────────────── */
+
+interface FieldDef {
+  key: string;
+  label: string;
+  type?: string;
+  multiline?: boolean;
+  hint?: string;      // keterangan lokasi/penggunaan di landing page
+  preview?: boolean;  // tampilkan thumbnail dari nilai URL
+}
+
+function FieldInput({ f, value, onChange }: { f: FieldDef; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="field">
+      <label>{f.label}</label>
+      {f.multiline ? (
+        <textarea rows={3} value={value} onChange={e => onChange(e.target.value)} />
+      ) : (
+        <input type={f.type ?? 'text'} value={value} onChange={e => onChange(e.target.value)} />
+      )}
+      {f.hint && (
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.4 }}>{f.hint}</p>
+      )}
+      {f.preview && value.trim() !== '' && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={value}
+          alt=""
+          style={{ marginTop: 8, maxWidth: 200, maxHeight: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
+          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+          onLoad={e => { (e.currentTarget as HTMLImageElement).style.display = 'block'; }}
+        />
+      )}
+    </div>
+  );
+}
+
 /* ── Komponen Tab ──────────────────────────────────────────────────────── */
 
 const TABS = [
@@ -44,7 +81,7 @@ type TabId = (typeof TABS)[number]['id'];
 
 /* ── Form Info Umum (landing_properties) ──────────────────────────────── */
 
-const PROP_FIELDS: { key: string; label: string; type?: string; multiline?: boolean }[] = [
+const PROP_FIELDS: FieldDef[] = [
   { key: 'name', label: 'Nama Properti' },
   { key: 'tagline', label: 'Tagline' },
   { key: 'city', label: 'Kota' },
@@ -55,8 +92,9 @@ const PROP_FIELDS: { key: string; label: string; type?: string; multiline?: bool
   { key: 'phone_display', label: 'Nomor Tampil' },
   { key: 'maps_url', label: 'URL Google Maps' },
   { key: 'maps_embed_url', label: 'URL Embed Maps', multiline: true },
+  { key: 'hero_photo_url', label: 'URL Foto Hero', hint: 'Dipakai: foto latar section paling atas (hero). Rasio 16:9 landscape. Kosongkan untuk pakai foto galeri pertama.', preview: true },
   { key: 'tour_video_url', label: 'URL Video Tour' },
-  { key: 'tour_video_poster_url', label: 'URL Poster Video' }
+  { key: 'tour_video_poster_url', label: 'URL Poster Video', hint: 'Dipakai: gambar poster sebelum video tour diputar (section Galeri). Rasio 16:9.', preview: true }
 ];
 
 function PropertiesForm({ data, onSaved }: { data: Record<string, any>; onSaved: () => void }) {
@@ -89,22 +127,12 @@ function PropertiesForm({ data, onSaved }: { data: Record<string, any>; onSaved:
       {err && <div className="banner error" style={{ marginBottom: 12 }}><CircleAlert size={16} /> {err}</div>}
       {ok && <div className="banner ok" style={{ marginBottom: 12 }}>{ok}</div>}
       {PROP_FIELDS.map(f => (
-        <div key={f.key} className="field">
-          <label>{f.label}</label>
-          {f.multiline ? (
-            <textarea
-              rows={3}
-              value={form[f.key] ?? ''}
-              onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-            />
-          ) : (
-            <input
-              type={f.type ?? 'text'}
-              value={form[f.key] ?? ''}
-              onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-            />
-          )}
-        </div>
+        <FieldInput
+          key={f.key}
+          f={f}
+          value={form[f.key] ?? ''}
+          onChange={v => setForm(p => ({ ...p, [f.key]: v }))}
+        />
       ))}
       <button className="btn" onClick={save} disabled={saving} style={{ marginTop: 8 }}>
         {saving ? <LoaderCircle size={18} className="spin" /> : <Save size={18} />}
@@ -119,7 +147,7 @@ function PropertiesForm({ data, onSaved }: { data: Record<string, any>; onSaved:
 interface ChildTableDef {
   table: string;
   label: string;
-  addFields: { key: string; label: string; type?: string; multiline?: boolean }[];
+  addFields: FieldDef[];
   displayCols: { key: string; label: string }[];
 }
 
@@ -134,7 +162,7 @@ const CHILD_DEFS: Record<string, ChildTableDef> = {
       { key: 'bed', label: 'Tempat Tidur' },
       { key: 'specs', label: 'Spesifikasi' },
       { key: 'note', label: 'Catatan' },
-      { key: 'photo_url', label: 'URL Foto' },
+      { key: 'photo_url', label: 'URL Foto', hint: 'Dipakai: foto kartu kamar di section Pilihan Kamar. Rasio 4:3.', preview: true },
       { key: 'photo_alt', label: 'Alt Foto' },
       { key: 'order', label: 'Urutan', type: 'number' }
     ],
@@ -147,7 +175,7 @@ const CHILD_DEFS: Record<string, ChildTableDef> = {
       { key: 'name', label: 'Nama Fasilitas' },
       { key: 'description', label: 'Deskripsi', multiline: true },
       { key: 'icon', label: 'Ikon (nama lucide)' },
-      { key: 'photo_url', label: 'URL Foto' },
+      { key: 'photo_url', label: 'URL Foto', hint: 'Dipakai: foto kartu fasilitas di section Fasilitas. Rasio 4:3.', preview: true },
       { key: 'photo_alt', label: 'Alt Foto' },
       { key: 'order', label: 'Urutan', type: 'number' }
     ],
@@ -177,7 +205,7 @@ const CHILD_DEFS: Record<string, ChildTableDef> = {
     table: 'landing_gallery_photos',
     label: 'Galeri',
     addFields: [
-      { key: 'url', label: 'URL Foto' },
+      { key: 'url', label: 'URL Foto', hint: 'Dipakai: foto grid section Galeri. Foto galeri urutan pertama juga jadi fallback hero bila Foto Hero kosong.', preview: true },
       { key: 'alt', label: 'Alt Text' },
       { key: 'order', label: 'Urutan', type: 'number' }
     ],
@@ -203,22 +231,48 @@ function ChildTable({
 }: { tabId: string; rows: Record<string, any>[]; propertyId: number; onRefresh: () => void }) {
   const def = CHILD_DEFS[tabId];
   const [form, setForm] = useState<Record<string, string>>({});
-  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<number | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [err, setErr] = useState('');
 
-  async function addRow() {
-    setAdding(true); setErr('');
+  function openAdd() {
+    setEditingId(null);
+    setForm({});
+    setShowForm(true);
+    setErr('');
+  }
+
+  function openEdit(row: Record<string, any>) {
+    const initial: Record<string, string> = {};
+    def.addFields.forEach(f => { initial[f.key] = String(row[f.key] ?? ''); });
+    setForm(initial);
+    setEditingId(Number(row.id));
+    setShowForm(true);
+    setErr('');
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({});
+  }
+
+  async function saveRow() {
+    setSaving(true); setErr('');
     try {
-      await apiCall('POST', { table: def.table, data: { ...form, property_id: propertyId } });
-      setForm({});
-      setShowAdd(false);
+      if (editingId != null) {
+        await apiCall('PUT', { table: def.table, id: editingId, data: form });
+      } else {
+        await apiCall('POST', { table: def.table, data: { ...form, property_id: propertyId } });
+      }
+      closeForm();
       onRefresh();
     } catch (e: any) {
       setErr(e.message);
     } finally {
-      setAdding(false);
+      setSaving(false);
     }
   }
 
@@ -247,7 +301,7 @@ function ChildTable({
                   {c.label}
                 </th>
               ))}
-              <th style={{ width: 48 }} />
+              <th style={{ width: 96 }} />
             </tr>
           </thead>
           <tbody>
@@ -260,11 +314,21 @@ function ChildTable({
                     {String(row[c.key] ?? '—')}
                   </td>
                 ))}
-                <td style={{ padding: '8px 8px', textAlign: 'center' }}>
+                <td style={{ padding: '8px 8px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                   <button
                     type="button"
                     className="btn btn-ghost"
                     style={{ padding: '4px 8px' }}
+                    title="Edit"
+                    onClick={() => openEdit(row)}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ padding: '4px 8px' }}
+                    title="Hapus"
                     disabled={busy === row.id}
                     onClick={() => deleteRow(row.id)}
                   >
@@ -277,39 +341,33 @@ function ChildTable({
         </table>
       </div>
 
-      {showAdd ? (
+      {showForm ? (
         <div className="card" style={{ marginBottom: 12 }}>
-          <h3 style={{ marginBottom: 12, fontSize: 15 }}>Tambah {def.label}</h3>
+          <h3 style={{ marginBottom: 12, fontSize: 15 }}>
+            {editingId != null ? `Edit ${def.label}` : `Tambah ${def.label}`}
+          </h3>
           <div className="form-col" style={{ maxWidth: 560 }}>
             {def.addFields.map(f => (
-              <div key={f.key} className="field">
-                <label>{f.label}</label>
-                {f.multiline ? (
-                  <textarea
-                    rows={2}
-                    value={form[f.key] ?? ''}
-                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                  />
-                ) : (
-                  <input
-                    type={f.type ?? 'text'}
-                    value={form[f.key] ?? ''}
-                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                  />
-                )}
-              </div>
+              <FieldInput
+                key={f.key}
+                f={f}
+                value={form[f.key] ?? ''}
+                onChange={v => setForm(p => ({ ...p, [f.key]: v }))}
+              />
             ))}
             <div className="btn-row" style={{ marginTop: 8 }}>
-              <button className="btn" onClick={addRow} disabled={adding}>
-                {adding ? <LoaderCircle size={16} className="spin" /> : <Plus size={16} />}
+              <button className="btn" onClick={saveRow} disabled={saving}>
+                {saving ? <LoaderCircle size={16} className="spin" /> : <Save size={16} />}
                 Simpan
               </button>
-              <button className="btn btn-ghost" onClick={() => { setShowAdd(false); setForm({}); }}>Batal</button>
+              <button className="btn btn-ghost" onClick={closeForm} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <X size={16} /> Batal
+              </button>
             </div>
           </div>
         </div>
       ) : (
-        <button className="btn btn-ghost" onClick={() => setShowAdd(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button className="btn btn-ghost" onClick={openAdd} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Plus size={16} /> Tambah {def.label}
         </button>
       )}

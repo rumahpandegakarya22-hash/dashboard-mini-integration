@@ -68,19 +68,23 @@ export default function DepositSettingPanel() {
       )}
 
       {data !== null && (
-        <>
-          <div className="field">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+        <div className="card form-col">
+          <div className="switch-row">
+            <div>
+              <div className="switch-label">Aktifkan fitur deposit</div>
+              <span className="muted" style={{ fontSize: '0.8rem' }}>
+                Jika aktif, field deposit muncul di pendaftaran penghuni baru.
+              </span>
+            </div>
+            <label className="switch" aria-label="Aktifkan fitur deposit">
               <input
                 type="checkbox"
                 checked={draft.enabled}
                 onChange={(e) => setDraft((d) => ({ ...d, enabled: e.target.checked }))}
               />
-              Aktifkan fitur deposit
+              <span className="track" />
+              <span className="thumb" />
             </label>
-            <span className="muted" style={{ fontSize: '0.8rem' }}>
-              Jika aktif, field deposit muncul di pendaftaran penghuni baru.
-            </span>
           </div>
 
           <div className="field">
@@ -105,7 +109,7 @@ export default function DepositSettingPanel() {
             {busy && <LoaderCircle size={18} className="spin" />}
             Simpan
           </button>
-        </>
+        </div>
       )}
     </div>
   );

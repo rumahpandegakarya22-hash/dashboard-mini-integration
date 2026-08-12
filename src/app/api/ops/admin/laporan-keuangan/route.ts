@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
 import { getConfig, setConfig } from '@/lib/app-config';
-import { queryLabaRugi, queryArusKas, queryNeraca } from '@/lib/laporan/generator';
+import { buildLabaRugi, buildArusKas, buildNeraca } from '@/lib/laporan/generator';
 import { htmlLabaRugi, htmlArusKas, htmlNeraca } from '@/lib/laporan/template';
 import { htmlKePdf } from '@/lib/invoice/pdf';
 import { arsipkanLaporan } from '@/lib/invoice/arsip';
@@ -79,14 +79,14 @@ export async function POST(req: NextRequest) {
   let html: string;
   try {
     if (jenis === 'LabaRugi') {
-      const items = await queryLabaRugi(dari, sampai);
-      html = htmlLabaRugi(items, periode, gate.user!.name);
+      const report = await buildLabaRugi(dari, sampai);
+      html = htmlLabaRugi(report, periode, gate.user!.name);
     } else if (jenis === 'Cashflow') {
-      const items = await queryArusKas(dari, sampai);
-      html = htmlArusKas(items, periode, gate.user!.name);
+      const report = await buildArusKas(dari, sampai);
+      html = htmlArusKas(report, periode, gate.user!.name);
     } else {
-      const items = await queryNeraca(sampai);
-      html = htmlNeraca(items, periode, gate.user!.name);
+      const report = await buildNeraca(sampai);
+      html = htmlNeraca(report, periode, gate.user!.name);
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);

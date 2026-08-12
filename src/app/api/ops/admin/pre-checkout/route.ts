@@ -51,9 +51,10 @@ export async function POST(req: Request) {
     catatan_akhir: string;
     tanggal_cek_akhir: string;
     pic: string;
+    item_fotos?: { item_no: number; url: string }[];
   };
 
-  const { kk_id, id_penghuni, no_kamar, nama_penghuni, items, catatan_akhir, tanggal_cek_akhir, pic } = body;
+  const { kk_id, id_penghuni, no_kamar, nama_penghuni, items, catatan_akhir, tanggal_cek_akhir, pic, item_fotos } = body;
 
   for (const val of Object.values(items)) {
     if (!VALID_KONDISI.has(val)) {
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
     return items[key] ?? 'Baik';
   });
 
+  let kondisiKamarId: number;
   if (kk_id != null) {
     const res = await turso().execute({
       sql: `UPDATE kondisi_kamar SET
@@ -78,12 +80,13 @@ export async function POST(req: Request) {
     if (res.rowsAffected === 0) {
       return NextResponse.json({ error: 'Sudah diajukan atau disetujui' }, { status: 409 });
     }
+    kondisiKamarId = kk_id;
   } else {
     if (!id_penghuni || !no_kamar || !nama_penghuni) {
       return NextResponse.json({ error: 'id_penghuni, no_kamar, dan nama_penghuni wajib untuk penghuni tanpa data kondisi.' }, { status: 400 });
     }
     const id_kamar = `KTD-${no_kamar}`;
-    await turso().execute({
+    const res = await turso().execute({
       sql: `INSERT INTO kondisi_kamar
               (id_kamar, no_kamar, id_penghuni, nama_penghuni,
                ${ITEM_COLS_AKHIR.join(', ')},
@@ -91,7 +94,24 @@ export async function POST(req: Request) {
             VALUES (?, ?, ?, ?, ${ITEM_COLS_AKHIR.map(() => '?').join(', ')}, ?, ?, ?, 'Disetujui', 'Menunggu', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       args: [id_kamar, no_kamar, id_penghuni, nama_penghuni, ...itemArgs, catatan_akhir, tanggal_cek_akhir, pic],
     });
+    kondisiKamarId = Number(res.lastInsertRowid);
   }
 
-  return NextResponse.json({ ok: true });
+  // Foto per-item (fase akhir). Hapus foto akhir per-item lama supaya tidak dobel saat re-submit.
+  if (item_fotos && item_fotos.length > 0) {
+    await turso().execute({
+      sql: `DELETE FROM kondisi_kamar_foto WHERE kondisi_kamar_id=? AND fase='akhir' AND item_no IS NOT NULL`,
+      args: [kondisiKamarId],
+    });
+    for (const f of item_fotos) {
+      if (!f?.url || !(f.item_no >= 1 && f.item_no <= 26)) continue;
+      await turso().execute({
+        sql: `INSERT INTO kondisi_kamar_foto (kondisi_kamar_id, fase, item_no, url, created_at)
+              VALUES (?, 'akhir', ?, ?, CURRENT_TIMESTAMP)`,
+        args: [kondisiKamarId, f.item_no, f.url],
+      });
+    }
+  }
+
+  return NextResponse.json({ ok: true, id: kondisiKamarId });
 }

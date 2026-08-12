@@ -82,14 +82,12 @@ export default function DaftarBookingPanel() {
       )}
 
       {rows === null && !error && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+        <div className="table-scroll">
+          <table className="data-table">
             <thead>
               <tr>
                 {['No. Kamar', 'Nama Penyewa', 'Tgl Masuk', 'No HP', 'Status Inspeksi', 'Aksi'].map((h) => (
-                  <th key={h} style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
-                    {h}
-                  </th>
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -97,7 +95,7 @@ export default function DaftarBookingPanel() {
               {[0, 1, 2].map((i) => (
                 <tr key={i}>
                   {[60, 120, 80, 90, 70, 100].map((w, j) => (
-                    <td key={j} style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)' }}>
+                    <td key={j}>
                       <div className="skeleton" style={{ height: 14, width: w }} />
                     </td>
                   ))}
@@ -115,14 +113,12 @@ export default function DaftarBookingPanel() {
       )}
 
       {rows && rows.length > 0 && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+        <div className="table-scroll">
+          <table className="data-table">
             <thead>
               <tr>
                 {['No. Kamar', 'Nama Penyewa', 'Tgl Masuk', 'No HP', 'Status Inspeksi', 'Aksi'].map((h) => (
-                  <th key={h} style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                    {h}
-                  </th>
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -133,19 +129,11 @@ export default function DaftarBookingPanel() {
                 const isLoading = actionLoading === row.no_booking;
                 return (
                   <tr key={row.no_booking}>
-                    <td style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)', whiteSpace: 'nowrap' }}>
-                      {row.kamar_no}
-                    </td>
-                    <td style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)' }}>
-                      {row.nama_penyewa}
-                    </td>
-                    <td style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)', whiteSpace: 'nowrap' }}>
-                      {row.tgl_masuk}
-                    </td>
-                    <td style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)', whiteSpace: 'nowrap' }}>
-                      {row.no_hp}
-                    </td>
-                    <td style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)' }}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{row.kamar_no}</td>
+                    <td>{row.nama_penyewa}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{row.tgl_masuk}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{row.no_hp}</td>
+                    <td>
                       <span style={{
                         fontSize: '0.72rem',
                         fontWeight: 600,
@@ -158,7 +146,7 @@ export default function DaftarBookingPanel() {
                         {badge.label}
                       </span>
                     </td>
-                    <td style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)' }}>
+                    <td>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button
                           type="button"

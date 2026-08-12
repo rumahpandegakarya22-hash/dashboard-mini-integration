@@ -107,8 +107,10 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
         <div className="bento-grid">
           {[0, 1, 2].map((i) => (
             <div key={i} className="bento-card">
-              <div className="skeleton" style={{ height: 18, width: '60%' }} />
-              <div className="skeleton" style={{ height: 14, width: '40%', marginTop: 8 }} />
+              <div className="bento-body" style={{ paddingTop: 16 }}>
+                <div className="skeleton" style={{ height: 18, width: '60%' }} />
+                <div className="skeleton" style={{ height: 14, width: '40%', marginTop: 8 }} />
+              </div>
             </div>
           ))}
         </div>
@@ -125,7 +127,7 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
           const isLoading = actionLoading === row.id;
           return (
             <div key={row.id} className="bento-card border-beam">
-              <div className="bento-head">
+              <div className="bento-head static">
                 <span className="icon-tile" aria-hidden>
                   <ClipboardCheck size={18} />
                 </span>
@@ -145,39 +147,41 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
                 </span>
               </div>
 
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>
-                {row.pic && <div>PIC: {row.pic}</div>}
-                {tanggal(row) && <div>Tgl Cek: {tanggal(row)}</div>}
-              </div>
+              <div className="bento-body">
+                <div style={{ fontSize: '0.8rem', color: 'var(--ink-2)' }}>
+                  {row.pic && <div>PIC: {row.pic}</div>}
+                  {tanggal(row) && <div>Tgl Cek: {tanggal(row)}</div>}
+                </div>
 
-              <div className="btn-row" style={{ marginTop: 10 }}>
-                <button
-                  type="button"
-                  className="btn secondary"
-                  style={{ flex: 1 }}
-                  onClick={() => setPreview(row)}
-                  disabled={isLoading}
-                >
-                  Preview
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ flex: 1 }}
-                  disabled={isLoading}
-                  onClick={() => handleAction(row, 'setujui')}
-                >
-                  {isLoading ? <LoaderCircle size={14} className="spin" /> : 'Setujui'}
-                </button>
-                <button
-                  type="button"
-                  className="btn secondary"
-                  style={{ flex: 1, color: '#dc2626', borderColor: '#dc2626' }}
-                  disabled={isLoading}
-                  onClick={() => handleAction(row, 'tolak')}
-                >
-                  Tolak
-                </button>
+                <div className="btn-row" style={{ marginTop: 10 }}>
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    style={{ flex: 1 }}
+                    onClick={() => setPreview(row)}
+                    disabled={isLoading}
+                  >
+                    Preview
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ flex: 1 }}
+                    disabled={isLoading}
+                    onClick={() => handleAction(row, 'setujui')}
+                  >
+                    {isLoading ? <LoaderCircle size={14} className="spin" /> : 'Setujui'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    style={{ flex: 1, color: '#dc2626', borderColor: '#dc2626' }}
+                    disabled={isLoading}
+                    onClick={() => handleAction(row, 'tolak')}
+                  >
+                    Tolak
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -197,13 +201,13 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
                 {tanggal(preview) && <div>Tanggal Cek: {tanggal(preview)}</div>}
               </div>
 
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+              <div className="table-scroll">
+                <table className="data-table">
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>No</th>
-                      <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>Item</th>
-                      <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>Kondisi</th>
+                      <th>No</th>
+                      <th>Item</th>
+                      <th>Kondisi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -212,13 +216,9 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
                       const color = VALUE_COLOR[val] ?? '#6b7280';
                       return (
                         <tr key={key}>
-                          <td style={{ padding: '5px 8px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)', color: 'var(--text-muted)' }}>
-                            {no}
-                          </td>
-                          <td style={{ padding: '5px 8px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)' }}>
-                            {label}
-                          </td>
-                          <td style={{ padding: '5px 8px', borderBottom: '1px solid var(--border-subtle, #f0f0f0)' }}>
+                          <td style={{ color: 'var(--ink-2)' }}>{no}</td>
+                          <td>{label}</td>
+                          <td>
                             <span style={{ color, fontWeight: val !== '-' ? 500 : undefined }}>{val}</span>
                           </td>
                         </tr>

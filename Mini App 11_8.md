@@ -2,153 +2,208 @@ Mini App
 
 
 
-Tambah Fitur:
+**Setting Landing Page**
 
 
 
-1.Buat Setting On/Off (toggle) Deposit. 
+1\. belum ada tombol edit data landing page (semua tab setting landing page) di Mini App
 
-&#x09;Jika On, ada field jumlah deposit di pendaftaran (berikan settingan untuk Jumlah Deposit) dan ada field no rekening untuk refund deposit, Nama rekening, dan Nama Bank di Pengajuan Checkout teman-rara. 
 
 
+2\. Untuk Foto, tolong berikan keterangan Foto digunakan di apa? karena banyak foto di landing page. Aku ingin mengganti placeholder foto spesifik berdasarkan tempat di landing page.	
 
-2\. Buat Menu Form Kondisi Kamar Checkout dan Checkin
 
-&#x09;Format (checkout dan Checkin) seperti di spreadsheet https://docs.google.com/spreadsheets/d/16usEPxHg3PdeWlFMHKieJq5MJfCyx8q2wW69pqMS-fg/edit?gid=1998798808#gid=1998798808 (Buat database baru dengan judul Kondisi kamar). Item dijadikan kolom, nilainya diisi dropdown: Baik, Perlu Perbaikan, Rusak, N/A. 
 
-&#x09;-Struktur Database: id\_kamar, no\_kamar (integer), id\_penghuni, Nama penghuni, Item 1, Item 2, ....., Item ke-N, Tanggal Cek Awal, Tanggal Cek Akhir, PIC, Approved Checkin By, Approve Checkout By,. 
 
 
+**UAT Fitur Baru**
 
-Untuk Menu Checkout, dirikan sendiri di sidebar dengan judul Checkout berisikan menu: Daftar Pengajuan Checkout, Pre-Check Out Form (Poin 2) dan Approval Checkout (untuk role Admin dan Owner).
+1. Cek tampilan UI: Daftar Booking, Pre-Check In Form, Approval Check-in, Daftar Pengajuan Checkout, Pre-Check Out Form, Approval Check-Out, Setting Deposit,Laporan keuangan. 
 
+&#x09;-Tampilan UI di semua modul baru Berantakan dan Jelek. Tidak ada padding yang proper seperti Modul Lain. 
 
+&#x09;-Bento Grid berantakan, buat yang rapi seperti modul kredensial Wifi. 
 
-3\. Buat juga Fitur Approval untuk Poin 2 bagi role Owner dan Admin. 
+&#x09;-Jika UI berbentuk table, tiru format dashboard. 
 
-&#x09;Fitur Poin 2 akan diisi oleh Role Admin/Operasional (Inpection). 
+&#x09;-Toggle on/off deposit jelek banget, buat seperti toggle button yang umum digunakan. 
 
+&#x09;-Belum ada data dummy untuk test UAT fitur yang direvisi ini, buat dengan data yang jelas jika data itu data dummy. 
 
+&#x09;-Laporan keuangan belum sesuai dengan format yang ku mau. 
 
-&#x09;
 
+2. Format Laporan Laba Rugi 
 
 
-4\. Buat Menu Check-in di sidebar (dapat dilihat oleh role Admin dan Owner).
 
-&#x09;Isi: Daftar  booking, Pre-Check In Form (poin 2) dan Penghuni Baru \& Review (pindahkan ke Menu Check-in dari Administrasi).
+| \*\*PENDAPATAN PENJUALAN\*\* | | |
 
+| Penerimaan Sewa Kamar | Rp11.825.000 | |
 
+| Pendapatan Tambahan | - | |
 
-4.1. Modul Daftar Booking
+| \*\*Total Pendapatan\*\* | | \*\*Rp11.825.000\*\* |
 
-&#x09;Menampilkan daftar booking baik pengisian mandiri dari teman rara ataupun input manual di Menu Administrasi: Penghuni Baru. Tampilan berbentuk Tabel berupa id\_penghuni, nama, no kamar, nomor WhatsApp, CTA checkin (dengan syarat kamar sudah di inspeksi melalui menu Form Checkin) dan CTA WhatsApp. 
+| \*\*HARGA POKOK / BEBAN PERAWATAN\*\* | | |
 
+| Beban Perbaikan \& Perawatan (HPP) | - | |
 
+| \*\*Laba Kotor\*\* | | \*\*Rp11.825.000\*\* |
 
-4.2. Modul Form Check-in (khusus modul ini tambahkan role Inspeksi )
+| \*\*BEBAN OPERASIONAL\*\* | | |
 
-&#x09;Berisikan seperti Poin 2. Semua item harus diinspeksi dan ada field upload foto. 
+| Listrik | Rp1.500.000 | |
 
+| Gaji Karyawan | Rp1.800.000 | |
 
+| Internet | Rp431.250 | |
 
-5\. Tambah modul pada sidebar menu berupa generate laporan arus kas, laporan laba rugi dan laporan Neraca (Export to pdf, kirim email, simpan ke drive).
+| PBB | - | |
 
-&#x09;Berikan Setting di menu ini berupa field tujuan email. Gunakan Brevo untuk mengirim email.  
+| Iuran Lingkungan | - | |
 
-&#x09;Berikan juga table Riwayat laporan di menu ini dengan CTA buka file. 
+| Pemasaran | - | |
 
-&#x09;Ambil Semua data dari table Jurnal\_transaksi. 
+| Beban Bahan \& Perlengkapan | - | |
 
-&#x09;Generate laporan ini harus berdasarkan prinsip Akuntansi dan PSAK.
+| \*\*Total Beban Operasional\*\* | | \*\*Rp3.731.250\*\* |
 
-&#x09;Jadilah Senior Accountant, Riset Peraturan PSAK dan pelajari Prinsip Pembuatan Laporan Akuntansi!. 
+| \*\*Laba Operasional\*\* | | \*\*Rp8.093.750\*\* |
 
-&#x09;Rancang Laporan dari data yang ada, berikan masukan jika ada yang kurang dari struktur data atau data.
+| \*\*BEBAN NON-OPERASIONAL\*\* | | |
 
-&#x09;Format Nama file: Periode (MMYY)-Nama Laporan(Cashflow/Labarugi/Neraca)-Kost Tiga Dara.   
+| Penyusutan Bangunan | - | |
 
+| Penyusutan Elektronik | - | |
 
+| Penyusutan Furniture | - | |
 
-6\. Pindahkan Modul:
+| Penyusutan Peralatan Operasional | - | |
 
-&#x09;- Kredensial Wifi (di Teman Rara) ke Menu Setting
+| Bunga Pinjaman | - | |
 
-&#x09;- Kelola Harga Kamar (di Admin) ke Menu Setting 
+| \*\*Total Beban Non-Operasional\*\* | | \*\*-\*\* |
 
-&#x09;- Kelola User (di Admin) ke Menu Setting 
+| \*\*LABA BERSIH\*\* | | \*\*Rp8.093.750\*\* |
 
-&#x09;- Ubah Data Penghuni (di Teman Rara) ke Menu Administrasi
 
 
 
-7\. Lengkapi lagi menu Sidebar. 
 
-&#x09;Cek semua menu di beranda. Tambahkan menu beranda yang belum ada di sidebar. 
+3\. Format Laporan Arus Kas
 
 
 
+| \*\*Arus Kas Awal Periode\*\* | | \*\*Rp3.475.000\*\* |
 
+| \*\*AKTIVITAS OPERASIONAL\*\* | | |
 
+| Penerimaan Sewa Kamar | Rp30.550.000 | |
 
+| Penerimaan Tambahan | - | |
 
-**Penjelasan Tambahan** 
+| Pembayaran Bunga Hutang | - | |
 
+| Pembayaran Operasional Lainnya | (Rp3.731.250) | |
 
+| \*\*Arus Kas Bersih Operasional\*\* | | \*\*Rp26.818.750\*\* |
 
-\-Untuk poin 1
+| \*\*AKTIVITAS INVESTASI\*\* | | |
 
-&#x09;1. Setting Hanya ditampilkan untuk role Owner dan Admin. 
+| Penjualan Aset | - | |
 
+| Pembelian Aset | - | |
 
+| \*\*Arus Kas Bersih Investasi\*\* | | \*\*-\*\* |
 
-\-Untuk Poin 2. 
+| \*\*AKTIVITAS PENDANAAN\*\* | | |
 
-&#x09;1. Hydrate untuk data penghuni aktif saat ini dengan semua kondisi baik. 
+| Setoran Modal / Investor | - | |
 
-&#x09;2. Buat card seperti menu kredensial Wifi dan menu Ubah Data Penghuni. 
+| Prive / Pelunasan Pokok | - | |
 
-&#x09;3. Menu ini akan dijadikan sebagai pengisian form. bentuk form adalah table dengan dropdown pada: kondisi item,no Kamar,nama penghuni; date picker pada kolom tanggal. 
+| \*\*Arus Kas Bersih Pendanaan\*\* | | \*\*-\*\* |
 
-&#x09;4. Role Inspection hanya berwenang di Modul Pre-Check Out Form. 
+| \*\*Kenaikan (Penurunan) Kas Bersih\*\* | | \*\*Rp26.818.750\*\* |
 
+| \*\*Arus Kas Akhir Periode\*\* | | \*\*Rp30.293.750\*\* |
 
 
 
 
-\-Untuk Poin 3. 
 
-&#x09;1.Approval dengan tombol CTA dengan popup warning.
+Arus Kas Awal periode adalah Arus Kas bulan sebelumnya. 
 
-&#x09;2.Buat tombol preview data kondisi kamar. 
 
-&#x09;3.Menu Approval ada di dalam Menu Check-Out
 
+4\. Laporan neraca
 
 
-\-Untuk Poin 4
 
-&#x09;1. Menu Check-in Lengkap (Daftar Booking, Pre-Check In Form, Penghuni Baru\& Review) hanya ditampilkan bagi Admin dan Owner. 
+\# LAPORAN POSISI KEUANGAN (NERACA)
 
-&#x09;3. Role Inspeksi hanya berwenang di modul Pre Check In Form. 
+\### Kost Tiga Dara UGM | per Juni 2026
 
 
 
-\-Untuk Poin 6
+| ASET (AKTIVA) | Jumlah | LIABILITAS \& EKUITAS (PASIVA) | Jumlah |
 
-&#x09;1. Kredensial Wifi hanya ditampilkan bagi Admin dan Owner
+| :--- | :---: | :--- | :---: |
 
-&#x09;2. Kelola Harga Kamar hanya ditampilkan bagi Owner
+| \*\*ASET LANCAR\*\* | | \*\*KEWAJIBAN\*\* | |
 
-&#x09;3. Kelola User hanya ditampilkan bagi Owner
+| Kas dan Bank | Rp30.293.750 | Hutang | - |
 
-&#x09;4. Ubah Data Penghuni hanya ditampilkan bagi Admin dan Owner
+| Piutang Sewa | - | Hutang Sewa | - |
 
+| Perlengkapan | - | Pendapatan Diterima di Muka | Rp18.650.000 |
 
+| \*\*Total Aset Lancar\*\* | \*\*Rp30.293.750\*\* | \*\*Total Kewajiban\*\* | \*\*Rp18.650.000\*\* |
 
-\-Untuk Poin 5
+| \*\*ASET TETAP\*\* | | \*\*EKUITAS (MODAL)\*\* | |
 
-&#x09;1. Hanya ditampilkan bagi role Admin, Sales dan Admin
+| Tanah | - | Modal Awal | - |
 
-&#x09;
+| Bangunan Kost | - | Laba Ditahan | - |
+
+| Peralatan Operasional | - | Laba Tahun Berjalan | Rp11.643.750 |
+
+| Furniture | - | Pengambilan Prive | - |
+
+| Elektronik | - | \*\*Total Ekuitas\*\* | \*\*Rp11.643.750\*\* |
+
+| Akum. Penyusutan Bangunan | - | | |
+
+| Akum. Penyusutan Elektronik | - | | |
+
+| Akum. Penyusutan Furniture | - | | |
+
+| Akum. Penyusutan Peralatan Ops | - | | |
+
+| \*\*Total Aset Tetap\*\* | \*\*-\*\* | | |
+
+| \*\*TOTAL ASET\*\* | \*\*Rp30.293.750\*\* | \*\*TOTAL PASIVA\*\* | \*\*Rp30.293.750\*\* |
+
+
+
+
+
+
+
+5\. Sistem Pencatatan Sepertinya belum sesuai dengan Kaidah Akuntansi dan PSAK. Ada spreadsheet Pembukuan yang benar di link ini:https://docs.google.com/spreadsheets/d/1oLGpqG8bv5a4b-H2GhKMbgcqyKZXLhRioTK3gCZQcxI/edit?usp=sharing . sudah di share akses. Jangan ubah apapun di spreadsheet. 
+
+
+
+Tugas: 
+
+&#x09;-Pelajari Sistem perhitungan dan system pencatatan (semua formula, link dan ketentuan). 
+
+&#x09;-Terapkan Sistem pencatatan dan sistem perhitungan ke system Web App ini 
+
+&#x09;-Jika Perlu membuat table baru di database, lakukan. 
+
+&#x09;-Baca semua sheet, Analisis semua fungsi sheet, Analisis Perhitungan di setiap cell. Implementasikan ke system Pencatatan dan perhitungan keuangan Mini App!
+
+
 

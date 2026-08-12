@@ -52,6 +52,7 @@ export async function POST(req: Request) {
     tanggal_cek_awal: string;
     pic: string;
     fotos?: string[];
+    item_fotos?: { item_no: number; url: string }[];
   };
 
   const {
@@ -64,6 +65,7 @@ export async function POST(req: Request) {
     tanggal_cek_awal,
     pic,
     fotos,
+    item_fotos,
   } = body;
 
   const VALID_KONDISI = new Set(['Baik', 'Perlu Perbaikan', 'Rusak', 'N/A']);
@@ -106,6 +108,22 @@ export async function POST(req: Request) {
       args: [id_kamar, no_kamar, id_penghuni, nama_penghuni, ...itemArgs, catatan_awal, tanggal_cek_awal, pic],
     });
     kondisiKamarId = Number(res.lastInsertRowid);
+  }
+
+  // Foto per-item (fase awal). Hapus foto awal per-item lama supaya tidak dobel saat re-submit.
+  if (item_fotos && item_fotos.length > 0) {
+    await turso().execute({
+      sql: `DELETE FROM kondisi_kamar_foto WHERE kondisi_kamar_id=? AND fase='awal' AND item_no IS NOT NULL`,
+      args: [kondisiKamarId],
+    });
+    for (const f of item_fotos) {
+      if (!f?.url || !(f.item_no >= 1 && f.item_no <= 26)) continue;
+      await turso().execute({
+        sql: `INSERT INTO kondisi_kamar_foto (kondisi_kamar_id, fase, item_no, url, created_at)
+              VALUES (?, 'awal', ?, ?, CURRENT_TIMESTAMP)`,
+        args: [kondisiKamarId, f.item_no, f.url],
+      });
+    }
   }
 
   // Insert foto jika ada (item_no NULL = foto umum kamar, bukan per-item)

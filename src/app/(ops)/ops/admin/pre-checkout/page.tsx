@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { DoorClosed } from 'lucide-react';
 import { getAuthState } from '@/lib/core/auth';
 import { guardOps } from '@/lib/core/routing';
 import KondisiKamarPanel from '@/components/KondisiKamarPanel';
@@ -10,13 +11,19 @@ export default async function PreCheckOutPage() {
 
   const role = s.user!.role;
   if (!['owner', 'staff_admin', 'staff_inspeksi'].includes(role)) {
-    return <div className="page-card"><p>Tidak punya akses.</p></div>;
+    return <div className="card"><p className="muted">Tidak punya akses.</p></div>;
   }
 
   return (
-    <div className="page-card">
-      <h1 className="page-title">Pre-Check Out Form</h1>
+    <>
+      <header className="page-head">
+        <span className="icon-tile lg" aria-hidden><DoorClosed size={24} /></span>
+        <div>
+          <h1 style={{ fontSize: '1.375rem' }}>Pre-Check Out</h1>
+          <p className="page-head-sub">Form kondisi kamar sebelum penghuni keluar</p>
+        </div>
+      </header>
       <KondisiKamarPanel fase="akhir" />
-    </div>
+    </>
   );
 }
