@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { CircleAlert, LoaderCircle, Trash2, Plus, Save, Pencil, X } from 'lucide-react';
+import { useEffect, useState, useCallback, Fragment } from 'react';
+import { CircleAlert, LoaderCircle, Trash2, Plus, Save, Pencil, X, Images } from 'lucide-react';
+import LandingPhotoManager from '@/components/LandingPhotoManager';
 
 /* ── Tipe Data ─────────────────────────────────────────────────────────── */
 
@@ -236,6 +237,9 @@ function ChildTable({
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [err, setErr] = useState('');
+  const [photoRoom, setPhotoRoom] = useState<number | null>(null); // baris kamar yg foto-nya sedang dikelola
+
+  const isRooms = tabId === 'rooms';
 
   function openAdd() {
     setEditingId(null);
@@ -308,13 +312,25 @@ function ChildTable({
             {rows.length === 0 ? (
               <tr><td colSpan={def.displayCols.length + 1} style={{ padding: '12px', color: 'var(--text-muted)' }}>Belum ada data</td></tr>
             ) : rows.map(row => (
-              <tr key={row.id} style={{ borderBottom: '1px solid var(--border)' }}>
+              <Fragment key={row.id}>
+              <tr style={{ borderBottom: photoRoom === row.id ? 'none' : '1px solid var(--border)' }}>
                 {def.displayCols.map(c => (
                   <td key={c.key} style={{ padding: '8px 12px', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {String(row[c.key] ?? '—')}
                   </td>
                 ))}
                 <td style={{ padding: '8px 8px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                  {isRooms && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      style={{ padding: '4px 8px', color: photoRoom === row.id ? 'var(--brand)' : undefined }}
+                      title="Kelola foto kamar"
+                      onClick={() => setPhotoRoom(photoRoom === row.id ? null : Number(row.id))}
+                    >
+                      <Images size={14} />
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="btn btn-ghost"
@@ -336,6 +352,15 @@ function ChildTable({
                   </button>
                 </td>
               </tr>
+              {isRooms && photoRoom === row.id && (
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td colSpan={def.displayCols.length + 1} style={{ padding: '12px', background: 'var(--surface-2, rgba(0,0,0,0.02))' }}>
+                    <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Foto Kamar "{String(row.name ?? '')}" — cover & urutan slide</h4>
+                    <LandingPhotoManager scope="room" roomId={Number(row.id)} />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -437,7 +462,16 @@ export default function LandingPageAdmin() {
         <p className="muted">Data landing_properties belum ada. Hubungi developer untuk setup awal.</p>
       )}
 
-      {activeTab !== 'properties' && (
+      {activeTab === 'gallery' && (
+        <>
+          <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
+            Atur urutan foto galeri (naik/turun) dan pilih 1 foto <strong>cover</strong> (★). Foto cover dipakai sebagai latar hero bila Foto Hero di Info Umum kosong.
+          </p>
+          <LandingPhotoManager scope="gallery" />
+        </>
+      )}
+
+      {activeTab !== 'properties' && activeTab !== 'gallery' && (
         <ChildTable
           tabId={activeTab}
           rows={data[activeTab] ?? []}
