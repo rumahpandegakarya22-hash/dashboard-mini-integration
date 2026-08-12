@@ -14,14 +14,17 @@ async function api(method: string, body: object) {
   return json;
 }
 
-export default function LandingPhotoManager({ scope, roomId }: { scope: 'room' | 'gallery'; roomId?: number }) {
+export default function LandingPhotoManager({ scope, roomId, noKamar }: { scope: 'room' | 'gallery' | 'kamar'; roomId?: number; noKamar?: number }) {
+  const scopeArgs = { scope, roomId, noKamar };
   const [photos, setPhotos] = useState<Photo[] | null>(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState<number | 'add' | null>(null);
   const [url, setUrl] = useState('');
   const [alt, setAlt] = useState('');
 
-  const q = scope === 'room' ? `?scope=room&roomId=${roomId}` : '?scope=gallery';
+  const q = scope === 'room' ? `?scope=room&roomId=${roomId}`
+    : scope === 'kamar' ? `?scope=kamar&noKamar=${noKamar}`
+    : '?scope=gallery';
 
   const load = useCallback(async () => {
     setErr('');
@@ -42,13 +45,13 @@ export default function LandingPhotoManager({ scope, roomId }: { scope: 'room' |
 
   const add = () => run(async () => {
     if (!url.trim()) throw new Error('URL foto wajib diisi.');
-    await api('POST', { scope, roomId, url: url.trim(), alt: alt.trim() });
+    await api('POST', { ...scopeArgs, url: url.trim(), alt: alt.trim() });
     setUrl(''); setAlt('');
   }, 'add');
 
-  const del = (id: number) => run(() => api('DELETE', { scope, roomId, id }).then(() => {}), id);
-  const move = (id: number, action: 'up' | 'down') => run(() => api('PATCH', { scope, roomId, id, action }).then(() => {}), id);
-  const cover = (id: number) => run(() => api('PATCH', { scope, roomId, id, action: 'cover' }).then(() => {}), id);
+  const del = (id: number) => run(() => api('DELETE', { ...scopeArgs, id }).then(() => {}), id);
+  const move = (id: number, action: 'up' | 'down') => run(() => api('PATCH', { ...scopeArgs, id, action }).then(() => {}), id);
+  const cover = (id: number) => run(() => api('PATCH', { ...scopeArgs, id, action: 'cover' }).then(() => {}), id);
 
   return (
     <div>

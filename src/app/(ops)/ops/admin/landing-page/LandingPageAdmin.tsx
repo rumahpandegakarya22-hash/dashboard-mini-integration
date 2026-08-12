@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, Fragment } from 'react';
 import { CircleAlert, LoaderCircle, Trash2, Plus, Save, Pencil, X, Images } from 'lucide-react';
 import LandingPhotoManager from '@/components/LandingPhotoManager';
 import LandingCopyEditor from '@/components/LandingCopyEditor';
+import KamarNomorPhotoPanel from '@/components/KamarNomorPhotoPanel';
 
 /* ── Tipe Data ─────────────────────────────────────────────────────────── */
 
@@ -39,9 +40,25 @@ interface FieldDef {
   multiline?: boolean;
   hint?: string;      // keterangan lokasi/penggunaan di landing page
   preview?: boolean;  // tampilkan thumbnail dari nilai URL
+  toggle?: boolean;   // render sebagai switch on/off (nilai '1'/'0')
 }
 
 function FieldInput({ f, value, onChange }: { f: FieldDef; value: string; onChange: (v: string) => void }) {
+  if (f.toggle) {
+    return (
+      <div className="switch-row" style={{ margin: '4px 0' }}>
+        <div>
+          <div className="switch-label">{f.label}</div>
+          {f.hint && <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>{f.hint}</span>}
+        </div>
+        <label className="switch" aria-label={f.label}>
+          <input type="checkbox" checked={value === '1'} onChange={e => onChange(e.target.checked ? '1' : '0')} />
+          <span className="track" />
+          <span className="thumb" />
+        </label>
+      </div>
+    );
+  }
   return (
     <div className="field">
       <label>{f.label}</label>
@@ -77,6 +94,7 @@ const TABS = [
   { id: 'highlights', label: 'Highlight' },
   { id: 'gallery', label: 'Galeri' },
   { id: 'testimonials', label: 'Testimoni' },
+  { id: 'kamar_photos', label: 'Foto Nomor Kamar' },
   { id: 'copy', label: 'Teks Halaman' }
 ] as const;
 
@@ -96,6 +114,7 @@ const PROP_FIELDS: FieldDef[] = [
   { key: 'maps_url', label: 'URL Google Maps' },
   { key: 'maps_embed_url', label: 'URL Embed Maps', multiline: true },
   { key: 'hero_photo_url', label: 'URL Foto Hero', hint: 'Dipakai: foto latar section paling atas (hero). Rasio 16:9 landscape. Kosongkan untuk pakai foto galeri pertama.', preview: true },
+  { key: 'tour_video_enabled', label: 'Aktifkan Video Tur Singkat', toggle: true, hint: 'Matikan untuk menyembunyikan blok "Video Tur Singkat" di landing (mis. video belum ada).' },
   { key: 'tour_video_url', label: 'URL Video Tour' },
   { key: 'tour_video_poster_url', label: 'URL Poster Video', hint: 'Dipakai: gambar poster sebelum video tour diputar (section Galeri). Rasio 16:9.', preview: true }
 ];
@@ -108,7 +127,7 @@ function PropertiesForm({ data, onSaved }: { data: Record<string, any>; onSaved:
 
   useEffect(() => {
     const initial: Record<string, string> = {};
-    PROP_FIELDS.forEach(f => { initial[f.key] = String(data[f.key] ?? ''); });
+    PROP_FIELDS.forEach(f => { initial[f.key] = f.toggle ? String(data[f.key] ?? 1) : String(data[f.key] ?? ''); });
     setForm(initial);
   }, [data]);
 
@@ -475,7 +494,9 @@ export default function LandingPageAdmin() {
 
       {activeTab === 'copy' && <LandingCopyEditor />}
 
-      {activeTab !== 'properties' && activeTab !== 'gallery' && activeTab !== 'copy' && (
+      {activeTab === 'kamar_photos' && <KamarNomorPhotoPanel />}
+
+      {activeTab !== 'properties' && activeTab !== 'gallery' && activeTab !== 'copy' && activeTab !== 'kamar_photos' && (
         <ChildTable
           tabId={activeTab}
           rows={data[activeTab] ?? []}

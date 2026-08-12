@@ -17,6 +17,11 @@ const GROUPS: { title: string; fields: CopyField[] }[] = [
     { key: 'gallery_desc', label: 'Deskripsi', def: 'Lihat langsung kondisi setiap sudut properti — dari kamar, dapur, hingga ruang bersama.', area: true },
     { key: 'gallery_video_title', label: 'Judul video tur', def: 'Video Tur Singkat' },
   ]},
+  { title: 'Foto Setiap Nomor Kamar', fields: [
+    { key: 'kamar_photos_eyebrow', label: 'Label kecil', def: 'Foto Kamar' },
+    { key: 'kamar_photos_title', label: 'Judul', def: 'Foto Setiap Nomor Kamar' },
+    { key: 'kamar_photos_desc', label: 'Deskripsi', def: 'Lihat kondisi tiap kamar secara langsung sebelum memilih.', area: true },
+  ]},
   { title: 'Kamar & Harga', fields: [
     { key: 'rooms_eyebrow', label: 'Label kecil', def: 'Kamar & Harga' },
     { key: 'rooms_title', label: 'Judul', def: 'Pilih Tipe Kamar Sesuai Kebutuhan' },
