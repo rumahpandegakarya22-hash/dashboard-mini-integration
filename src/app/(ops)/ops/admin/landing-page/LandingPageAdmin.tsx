@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, Fragment } from 'react';
 import { CircleAlert, LoaderCircle, Trash2, Plus, Save, Pencil, X, Images } from 'lucide-react';
 import LandingPhotoManager from '@/components/LandingPhotoManager';
+import LandingCopyEditor from '@/components/LandingCopyEditor';
 
 /* ── Tipe Data ─────────────────────────────────────────────────────────── */
 
@@ -75,7 +76,8 @@ const TABS = [
   { id: 'faqs', label: 'FAQ' },
   { id: 'highlights', label: 'Highlight' },
   { id: 'gallery', label: 'Galeri' },
-  { id: 'testimonials', label: 'Testimoni' }
+  { id: 'testimonials', label: 'Testimoni' },
+  { id: 'copy', label: 'Teks Halaman' }
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -471,7 +473,9 @@ export default function LandingPageAdmin() {
         </>
       )}
 
-      {activeTab !== 'properties' && activeTab !== 'gallery' && (
+      {activeTab === 'copy' && <LandingCopyEditor />}
+
+      {activeTab !== 'properties' && activeTab !== 'gallery' && activeTab !== 'copy' && (
         <ChildTable
           tabId={activeTab}
           rows={data[activeTab] ?? []}
