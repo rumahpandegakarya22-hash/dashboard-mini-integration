@@ -11,6 +11,7 @@
 //     satu kali scan QR berlaku utk kedua app). Sesi Clerk yang valid saja
 //     belum cukup bila 2FA aktif — wajib cookie step-up (lihat bawah).
 
+import { cache } from 'react';
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import type { User } from '@clerk/nextjs/server';
 import { SignJWT, jwtVerify } from 'jose';
@@ -201,7 +202,12 @@ function bypassDev(): AuthState | null {
   };
 }
 
-export async function getAuthState(): Promise<AuthState> {
+/**
+ * Di-memo per request (React cache): satu navigasi RSC menjalankan layout
+ * (getAuthState) + page (getSessionUser→getAuthState). Tanpa memo, `currentUser()`
+ * (round-trip ke Clerk) dipanggil 2×/navigasi. cache() menjadikannya 1×.
+ */
+export const getAuthState = cache(async (): Promise<AuthState> => {
   const lewat = bypassDev();
   if (lewat) return lewat;
 
@@ -242,7 +248,7 @@ export async function getAuthState(): Promise<AuthState> {
     dashboardRole,
     dashboardStatus
   };
-}
+});
 
 /**
  * User Dashboard terautentikasi PENUH (login + status active + role valid +

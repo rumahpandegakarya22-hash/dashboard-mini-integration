@@ -24,6 +24,7 @@
    ========================================================================= */
 
 import { turso } from '@/lib/core/turso';
+import { cached, TTL } from '@/lib/core/cache';
 import { computeAll, type DbRow, type DbTables } from './compute';
 import { SHEET_MAP } from './sheet-map';
 
@@ -50,7 +51,7 @@ const TABLES = [
 export type SheetGrid = (string | number | null)[][];
 export type SheetsOut = Record<string, SheetGrid>;
 
-const TTL = 10 * 1000; // cache 10 detik
+const TTL_L1 = 10 * 1000; // cache in-memory (L1) 10 detik
 let cache: { at: number; tables: DbTables | null; sheets: SheetsOut | null } = {
   at: 0,
   tables: null,
@@ -75,16 +76,19 @@ export async function readTable(name: string): Promise<DbRow[]> {
 /* Baca SEMUA tabel → { tableName: [rows] }. Tabel yang error (mis. belum ada)
    dikembalikan sebagai array kosong + dicatat, tidak menggagalkan keseluruhan. */
 export async function readAllTables(): Promise<DbTables> {
-  const out: DbTables = {};
-  for (const t of TABLES) {
-    try {
-      out[t] = await readTable(t);
-    } catch (e: any) {
-      out[t] = [];
-      console.warn(`[turso] gagal baca tabel ${t}: ${e?.message}`);
-    }
-  }
-  return out;
+  // Baca semua tabel PARALEL (sebelumnya sequential = ~20 round-trip beruntun,
+  // ~2 dtk. Turso remote ~100ms/query; paralel memangkas ke ~0.35 dtk).
+  const hasil = await Promise.all(
+    TABLES.map(async (t): Promise<[string, DbRow[]]> => {
+      try {
+        return [t, await readTable(t)];
+      } catch (e: any) {
+        console.warn(`[turso] gagal baca tabel ${t}: ${e?.message}`);
+        return [t, []];
+      }
+    })
+  );
+  return Object.fromEntries(hasil);
 }
 
 function fmtCell(v: any): any {
@@ -238,9 +242,15 @@ export function derivePenghuni(tables: DbTables): SheetGrid {
   return [header, ...body];
 }
 
+/* L2 persisten (Next Data Cache, TTL.dashboard=10s) — bertahan lintas request &
+   instance serverless, mengganti kelemahan cache in-memory saat cold start.
+   Hanya membungkus pembacaan DB (murni, tanpa auth). */
+const readAllTablesCached = cached(readAllTables, ['dashboard', 'all-tables'], TTL.dashboard, ['dashboard']);
+
 async function loadAll(force?: boolean) {
-  if (!force && cache.tables && Date.now() - cache.at < TTL) return cache;
-  const raw = await readAllTables();
+  // L1 in-memory (0ms) untuk hit beruntun dalam satu instance.
+  if (!force && cache.tables && Date.now() - cache.at < TTL_L1) return cache;
+  const raw = force ? await readAllTables() : await readAllTablesCached();
   const computed = computeAll(raw);
   cache = { at: Date.now(), tables: computed, sheets: toSheets(computed) };
   return cache;
