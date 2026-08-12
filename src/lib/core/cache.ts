@@ -25,11 +25,18 @@ export const TTL = {
 } as const;
 
 /**
- * Bungkus loader data dengan cache persisten berjenjang.
+ * Bungkus loader data dengan cache persisten berbasis TTL (Next Data Cache).
+ * Cocok untuk data yang boleh basi selama TTL (mis. snapshot dashboard).
+ *
+ * Untuk data EDITABLE yang wajib invalidasi-langsung saat disimpan, JANGAN pakai
+ * ini — pakai cache Redis dengan `redis.del()` (lihat `master.ts` &
+ * `api/ops/landing-page/route.ts`). Di Next 16 `revalidateTag` butuh argumen
+ * profil, jadi invalidasi manual distandarkan lewat Redis di repo ini.
+ *
  * @param fn         loader data murni (tanpa auth/cookies)
  * @param keyParts   bagian key unik (mis. ['dashboard','all-tables'])
  * @param revalidate TTL detik — pakai konstanta TTL di atas
- * @param tags       tag untuk invalidasi manual via revalidateTag()
+ * @param tags       tag metadata unstable_cache (opsional)
  */
 export function cached<A extends unknown[], R>(
   fn: (...args: A) => Promise<R>,
