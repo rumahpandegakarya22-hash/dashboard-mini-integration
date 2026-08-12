@@ -16,6 +16,7 @@ import {
   Hammer,
   HandCoins,
   History,
+  Landmark,
   LayoutGrid,
   ListTodo,
   Megaphone,
@@ -94,6 +95,7 @@ export const NAV_RIWAYAT_BAYAR = { href: '/ops/admin/riwayat-pembayaran', label:
 export const NAV_PENGATURAN: { href: string; label: string; icon: LucideIcon; ownerOnly?: true }[] = [
   { href: '/ops/admin/wifi', label: 'Kredensial WiFi', icon: Wifi },
   { href: '/ops/admin/deposit', label: 'Setting Deposit', icon: HandCoins },
+  { href: '/ops/admin/aset-tetap', label: 'Aset Tetap & Penyusutan', icon: Landmark },
   { href: '/ops/admin/kamar', label: 'Kelola Harga Kamar', icon: Tag, ownerOnly: true },
   { href: '/ops/admin/users', label: 'Kelola User', icon: Users, ownerOnly: true }
 ];

@@ -249,11 +249,12 @@ export async function buildNeraca(sampai: string): Promise<NeracaTable> {
   const peralatan = sumGrup(a, 'Peralatan Operasional', S);
   const furniture = sumGrup(a, 'Furniture', S);
   const elektronik = sumGrup(a, 'Elektronik', S);
-  // Akumulasi penyusutan = Kontra Aset (saldo normal Kredit → saldoSampai negatif dalam arah debit)
-  const akumBangunan = sumGrup(a, 'Akum Bangunan', S);
-  const akumElektronik = sumGrup(a, 'Akum Elektronik', S);
-  const akumFurniture = sumGrup(a, 'Akum Furniture', S);
-  const akumPeralatan = sumGrup(a, 'Akum Peralatan', S);
+  // Akumulasi penyusutan = Kontra Aset (saldo normal Kredit). saldoSampai-nya positif
+  // dalam arah normalnya sendiri, tapi di sisi ASET harus MENGURANGI → negasikan.
+  const akumBangunan = -sumGrup(a, 'Akum Bangunan', S);
+  const akumElektronik = -sumGrup(a, 'Akum Elektronik', S);
+  const akumFurniture = -sumGrup(a, 'Akum Furniture', S);
+  const akumPeralatan = -sumGrup(a, 'Akum Peralatan', S);
   const totalTetap = tanah + bangunan + peralatan + furniture + elektronik
     + akumBangunan + akumElektronik + akumFurniture + akumPeralatan;
   const totalAset = totalLancar + totalTetap;

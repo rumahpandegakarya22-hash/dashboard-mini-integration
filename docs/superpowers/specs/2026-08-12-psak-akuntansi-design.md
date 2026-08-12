@@ -80,10 +80,19 @@ Gap yang ditemukan (lebih kecil dari dugaan):
 - **G2 (deferred revenue) — SUDAH ADA:** ternyata `src/lib/jurnal.ts` `barisJurnalSewa` SUDAH menerapkan pola 2 tahap §4 (terima→2105, pengakuan per bulan 2105→4101, denda→4102, DP→2104). **Tidak perlu diubah.** Ini sebabnya data live sudah punya saldo "Pendapatan Diterima di Muka" & laporan rekonsiliasi benar.
 - **G3 (saldo awal) — DITUTUP (C-1 ✅):** `buildArusKas` hitung saldo kas awal dari transaksi < dari; `buildNeraca` hitung Laba Ditahan (akumulasi sebelum tahun berjalan) vs Laba Tahun Berjalan.
 
-## 7. Sisa pekerjaan (opsional, fase lanjut)
+## 7. Penyusutan aset tetap (C-3 — SUDAH diimplementasi)
 
-- **C-3 Penyusutan aset tetap:** baris Penyusutan (6101–6104) di Laba Rugi/Neraca akan tetap 0 sampai ada entri penyusutan bulanan. Perlu: register aset + umur manfaat + mekanisme posting bulanan. Butuh keputusan bisnis (metode & umur). Belum diimplementasi.
-- **(opsional) Tampilan laporan on-screen:** saat ini laporan hanya di-generate jadi PDF (arsip Drive + email). Bila ingin lihat di layar, tambah endpoint render HTML di panel.
+Metode **garis lurus**, residu default 0. Umur manfaat: Bangunan 240 bln, Elektronik 48, Furniture 96, Peralatan Operasional 48.
 
-Tabel baru: **tidak perlu** — COA (125 akun) + `jurnal_transaksi` sudah cukup untuk seluruh sistem PSAK ini.
+- Tabel baru: `aset_tetap` (register) + `penyusutan_posting` (log idempoten UNIQUE(aset_id, periode)) — migrasi `013`.
+- Mesin: `src/lib/laporan/penyusutan.ts` — `penyusutan/bulan = (harga_perolehan − nilai_residu) / umur_bulan`. `postingPenyusutan(sampaiPeriode)` backfill dari bulan perolehan s/d periode, idempoten. Jurnal: debit Beban Penyusutan (61xx) / kredit Akum (19xx), kategori Non-Operasional, tanggal akhir bulan.
+- Peta kategori→akun: Bangunan 6101/1901, Elektronik 6102/1902, Furniture 6103/1903, Peralatan 6104/1904.
+- Admin: `/ops/admin/aset-tetap` (panel `AsetTetapPanel`, API `aset-tetap/route.ts`) — tambah/hapus aset + tombol posting bulanan. Nav di `NAV_PENGATURAN`.
+- **Terverifikasi:** aset uji 4.8jt/48bln → 100rb/bln, posting 3 bln = 300rb, idempoten (posting ulang = 0), Laba Rugi menampilkan penyusutan, Neraca Akum negatif & tetap seimbang. Perbaikan bug: akun Kontra Aset (akum) dinegasikan di `buildNeraca`.
+
+### Sisa (opsional)
+- Tampilan laporan on-screen (kini hanya PDF via `/pdf` + arsip Drive + email).
+- `DRIVE_FOLDER_LAPORAN` belum di-set → arsip Drive laporan mati (tombol "Unduh PDF" jalan tanpa Drive).
+
+Tabel: `coa` + `jurnal_transaksi` + `aset_tetap` + `penyusutan_posting`.
 ```
