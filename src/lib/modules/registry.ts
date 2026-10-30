@@ -304,7 +304,13 @@ export const MODULES: ModuleMeta[] = [
           'Otomatis dari riwayat pembayaran di database (tabel payment) — invoice belum lunas dihitung tunggakan. Sesuaikan manual kalau perlu.'
       },
       { name: 'nominalTunggakan', label: 'Nominal Tunggakan (jika Ya)', type: 'number', required: false },
-      { name: 'pengembalianDeposit', label: 'Pengembalian Deposit (Rp)', type: 'number', required: false },
+      {
+        name: 'pengembalianDeposit',
+        label: 'Pengembalian Deposit (Rp)',
+        type: 'number',
+        required: false,
+        helpText: 'Terisi otomatis dari Approval Check-out. Nilai yang tersimpan selalu mengikuti approval, bukan isian di sini.'
+      },
       {
         name: 'kondisiKamar',
         label: 'Kondisi Kamar',

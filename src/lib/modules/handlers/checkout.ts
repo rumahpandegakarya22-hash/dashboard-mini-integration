@@ -36,7 +36,6 @@ export const submitCheckout: SubmitHandler = async (values, ctx) => {
   const adaTunggakan = required(values.adaTunggakan, 'Tunggakan?');
   if (adaTunggakan !== 'Ya' && adaTunggakan !== 'Tidak') throw new Error('Nilai Tunggakan? tidak valid.');
   const nominalTunggakan = adaTunggakan === 'Ya' ? parseRupiahOptional(values.nominalTunggakan) : 0;
-  const pengembalianDeposit = parseRupiahOptional(values.pengembalianDeposit);
   const kondisiKamar = required(values.kondisiKamar, 'Kondisi Kamar');
   const catatanKerusakan = String(values.catatanKerusakan ?? '').trim();
 
@@ -47,6 +46,21 @@ export const submitCheckout: SubmitHandler = async (values, ctx) => {
     if (!tenant?.kamar) throw new Error(`Kamar tidak terdeteksi untuk penghuni "${penghuni}".`);
     const kamar = tenant.kamar;
     const idPenghuni = tenant.id;
+
+    /* Gerbang approval: checkout hanya boleh jalan setelah inspeksi check-out disetujui.
+       Nominal deposit yang dikembalikan juga datang dari keputusan approval itu,
+       bukan dari input form — jadi tidak bisa berbeda dari yang disetujui admin. */
+    const kk = await db.execute({
+      sql: `SELECT status_checkout, deposit_dikembalikan FROM kondisi_kamar
+            WHERE id_penghuni = ? ORDER BY id DESC LIMIT 1`,
+      args: [idPenghuni]
+    });
+    if (kk.rows[0]?.status_checkout !== 'Disetujui') {
+      throw new Error(
+        `Inspeksi check-out ${penghuni} belum disetujui (status: ${kk.rows[0]?.status_checkout ?? 'belum ada'}). Selesaikan Pre-Check Out lalu Approval Check-out dulu.`
+      );
+    }
+    const pengembalianDeposit = Number(kk.rows[0].deposit_dikembalikan ?? 0) || 0;
 
     // Booking aktif penghuni ini (kalau ada) — penentu jalur utama vs fallback.
     const bk = await db.execute({

@@ -8,6 +8,7 @@ interface CheckoutDefaults {
   tglMasuk: string; // '' kalau tidak ditemukan otomatis
   adaTunggakan: 'Ya' | 'Tidak' | ''; // '' = tidak bisa dihitung (tidak ada riwayat pembayaran)
   nominalTunggakan: number;
+  pengembalianDeposit: number; // dari keputusan Approval Check-out
   note: string; // penjelasan/langkah manual, '' kalau semua lengkap
 }
 
@@ -23,7 +24,7 @@ interface CheckoutDefaults {
 async function computeCheckoutDefaults(penghuniLabel: string, tanggalCheckoutISO: string): Promise<CheckoutDefaults> {
   const tenant = await getTenantByLabel(penghuniLabel);
   if (!tenant) {
-    return { tglMasuk: '', adaTunggakan: '', nominalTunggakan: 0, note: `Penghuni "${penghuniLabel}" tidak ditemukan di Database Penghuni.` };
+    return { tglMasuk: '', adaTunggakan: '', nominalTunggakan: 0, pengembalianDeposit: 0, note: `Penghuni "${penghuniLabel}" tidak ditemukan di Database Penghuni.` };
   }
 
   const notes: string[] = [];
@@ -70,7 +71,26 @@ async function computeCheckoutDefaults(penghuniLabel: string, tanggalCheckoutISO
     notes.push('Gagal membaca riwayat pembayaran dari database — Tunggakan harus dicek manual.');
   }
 
-  return { tglMasuk: tglMasuk || '', adaTunggakan, nominalTunggakan, note: notes.join(' ') };
+  // --- Status approval inspeksi check-out + deposit yang disetujui ---
+  let pengembalianDeposit = 0;
+  try {
+    const res = await turso().execute({
+      sql: `SELECT status_checkout, deposit_dikembalikan FROM kondisi_kamar
+            WHERE id_penghuni = ? ORDER BY id DESC LIMIT 1`,
+      args: [tenant.id]
+    });
+    const st = res.rows[0]?.status_checkout ? String(res.rows[0].status_checkout) : 'belum ada';
+    if (st !== 'Disetujui') {
+      notes.push(`PERHATIAN: inspeksi check-out belum disetujui (status: ${st}). Checkout akan ditolak sampai Approval Check-out selesai.`);
+    } else {
+      pengembalianDeposit = Number(res.rows[0].deposit_dikembalikan ?? 0) || 0;
+    }
+  } catch (e: any) {
+    console.error('[checkout-lookup] gagal baca status approval:', e?.message);
+    notes.push('Gagal membaca status approval inspeksi check-out.');
+  }
+
+  return { tglMasuk: tglMasuk || '', adaTunggakan, nominalTunggakan, pengembalianDeposit, note: notes.join(' ') };
 }
 
 export const autoFillCheckout: AutoFillHandler = async (values) => {
@@ -79,7 +99,12 @@ export const autoFillCheckout: AutoFillHandler = async (values) => {
   if (!penghuni || !tanggalCheckout) return { fields: {} as Record<string, string> };
   const d = await computeCheckoutDefaults(penghuni, tanggalCheckout);
   return {
-    fields: { tglMasuk: d.tglMasuk, adaTunggakan: d.adaTunggakan, nominalTunggakan: d.nominalTunggakan ? String(d.nominalTunggakan) : '' },
+    fields: {
+      tglMasuk: d.tglMasuk,
+      adaTunggakan: d.adaTunggakan,
+      nominalTunggakan: d.nominalTunggakan ? String(d.nominalTunggakan) : '',
+      pengembalianDeposit: String(d.pengembalianDeposit)
+    },
     note: d.note || undefined
   };
 };

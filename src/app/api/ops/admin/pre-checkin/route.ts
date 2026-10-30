@@ -30,8 +30,7 @@ export async function GET() {
           LEFT JOIN kondisi_kamar kk ON kk.id = (
             SELECT MAX(k2.id) FROM kondisi_kamar k2
             WHERE k2.id_penghuni = COALESCE(NULLIF(b.id_penghuni, ''), b.no_booking))
-          WHERE b.status_booking IS NOT NULL
-            AND b.status_booking NOT IN ('Check-in', 'Check-out', 'Batal', 'Dibatalkan')
+          WHERE b.status_booking = 'Konfirmasi'
           ORDER BY b.tgl_masuk ASC`,
     args: [],
   });

@@ -24,8 +24,9 @@ export async function GET() {
                  ${itemSelect},
                  kk.catatan_akhir, kk.tanggal_cek_akhir
           FROM active_tenant at
-          LEFT JOIN kondisi_kamar kk ON kk.id_penghuni = at.id_penghuni
-          WHERE kk.status_checkout IS NULL OR kk.status_checkout = 'Draft'
+          LEFT JOIN kondisi_kamar kk ON kk.id = (
+            SELECT MAX(k2.id) FROM kondisi_kamar k2 WHERE k2.id_penghuni = at.id_penghuni)
+          WHERE kk.status_checkout IS NULL OR kk.status_checkout IN ('Draft', 'Ditolak')
           ORDER BY at.no_kamar ASC`,
     args: [],
   });

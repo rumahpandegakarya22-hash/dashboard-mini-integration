@@ -61,8 +61,9 @@ export default function DaftarBookingPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ no_booking: row.no_booking }),
       });
-      const json = await res.json() as { ok?: boolean; error?: string };
+      const json = await res.json() as { ok?: boolean; error?: string; warning?: string };
       if (!res.ok) throw new Error(json.error ?? 'Gagal check-in.');
+      if (json.warning) window.alert(`Check-in tercatat. Perhatian: ${json.warning}`);
       // Hapus baris dari list setelah check-in berhasil
       setRows((prev) => prev?.filter((r) => r.no_booking !== row.no_booking) ?? prev);
     } catch (e) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
+import { invalidateTenantsCache, updateRoomStatus } from '@/lib/master';
 
 const ALLOWED_ROLES = ['owner', 'staff_admin'] as const;
 
@@ -23,8 +24,7 @@ export async function GET() {
           LEFT JOIN kondisi_kamar kk ON kk.id = (
             SELECT MAX(k2.id) FROM kondisi_kamar k2
             WHERE k2.id_penghuni = COALESCE(NULLIF(b.id_penghuni, ''), b.no_booking))
-          WHERE b.status_booking IS NOT NULL
-            AND b.status_booking NOT IN ('Check-in', 'Check-out', 'Batal', 'Dibatalkan')
+          WHERE b.status_booking = 'Konfirmasi'
           ORDER BY b.tgl_masuk ASC`,
     args: [],
   });
@@ -46,13 +46,14 @@ export async function POST(req: Request) {
 
   // Ambil id_penghuni untuk cek status inspeksi
   const bookingRes = await turso().execute({
-    sql: `SELECT COALESCE(NULLIF(id_penghuni, ''), no_booking) AS kunci FROM booking WHERE no_booking = ?`,
+    sql: `SELECT COALESCE(NULLIF(id_penghuni, ''), no_booking) AS kunci, kamar_no FROM booking WHERE no_booking = ?`,
     args: [no_booking],
   });
   if (bookingRes.rows.length === 0) {
     return NextResponse.json({ error: 'Booking tidak ditemukan' }, { status: 404 });
   }
   const id_penghuni = bookingRes.rows[0].kunci as string;
+  const kamarNo = String(bookingRes.rows[0].kamar_no ?? '');
 
   // Validasi: inspeksi harus sudah disetujui
   const kkRes = await turso().execute({
@@ -69,11 +70,11 @@ export async function POST(req: Request) {
     sql: `UPDATE booking
           SET status_booking = 'Check-in'
           WHERE no_booking = ?
-            AND status_booking NOT IN ('Check-in', 'Check-out', 'Batal')`,
+            AND status_booking = 'Konfirmasi'`,
     args: [no_booking],
   });
   if (updateRes.rowsAffected === 0) {
-    return NextResponse.json({ error: 'Sudah check-in atau dibatalkan' }, { status: 409 });
+    return NextResponse.json({ error: 'Booking harus berstatus Konfirmasi untuk check-in.' }, { status: 409 });
   }
 
   // Trigger sudah membuat id_penghuni (KTD-...). Pindahkan kunci inspeksi dari no_booking
@@ -88,5 +89,37 @@ export async function POST(req: Request) {
     });
   }
 
-  return NextResponse.json({ ok: true });
+  // Trigger DB hanya membuat occupancy_history & active_tenant. Sisanya dikerjakan di sini,
+  // sama seperti jalur check-in Edit Data: salin tambahan listrik, set kamar Terisi, bersihkan cache.
+  const db = turso();
+  const warnings: string[] = [];
+  try {
+    await db.batch(
+      [
+        {
+          sql: `UPDATE occupancy_history SET tambahan_listrik = (SELECT tambahan_listrik FROM booking WHERE no_booking = ?)
+                WHERE id_penghuni = (SELECT id_penghuni FROM booking WHERE no_booking = ?) AND tambahan_listrik IS NULL`,
+          args: [no_booking, no_booking],
+        },
+        {
+          sql: `UPDATE active_tenant SET tambahan_listrik = (SELECT tambahan_listrik FROM booking WHERE no_booking = ?)
+                WHERE id_penghuni = (SELECT id_penghuni FROM booking WHERE no_booking = ?) AND tambahan_listrik IS NULL`,
+          args: [no_booking, no_booking],
+        },
+      ],
+      'write'
+    );
+  } catch (e) {
+    console.error('[daftar-booking] gagal salin tambahan listrik:', e instanceof Error ? e.message : e);
+    warnings.push('Tambahan listrik gagal disalin ke penghuni — isi manual di Ubah Data Penghuni.');
+  }
+  try {
+    if (kamarNo) await updateRoomStatus(kamarNo, 'Terisi');
+  } catch (e) {
+    console.error('[daftar-booking] gagal set status kamar:', e instanceof Error ? e.message : e);
+    warnings.push(`Status kamar ${kamarNo} gagal diubah ke Terisi — ubah manual.`);
+  }
+  await invalidateTenantsCache().catch(() => undefined);
+
+  return NextResponse.json({ ok: true, warning: warnings.join(' ') || undefined });
 }

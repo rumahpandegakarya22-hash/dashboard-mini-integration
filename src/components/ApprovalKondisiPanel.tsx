@@ -23,7 +23,11 @@ type ApprovalRow = {
   catatan_awal?: string | null;
   catatan_akhir?: string | null;
   foto_urls?: string | null;
+  deposit_nominal?: number | string | null;
 } & Record<string, unknown>;
+
+const rupiah = (n: number) => `Rp${n.toLocaleString('id-ID')}`;
+const depositOf = (row: ApprovalRow) => Number(row.deposit_nominal ?? 0) || 0;
 
 function extractItemValues(row: ApprovalRow, fase: 'awal' | 'akhir'): Record<string, string> {
   const result: Record<string, string> = {};
@@ -48,6 +52,9 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<ApprovalRow | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  // Keputusan deposit (hanya fase akhir): nominal yang dikembalikan + alasan bila ada potongan.
+  const [depKembali, setDepKembali] = useState('');
+  const [depCatatan, setDepCatatan] = useState('');
 
   const load = useCallback(async () => {
     setError(null);
@@ -69,10 +76,13 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
     if (!ok) return;
     setActionLoading(row.id);
     try {
+      const deposit = fase === 'akhir' && action === 'setujui'
+        ? { deposit_dikembalikan: depositOf(row) > 0 ? Number(depKembali || 0) : 0, catatan_deposit: depCatatan }
+        : {};
       const res = await fetch('/api/ops/admin/approval-kondisi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: row.id, fase, action, by: userName }),
+        body: JSON.stringify({ id: row.id, fase, action, by: userName, ...deposit }),
       });
       const json = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok) throw new Error(json.error ?? 'Gagal memproses.');
@@ -83,6 +93,12 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
     } finally {
       setActionLoading(null);
     }
+  }
+
+  function bukaPreview(row: ApprovalRow) {
+    setDepKembali(String(depositOf(row)));
+    setDepCatatan('');
+    setPreview(row);
   }
 
   const tanggal = (row: ApprovalRow) =>
@@ -158,7 +174,7 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
                     type="button"
                     className="btn secondary"
                     style={{ flex: 1 }}
-                    onClick={() => setPreview(row)}
+                    onClick={() => bukaPreview(row)}
                     disabled={isLoading}
                   >
                     Preview
@@ -168,7 +184,7 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
                     className="btn"
                     style={{ flex: 1 }}
                     disabled={isLoading}
-                    onClick={() => handleAction(row, 'setujui')}
+                    onClick={() => (fase === 'akhir' ? bukaPreview(row) : handleAction(row, 'setujui'))}
                   >
                     {isLoading ? <LoaderCircle size={14} className="spin" /> : 'Setujui'}
                   </button>
@@ -251,6 +267,51 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
                   </div>
                 </div>
               )}
+
+              {fase === 'akhir' && (() => {
+                const deposit = depositOf(preview);
+                const kembali = Number(depKembali || 0);
+                const potongan = Math.max(0, deposit - kembali);
+                return (
+                  <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                    <strong style={{ fontSize: '0.875rem' }}>Deposit</strong>
+                    <div style={{ fontSize: '0.875rem', margin: '6px 0' }}>
+                      Deposit tercatat (dari booking): <strong>{rupiah(deposit)}</strong>
+                    </div>
+                    {deposit === 0 ? (
+                      <p className="muted" style={{ margin: 0, fontSize: '0.8125rem' }}>
+                        Tidak ada deposit tercatat untuk penghuni ini, tidak ada yang dikembalikan.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="field">
+                          <label htmlFor="dep-kembali">Dikembalikan (Rp)</label>
+                          <input
+                            id="dep-kembali"
+                            type="number"
+                            min={0}
+                            max={deposit}
+                            value={depKembali}
+                            onChange={(e) => setDepKembali(e.target.value)}
+                          />
+                        </div>
+                        {potongan > 0 && (
+                          <div className="field">
+                            <label htmlFor="dep-catatan">Alasan potongan ({rupiah(potongan)})</label>
+                            <input
+                              id="dep-catatan"
+                              maxLength={300}
+                              value={depCatatan}
+                              onChange={(e) => setDepCatatan(e.target.value)}
+                              placeholder="Wajib diisi bila deposit dipotong"
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="btn-row" style={{ marginTop: 16 }}>
                 <button

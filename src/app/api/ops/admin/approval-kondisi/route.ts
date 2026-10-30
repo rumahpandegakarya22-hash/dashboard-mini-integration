@@ -41,6 +41,9 @@ export async function GET(req: Request) {
                   kk.tanggal_cek_akhir, kk.status_checkout,
                   ${itemCols},
                   kk.catatan_akhir,
+                  kk.deposit_dikembalikan, kk.catatan_deposit,
+                  (SELECT b.deposit FROM booking b WHERE b.id_penghuni = kk.id_penghuni
+                   ORDER BY b.tanggal_booking DESC LIMIT 1) AS deposit_nominal,
                   GROUP_CONCAT(f.url, '|') as foto_urls
            FROM kondisi_kamar kk
            LEFT JOIN kondisi_kamar_foto f ON f.kondisi_kamar_id = kk.id AND f.fase = 'akhir'
@@ -63,6 +66,8 @@ export async function POST(req: Request) {
     id?: number;
     fase?: 'awal' | 'akhir';
     action?: 'setujui' | 'tolak';
+    deposit_dikembalikan?: number;
+    catatan_deposit?: string;
   };
   const { id, fase, action } = body;
 
@@ -84,7 +89,37 @@ export async function POST(req: Request) {
            WHERE id = ? AND status_checkout = 'Menunggu'`;
   }
 
-  const result = await turso().execute({ sql, args: [newStatus, by, id] });
+  let args: (string | number | null)[] = [newStatus, by, id];
+
+  /* Check-out disetujui = keputusan deposit ikut disimpan. Nominal deposit dibaca dari
+     database, bukan dari klien, supaya pengembalian tidak bisa melebihi deposit asli. */
+  if (fase === 'akhir' && action === 'setujui') {
+    const dep = await turso().execute({
+      sql: `SELECT COALESCE((SELECT b.deposit FROM booking b WHERE b.id_penghuni = kk.id_penghuni
+                             ORDER BY b.tanggal_booking DESC LIMIT 1), 0) AS deposit
+            FROM kondisi_kamar kk WHERE kk.id = ?`,
+      args: [id],
+    });
+    if (dep.rows.length === 0) return NextResponse.json({ error: 'Data tidak ditemukan' }, { status: 404 });
+    const deposit = Number(dep.rows[0].deposit ?? 0);
+
+    const dikembalikan = deposit > 0 ? Math.round(Number(body.deposit_dikembalikan ?? deposit)) : 0;
+    if (!Number.isFinite(dikembalikan) || dikembalikan < 0 || dikembalikan > deposit) {
+      return NextResponse.json({ error: `Pengembalian deposit harus antara Rp0 dan Rp${deposit.toLocaleString('id-ID')}.` }, { status: 400 });
+    }
+    const catatanDeposit = String(body.catatan_deposit ?? '').trim().slice(0, 300);
+    if (dikembalikan < deposit && catatanDeposit.length < 5) {
+      return NextResponse.json({ error: 'Alasan potongan deposit wajib diisi (minimal 5 karakter).' }, { status: 400 });
+    }
+
+    sql = `UPDATE kondisi_kamar
+           SET status_checkout = ?, approved_checkout_by = ?, deposit_dikembalikan = ?, catatan_deposit = ?,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = ? AND status_checkout = 'Menunggu'`;
+    args = [newStatus, by, dikembalikan, catatanDeposit || null, id];
+  }
+
+  const result = await turso().execute({ sql, args });
   if (result.rowsAffected === 0) {
     return NextResponse.json({ error: 'Bukan status Menunggu' }, { status: 409 });
   }

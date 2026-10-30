@@ -19,7 +19,7 @@ export default async function ApprovalCheckoutPage() {
         <span className="icon-tile lg" aria-hidden><ClipboardCheck size={24} /></span>
         <div>
           <h1 style={{ fontSize: '1.375rem' }}>Approval Check-out</h1>
-          <p className="page-head-sub">Setujui kondisi kamar &amp; pengembalian deposit</p>
+          <p className="page-head-sub">Setujui kondisi kamar &amp; tentukan pengembalian deposit</p>
         </div>
       </header>
       <ApprovalKondisiPanel fase="akhir" userName={s.user!.name} />
