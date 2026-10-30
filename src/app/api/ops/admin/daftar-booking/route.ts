@@ -15,13 +15,16 @@ export async function GET() {
   }
 
   const result = await turso().execute({
-    sql: `SELECT b.no_booking, b.id_penghuni, b.nama_penyewa, b.kamar_no, b.tgl_masuk,
+    sql: `SELECT b.no_booking, COALESCE(NULLIF(b.id_penghuni, ''), b.no_booking) AS id_penghuni,
+                 b.nama_penyewa, b.kamar_no, b.tgl_masuk,
                  b.no_hp, b.status_booking,
                  kk.id as kk_id, kk.status_checkin
           FROM booking b
-          LEFT JOIN kondisi_kamar kk ON kk.id_penghuni = b.id_penghuni
+          LEFT JOIN kondisi_kamar kk ON kk.id = (
+            SELECT MAX(k2.id) FROM kondisi_kamar k2
+            WHERE k2.id_penghuni = COALESCE(NULLIF(b.id_penghuni, ''), b.no_booking))
           WHERE b.status_booking IS NOT NULL
-            AND b.status_booking NOT IN ('Check-in', 'Check-out', 'Batal')
+            AND b.status_booking NOT IN ('Check-in', 'Check-out', 'Batal', 'Dibatalkan')
           ORDER BY b.tgl_masuk ASC`,
     args: [],
   });
@@ -43,13 +46,13 @@ export async function POST(req: Request) {
 
   // Ambil id_penghuni untuk cek status inspeksi
   const bookingRes = await turso().execute({
-    sql: `SELECT id_penghuni FROM booking WHERE no_booking = ?`,
+    sql: `SELECT COALESCE(NULLIF(id_penghuni, ''), no_booking) AS kunci FROM booking WHERE no_booking = ?`,
     args: [no_booking],
   });
   if (bookingRes.rows.length === 0) {
     return NextResponse.json({ error: 'Booking tidak ditemukan' }, { status: 404 });
   }
-  const id_penghuni = bookingRes.rows[0].id_penghuni as string;
+  const id_penghuni = bookingRes.rows[0].kunci as string;
 
   // Validasi: inspeksi harus sudah disetujui
   const kkRes = await turso().execute({
@@ -71,6 +74,18 @@ export async function POST(req: Request) {
   });
   if (updateRes.rowsAffected === 0) {
     return NextResponse.json({ error: 'Sudah check-in atau dibatalkan' }, { status: 409 });
+  }
+
+  // Trigger sudah membuat id_penghuni (KTD-...). Pindahkan kunci inspeksi dari no_booking
+  // ke id itu supaya Pre-Check Out menemukan data kondisi awal.
+  if (id_penghuni === no_booking) {
+    await turso().execute({
+      sql: `UPDATE kondisi_kamar
+            SET id_penghuni = (SELECT id_penghuni FROM booking WHERE no_booking = ?)
+            WHERE id_penghuni = ?
+              AND (SELECT id_penghuni FROM booking WHERE no_booking = ?) IS NOT NULL`,
+      args: [no_booking, no_booking, no_booking],
+    });
   }
 
   return NextResponse.json({ ok: true });

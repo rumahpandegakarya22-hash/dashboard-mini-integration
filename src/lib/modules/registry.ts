@@ -122,15 +122,6 @@ export const MODULES: ModuleMeta[] = [
     autoFillTrigger: ['penghuni', 'jenisPembayaran'],
     fields: [
       {
-        name: 'penghuni',
-        label: 'Nama Penghuni',
-        type: 'select-async',
-        required: true,
-        master: 'tenants',
-        masterValue: 'label', // value tetap "KTD-x — Nama" (format baku handler/preview)
-        masterLabel: 'nama' // tampilan dropdown cukup nama saja (Improvement v1.1 §5)
-      },
-      {
         name: 'jenisPembayaran',
         label: 'Jenis Pembayaran',
         type: 'select',
@@ -139,6 +130,44 @@ export const MODULES: ModuleMeta[] = [
           { value: 'DP', label: 'DP' },
           { value: 'Sewa', label: 'Sewa' }
         ]
+      },
+      {
+        name: 'penghuni',
+        label: 'Nama Penghuni',
+        type: 'select-async',
+        required: true,
+        showIf: { field: 'jenisPembayaran', equals: 'Sewa' },
+        master: 'tenants',
+        masterValue: 'label', // value tetap "KTD-x — Nama" (format baku handler/preview)
+        masterLabel: 'nama' // tampilan dropdown cukup nama saja (Improvement v1.1 §5)
+      },
+      // --- Field khusus DP: calon penghuni belum ada di data penghuni aktif, jadi diisi manual ---
+      { name: 'namaDp', label: 'Nama', type: 'text', required: true, showIf: { field: 'jenisPembayaran', equals: 'DP' } },
+      {
+        name: 'noHpDp',
+        label: 'Nomor WhatsApp',
+        type: 'text',
+        required: true,
+        placeholder: '08xxxxxxxxxx',
+        showIf: { field: 'jenisPembayaran', equals: 'DP' }
+      },
+      {
+        name: 'emailDp',
+        label: 'Email',
+        type: 'text',
+        required: true,
+        placeholder: 'nama@email.com',
+        helpText: 'Invoice DP dikirim ke email ini.',
+        showIf: { field: 'jenisPembayaran', equals: 'DP' }
+      },
+      { name: 'kamarDp', label: 'Nomor Kamar', type: 'text', required: true, placeholder: 'mis. 12', showIf: { field: 'jenisPembayaran', equals: 'DP' } },
+      {
+        name: 'tglMasukDp',
+        label: 'Tanggal Masuk',
+        type: 'date',
+        required: true,
+        helpText: 'Bulan & tahun nomor invoice DP diambil dari tanggal ini.',
+        showIf: { field: 'jenisPembayaran', equals: 'DP' }
       },
       { name: 'tanggalBayar', label: 'Tanggal Pembayaran', type: 'date', required: true, defaultToday: true },
       // --- Field khusus Sewa (samakan persis dgn Invoice Generator "Sewa") ---

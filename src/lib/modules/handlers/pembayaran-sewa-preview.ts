@@ -1,5 +1,6 @@
-import { parseDateISO, parseRupiah, required } from '../../core/validate';
-import { getTenantByLabel, getInvoiceSewaMaster, getListrikByKamar, getInvoiceDpMaster } from '../../master';
+import { normalizePhone, normalizeRoomId, parseDateISO, parseRupiah, required } from '../../core/validate';
+import { turso } from '../../core/turso';
+import { getTenantByLabel, getInvoiceSewaMaster, getListrikByKamar } from '../../master';
 import type { PreviewHandler } from '../types';
 
 // Replika PERSIS logika buildInvoiceData_() di Apps Script Invoice Generator (Sewa & DP) — supaya angka
@@ -34,20 +35,82 @@ function toISO(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/**
+ * No. invoice = INV/{kamar}/{TDU|DPU}/{bulan}/{tahun}, bulan & tahun dari tanggal PERIODE
+ * (awal sewa untuk Sewa, tanggal masuk untuk DP), bukan tanggal bayar. Kalau nomor yang sama
+ * sudah ada (kamar & bulan periode sama), ditambah suffix urut: ...-2, ...-3.
+ */
+async function noInvUnik(kode: 'TDU' | 'DPU', noKamar: string, tanggalPeriode: string): Promise<string> {
+  const base = `INV/${noKamar}/${kode}/${Number(tanggalPeriode.slice(5, 7))}/${tanggalPeriode.slice(0, 4)}`;
+  const tabel = kode === 'TDU' ? 'invoice_sewa' : 'invoice_dp';
+  const res = await turso().execute({
+    sql: `SELECT no_inv FROM ${tabel} WHERE no_inv = ? OR no_inv LIKE ?`,
+    args: [base, `${base}-%`]
+  });
+  if (res.rows.length === 0) return base;
+  const urut = res.rows.map((r) => Number(String(r.no_inv).slice(base.length + 1)) || 1);
+  return `${base}-${Math.max(1, ...urut) + 1}`;
+}
+
+/** DP: calon penghuni belum ada di active_tenant, jadi data diri diisi manual. */
+async function previewDpManual(values: Record<string, unknown>, tanggalBayar: string, pajak: number, diskon: number) {
+  const nama = required(values.namaDp, 'Nama').trim();
+  const noHp = normalizePhone(required(values.noHpDp, 'Nomor WhatsApp'));
+  const email = required(values.emailDp, 'Email').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error(`Email tidak valid: "${email}".`);
+  const noKamar = normalizeRoomId(required(values.kamarDp, 'Nomor Kamar'));
+  const tglMasuk = parseDateISO(String(values.tglMasukDp ?? ''));
+
+  const k = await turso().execute({ sql: 'SELECT tipe_kamar, harga_bulan FROM kamar WHERE no_kamar = ?', args: [noKamar] });
+  if (k.rows.length === 0) throw new Error(`Kamar ${noKamar} tidak ditemukan.`);
+  const tipe = String(k.rows[0].tipe_kamar ?? '');
+  const hargaKamar = Number(k.rows[0].harga_bulan ?? 0);
+  if (!hargaKamar) throw new Error(`Harga kamar ${noKamar} kosong di tabel kamar.`);
+
+  const dp = Math.round(hargaKamar / 2);
+  const subtotal = dp;
+  const grandTotal = subtotal - diskon + pajak;
+  if (diskon > subtotal) throw new Error('Diskon tidak boleh melebihi subtotal.');
+  if (grandTotal <= 0) throw new Error('Grand total tidak valid (harus lebih dari 0).');
+  const noInv = await noInvUnik('DPU', noKamar, tglMasuk);
+
+  return {
+    raw: {
+      jenisPembayaran: 'DP', manual: true, nama, noHp, email, noKamar, tipe, tglMasuk,
+      tglPembayaran: tanggalBayar, hargaKamar, dp, subtotal, pajak, diskon, grandTotal, noInv
+    },
+    fields: [
+      { label: 'No. Invoice', value: noInv },
+      { label: 'Nama', value: nama },
+      { label: 'No. WhatsApp', value: noHp },
+      { label: 'Email tujuan', value: email },
+      { label: 'No. Kamar', value: noKamar },
+      { label: 'Tipe Kamar', value: tipe },
+      { label: 'Tanggal Masuk', value: fmtTanggalId(tglMasuk) },
+      { label: 'Harga Kamar (penuh)', value: rp(hargaKamar) },
+      { label: 'Harga/unit (DP 50%)', value: rp(dp) },
+      { label: 'Pajak', value: rp(pajak) },
+      { label: 'Diskon', value: rp(diskon) },
+      { label: 'Grand Total', value: rp(grandTotal) }
+    ]
+  };
+}
+
 export const previewPembayaranSewa: PreviewHandler = async (values) => {
   const jenisPembayaran = required(values.jenisPembayaran, 'Jenis Pembayaran');
   if (jenisPembayaran !== 'DP' && jenisPembayaran !== 'Sewa') throw new Error('Jenis Pembayaran tidak valid.');
-  const penghuniLabel = required(values.penghuni, 'Nama Penghuni');
   const tanggalBayar = parseDateISO(String(values.tanggalBayar ?? ''));
   const pajak = values.pajak ? parseRupiah(values.pajak as string | number) : 0;
   const diskon = values.diskon ? parseRupiah(values.diskon as string | number) : 0;
 
+  if (jenisPembayaran === 'DP') return previewDpManual(values, tanggalBayar, pajak, diskon);
+
+  const penghuniLabel = required(values.penghuni, 'Nama Penghuni');
   const tenant = await getTenantByLabel(penghuniLabel);
   if (!tenant) throw new Error(`Penghuni "${penghuniLabel}" tidak ditemukan.`);
   const noKamar = tenant.kamar;
-  const tglBayarDate = new Date(`${tanggalBayar}T00:00:00`);
 
-  if (jenisPembayaran === 'Sewa') {
+  {
     const lama = parseInt(String(values.jumlahBulan ?? ''), 10);
     if (!lama) throw new Error('Lama Sewa belum dipilih.');
     const periodeAwalSewa = parseDateISO(String(values.periodeAwalSewa ?? ''));
@@ -78,7 +141,7 @@ export const previewPembayaranSewa: PreviewHandler = async (values) => {
     const grandTotal = subtotal - diskon + pajak;
     if (diskon > subtotal) throw new Error('Diskon tidak boleh melebihi subtotal.');
     if (grandTotal <= 0) throw new Error('Grand total tidak valid (harus lebih dari 0).');
-    const noInv = `INV/${noKamar}/TDU/${tglBayarDate.getMonth() + 1}/${tglBayarDate.getFullYear()}`;
+    const noInv = await noInvUnik('TDU', noKamar, periodeAwalSewa);
 
     const raw = {
       jenisPembayaran, nama: p.nama, email: p.email, noKamar, tipe: p.tipe, lamaSewa: lama,
@@ -108,42 +171,4 @@ export const previewPembayaranSewa: PreviewHandler = async (values) => {
       ]
     };
   }
-
-  // --- DP ---
-  const list = await getInvoiceDpMaster();
-  const p = list.find((x) => x.noKamar === noKamar);
-  if (!p) {
-    throw new Error(
-      `Kamar ${noKamar} tidak ditemukan di master Invoice Generator DP. Pastikan sudah terdaftar di sheet Invoice Pembayaran DP → "Sheet1".`
-    );
-  }
-  if (!p.hargaKamar) throw new Error(`Harga kamar untuk ${p.nama} kosong di sheet Invoice Pembayaran DP.`);
-
-  const dp = Math.round(p.hargaKamar / 2);
-  const subtotal = dp;
-  const grandTotal = subtotal - diskon + pajak;
-  if (diskon > subtotal) throw new Error('Diskon tidak boleh melebihi subtotal.');
-  if (grandTotal <= 0) throw new Error('Grand total tidak valid (harus lebih dari 0).');
-  const noInv = `INV/${noKamar}/DPU/${tglBayarDate.getMonth() + 1}/${tglBayarDate.getFullYear()}`;
-
-  const raw = {
-    jenisPembayaran, nama: p.nama, email: p.email, noKamar, tipe: p.tipe,
-    tglPembayaran: tanggalBayar, hargaKamar: p.hargaKamar, dp, subtotal, pajak, diskon, grandTotal, noInv
-  };
-
-  return {
-    raw,
-    fields: [
-      { label: 'No. Invoice', value: noInv },
-      { label: 'Nama', value: p.nama },
-      { label: 'No. Kamar', value: noKamar },
-      { label: 'Tipe Kamar', value: p.tipe },
-      { label: 'Email tujuan', value: p.email || '(kosong — cek data penghuni)' },
-      { label: 'Harga Kamar (penuh)', value: rp(p.hargaKamar) },
-      { label: 'Harga/unit (DP 50%)', value: rp(dp) },
-      { label: 'Pajak', value: rp(pajak) },
-      { label: 'Diskon', value: rp(diskon) },
-      { label: 'Grand Total', value: rp(grandTotal) }
-    ]
-  };
 };

@@ -17,12 +17,16 @@ export default function Modal({
   children: React.ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // onClose dari induk berupa fungsi baru tiap render. Jika masuk dependency efek,
+  // efek jalan ulang tiap ketikan dan focus() merebut fokus dari input.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
 
@@ -35,7 +39,7 @@ export default function Modal({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = overflowLama;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (typeof document === 'undefined') return null;
 

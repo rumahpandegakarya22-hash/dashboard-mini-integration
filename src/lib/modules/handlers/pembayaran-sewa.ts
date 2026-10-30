@@ -46,8 +46,11 @@ async function simpanPembayaran(
   akunKasBank: string,
   nominal: number
 ): Promise<{ peringatanJurnal?: string }> {
-  const occupancyId = await resolveOccupancyId(String(raw.noKamar));
-  if (!occupancyId) {
+  // DP manual = calon penghuni: kamar mungkin masih dihuni orang lain, jadi tidak ditautkan
+  // ke occupancy_history. Konsekuensi: tidak ada baris `payment` (payment.id_penghuni NOT NULL).
+  const dpManual = jenisPembayaran === 'DP';
+  const occupancyId = dpManual ? null : await resolveOccupancyId(String(raw.noKamar));
+  if (!dpManual && !occupancyId) {
     throw new Error(
       `Kamar ${raw.noKamar} tidak ditemukan sebagai penghuni aktif di occupancy_history — pembayaran tidak dicatat. Periksa data check-in penghuni dulu.`
     );
@@ -88,15 +91,15 @@ async function simpanPembayaran(
       const periodeAwal = jenisPembayaran === 'Sewa' ? raw.periodeAwal : tanggalBayar;
       const periodeAkhir = jenisPembayaran === 'Sewa' ? raw.periodeAkhir : null;
 
-      await tx.execute({
+      if (!dpManual) await tx.execute({
         sql: `INSERT INTO payment
               (id_payment, id_penghuni, invoice_dp_id, invoice_sewa_id, periode_awal, periode_akhir, amount, payment_date, status, notes)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?)`,
         args: [
           raw.noInv,
           occupancyId,
-          jenisPembayaran === 'DP' ? invoiceId : null,
-          jenisPembayaran === 'Sewa' ? invoiceId : null,
+          null, // payment hanya dicatat untuk Sewa (DP manual dilewati di atas)
+          invoiceId,
           periodeAwal,
           periodeAkhir,
           nominal,
@@ -123,10 +126,12 @@ async function simpanPembayaran(
          insert-nya tidak bisa direproduksi. Selama sebabnya belum ketahuan,
          ketidakhadiran baris itu dijadikan warning yang terlihat admin —
          bukan lubang senyap di catatan pembayaran. */
-      const cek = await turso().execute({
-        sql: 'SELECT 1 FROM payment WHERE id_payment = ? LIMIT 1',
-        args: [raw.noInv]
-      });
+      const cek = dpManual
+        ? { rows: [1] }
+        : await turso().execute({
+            sql: 'SELECT 1 FROM payment WHERE id_payment = ? LIMIT 1',
+            args: [raw.noInv]
+          });
       if (cek.rows.length === 0) {
         return {
           peringatanJurnal: [
@@ -253,9 +258,10 @@ export const autoFillPembayaranSewa: AutoFillHandler = async (values) => {
 };
 
 export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
-  const penghuni = required(values.penghuni, 'Penghuni'); // format baku "KTD-x — Nama"
   const jenisPembayaran = required(values.jenisPembayaran, 'Jenis Pembayaran');
   if (jenisPembayaran !== 'DP' && jenisPembayaran !== 'Sewa') throw new Error('Jenis Pembayaran tidak valid.');
+  // Sewa: dropdown penghuni aktif ("KTD-x — Nama"). DP: nama diisi manual.
+  const penghuni = jenisPembayaran === 'Sewa' ? required(values.penghuni, 'Penghuni') : required(values.namaDp, 'Nama');
   const tanggalBayar = parseDateISO(String(values.tanggalBayar ?? ''));
   // Lama Sewa cuma relevan utk jenis Sewa (field disembunyikan showIf utk DP) — DP dicatat 1 bulan di ledger.
   const jumlahBulan = jenisPembayaran === 'Sewa' ? parseInt(String(values.jumlahBulan ?? ''), 10) : 1;
@@ -269,7 +275,8 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
   const raw = preview.raw as Record<string, any>;
   const nominal = Math.round(raw.grandTotal);
 
-  return withLock(`penghuni:${penghuni}`, 15, async () => {
+  const kunciLock = jenisPembayaran === 'DP' ? `dp-kamar:${raw.noKamar}` : `penghuni:${penghuni}`;
+  return withLock(kunciLock, 15, async () => {
     if (jenisPembayaran === 'Sewa') {
       const occupancyId = await resolveOccupancyId(String(raw.noKamar));
       if (occupancyId) await cekPeriodeTumpangTindih(occupancyId, String(raw.periodeAwal), String(raw.periodeAkhir));
@@ -285,7 +292,7 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
 
     // ID Docs bukti bayar memakai nomor invoicenya, bukan kode DOC- baru — biar
     // berkas di Drive langsung tertaut ke invoice & payment dengan id yang sama.
-    const idPenghuni = await resolveOccupancyId(String(raw.noKamar));
+    const idPenghuni = jenisPembayaran === 'DP' ? null : await resolveOccupancyId(String(raw.noKamar));
     const lampiranWarning = await saveLampiran(
       values,
       ctx,

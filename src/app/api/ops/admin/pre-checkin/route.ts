@@ -20,14 +20,18 @@ export async function GET() {
   const itemSelect = ITEM_COLS_AWAL.map((c) => `kk.${c}`).join(', ');
 
   const result = await turso().execute({
-    sql: `SELECT b.no_booking, b.id_penghuni, b.nama_penyewa, b.kamar_no, b.tgl_masuk, b.no_hp,
+    // id_penghuni baru dibuat trigger saat Check-in; sebelum itu inspeksi dikunci pakai no_booking.
+    sql: `SELECT b.no_booking, COALESCE(NULLIF(b.id_penghuni, ''), b.no_booking) AS id_penghuni,
+                 b.nama_penyewa, b.kamar_no, b.tgl_masuk, b.no_hp,
                  kk.id as kk_id, kk.status_checkin,
                  ${itemSelect},
                  kk.catatan_awal, kk.tanggal_cek_awal, kk.pic
           FROM booking b
-          LEFT JOIN kondisi_kamar kk ON kk.id_penghuni = b.id_penghuni
+          LEFT JOIN kondisi_kamar kk ON kk.id = (
+            SELECT MAX(k2.id) FROM kondisi_kamar k2
+            WHERE k2.id_penghuni = COALESCE(NULLIF(b.id_penghuni, ''), b.no_booking))
           WHERE b.status_booking IS NOT NULL
-            AND b.status_booking NOT IN ('Check-in', 'Check-out', 'Batal')
+            AND b.status_booking NOT IN ('Check-in', 'Check-out', 'Batal', 'Dibatalkan')
           ORDER BY b.tgl_masuk ASC`,
     args: [],
   });
