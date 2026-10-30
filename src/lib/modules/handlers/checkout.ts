@@ -56,8 +56,9 @@ export const submitCheckout: SubmitHandler = async (values, ctx) => {
       args: [idPenghuni]
     });
     if (kk.rows[0]?.status_checkout !== 'Disetujui') {
+      // Pesan harus < 120 karakter, kalau tidak submit route menggantinya jadi "Terjadi kesalahan".
       throw new Error(
-        `Inspeksi check-out ${penghuni} belum disetujui (status: ${kk.rows[0]?.status_checkout ?? 'belum ada'}). Selesaikan Pre-Check Out lalu Approval Check-out dulu.`
+        `Inspeksi check-out belum disetujui (status: ${kk.rows[0]?.status_checkout ?? 'belum ada'}). Selesaikan Pre-Check Out & Approval dulu.`
       );
     }
     const pengembalianDeposit = Number(kk.rows[0].deposit_dikembalikan ?? 0) || 0;
