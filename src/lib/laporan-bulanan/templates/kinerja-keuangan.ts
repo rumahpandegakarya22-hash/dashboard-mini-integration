@@ -31,5 +31,5 @@ ${d.transaksi.length ? '' : '<p>Tidak ada transaksi pada periode ini.</p>'}
 <td style="border:none;width:50%">Dibuat oleh,<br><br><br><br>(________________)<br>Staf Divisi</td>
 <td style="border:none;width:50%">Mengetahui,<br><br><br><br>(________________)<br>Pengelola Kost</td>
 </tr></table>`;
-  return kerangkaDokumen(isi, 'dokumen');
+  return kerangkaDokumen(isi, 'kinerja');
 }

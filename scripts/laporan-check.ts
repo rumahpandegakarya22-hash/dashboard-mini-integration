@@ -20,7 +20,7 @@ async function main() {
   const periode = arg ?? new Date().toISOString().slice(0, 7);
   const [y, m] = periode.split('-').map(Number);
   const dari = `${periode}-01`;
-  const sampai = new Date(y, m, 0).toISOString().slice(0, 10);
+  const sampai = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
 
   const lr = await buildLabaRugi(dari, sampai);
   const ak = await buildArusKas(dari, sampai);
