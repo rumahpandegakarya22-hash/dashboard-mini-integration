@@ -49,7 +49,7 @@ export const LAPORAN: LaporanDef[] = [
     judul: 'Owner Review',
     ownerOnly: true,
     async render(periode, dibuat) {
-      return htmlOwner({ ...(await ambilOwner(periode)), dibuat });
+      return htmlOwner(await ambilOwner(periode, dibuat));
     },
     namaFile: periode => `Laporan Owner Review - ${periode.label}.pdf`,
   },

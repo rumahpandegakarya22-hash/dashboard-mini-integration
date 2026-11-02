@@ -2,6 +2,9 @@ import type { DataOwner } from '../builders/owner';
 import { esc, rupiah, tglPendek, waktuWib } from '../format';
 import { kerangkaDokumen } from '../shell';
 
+const tgl = (s: string | null | undefined) =>
+  s && /^\d{4}-\d{2}-\d{2}/.test(s) ? tglPendek(s) : esc(s) || '-';
+
 const tabel = (kepala: string[], baris: string[][], kosong: string) =>
   baris.length
     ? `<table><tr>${kepala.map(k => `<th>${k}</th>`).join('')}</tr>${baris.map(b => `<tr>${b.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</table>`
@@ -11,7 +14,7 @@ export function htmlOwner(d: DataOwner): string {
   const label = esc(d.periode.label);
   const k = d.keuangan;
   const o = d.operasional;
-  const kerja = o.korektifSelesai + o.preventifSelesai;
+  const kerja = o.rincian.filter(r => r.jenis !== 'Inspeksi').length;
 
   const isi = `
 <h1 style="text-align:center">KOST TIGA DARA PUTRI UGM</h1>
@@ -31,11 +34,11 @@ export function htmlOwner(d: DataOwner): string {
 <h2>2. Hunian &amp; Penyewa</h2>
 <h3>Penghuni Baru Masuk — ${label}</h3>
 ${tabel(['Nama', 'Kamar', 'Institusi', 'Tanggal Masuk'],
-  d.masuk.map(m => [esc(m.nama), esc(m.kamar), esc(m.institusi), tglPendek(m.tglMasuk)]),
+  d.masuk.map(m => [esc(m.nama), esc(m.kamar), esc(m.institusi), tgl(m.tglMasuk)]),
   'Tidak ada penghuni baru tercatat pada periode ini.')}
 <h3>Penghuni Keluar — ${label}</h3>
 ${tabel(['Nama', 'Kamar', 'Tanggal Keluar'],
-  d.keluar.map(m => [esc(m.nama), esc(m.kamar), tglPendek(m.tglKeluar)]),
+  d.keluar.map(m => [esc(m.nama), esc(m.kamar), tgl(m.tglKeluar)]),
   'Tidak ada penghuni keluar tercatat pada periode ini.')}
 <h2>3. Keuangan — ${label}</h2>
 <table><tr><th>Indikator</th><th>Nilai</th></tr>
@@ -47,7 +50,7 @@ ${tabel(['Nama', 'Kamar', 'Tanggal Keluar'],
 <tr><td>Arus kas bersih</td><td>${rupiah(k.arusBersih)}</td></tr></table>
 <h3>Rincian Transaksi pada Periode</h3>
 ${tabel(['Tanggal', 'Keterangan', 'Debit', 'Kredit', 'Nominal'],
-  k.transaksi.map(t => [tglPendek(t.tanggal), esc(t.keterangan), esc(t.debit), esc(t.kredit), rupiah(t.nominal)]),
+  k.transaksi.map(t => [tgl(t.tanggal), esc(t.keterangan), esc(t.debit), esc(t.kredit), rupiah(t.nominal)]),
   'Tidak ada transaksi keuangan tercatat pada periode ini.')}
 <h2>4. Operasional: Inspeksi, Perawatan &amp; Perbaikan — ${label}</h2>
 <table><tr><th>Indikator</th><th>Jumlah</th></tr>
@@ -58,7 +61,7 @@ ${tabel(['Tanggal', 'Keterangan', 'Debit', 'Kredit', 'Nominal'],
 <tr><td>Total biaya</td><td>${rupiah(o.biaya)}</td></tr></table>
 <h3>Rincian Pekerjaan pada Periode</h3>
 ${tabel(['Tanggal', 'Jenis', 'Item / Lokasi', 'Biaya', 'Status'],
-  o.rincian.map(r => [tglPendek(r.tanggal), esc(r.jenis), esc(r.item), rupiah(r.biaya), esc(r.status)]),
+  o.rincian.map(r => [tgl(r.tanggal), esc(r.jenis), esc(r.item), rupiah(r.biaya), esc(r.status)]),
   'Tidak ada pekerjaan tercatat pada periode ini.')}
 <h2>5. Marketing — ${label}</h2>
 ${d.marketing.leads + d.marketing.booking === 0

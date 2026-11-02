@@ -31,9 +31,13 @@ export function susunRekomendasi(d: Omit<DataOwner, 'rekomendasi'>): string[] {
 // Angka diambil dari baris Laba Rugi / Arus Kas resmi, bukan dihitung ulang dari jurnal.
 // Kas masuk/keluar = jumlah baris rincian arus kas (bukan subtotal, bukan saldo) yang positif/negatif.
 export function ekstrakKeuangan(lr: LaporanTable, ak: LaporanTable) {
-  const nilai = (t: LaporanTable, label: string) => t.baris.find(b => b.label === label)?.nilai ?? 0;
-  const pendapatan = nilai(lr, 'Total Pendapatan');
-  const laba = nilai(lr, 'LABA BERSIH');
+  const nilai = (t: LaporanTable, label: string, nama: string) => {
+    const baris = t.baris.find(b => b.label === label);
+    if (!baris) throw new Error(`Baris "${label}" tidak ditemukan di ${nama}.`);
+    return baris.nilai ?? 0;
+  };
+  const pendapatan = nilai(lr, 'Total Pendapatan', 'Laba Rugi');
+  const laba = nilai(lr, 'LABA BERSIH', 'Laba Rugi');
   let kasMasuk = 0;
   let kasKeluar = 0;
   for (const b of ak.baris) {
@@ -41,13 +45,13 @@ export function ekstrakKeuangan(lr: LaporanTable, ak: LaporanTable) {
     if (b.nilai > 0) kasMasuk += b.nilai;
     else kasKeluar += -b.nilai;
   }
-  return { pendapatan, beban: pendapatan - laba, laba, kasMasuk, kasKeluar, arusBersih: nilai(ak, 'Kenaikan (Penurunan) Kas Bersih') };
+  return { pendapatan, beban: pendapatan - laba, laba, kasMasuk, kasKeluar, arusBersih: nilai(ak, 'Kenaikan (Penurunan) Kas Bersih', 'Arus Kas') };
 }
 
 const teks = (v: unknown) => (v == null ? '' : String(v));
-const angka = (v: unknown) => Number(v ?? 0);
+const angka = (v: unknown) => { const n = Number(v ?? 0); return Number.isFinite(n) ? n : 0; };
 
-export async function ambilOwner(periode: Periode): Promise<DataOwner> {
+export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): Promise<DataOwner> {
   const db = turso();
   const a = [periode.dari, periode.sampai];
   const [lr, ak, masuk, keluar, jurnal, cm, pm, insp, leads, booking] = await Promise.all([
@@ -98,7 +102,7 @@ export async function ambilOwner(periode: Periode): Promise<DataOwner> {
 
   const d: Omit<DataOwner, 'rekomendasi'> = {
     periode,
-    dibuat: new Date(),
+    dibuat,
     masuk: masuk.rows.map(r => ({ nama: teks(r.nama), kamar: teks(r.no_kamar), institusi: teks(r.instansi) || '-', tglMasuk: teks(r.tanggal_mulai) })),
     keluar: keluar.rows.map(r => {
       const label = teks(r.penghuni_label);
@@ -114,7 +118,7 @@ export async function ambilOwner(periode: Periode): Promise<DataOwner> {
       inspeksi: inspeksi.length,
       darurat: semua.filter(x => x.darurat).length,
       biaya: semua.reduce((s, x) => s + x.biaya, 0),
-      rincian: semua.map(({ darurat: _d, ...x }) => x),
+      rincian: semua.map(x => ({ tanggal: x.tanggal, jenis: x.jenis, item: x.item, biaya: x.biaya, status: x.status })),
     },
     marketing: { leads: angka(leads.rows[0]?.n), booking: angka(booking.rows[0]?.n) },
   };

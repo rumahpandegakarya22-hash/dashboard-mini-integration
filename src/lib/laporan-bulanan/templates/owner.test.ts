@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { DataOwner } from '../builders/owner';
-import { susunRekomendasi } from '../builders/owner';
+import { susunRekomendasi, ekstrakKeuangan } from '../builders/owner';
+import type { LaporanTable } from '@/lib/laporan/generator';
 import { htmlOwner } from './owner';
 import { parsePeriode } from '../periode';
 
@@ -20,7 +21,12 @@ function dasar(): Omit<DataOwner, 'rekomendasi'> {
     },
     operasional: {
       korektifSelesai: 2, preventifSelesai: 1, inspeksi: 1, darurat: 1, biaya: 250000,
-      rincian: [{ tanggal: '2026-06-03', jenis: 'Korektif', item: 'AC Kamar 5', biaya: 250000, status: 'Selesai' }],
+      rincian: [
+        { tanggal: '2026-06-03', jenis: 'Korektif', item: 'AC Kamar 5', biaya: 250000, status: 'Selesai' },
+        { tanggal: '2026-06-04', jenis: 'Korektif', item: 'Keran', biaya: 0, status: 'Selesai' },
+        { tanggal: '2026-06-05', jenis: 'Preventif', item: 'Servis AC', biaya: 0, status: 'Selesai' },
+        { tanggal: '2026-06-06', jenis: 'Inspeksi', item: 'Dapur', biaya: 0, status: 'Terdokumentasi' },
+      ],
     },
     marketing: { leads: 4, booking: 1 },
   };
@@ -106,4 +112,88 @@ test('susunRekomendasi: tanpa leads menyarankan isi rekap leads', () => {
 
 test('susunRekomendasi: data lengkap menghasilkan satu pesan', () => {
   assert.equal(susunRekomendasi(dasar()).length, 1);
+});
+
+test('bullet pemeliharaan menghitung semua pekerjaan apa pun statusnya', () => {
+  const d = dasar();
+  d.operasional = {
+    korektifSelesai: 0, preventifSelesai: 0, inspeksi: 1, darurat: 1, biaya: 300000,
+    rincian: [
+      { tanggal: '2026-06-03', jenis: 'Korektif', item: 'A', biaya: 200000, status: 'Proses' },
+      { tanggal: '2026-06-04', jenis: 'Preventif', item: 'B', biaya: 100000, status: 'Tertunda' },
+      { tanggal: '2026-06-05', jenis: 'Inspeksi', item: 'C', biaya: 0, status: 'Terdokumentasi' },
+    ],
+  };
+  assert.match(htmlOwner({ ...d, rekomendasi: [] }), /Pemeliharaan: 2 pekerjaan, biaya Rp300\.000, darurat 1\./);
+});
+
+test('transaksi dan rincian pekerjaan kosong menampilkan pesan kosong', () => {
+  const d = dasar();
+  d.keuangan.transaksi = [];
+  d.operasional.rincian = [];
+  const html = htmlOwner({ ...d, rekomendasi: [] });
+  assert.match(html, /Tidak ada transaksi keuangan tercatat pada periode ini\./);
+  assert.match(html, /Tidak ada pekerjaan tercatat pada periode ini./);
+});
+
+test('tanggal kosong atau rusak tampil aman', () => {
+  const d = dasar();
+  d.masuk[0].tglMasuk = '';
+  d.keluar[0].tglKeluar = '<b>';
+  const html = htmlOwner({ ...d, rekomendasi: [] });
+  assert.ok(!html.includes('undefined'));
+  assert.ok(html.includes('&lt;b&gt;'));
+  assert.ok(html.includes('<td>-</td>'));
+});
+
+test('susunRekomendasi: bentuk nol penuh memberi tiga saran', () => {
+  const d = dasar();
+  d.keuangan.transaksi = [];
+  d.operasional.inspeksi = 0;
+  d.marketing = { leads: 0, booking: 0 };
+  assert.equal(susunRekomendasi(d).length, 3);
+});
+
+const tabelUji = (judul: string, baris: LaporanTable['baris']): LaporanTable => ({ judul, baris });
+const LR_BULAN_RUGI = tabelUji('Laba Rugi', [
+  { label: 'PENDAPATAN PENJUALAN', nilai: null, seksi: true },
+  { label: 'Penerimaan Sewa Kamar', nilai: 1000000 },
+  { label: 'Total Pendapatan', nilai: 1000000, bold: true },
+  { label: 'LABA BERSIH', nilai: -175000, bold: true },
+]);
+const AK_UJI = tabelUji('Arus Kas', [
+  { label: 'Arus Kas Awal Periode', nilai: 5000000, bold: true },
+  { label: 'AKTIVITAS OPERASIONAL', nilai: null, seksi: true },
+  { label: 'Penerimaan Sewa Kamar', nilai: 1000000 },
+  { label: 'Pembayaran Operasional Lainnya', nilai: -1175000 },
+  { label: 'Arus Kas Bersih Operasional', nilai: -175000, bold: true },
+  { label: 'Kenaikan (Penurunan) Kas Bersih', nilai: -175000, bold: true },
+  { label: 'Arus Kas Akhir Periode', nilai: 4825000, bold: true },
+]);
+
+test('ekstrakKeuangan: laba negatif, beban = pendapatan - laba', () => {
+  assert.deepEqual(ekstrakKeuangan(LR_BULAN_RUGI, AK_UJI), {
+    pendapatan: 1000000, beban: 1175000, laba: -175000,
+    kasMasuk: 1000000, kasKeluar: 1175000, arusBersih: -175000,
+  });
+});
+
+test('ekstrakKeuangan: bulan kosong (semua nol) tidak melempar', () => {
+  const lr = tabelUji('Laba Rugi', [
+    { label: 'Total Pendapatan', nilai: 0, bold: true },
+    { label: 'LABA BERSIH', nilai: 0, bold: true },
+  ]);
+  const ak = tabelUji('Arus Kas', [
+    { label: 'Arus Kas Awal Periode', nilai: 0, bold: true },
+    { label: 'Penerimaan Sewa Kamar', nilai: 0 },
+    { label: 'Kenaikan (Penurunan) Kas Bersih', nilai: 0, bold: true },
+  ]);
+  assert.deepEqual(ekstrakKeuangan(lr, ak), { pendapatan: 0, beban: 0, laba: 0, kasMasuk: 0, kasKeluar: 0, arusBersih: 0 });
+});
+
+test('ekstrakKeuangan: label wajib hilang -> melempar pesan jelas', () => {
+  const tanpaLaba = tabelUji('Laba Rugi', [{ label: 'Total Pendapatan', nilai: 1, bold: true }]);
+  assert.throws(() => ekstrakKeuangan(tanpaLaba, AK_UJI), /Baris "LABA BERSIH" tidak ditemukan di Laba Rugi\./);
+  const tanpaKas = tabelUji('Arus Kas', []);
+  assert.throws(() => ekstrakKeuangan(LR_BULAN_RUGI, tanpaKas), /Baris "Kenaikan \(Penurunan\) Kas Bersih" tidak ditemukan di Arus Kas\./);
 });
