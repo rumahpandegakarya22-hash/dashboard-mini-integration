@@ -6,6 +6,8 @@ import type { Periode } from './types';
 import { parsePeriode } from './periode';
 import { ambilPekerjaan, susunPekerjaan, type DivisiPekerjaan } from './builders/pekerjaan';
 import { htmlPekerjaan } from './templates/pekerjaan';
+import { ambilOwner } from './builders/owner';
+import { htmlOwner } from './templates/owner';
 
 export interface LaporanDef {
   id: string;
@@ -41,6 +43,16 @@ export const LAPORAN: LaporanDef[] = [
   laporanKerja('Keuangan'),
   laporanKerja('Marketing'),
   laporanKerja('Sales'),
+  {
+    id: 'owner-review',
+    keluarga: 'owner',
+    judul: 'Owner Review',
+    ownerOnly: true,
+    async render(periode, dibuat) {
+      return htmlOwner({ ...(await ambilOwner(periode)), dibuat });
+    },
+    namaFile: periode => `Laporan Owner Review - ${periode.label}.pdf`,
+  },
 ];
 
 export function cariLaporan(id: string): LaporanDef | undefined {

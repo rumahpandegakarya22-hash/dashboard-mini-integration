@@ -43,3 +43,11 @@ test('bacaBody menolak null, non-objek, dan field bukan string', () => {
   for (const x of [null, undefined, 5, 'x', { id: 'a' }, { id: 1, periode: '2026-06' }]) assert.equal(bacaBody(x), null);
   assert.deepEqual(bacaBody({ id: 'kerja-admin', periode: '2026-06', x: 1 }), { id: 'kerja-admin', periode: '2026-06' });
 });
+
+test('owner-review terdaftar, ownerOnly, nama berkas sesuai', () => {
+  const def = cariLaporan('owner-review');
+  assert.ok(def);
+  assert.equal(def.ownerOnly, true);
+  assert.equal(def.keluarga, 'owner');
+  assert.equal(def.namaFile(parsePeriode('2026-06', SEKARANG)), 'Laporan Owner Review - Juni 2026.pdf');
+});
