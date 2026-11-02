@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { kodeBulanJakarta, kodeBulanLalu } from '@/lib/laporan-bulanan/periode';
+import { adalahBulanBerjalan, kodeBulanJakarta, kodeBulanLalu } from '@/lib/laporan-bulanan/periode';
+import { waktuRiwayatWib } from '@/lib/laporan-bulanan/format';
 
 interface LaporanItem {
   id: string;
@@ -81,9 +82,11 @@ export default function LaporanBulananPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: item.id, periode }),
       });
-      const data = await res.json() as { namaFile?: string; driveUrl?: string | null; error?: string };
+      const data = await res.json() as { namaFile?: string; driveUrl?: string | null; catatanArsip?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Gagal membuat laporan.');
-      setSuccess(`Laporan "${data.namaFile}" berhasil dibuat dan diarsipkan.`);
+      setSuccess(data.catatanArsip
+        ? `Laporan "${data.namaFile}" dibuat. ${data.catatanArsip}`
+        : `Laporan "${data.namaFile}" berhasil dibuat dan diarsipkan.`);
       setDriveUrl(data.driveUrl ?? null);
       void fetchData();
     } catch (e: unknown) {
@@ -96,6 +99,7 @@ export default function LaporanBulananPanel() {
   const judulById = new Map(laporan.map((l) => [l.id, l.judul]));
   const sibuk = generating !== null;
   const periodeOk = /^\d{4}-\d{2}$/.test(periode);
+  const berjalan = periodeOk && adalahBulanBerjalan(periode);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -130,6 +134,11 @@ export default function LaporanBulananPanel() {
             onChange={(e) => setPeriode(e.target.value)}
             style={{ maxWidth: 200 }}
           />
+          {berjalan && (
+            <p className="muted" style={{ marginTop: 6, fontSize: '0.85em' }}>
+              Bulan berjalan belum selesai: hanya Pratinjau dan Unduh PDF. Generate &amp; Arsipkan tersedia setelah bulan berakhir.
+            </p>
+          )}
         </div>
 
         {loading ? (
@@ -172,7 +181,8 @@ export default function LaporanBulananPanel() {
                           className="btn"
                           style={tombolKecil}
                           onClick={() => void generate(l)}
-                          disabled={sibuk || !periodeOk}
+                          disabled={sibuk || !periodeOk || berjalan}
+                          title={berjalan ? 'Bulan berjalan belum selesai' : undefined}
                         >
                           {generating === l.id ? 'Memproses…' : 'Generate & Arsipkan'}
                         </button>
@@ -220,7 +230,7 @@ export default function LaporanBulananPanel() {
                     <td>{judulById.get(r.jenis) ?? r.jenis}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: '0.85em' }}>{r.nama_file}</td>
                     <td>{r.dibuat_oleh ?? '-'}</td>
-                    <td>{r.created_at.slice(0, 16).replace('T', ' ')}</td>
+                    <td>{waktuRiwayatWib(r.created_at)}</td>
                     <td>
                       {r.drive_url ? (
                         <a href={r.drive_url} target="_blank" rel="noopener noreferrer" className="btn secondary" style={tombolKecil}>

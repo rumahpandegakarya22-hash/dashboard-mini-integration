@@ -27,3 +27,13 @@ test('kodeBulanLalu mengikuti WIB', () => {
   assert.equal(kodeBulanLalu(new Date('2026-12-31T20:00:00Z')), '2026-12');
 });
 test('kodeBulanJakarta', () => { assert.equal(kodeBulanJakarta(new Date('2026-12-31T20:00:00Z')), '2027-01'); });
+
+test('adalahBulanBerjalan mengikuti WIB', async () => {
+  const { adalahBulanBerjalan } = await import('./periode');
+  assert.equal(adalahBulanBerjalan('2026-11', new Date('2026-11-02T00:00:00Z')), true);
+  assert.equal(adalahBulanBerjalan('2026-10', new Date('2026-11-02T00:00:00Z')), false);
+  // 31 Okt 20:00 UTC = 1 Nov 03:00 WIB
+  assert.equal(adalahBulanBerjalan('2026-11', new Date('2026-10-31T20:00:00Z')), true);
+  assert.equal(adalahBulanBerjalan('2026-10', new Date('2026-10-31T20:00:00Z')), false);
+  assert.equal(adalahBulanBerjalan('2026-10', new Date('2026-10-31T16:59:00Z')), true);
+});

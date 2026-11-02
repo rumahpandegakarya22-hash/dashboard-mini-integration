@@ -46,3 +46,7 @@ export function periodeSebelumnya(sekarang: Date): Periode {
 export function kodeBulanLalu(sekarang: Date): string {
   return periodeSebelumnya(sekarang).kode;
 }
+
+export function adalahBulanBerjalan(kode: string, sekarang: Date = new Date()): boolean {
+  return kode === kodeBulanJakarta(sekarang);
+}

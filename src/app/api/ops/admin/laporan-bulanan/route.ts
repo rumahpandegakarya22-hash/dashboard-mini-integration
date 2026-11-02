@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
 import { LAPORAN, bacaBody, boleh, cariLaporan, generateLaporan } from '@/lib/laporan-bulanan/registry';
-import { parsePeriode } from '@/lib/laporan-bulanan/periode';
+import { adalahBulanBerjalan, parsePeriode } from '@/lib/laporan-bulanan/periode';
 
 async function requireAccess() {
   const user = await getSessionUser();
@@ -15,17 +15,21 @@ export async function GET() {
   const gate = await requireAccess();
   if (gate.error) return gate.error;
 
-  const diizinkan = LAPORAN.filter(l => boleh(gate.user!.role, l));
-  const ids = diizinkan.map(l => l.id);
-  const riwayatRes = await turso().execute({
-    sql: `SELECT * FROM laporan_riwayat WHERE jenis IN (${ids.map(() => '?').join(',')}) ORDER BY created_at DESC, id DESC LIMIT 50`,
-    args: ids,
-  });
+  try {
+    const diizinkan = LAPORAN.filter(l => boleh(gate.user!.role, l));
+    const ids = diizinkan.map(l => l.id);
+    const riwayatRes = await turso().execute({
+      sql: `SELECT * FROM laporan_riwayat WHERE jenis IN (${ids.map(() => '?').join(',')}) ORDER BY created_at DESC, id DESC LIMIT 50`,
+      args: ids,
+    });
 
-  return NextResponse.json({
-    laporan: diizinkan.map(l => ({ id: l.id, judul: l.judul, keluarga: l.keluarga })),
-    riwayat: riwayatRes.rows,
-  });
+    return NextResponse.json({
+      laporan: diizinkan.map(l => ({ id: l.id, judul: l.judul, keluarga: l.keluarga })),
+      riwayat: riwayatRes.rows,
+    });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Gagal memuat data.' }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -40,13 +44,14 @@ export async function POST(req: NextRequest) {
 
   try {
     parsePeriode(body.periode);
+    if (adalahBulanBerjalan(body.periode)) throw new Error('Bulan berjalan belum selesai. Pilih bulan lalu atau sebelumnya.');
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Periode tidak valid.' }, { status: 400 });
   }
 
   try {
-    const { namaFile, driveUrl, riwayatId } = await generateLaporan(def.id, body.periode, gate.user!.name);
-    return NextResponse.json({ ok: true, namaFile, driveUrl, riwayatId });
+    const { namaFile, driveUrl, riwayatId, catatanArsip } = await generateLaporan(def.id, body.periode, gate.user!.name);
+    return NextResponse.json({ ok: true, namaFile, driveUrl, riwayatId, catatanArsip });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Gagal membuat laporan.' }, { status: 500 });
   }

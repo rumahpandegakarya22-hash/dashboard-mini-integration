@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LAPORAN, cariLaporan, boleh, bacaBody } from './registry';
+import { createClient } from '@libsql/client';
+import { LAPORAN, cariLaporan, boleh, bacaBody, pilihFolder, generateLaporan, type DepsGenerate } from './registry';
 import { parsePeriode } from './periode';
 
 const SEKARANG = new Date('2026-11-02');
@@ -79,4 +80,93 @@ test('registri operasional dan admin: keluarga, judul, nama file', () => {
   cek('kerja-operasional', 'kerja', 'Kerja Operasional', 'Laporan Kerja Divisi Operasional - Juni 2026.pdf');
   cek('kinerja-operasional', 'kinerja', 'Kinerja Operasional', 'Laporan Kinerja Operasional (Inspeksi & Maintenance) - Juni 2026.pdf');
   cek('kinerja-admin', 'kinerja', 'Kinerja Admin', 'Laporan Kinerja Admin - Juni 2026.pdf');
+});
+
+test('pilihFolder: kunci config menang; owner-review tanpa fallback; lainnya fallback env', () => {
+  assert.equal(pilihFolder('kerja-admin', ' abc ', 'env'), 'abc');
+  assert.equal(pilihFolder('kerja-admin', null, 'env'), 'env');
+  assert.equal(pilihFolder('kerja-admin', '  ', 'env'), 'env');
+  assert.equal(pilihFolder('kerja-admin', undefined, undefined), undefined);
+  assert.equal(pilihFolder('owner-review', 'own', 'env'), 'own');
+  assert.equal(pilihFolder('owner-review', null, 'env'), undefined);
+  assert.equal(pilihFolder('owner-review', '', 'env'), undefined);
+});
+
+// Render laporan dibuat tanpa DB: def.render diganti stub agar yang diuji hanya alur catat -> arsip.
+async function siapkan(opsi: { tabel?: boolean; env?: string; drive?: string | undefined } = {}) {
+  const db = createClient({ url: ':memory:' });
+  if (opsi.tabel !== false) {
+    await db.execute('CREATE TABLE laporan_riwayat (id INTEGER PRIMARY KEY AUTOINCREMENT, periode TEXT, jenis TEXT, nama_file TEXT, drive_url TEXT, dibuat_oleh TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
+  }
+  const arsip: string[] = [];
+  const deps: Partial<DepsGenerate> = {
+    db,
+    htmlKePdf: async () => Buffer.from('pdf'),
+    getConfig: async () => null,
+    arsipkan: async (_n, _p, folder) => { arsip.push(folder); return 'drive' in opsi ? opsi.drive : 'https://drive/x'; },
+    envFolder: opsi.env,
+    sekarang: () => new Date('2026-11-02T03:00:00Z'),
+  };
+  return { db, arsip, deps };
+}
+
+function stubRender(id: string) {
+  const def = cariLaporan(id)!;
+  const asli = def.render;
+  def.render = async () => '<html></html>';
+  return () => { def.render = asli; };
+}
+
+test('generateLaporan menolak bulan berjalan (WIB) tanpa menyentuh DB/Drive', async () => {
+  const { arsip, deps, db } = await siapkan({ env: 'F' });
+  await assert.rejects(generateLaporan('kerja-admin', '2026-11', 'x', deps), /Bulan berjalan belum selesai/);
+  assert.equal(arsip.length, 0);
+  assert.equal(Number((await db.execute('SELECT COUNT(*) AS n FROM laporan_riwayat')).rows[0].n), 0);
+  const batas = { ...deps, sekarang: () => new Date('2026-10-31T20:00:00Z') };
+  await assert.rejects(generateLaporan('kerja-admin', '2026-11', 'x', batas), /Bulan berjalan/);
+});
+
+test('generateLaporan: INSERT gagal -> error jelas, TIDAK ada upload Drive', async () => {
+  const pulih = stubRender('kerja-admin');
+  try {
+    const { arsip, deps } = await siapkan({ tabel: false, env: 'F' });
+    await assert.rejects(generateLaporan('kerja-admin', '2026-10', 'x', deps), /Gagal mencatat riwayat/);
+    assert.equal(arsip.length, 0);
+  } finally { pulih(); }
+});
+
+test('generateLaporan: INSERT dulu, lalu upload, lalu drive_url diisi', async () => {
+  const pulih = stubRender('kerja-admin');
+  try {
+    const { db, arsip, deps } = await siapkan({ env: 'F' });
+    const hasil = await generateLaporan('kerja-admin', '2026-10', 'Budi', deps);
+    assert.deepEqual(arsip, ['F']);
+    assert.equal(hasil.driveUrl, 'https://drive/x');
+    assert.equal(hasil.catatanArsip, undefined);
+    const row = (await db.execute('SELECT periode, jenis, drive_url, dibuat_oleh FROM laporan_riwayat')).rows[0];
+    assert.equal(row.drive_url, 'https://drive/x');
+    assert.equal(row.periode, '2026-10');
+    assert.equal(row.dibuat_oleh, 'Budi');
+  } finally { pulih(); }
+});
+
+test('generateLaporan: upload gagal -> riwayat tetap ada tanpa tautan, ada catatan', async () => {
+  const pulih = stubRender('kerja-admin');
+  try {
+    const { db, deps } = await siapkan({ env: 'F', drive: undefined });
+    const hasil = await generateLaporan('kerja-admin', '2026-10', 'x', deps);
+    assert.match(hasil.catatanArsip ?? '', /gagal/);
+    assert.equal((await db.execute('SELECT drive_url FROM laporan_riwayat')).rows[0].drive_url, null);
+  } finally { pulih(); }
+});
+
+test('generateLaporan: owner-review tanpa folder tidak diarsipkan walau env keuangan ada', async () => {
+  const pulih = stubRender('owner-review');
+  try {
+    const { db, arsip, deps } = await siapkan({ env: 'FOLDER-KEUANGAN' });
+    const hasil = await generateLaporan('owner-review', '2026-10', 'x', deps);
+    assert.equal(arsip.length, 0);
+    assert.equal(hasil.catatanArsip, 'Owner Review tidak diarsipkan: folder Drive belum diatur.');
+    assert.equal(Number((await db.execute('SELECT COUNT(*) AS n FROM laporan_riwayat')).rows[0].n), 1);
+  } finally { pulih(); }
 });
