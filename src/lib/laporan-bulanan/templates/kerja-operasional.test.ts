@@ -67,3 +67,9 @@ test('kerja operasional: status dari database di-escape', () => {
   assert.ok(!h.includes('<i>x'));
   assert.match(h, /<td>&lt;i&gt;x&lt;\/i&gt;<\/td>/);
 });
+
+test('deadline teks bebas ter-escape dan tidak menjadi undefined', () => {
+  const h = htmlKerjaOperasional(susunKerjaOperasional(periode, dibuat, [t('Maintenance', 'Pending', 'akhir bulan & "segera"')]));
+  assert.ok(h.includes('akhir bulan &amp; &quot;segera&quot;'));
+  assert.ok(!h.includes('undefined'));
+});

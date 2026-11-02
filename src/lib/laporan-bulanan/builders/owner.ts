@@ -2,6 +2,8 @@ import { turso } from '@/lib/core/turso';
 import { buildArusKas, buildLabaRugi } from '@/lib/laporan/generator';
 import { ambilTransaksiJurnal, ekstrakKeuangan } from './keuangan';
 import type { Periode } from '../types';
+import { kondisiTanggal } from '../tanggal';
+import { tanggalDalamPeriode } from './marketing';
 
 export { ekstrakKeuangan };
 
@@ -43,29 +45,30 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
     db.execute({
       sql: `SELECT o.nama, o.no_kamar, o.tanggal_mulai, t.instansi FROM occupancy_history o
             LEFT JOIN active_tenant t ON t.id_penghuni = o.id_penghuni
-            WHERE o.tanggal_mulai BETWEEN ? AND ? ORDER BY o.tanggal_mulai, o.id_penghuni`,
+            WHERE ${kondisiTanggal('o.tanggal_mulai')} ORDER BY o.tanggal_mulai, o.id_penghuni`,
       args: a,
     }),
     db.execute({
-      sql: 'SELECT penghuni_label, no_kamar, tanggal_checkout FROM checkout_log WHERE tanggal_checkout BETWEEN ? AND ? ORDER BY tanggal_checkout, id',
+      sql: `SELECT penghuni_label, no_kamar, tanggal_checkout FROM checkout_log WHERE ${kondisiTanggal('tanggal_checkout')} ORDER BY tanggal_checkout, id`,
       args: a,
     }),
     ambilTransaksiJurnal(periode),
     db.execute({
-      sql: 'SELECT tanggal_lapor AS tgl, lokasi_item, biaya, status, prioritas FROM maintenance_cm WHERE tanggal_lapor BETWEEN ? AND ? ORDER BY tanggal_lapor',
+      sql: `SELECT tanggal_kerusakan AS tgl, lokasi_item, biaya, status, prioritas FROM maintenance_cm WHERE ${kondisiTanggal('tanggal_kerusakan')} ORDER BY tanggal_kerusakan`,
       args: a,
     }),
     db.execute({
-      sql: 'SELECT tanggal_lapor AS tgl, lokasi_item, biaya, status, prioritas FROM maintenance_pm WHERE tanggal_lapor BETWEEN ? AND ? ORDER BY tanggal_lapor',
+      sql: `SELECT tanggal_lapor AS tgl, lokasi_item, biaya, status, prioritas FROM maintenance_pm WHERE ${kondisiTanggal('tanggal_lapor')} ORDER BY tanggal_lapor`,
       args: a,
     }),
     db.execute({
-      sql: 'SELECT tanggal, area_fasilitas FROM inspeksi_fasilitas WHERE tanggal BETWEEN ? AND ? ORDER BY tanggal, id',
+      sql: `SELECT tanggal, area_fasilitas FROM inspeksi_fasilitas WHERE ${kondisiTanggal('tanggal')} ORDER BY tanggal, id`,
       args: a,
     }),
-    db.execute({ sql: 'SELECT COUNT(*) AS n FROM leads WHERE tanggal BETWEEN ? AND ?', args: a }),
+    // leads.tanggal bertipe teks dan bisa d/m/yyyy, jadi disaring di JS seperti Kinerja Marketing.
+    db.execute('SELECT tanggal FROM leads'),
     db.execute({
-      sql: "SELECT COUNT(*) AS n FROM booking WHERE tanggal_booking BETWEEN ? AND ? AND LOWER(COALESCE(status_booking, '')) NOT LIKE '%cancel%' AND LOWER(COALESCE(status_booking, '')) NOT LIKE '%batal%'",
+      sql: `SELECT COUNT(*) AS n FROM booking WHERE ${kondisiTanggal('tanggal_booking')} AND LOWER(COALESCE(status_booking, '')) NOT LIKE '%cancel%' AND LOWER(COALESCE(status_booking, '')) NOT LIKE '%batal%'`,
       args: a,
     }),
   ]);
@@ -98,7 +101,7 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
       biaya: semua.reduce((s, x) => s + x.biaya, 0),
       rincian: semua.map(x => ({ tanggal: x.tanggal, jenis: x.jenis, item: x.item, biaya: x.biaya, status: x.status })),
     },
-    marketing: { leads: angka(leads.rows[0]?.n), booking: angka(booking.rows[0]?.n) },
+    marketing: { leads: leads.rows.filter(r => tanggalDalamPeriode(teks(r.tanggal), periode.dari, periode.sampai)).length, booking: angka(booking.rows[0]?.n) },
   };
   return { ...d, rekomendasi: susunRekomendasi(d) };
 }

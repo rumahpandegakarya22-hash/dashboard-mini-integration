@@ -1,5 +1,5 @@
 import type { DataKinerjaOperasional } from '../builders/operasional';
-import { esc, rupiah, tglPendek, waktuWib } from '../format';
+import { esc, rupiah, tgl, waktuWib } from '../format';
 import { kerangkaDokumen } from '../shell';
 
 const kv = (baris: [string, string][]) =>
@@ -12,8 +12,8 @@ export function htmlKinerjaOperasional(d: DataKinerjaOperasional): string {
   const label = esc(d.periode.label);
   const { inspeksi: i, preventif: p, korektif: k } = d;
 
-  const barisP = p.rows.map(r => [tglPendek(r.tgl), esc(r.fasilitas), esc(r.jenis), esc(r.prioritas), rupiah(r.biaya), esc(r.status)]);
-  const barisK = k.rows.map(r => [tglPendek(r.tgl), esc(r.lokasi), esc(r.kerusakan), esc(r.prioritas), rupiah(r.biaya), esc(r.status)]);
+  const barisP = p.rows.map(r => [tgl(r.tgl), esc(r.fasilitas), esc(r.jenis), esc(r.prioritas), rupiah(r.biaya), esc(r.status)]);
+  const barisK = k.rows.map(r => [tgl(r.tgl), esc(r.lokasi), esc(r.kerusakan), esc(r.prioritas), rupiah(r.biaya), esc(r.status)]);
 
   const isi = `
 <h1 style="text-align:center">LAPORAN KINERJA OPERASIONAL (INSPEKSI &amp; MAINTENANCE)</h1>

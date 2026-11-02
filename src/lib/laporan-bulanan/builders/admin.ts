@@ -1,7 +1,7 @@
 import { turso } from '@/lib/core/turso';
 import { normalisasiStatus } from '@/lib/core/complain';
 import type { Periode } from '../types';
-import { tglPendek } from '../format';
+import { tglMentah } from '../format';
 
 export interface FeedbackMentah { tanggal: string; kamar: string | null; kategori: string | null; deskripsi: string; status: string }
 export interface PelanggaranRow { tanggal: string; jenis: string; deskripsi: string; pihak: string; tindakan: string }
@@ -58,9 +58,9 @@ export function susunKinerjaAdmin(
     kecelakaan: { total: kecelakaan.length, lokasi: teratas(kecelakaan.map(k => k.lokasi)) },
     lampiran: {
       // Hanya No. Kamar, tanpa nama/telepon penghuni.
-      feedback: feedback.map((f, i) => [tglPendek(f.tanggal), f.kamar?.trim() || '-', f.kategori?.trim() || '-', f.deskripsi, status[i]]),
-      pelanggaran: pelanggaran.map(p => [tglPendek(p.tanggal), p.jenis, p.deskripsi, p.pihak, p.tindakan]),
-      kecelakaan: kecelakaan.map(k => [tglPendek(k.tanggal), k.lokasi, k.petugas, k.kronologi, k.tindakan]),
+      feedback: feedback.map((f, i) => [tglMentah(f.tanggal), f.kamar?.trim() || '-', f.kategori?.trim() || '-', f.deskripsi, status[i]]),
+      pelanggaran: pelanggaran.map(p => [tglMentah(p.tanggal), p.jenis, p.deskripsi, p.pihak, p.tindakan]),
+      kecelakaan: kecelakaan.map(k => [tglMentah(k.tanggal), k.lokasi, k.petugas, k.kronologi, k.tindakan]),
     },
   };
 }

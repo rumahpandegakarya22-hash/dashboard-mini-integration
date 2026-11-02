@@ -25,6 +25,12 @@ export function tanggalIso(v: string | null | undefined): string {
   return m ? `${m[3]}-${dua(m[2])}-${dua(m[1])}` : '';
 }
 
+// Dipakai Kinerja Marketing dan Owner agar hitungan leads/konten sama.
+export function tanggalDalamPeriode(t: string | null | undefined, dari: string, sampai: string): boolean {
+  const i = tanggalIso(t);
+  return i >= dari && i <= sampai;
+}
+
 // Kampanye beririsan dengan periode; tgl_selesai kosong = masih berjalan.
 export function kampanyeBeririsan(mulai: string, selesai: string | null, dari: string, sampai: string): boolean {
   const a = tanggalIso(mulai);
@@ -40,7 +46,7 @@ const tambah = (m: Map<string, number>, k: string | null | undefined) => {
 };
 
 export function susunMarketing(periode: Periode, dibuat: Date, leads: LeadMentah[], konten: KontenMentah[], promo: PromoMentah[]): DataKinerjaMarketing {
-  const dalam = (t: string) => { const i = tanggalIso(t); return i >= periode.dari && i <= periode.sampai; };
+  const dalam = (t: string) => tanggalDalamPeriode(t, periode.dari, periode.sampai);
 
   const L = leads.filter(l => dalam(l.tanggal));
   const sumber = new Map<string, number>();

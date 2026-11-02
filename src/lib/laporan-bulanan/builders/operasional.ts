@@ -1,5 +1,6 @@
 import { turso } from '@/lib/core/turso';
 import type { DailyTaskRow, Periode } from '../types';
+import { kondisiTanggal } from '../tanggal';
 
 export type SubOperasional = 'Maintenance' | 'Inspeksi' | 'Kebersihan';
 type StatusDb = DailyTaskRow['status'];
@@ -52,7 +53,7 @@ export function susunKerjaOperasional(periode: Periode, dibuat: Date, rowsDb: Da
 export async function ambilKerjaOperasional(periode: Periode, dibuat: Date = new Date()): Promise<DataKerjaOperasional> {
   const res = await turso().execute({
     sql: `SELECT id, tanggal, task, pic, divisi, deadline, status FROM daily_tasks
-          WHERE divisi IN ('Maintenance', 'Inspeksi', 'Cleaning') AND tanggal BETWEEN ? AND ? ORDER BY tanggal, id`,
+          WHERE divisi IN ('Maintenance', 'Inspeksi', 'Cleaning') AND ${kondisiTanggal('tanggal')} ORDER BY tanggal, id`,
     args: [periode.dari, periode.sampai],
   });
   return susunKerjaOperasional(periode, dibuat, res.rows.map(r => ({
@@ -111,16 +112,16 @@ export async function ambilKinerjaOperasional(periode: Periode, dibuat: Date = n
   const db = turso();
   const a = [periode.dari, periode.sampai];
   const [insp, pm, cm] = await Promise.all([
-    db.execute({ sql: 'SELECT tindak_lanjut_perlu FROM inspeksi_fasilitas WHERE substr(tanggal, 1, 10) BETWEEN ? AND ? ORDER BY tanggal, id', args: a }),
+    db.execute({ sql: `SELECT tindak_lanjut_perlu FROM inspeksi_fasilitas WHERE ${kondisiTanggal('tanggal')} ORDER BY tanggal, id`, args: a }),
     // maintenance_pm: tanggal_lapor = tanggal jadwal, sumber_laporan = fasilitas, lokasi_item = jenis perawatan.
     db.execute({
       sql: `SELECT tanggal_lapor, sumber_laporan, lokasi_item, prioritas, biaya, status FROM maintenance_pm
-            WHERE substr(tanggal_lapor, 1, 10) BETWEEN ? AND ? ORDER BY tanggal_lapor, no_urut`,
+            WHERE ${kondisiTanggal('tanggal_lapor')} ORDER BY tanggal_lapor, no_urut`,
       args: a,
     }),
     db.execute({
       sql: `SELECT tanggal_kerusakan, lokasi_item, deskripsi_kerusakan, prioritas, biaya, status, durasi_perbaikan_hari FROM maintenance_cm
-            WHERE substr(tanggal_kerusakan, 1, 10) BETWEEN ? AND ? ORDER BY tanggal_kerusakan, no_urut`,
+            WHERE ${kondisiTanggal('tanggal_kerusakan')} ORDER BY tanggal_kerusakan, no_urut`,
       args: a,
     }),
   ]);

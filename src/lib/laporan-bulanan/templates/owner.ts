@@ -1,9 +1,6 @@
 import type { DataOwner } from '../builders/owner';
-import { esc, rupiah, tglPendek, waktuWib } from '../format';
+import { esc, rupiah, tgl, waktuWib } from '../format';
 import { kerangkaDokumen } from '../shell';
-
-const tgl = (s: string | null | undefined) =>
-  s && /^\d{4}-\d{2}-\d{2}/.test(s) ? tglPendek(s) : esc(s) || '-';
 
 const tabel = (kepala: string[], baris: string[][], kosong: string) =>
   baris.length

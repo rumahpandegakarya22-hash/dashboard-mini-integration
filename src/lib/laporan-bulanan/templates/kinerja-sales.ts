@@ -1,5 +1,5 @@
 import type { DataKinerjaSales } from '../builders/sales';
-import { esc, rupiah, tglPendek, waktuWib } from '../format';
+import { esc, rupiah, tgl, waktuWib } from '../format';
 import { kerangkaDokumen } from '../shell';
 
 const kv = (baris: [string, string][]) =>
@@ -9,7 +9,7 @@ export function htmlKinerjaSales(d: DataKinerjaSales): string {
   const label = esc(d.periode.label);
   const s = d.survey;
   const booking = d.booking.map(b =>
-    `<tr><td>${tglPendek(b.tanggal)}</td><td>${esc(b.nama)}</td><td>${esc(b.kamar)}</td><td>${esc(b.status)}</td><td>${rupiah(b.harga)}</td><td>${esc(b.sumber)}</td></tr>`).join('');
+    `<tr><td>${tgl(b.tanggal)}</td><td>${esc(b.nama)}</td><td>${esc(b.kamar)}</td><td>${esc(b.status)}</td><td>${rupiah(b.harga)}</td><td>${esc(b.sumber)}</td></tr>`).join('');
 
   const isi = `
 <h1 style="text-align:center">LAPORAN KINERJA SALES</h1>

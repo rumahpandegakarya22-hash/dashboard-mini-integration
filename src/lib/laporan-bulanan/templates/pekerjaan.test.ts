@@ -66,3 +66,9 @@ test('susunPekerjaan memetakan Finance ke Keuangan', () => {
   assert.ok(h.includes('Staf KEUANGAN'));
   assert.ok(h.includes('DIVISI KEUANGAN'));
 });
+
+test('deadline teks bebas ter-escape dan tidak menjadi undefined', () => {
+  const h = htmlPekerjaan(data({ rows: [{ tanggal: '2026-06-02', pekerjaan: 'x', pic: 'Rina', deadline: 'Jumat <depan>', status: 'Selesai' }] }));
+  assert.ok(h.includes('Jumat &lt;depan&gt;'));
+  assert.ok(!h.includes('undefined'));
+});

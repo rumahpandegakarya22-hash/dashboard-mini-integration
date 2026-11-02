@@ -1,5 +1,5 @@
 import type { DataPekerjaan } from '../builders/pekerjaan';
-import { esc, tglPendek, waktuWib } from '../format';
+import { esc, tgl, waktuWib } from '../format';
 import { kerangkaDokumen } from '../shell';
 import { ringkasTugas } from '../tugas';
 
@@ -9,7 +9,7 @@ export function htmlPekerjaan(d: DataPekerjaan): string {
   const r = ringkasTugas(d.rows);
   const nama = esc(d.divisi);
   const baris = d.rows.length
-    ? d.rows.map((x, i) => `<tr><td>${i + 1}</td><td>${tglPendek(x.tanggal)}</td><td>${esc(x.pekerjaan)}</td><td>${nama}</td><td>${esc(x.pic)}</td><td>${x.deadline ? tglPendek(x.deadline) : '-'}</td><td>${x.status}</td></tr>`).join('')
+    ? d.rows.map((x, i) => `<tr><td>${i + 1}</td><td>${tgl(x.tanggal)}</td><td>${esc(x.pekerjaan)}</td><td>${nama}</td><td>${esc(x.pic)}</td><td>${tgl(x.deadline)}</td><td>${esc(x.status)}</td></tr>`).join('')
     : '<tr><td>-</td><td>-</td><td>(tidak ada data pada periode ini)</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>';
 
   const isi = `
