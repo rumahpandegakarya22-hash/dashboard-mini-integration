@@ -14,7 +14,7 @@ export function namaBulan(m: number): string {
 const dua = (n: number) => String(n).padStart(2, '0');
 
 // 'en-CA' menghasilkan YYYY-MM-DD; dipakai agar bulan "sekarang" mengikuti WIB, bukan UTC server.
-function kodeBulanJakarta(d: Date): string {
+export function kodeBulanJakarta(d: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(d).slice(0, 7);
 }
 
@@ -41,4 +41,8 @@ export function parsePeriode(kode: string, sekarang: Date = new Date()): Periode
 export function periodeSebelumnya(sekarang: Date): Periode {
   const [y, m] = kodeBulanJakarta(sekarang).split('-').map(Number);
   return m === 1 ? bangunPeriode(y - 1, 12) : bangunPeriode(y, m - 1);
+}
+
+export function kodeBulanLalu(sekarang: Date): string {
+  return periodeSebelumnya(sekarang).kode;
 }

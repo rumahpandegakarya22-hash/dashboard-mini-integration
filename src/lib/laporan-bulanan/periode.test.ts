@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePeriode, periodeSebelumnya } from './periode';
+import { kodeBulanJakarta, kodeBulanLalu, parsePeriode, periodeSebelumnya } from './periode';
 
 test('Februari kabisat berakhir 29', () => {
   assert.equal(parsePeriode('2028-02', new Date('2028-03-05')).sampai, '2028-02-29');
@@ -22,3 +22,8 @@ test('periode berjalan diterima, dari/sampai benar', () => {
   assert.equal(p.dari, '2026-10-01');
   assert.equal(p.sampai, '2026-10-31');
 });
+test('kodeBulanLalu mengikuti WIB', () => {
+  assert.equal(kodeBulanLalu(new Date('2026-11-02T00:00:00Z')), '2026-10');
+  assert.equal(kodeBulanLalu(new Date('2026-12-31T20:00:00Z')), '2026-12');
+});
+test('kodeBulanJakarta', () => { assert.equal(kodeBulanJakarta(new Date('2026-12-31T20:00:00Z')), '2027-01'); });
