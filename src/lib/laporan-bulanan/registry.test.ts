@@ -65,3 +65,18 @@ test('kinerja-keuangan dan kinerja-sales terdaftar, bukan ownerOnly, nama berkas
   assert.equal(kk.namaFile(p), 'Laporan Kinerja Keuangan - Juni 2026.pdf');
   assert.equal(ks.namaFile(p), 'Laporan Kinerja Sales - Juni 2026.pdf');
 });
+
+test('registri operasional dan admin: keluarga, judul, nama file', () => {
+  const p = parsePeriode('2026-06', SEKARANG);
+  const cek = (id: string, keluarga: string, judul: string, file: string) => {
+    const d = cariLaporan(id);
+    assert.ok(d, id);
+    assert.equal(d.keluarga, keluarga);
+    assert.equal(d.judul, judul);
+    assert.ok(!d.ownerOnly);
+    assert.equal(d.namaFile(p), file);
+  };
+  cek('kerja-operasional', 'kerja', 'Kerja Operasional', 'Laporan Kerja Divisi Operasional - Juni 2026.pdf');
+  cek('kinerja-operasional', 'kinerja', 'Kinerja Operasional', 'Laporan Kinerja Operasional (Inspeksi & Maintenance) - Juni 2026.pdf');
+  cek('kinerja-admin', 'kinerja', 'Kinerja Admin', 'Laporan Kinerja Admin - Juni 2026.pdf');
+});

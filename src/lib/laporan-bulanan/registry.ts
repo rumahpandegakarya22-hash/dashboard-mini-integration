@@ -14,6 +14,11 @@ import { ambilKinerjaSales } from './builders/sales';
 import { htmlKinerjaSales } from './templates/kinerja-sales';
 import { ambilKinerjaMarketing } from './builders/marketing';
 import { htmlKinerjaMarketing } from './templates/kinerja-marketing';
+import { ambilKerjaOperasional, ambilKinerjaOperasional } from './builders/operasional';
+import { htmlKerjaOperasional } from './templates/kerja-operasional';
+import { htmlKinerjaOperasional } from './templates/kinerja-operasional';
+import { ambilKinerjaAdmin } from './builders/admin';
+import { htmlKinerjaAdmin } from './templates/kinerja-admin';
 
 export interface LaporanDef {
   id: string;
@@ -75,6 +80,33 @@ export const LAPORAN: LaporanDef[] = [
       return htmlKinerjaMarketing(await ambilKinerjaMarketing(periode, dibuat));
     },
     namaFile: periode => `Laporan Kinerja Marketing - ${periode.label}.pdf`,
+  },
+  {
+    id: 'kerja-operasional',
+    keluarga: 'kerja',
+    judul: 'Kerja Operasional',
+    async render(periode, dibuat) {
+      return htmlKerjaOperasional(await ambilKerjaOperasional(periode, dibuat));
+    },
+    namaFile: periode => `Laporan Kerja Divisi Operasional - ${periode.label}.pdf`,
+  },
+  {
+    id: 'kinerja-operasional',
+    keluarga: 'kinerja',
+    judul: 'Kinerja Operasional',
+    async render(periode, dibuat) {
+      return htmlKinerjaOperasional(await ambilKinerjaOperasional(periode, dibuat));
+    },
+    namaFile: periode => `Laporan Kinerja Operasional (Inspeksi & Maintenance) - ${periode.label}.pdf`,
+  },
+  {
+    id: 'kinerja-admin',
+    keluarga: 'kinerja',
+    judul: 'Kinerja Admin',
+    async render(periode, dibuat) {
+      return htmlKinerjaAdmin(await ambilKinerjaAdmin(periode, dibuat));
+    },
+    namaFile: periode => `Laporan Kinerja Admin - ${periode.label}.pdf`,
   },
   {
     id: 'owner-review',
