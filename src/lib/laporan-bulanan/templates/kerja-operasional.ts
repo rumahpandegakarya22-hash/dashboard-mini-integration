@@ -34,7 +34,7 @@ export function htmlKerjaOperasional(d: DataKerjaOperasional): string {
 
   const bagian = hitung.map((h, i) => {
     const rows = h.tugas.map(t => baris([
-      tglPendek(t.tanggal), esc(t.task), esc(t.pic), t.deadline ? tglPendek(t.deadline) : '-', t.status,
+      tglPendek(t.tanggal), esc(t.task), esc(t.pic), t.deadline ? tglPendek(t.deadline) : '-', esc(t.status),
     ])).join('');
     return `<h3>${HURUF[i]}. Divisi ${h.nama}</h3>
 ${kv([['Total Task', h.total], ['Complete', h.complete], ['In Progress', h.proses], ['Pending', h.pending], ['Lewat Deadline (belum complete)', h.lewat]])}

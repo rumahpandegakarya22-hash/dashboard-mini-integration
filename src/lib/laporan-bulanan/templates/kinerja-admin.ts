@@ -38,7 +38,7 @@ ${lampiran('Lampiran 1. Logbook Feedback', ['Tanggal', 'No. Kamar', 'Kategori', 
 ${lampiran('Lampiran 2. Logbook Pelanggaran Peraturan', ['Tanggal', 'Jenis', 'Deskripsi', 'Penghuni/Petugas', 'Tindakan'], l.pelanggaran)}
 ${lampiran('Lampiran 3. Logbook Kecelakaan Kerja', ['Tanggal', 'Lokasi', 'Petugas', 'Kronologi', 'Tindakan'], l.kecelakaan)}
 <table style="border:none;margin-top:24pt"><tr>
-<td style="border:none;width:50%">Dibuat oleh,<br><br><br><br>(________________)<br>Staf Admin</td>
+<td style="border:none;width:50%">Dibuat oleh,<br><br><br><br>(________________)<br>Staf Divisi</td>
 <td style="border:none;width:50%">Mengetahui,<br><br><br><br>(________________)<br>Pengelola Kost</td>
 </tr></table>`;
   return kerangkaDokumen(isi, 'dokumen');

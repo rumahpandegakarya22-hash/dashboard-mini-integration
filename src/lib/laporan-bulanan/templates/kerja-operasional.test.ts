@@ -60,3 +60,10 @@ test('kerja operasional: teks database di-escape', () => {
   assert.ok(!h.includes('<script>') && !h.includes('<b>'));
   assert.match(h, /&lt;script&gt;x&lt;\/script&gt; &amp; &quot;y&quot;/);
 });
+
+test('kerja operasional: status dari database di-escape', () => {
+  const d = susunKerjaOperasional(periode, dibuat, [t('Maintenance', '<i>x</i>' as DailyTaskRow['status'], null)]);
+  const h = htmlKerjaOperasional(d);
+  assert.ok(!h.includes('<i>x'));
+  assert.match(h, /<td>&lt;i&gt;x&lt;\/i&gt;<\/td>/);
+});

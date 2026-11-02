@@ -29,7 +29,7 @@ test('kinerja admin: header, bagian, label, lampiran', () => {
   assert.match(h, /<td>Kategori<\/td><td>Kebersihan \(4\)<\/td>/);
   assert.match(h, /<th>Tanggal<\/th><th>No\. Kamar<\/th><th>Kategori<\/th><th>Deskripsi<\/th><th>Status<\/th>/);
   assert.match(h, /<td>03\/06\/2026<\/td><td>5<\/td><td>Kebersihan<\/td><td>Lantai licin<\/td><td>Selesai<\/td>/);
-  assert.match(h, /Dibuat oleh,[\s\S]*Staf Admin[\s\S]*Mengetahui,[\s\S]*Pengelola Kost/);
+  assert.match(h, /Dibuat oleh,[\s\S]*Staf Divisi[\s\S]*Mengetahui,[\s\S]*Pengelola Kost/);
   assert.ok(h.includes('Tidak ada pelanggaran pada periode ini.'));
   assert.ok(h.includes('Tidak ada kecelakaan kerja pada periode ini.'));
   assert.equal(h.split('Tidak ada entri pada periode ini.').length - 1, 2);

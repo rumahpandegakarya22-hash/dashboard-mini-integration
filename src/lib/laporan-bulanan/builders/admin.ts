@@ -69,8 +69,9 @@ export async function ambilKinerjaAdmin(periode: Periode, dibuat: Date = new Dat
   // Sumber feedback = tenant_complain (ditulis modul Feedback & aplikasi penghuni); tabel `feedback` lama kosong.
   const [res, pelanggaran, kecelakaan] = await Promise.all([
     turso().execute({
-      sql: `SELECT substr(c.reported_at, 1, 10) AS tanggal, t.no_kamar, c.category, c.description, c.status
-            FROM tenant_complain c LEFT JOIN active_tenant t ON t.id_penghuni = c.id_penghuni
+      sql: `SELECT substr(c.reported_at, 1, 10) AS tanggal,
+                   (SELECT t.no_kamar FROM active_tenant t WHERE t.id_penghuni = c.id_penghuni LIMIT 1) AS no_kamar, c.category, c.description, c.status
+            FROM tenant_complain c
             WHERE substr(c.reported_at, 1, 10) BETWEEN ? AND ? ORDER BY c.reported_at, c.id_complain`,
       args: [periode.dari, periode.sampai],
     }),
