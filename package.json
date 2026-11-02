@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:laporan": "tsx --test \"src/lib/laporan-bulanan/**/*.test.ts\""
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.18",
