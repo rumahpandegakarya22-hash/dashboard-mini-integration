@@ -12,6 +12,8 @@ import { ambilKinerjaKeuangan } from './builders/keuangan';
 import { htmlKinerjaKeuangan } from './templates/kinerja-keuangan';
 import { ambilKinerjaSales } from './builders/sales';
 import { htmlKinerjaSales } from './templates/kinerja-sales';
+import { ambilKinerjaMarketing } from './builders/marketing';
+import { htmlKinerjaMarketing } from './templates/kinerja-marketing';
 
 export interface LaporanDef {
   id: string;
@@ -64,6 +66,15 @@ export const LAPORAN: LaporanDef[] = [
       return htmlKinerjaSales(await ambilKinerjaSales(periode, dibuat));
     },
     namaFile: periode => `Laporan Kinerja Sales - ${periode.label}.pdf`,
+  },
+  {
+    id: 'kinerja-marketing',
+    keluarga: 'kinerja',
+    judul: 'Kinerja Marketing',
+    async render(periode, dibuat) {
+      return htmlKinerjaMarketing(await ambilKinerjaMarketing(periode, dibuat));
+    },
+    namaFile: periode => `Laporan Kinerja Marketing - ${periode.label}.pdf`,
   },
   {
     id: 'owner-review',
