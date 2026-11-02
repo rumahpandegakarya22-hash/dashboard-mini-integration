@@ -1,9 +1,9 @@
 import { Readable } from 'node:stream';
 import { driveClient, withRetry } from '../core/google';
 
-/** Simpan PDF laporan ke folder Drive laporan keuangan. */
-export async function arsipkanLaporan(namaFile: string, pdf: Buffer): Promise<string | undefined> {
-  const folderId = process.env.DRIVE_FOLDER_LAPORAN;
+/** Simpan PDF laporan ke folder Drive; folderIdKhusus kosong -> DRIVE_FOLDER_LAPORAN. */
+export async function arsipkanLaporan(namaFile: string, pdf: Buffer, folderIdKhusus?: string): Promise<string | undefined> {
+  const folderId = folderIdKhusus || process.env.DRIVE_FOLDER_LAPORAN;
   if (!folderId) return undefined;
   try {
     const res = await withRetry(() =>
