@@ -22,3 +22,19 @@ export function cariCacat(html: string): string[] {
   const teks = teksPolos(html);
   return CACAT.filter(([, re]) => re.test(teks)).map(([nama]) => nama);
 }
+
+export function urai(argv: string[]): { id: string; kode: string; html?: string; full: boolean } | null {
+  const posisi: string[] = [];
+  let html: string | undefined;
+  let full = false;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--full') full = true;
+    else if (a === '--html') {
+      html = argv[++i];
+      if (!html || html.startsWith('--')) return null;
+    } else if (!a.startsWith('--')) posisi.push(a);
+  }
+  const [id, kode] = posisi;
+  return id && kode ? { id, kode, html, full } : null;
+}

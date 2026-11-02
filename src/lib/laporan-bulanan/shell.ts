@@ -12,7 +12,6 @@ const CSS_DASAR = `
   p { margin: 0; }
   table { width: 100%; border-collapse: collapse; margin: 6pt 0 10pt; }
   th, td { border: 1pt solid #000; padding: 5pt; text-align: left; vertical-align: top; }
-  th { font-weight: 700; }
   tr { page-break-inside: avoid; }
 `;
 

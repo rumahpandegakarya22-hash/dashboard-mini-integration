@@ -12,21 +12,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { LAPORAN, cariLaporan } from '../src/lib/laporan-bulanan/registry';
 import { parsePeriode } from '../src/lib/laporan-bulanan/periode';
-import { teksPolos, cariCacat } from '../src/lib/laporan-bulanan/cek';
+import { teksPolos, cariCacat, urai } from '../src/lib/laporan-bulanan/cek';
 
 const BATAS = 1500;
 
 async function main() {
-  const args = process.argv.slice(2);
-  const full = args.includes('--full');
-  const iHtml = args.indexOf('--html');
-  const dirHtml = iHtml >= 0 ? args[iHtml + 1] : undefined;
-  const posisi = args.filter((a, i) => !a.startsWith('--') && i !== iHtml + 1);
-  const [id, kode] = posisi;
-  if (!id || !kode || (iHtml >= 0 && !dirHtml)) {
+  const arg = urai(process.argv.slice(2));
+  if (!arg) {
     console.error('Pakai: npx tsx scripts/laporan-bulanan-check.ts <id|semua> <YYYY-MM> [--html <dir>] [--full]');
     process.exit(2);
   }
+  const { id, kode, full, html: dirHtml } = arg;
 
   const daftar = id === 'semua' ? LAPORAN : [cariLaporan(id)].filter((d) => d !== undefined);
   if (daftar.length === 0) {
