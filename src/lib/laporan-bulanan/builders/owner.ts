@@ -1,6 +1,9 @@
 import { turso } from '@/lib/core/turso';
-import { buildArusKas, buildLabaRugi, type LaporanTable } from '@/lib/laporan/generator';
+import { buildArusKas, buildLabaRugi } from '@/lib/laporan/generator';
+import { ambilTransaksiJurnal, ekstrakKeuangan } from './keuangan';
 import type { Periode } from '../types';
+
+export { ekstrakKeuangan };
 
 export interface DataOwner {
   periode: Periode;
@@ -28,26 +31,6 @@ export function susunRekomendasi(d: Omit<DataOwner, 'rekomendasi'>): string[] {
   return r.length ? r : ['Data periode ini sudah lengkap; tidak ada rekomendasi tambahan.'];
 }
 
-// Angka diambil dari baris Laba Rugi / Arus Kas resmi, bukan dihitung ulang dari jurnal.
-// Kas masuk/keluar = jumlah baris rincian arus kas (bukan subtotal, bukan saldo) yang positif/negatif.
-export function ekstrakKeuangan(lr: LaporanTable, ak: LaporanTable) {
-  const nilai = (t: LaporanTable, label: string, nama: string) => {
-    const baris = t.baris.find(b => b.label === label);
-    if (!baris) throw new Error(`Baris "${label}" tidak ditemukan di ${nama}.`);
-    return baris.nilai ?? 0;
-  };
-  const pendapatan = nilai(lr, 'Total Pendapatan', 'Laba Rugi');
-  const laba = nilai(lr, 'LABA BERSIH', 'Laba Rugi');
-  let kasMasuk = 0;
-  let kasKeluar = 0;
-  for (const b of ak.baris) {
-    if (b.seksi || b.bold || b.nilai == null) continue;
-    if (b.nilai > 0) kasMasuk += b.nilai;
-    else kasKeluar += -b.nilai;
-  }
-  return { pendapatan, beban: pendapatan - laba, laba, kasMasuk, kasKeluar, arusBersih: nilai(ak, 'Kenaikan (Penurunan) Kas Bersih', 'Arus Kas') };
-}
-
 const teks = (v: unknown) => (v == null ? '' : String(v));
 const angka = (v: unknown) => { const n = Number(v ?? 0); return Number.isFinite(n) ? n : 0; };
 
@@ -67,12 +50,7 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
       sql: 'SELECT penghuni_label, no_kamar, tanggal_checkout FROM checkout_log WHERE tanggal_checkout BETWEEN ? AND ? ORDER BY tanggal_checkout, id',
       args: a,
     }),
-    db.execute({
-      sql: `SELECT j.tanggal, j.keterangan, j.nominal, d.nama_akun AS debit, k.nama_akun AS kredit
-            FROM jurnal_transaksi j LEFT JOIN coa d ON d.kode = j.akun_debit_kode LEFT JOIN coa k ON k.kode = j.akun_kredit_kode
-            WHERE j.tanggal BETWEEN ? AND ? ORDER BY j.tanggal, j.id`,
-      args: a,
-    }),
+    ambilTransaksiJurnal(periode),
     db.execute({
       sql: 'SELECT tanggal_lapor AS tgl, lokasi_item, biaya, status, prioritas FROM maintenance_cm WHERE tanggal_lapor BETWEEN ? AND ? ORDER BY tanggal_lapor',
       args: a,
@@ -110,7 +88,7 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
     }),
     keuangan: {
       ...ekstrakKeuangan(lr, ak),
-      transaksi: jurnal.rows.map(r => ({ tanggal: teks(r.tanggal), keterangan: teks(r.keterangan), debit: teks(r.debit) || '-', kredit: teks(r.kredit) || '-', nominal: angka(r.nominal) })),
+      transaksi: jurnal,
     },
     operasional: {
       korektifSelesai: korektif.filter(selesai).length,

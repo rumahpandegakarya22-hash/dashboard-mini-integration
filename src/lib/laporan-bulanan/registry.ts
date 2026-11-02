@@ -8,6 +8,10 @@ import { ambilPekerjaan, susunPekerjaan, type DivisiPekerjaan } from './builders
 import { htmlPekerjaan } from './templates/pekerjaan';
 import { ambilOwner } from './builders/owner';
 import { htmlOwner } from './templates/owner';
+import { ambilKinerjaKeuangan } from './builders/keuangan';
+import { htmlKinerjaKeuangan } from './templates/kinerja-keuangan';
+import { ambilKinerjaSales } from './builders/sales';
+import { htmlKinerjaSales } from './templates/kinerja-sales';
 
 export interface LaporanDef {
   id: string;
@@ -43,6 +47,24 @@ export const LAPORAN: LaporanDef[] = [
   laporanKerja('Keuangan'),
   laporanKerja('Marketing'),
   laporanKerja('Sales'),
+  {
+    id: 'kinerja-keuangan',
+    keluarga: 'kinerja',
+    judul: 'Kinerja Keuangan',
+    async render(periode, dibuat) {
+      return htmlKinerjaKeuangan(await ambilKinerjaKeuangan(periode, dibuat));
+    },
+    namaFile: periode => `Laporan Kinerja Keuangan - ${periode.label}.pdf`,
+  },
+  {
+    id: 'kinerja-sales',
+    keluarga: 'kinerja',
+    judul: 'Kinerja Sales',
+    async render(periode, dibuat) {
+      return htmlKinerjaSales(await ambilKinerjaSales(periode, dibuat));
+    },
+    namaFile: periode => `Laporan Kinerja Sales - ${periode.label}.pdf`,
+  },
   {
     id: 'owner-review',
     keluarga: 'owner',

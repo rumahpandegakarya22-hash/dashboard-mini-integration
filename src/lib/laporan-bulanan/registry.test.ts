@@ -51,3 +51,17 @@ test('owner-review terdaftar, ownerOnly, nama berkas sesuai', () => {
   assert.equal(def.keluarga, 'owner');
   assert.equal(def.namaFile(parsePeriode('2026-06', SEKARANG)), 'Laporan Owner Review - Juni 2026.pdf');
 });
+
+test('kinerja-keuangan dan kinerja-sales terdaftar, bukan ownerOnly, nama berkas sesuai', () => {
+  const p = parsePeriode('2026-06', SEKARANG);
+  const kk = cariLaporan('kinerja-keuangan');
+  const ks = cariLaporan('kinerja-sales');
+  assert.ok(kk && ks);
+  assert.equal(kk.keluarga, 'kinerja');
+  assert.equal(ks.keluarga, 'kinerja');
+  assert.equal(kk.judul, 'Kinerja Keuangan');
+  assert.equal(ks.judul, 'Kinerja Sales');
+  assert.ok(!kk.ownerOnly && !ks.ownerOnly);
+  assert.equal(kk.namaFile(p), 'Laporan Kinerja Keuangan - Juni 2026.pdf');
+  assert.equal(ks.namaFile(p), 'Laporan Kinerja Sales - Juni 2026.pdf');
+});
