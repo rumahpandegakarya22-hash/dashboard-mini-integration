@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LAPORAN, cariLaporan, boleh } from './registry';
+import { LAPORAN, cariLaporan, boleh, bacaBody } from './registry';
 import { parsePeriode } from './periode';
 
 const SEKARANG = new Date('2026-11-02');
@@ -37,4 +37,9 @@ test('boleh(): peran ALLOWED, ownerOnly hanya owner', () => {
   assert.equal(boleh('tenant', biasa), false);
   assert.equal(boleh('staff_admin', khusus), false);
   assert.equal(boleh('owner', khusus), true);
+});
+
+test('bacaBody menolak null, non-objek, dan field bukan string', () => {
+  for (const x of [null, undefined, 5, 'x', { id: 'a' }, { id: 1, periode: '2026-06' }]) assert.equal(bacaBody(x), null);
+  assert.deepEqual(bacaBody({ id: 'kerja-admin', periode: '2026-06', x: 1 }), { id: 'kerja-admin', periode: '2026-06' });
 });

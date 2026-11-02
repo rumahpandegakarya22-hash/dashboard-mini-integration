@@ -22,18 +22,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Periode tidak valid.' }, { status: 400 });
   }
 
-  const html = await def.render(periode, new Date());
-  if (q.get('format') === 'html') {
-    return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
-  }
-
   const namaFile = def.namaFile(periode);
-  const pdf = await htmlKePdf(html);
-  return new NextResponse(new Uint8Array(pdf), {
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="${encodeURIComponent(namaFile)}"`,
-      'Cache-Control': 'no-store',
-    },
-  });
+  try {
+    const html = await def.render(periode, new Date());
+    if (q.get('format') === 'html') {
+      return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+    }
+    const pdf = await htmlKePdf(html);
+    const ascii = namaFile.replace(/[^\x20-\x7E]|["\\]/g, '_');
+    return new NextResponse(new Uint8Array(pdf), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(namaFile)}`,
+        'Cache-Control': 'no-store',
+      },
+    });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ error: `Gagal membuat laporan: ${msg}` }, { status: 500 });
+  }
 }

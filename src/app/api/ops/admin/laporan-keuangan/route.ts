@@ -24,7 +24,7 @@ export async function GET() {
   if (gate.error) return gate.error;
 
   const [riwayatRes, emailTo] = await Promise.all([
-    turso().execute('SELECT * FROM laporan_riwayat ORDER BY created_at DESC LIMIT 50'),
+    turso().execute("SELECT * FROM laporan_riwayat WHERE jenis IN ('Cashflow','LabaRugi','Neraca') ORDER BY created_at DESC LIMIT 50"),
     getConfig('laporan_email_to'),
   ]);
 

@@ -82,3 +82,10 @@ export async function laporanSudahAda(id: string, kode: string): Promise<boolean
   });
   return res.rows.length > 0;
 }
+
+/** Validasi body POST: harus objek dengan id dan periode string. */
+export function bacaBody(raw: unknown): { id: string; periode: string } | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const { id, periode } = raw as Record<string, unknown>;
+  return typeof id === 'string' && typeof periode === 'string' ? { id, periode } : null;
+}
