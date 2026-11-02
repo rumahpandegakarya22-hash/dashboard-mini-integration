@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/core/auth';
 import { htmlKePdf } from '@/lib/invoice/pdf';
 import { boleh, cariLaporan } from '@/lib/laporan-bulanan/registry';
 import { parsePeriode } from '@/lib/laporan-bulanan/periode';
+import { rfc5987 } from '@/lib/laporan-bulanan/format';
 
 /** Regenerasi laporan dari Turso (tidak tergantung arsip Drive). format=html untuk pratinjau tanpa Chrome. */
 export async function GET(req: NextRequest) {
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(namaFile)}`,
+        'Content-Disposition': `inline; filename="${ascii}"; filename*=UTF-8''${rfc5987(namaFile)}`,
         'Cache-Control': 'no-store',
       },
     });
