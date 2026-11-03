@@ -2,6 +2,7 @@ import { turso } from '@/lib/core/turso';
 import { normalisasiStatus } from '@/lib/core/complain';
 import type { Periode } from '../types';
 import { tglMentah } from '../format';
+import { argTanggal, kondisiTanggal } from '../tanggal';
 
 export interface FeedbackMentah { tanggal: string; kamar: string | null; kategori: string | null; deskripsi: string; status: string }
 export interface PelanggaranRow { tanggal: string; jenis: string; deskripsi: string; pihak: string; tindakan: string }
@@ -72,8 +73,8 @@ export async function ambilKinerjaAdmin(periode: Periode, dibuat: Date = new Dat
       sql: `SELECT substr(c.reported_at, 1, 10) AS tanggal,
                    (SELECT t.no_kamar FROM active_tenant t WHERE t.id_penghuni = c.id_penghuni LIMIT 1) AS no_kamar, c.category, c.description, c.status
             FROM tenant_complain c
-            WHERE substr(c.reported_at, 1, 10) BETWEEN ? AND ? ORDER BY c.reported_at, c.id_complain`,
-      args: [periode.dari, periode.sampai],
+            WHERE ${kondisiTanggal('c.reported_at')} ORDER BY c.reported_at, c.id_complain`,
+      args: argTanggal(periode),
     }),
     ambilPelanggaran(periode),
     ambilKecelakaan(periode),

@@ -2,8 +2,7 @@ import { turso } from '@/lib/core/turso';
 import { buildArusKas, buildLabaRugi } from '@/lib/laporan/generator';
 import { ambilTransaksiJurnal, ekstrakKeuangan } from './keuangan';
 import type { Periode } from '../types';
-import { kondisiTanggal } from '../tanggal';
-import { tanggalDalamPeriode } from './marketing';
+import { argTanggal, kondisiTanggal } from '../tanggal';
 
 export { ekstrakKeuangan };
 
@@ -38,7 +37,7 @@ const angka = (v: unknown) => { const n = Number(v ?? 0); return Number.isFinite
 
 export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): Promise<DataOwner> {
   const db = turso();
-  const a = [periode.dari, periode.sampai];
+  const a = argTanggal(periode);
   const [lr, ak, masuk, keluar, jurnal, cm, pm, insp, leads, booking] = await Promise.all([
     buildLabaRugi(periode.dari, periode.sampai),
     buildArusKas(periode.dari, periode.sampai),
@@ -65,8 +64,8 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
       sql: `SELECT tanggal, area_fasilitas FROM inspeksi_fasilitas WHERE ${kondisiTanggal('tanggal')} ORDER BY tanggal, id`,
       args: a,
     }),
-    // leads.tanggal bertipe teks dan bisa d/m/yyyy, jadi disaring di JS seperti Kinerja Marketing.
-    db.execute('SELECT tanggal FROM leads'),
+    // Hanya butuh jumlah: hitung di database, jangan tarik barisnya.
+    db.execute({ sql: `SELECT COUNT(*) AS n FROM leads WHERE ${kondisiTanggal('tanggal')}`, args: a }),
     db.execute({
       sql: `SELECT COUNT(*) AS n FROM booking WHERE ${kondisiTanggal('tanggal_booking')} AND LOWER(COALESCE(status_booking, '')) NOT LIKE '%cancel%' AND LOWER(COALESCE(status_booking, '')) NOT LIKE '%batal%'`,
       args: a,
@@ -101,7 +100,7 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
       biaya: semua.reduce((s, x) => s + x.biaya, 0),
       rincian: semua.map(x => ({ tanggal: x.tanggal, jenis: x.jenis, item: x.item, biaya: x.biaya, status: x.status })),
     },
-    marketing: { leads: leads.rows.filter(r => tanggalDalamPeriode(teks(r.tanggal), periode.dari, periode.sampai)).length, booking: angka(booking.rows[0]?.n) },
+    marketing: { leads: angka(leads.rows[0]?.n), booking: angka(booking.rows[0]?.n) },
   };
   return { ...d, rekomendasi: susunRekomendasi(d) };
 }

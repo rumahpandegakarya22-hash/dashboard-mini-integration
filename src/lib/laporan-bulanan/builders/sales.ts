@@ -1,5 +1,6 @@
 import { turso } from '@/lib/core/turso';
 import type { Periode } from '../types';
+import { argTanggal, kondisiTanggal } from '../tanggal';
 
 export interface DataKinerjaSales {
   periode: Periode;
@@ -56,15 +57,15 @@ export function susunSales(periode: Periode, dibuat: Date, booking: BookingMenta
 
 export async function ambilKinerjaSales(periode: Periode, dibuat: Date = new Date()): Promise<DataKinerjaSales> {
   const db = turso();
-  const a = [periode.dari, periode.sampai];
+  const a = argTanggal(periode);
   const [booking, survey] = await Promise.all([
     db.execute({
       sql: `SELECT tanggal_booking, nama_penyewa, kamar_no, status_booking, harga_disepakati, sumber_leads
-            FROM booking WHERE substr(tanggal_booking, 1, 10) BETWEEN ? AND ? ORDER BY tanggal_booking, no_booking`,
+            FROM booking WHERE ${kondisiTanggal('tanggal_booking')} ORDER BY tanggal_booking, no_booking`,
       args: a,
     }),
     db.execute({
-      sql: 'SELECT hasil_survey FROM survey WHERE substr(tanggal_survey, 1, 10) BETWEEN ? AND ? ORDER BY tanggal_survey, id',
+      sql: `SELECT hasil_survey FROM survey WHERE ${kondisiTanggal('tanggal_survey')} ORDER BY tanggal_survey, id`,
       args: a,
     }),
   ]);

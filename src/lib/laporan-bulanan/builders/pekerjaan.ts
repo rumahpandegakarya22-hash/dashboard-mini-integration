@@ -1,6 +1,6 @@
 import type { Client } from '@libsql/client';
 import { turso } from '@/lib/core/turso';
-import { kondisiTanggal } from '../tanggal';
+import { argTanggal, kondisiTanggal } from '../tanggal';
 import type { DailyTaskRow, Periode, StatusTugas } from '../types';
 import { petaStatus } from '../tugas';
 
@@ -43,7 +43,7 @@ export function susunPekerjaan(
 export async function ambilPekerjaan(divisi: DivisiPekerjaan, periode: Periode, db: Client = turso()): Promise<DailyTaskRow[]> {
   const res = await db.execute({
     sql: `SELECT id, tanggal, task, pic, divisi, deadline, status FROM daily_tasks WHERE divisi = ? AND ${kondisiTanggal('tanggal')} ORDER BY tanggal, id`,
-    args: [DIVISI_DB[divisi], periode.dari, periode.sampai],
+    args: [DIVISI_DB[divisi], ...argTanggal(periode)],
   });
   return res.rows.map(r => ({
     id: Number(r.id),

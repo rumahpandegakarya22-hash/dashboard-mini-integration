@@ -1,5 +1,7 @@
+import type { Client } from '@libsql/client';
 import { turso } from '@/lib/core/turso';
 import type { Periode } from '../types';
+import { argTanggal, kondisiTanggal } from '../tanggal';
 
 export interface DataKinerjaMarketing {
   periode: Periode;
@@ -86,13 +88,18 @@ export function susunMarketing(periode: Periode, dibuat: Date, leads: LeadMentah
   };
 }
 
-export async function ambilKinerjaMarketing(periode: Periode, dibuat: Date = new Date()): Promise<DataKinerjaMarketing> {
-  const db = turso();
-  // Tanggal bertipe teks bisa non-ISO, jadi saring di susunMarketing, bukan di SQL.
+export async function ambilKinerjaMarketing(periode: Periode, dibuat: Date = new Date(), db: Client = turso()): Promise<DataKinerjaMarketing> {
+  // Saring periode di SQL (hanya baris yang relevan yang dikirim); susunMarketing menyaring lagi sebagai pengaman.
+  const a = argTanggal(periode);
   const [leads, konten, promo] = await Promise.all([
-    db.execute('SELECT tanggal, sumber_leads, status_leads FROM leads'),
-    db.execute('SELECT tgl_post, platform, likes, komentar, share_saves, reach FROM content'),
-    db.execute('SELECT tgl_mulai, tgl_selesai, budget, spend_aktual, target_leads, leads_aktual, booking_dr_promo FROM promotion'),
+    db.execute({ sql: `SELECT tanggal, sumber_leads, status_leads FROM leads WHERE ${kondisiTanggal('tanggal')}`, args: a }),
+    db.execute({ sql: `SELECT tgl_post, platform, likes, komentar, share_saves, reach FROM content WHERE ${kondisiTanggal('tgl_post')}`, args: a }),
+    // Kampanye beririsan dengan periode: mulai sebelum hari-setelah-sampai dan (belum selesai atau selesai >= dari).
+    db.execute({
+      sql: `SELECT tgl_mulai, tgl_selesai, budget, spend_aktual, target_leads, leads_aktual, booking_dr_promo FROM promotion
+            WHERE tgl_mulai < ? AND (tgl_selesai IS NULL OR tgl_selesai = '' OR tgl_selesai >= ?)`,
+      args: [a[1], periode.dari],
+    }),
   ]);
   const teks = (v: unknown) => (v == null ? null : String(v));
   const angka = (v: unknown) => Number(v ?? 0) || 0;

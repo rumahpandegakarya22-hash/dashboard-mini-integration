@@ -1,6 +1,6 @@
 import { turso } from '@/lib/core/turso';
 import type { DailyTaskRow, Periode } from '../types';
-import { kondisiTanggal } from '../tanggal';
+import { argTanggal, kondisiTanggal } from '../tanggal';
 
 export type SubOperasional = 'Maintenance' | 'Inspeksi' | 'Kebersihan';
 type StatusDb = DailyTaskRow['status'];
@@ -54,7 +54,7 @@ export async function ambilKerjaOperasional(periode: Periode, dibuat: Date = new
   const res = await turso().execute({
     sql: `SELECT id, tanggal, task, pic, divisi, deadline, status FROM daily_tasks
           WHERE divisi IN ('Maintenance', 'Inspeksi', 'Cleaning') AND ${kondisiTanggal('tanggal')} ORDER BY tanggal, id`,
-    args: [periode.dari, periode.sampai],
+    args: argTanggal(periode),
   });
   return susunKerjaOperasional(periode, dibuat, res.rows.map(r => ({
     id: Number(r.id),
@@ -110,7 +110,7 @@ const angka = (v: unknown) => Number(v ?? 0) || 0;
 
 export async function ambilKinerjaOperasional(periode: Periode, dibuat: Date = new Date()): Promise<DataKinerjaOperasional> {
   const db = turso();
-  const a = [periode.dari, periode.sampai];
+  const a = argTanggal(periode);
   const [insp, pm, cm] = await Promise.all([
     db.execute({ sql: `SELECT tindak_lanjut_perlu FROM inspeksi_fasilitas WHERE ${kondisiTanggal('tanggal')} ORDER BY tanggal, id`, args: a }),
     // maintenance_pm: tanggal_lapor = tanggal jadwal, sumber_laporan = fasilitas, lokasi_item = jenis perawatan.
