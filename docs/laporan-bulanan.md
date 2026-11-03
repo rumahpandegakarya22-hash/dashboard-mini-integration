@@ -2,6 +2,12 @@
 
 11 laporan PDF per bulan (Properti A): 4 laporan pekerjaan divisi, Kerja Operasional, 5 laporan kinerja, dan Owner Review. Dibuat dari data Turso, diarsipkan ke Google Drive, dicatat di tabel `laporan_riwayat`.
 
+## Status deploy (3 Nov 2026)
+
+Sudah ter-deploy ke production lewat Vercel CLI (`vercel --prod`) ke proyek `dashboard-integrate-mini`, alias `https://dashboard-tiga-dara.vercel.app`. Build lolos dan rute `/api/cron/laporan-bulanan` ikut ter-build. Uji endpoint tanpa kunci dan dengan kunci salah: HTTP 401 JSON (tidak dialihkan ke login). Uji dengan kunci yang benar belum dijalankan dari luar karena `CRON_SECRET` bertipe Sensitive di Vercel (nilainya tidak bisa dibaca kembali); jalankan lewat tombol Run di Vercel (Settings > Cron Jobs).
+
+Peringatan: kode fitur ini hanya ada di repo lokal dan hasil deploy CLI, belum di repo GitHub. Bila proyek Vercel memakai integrasi Git, push berikutnya dari repo GitHub (yang belum memuat fitur ini) akan men-deploy versi tanpa fitur laporan bulanan. Salin perubahan ke repo GitHub sebelum push berikutnya.
+
 ## Urutan deploy
 
 Lakukan berurutan. Jangan deploy sebelum langkah 1-4 selesai.
