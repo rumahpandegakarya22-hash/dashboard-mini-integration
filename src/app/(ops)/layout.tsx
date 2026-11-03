@@ -4,6 +4,7 @@ import { guardOps } from '@/lib/core/routing';
 import { canAccess, ROLE_LABEL } from '@/lib/core/roles';
 import { MODULES } from '@/lib/modules/registry';
 import AppShell from '@/components/AppShell';
+import { bolehBukaLandingAdmin } from '@/lib/landing-admin';
 
 /**
  * Layout route group Ops. Urutan gerbang: login Clerk (proxy.ts) →
@@ -25,7 +26,7 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
     <div data-app="ops">
       <AppShell userName={user.name} roleLabel={ROLE_LABEL[user.role]} isOwner={user.role === 'owner'}
         canKelola={user.role === 'owner' || user.role === 'staff_admin'}
-        canLandingPage={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_marketing'}
+        canLandingPage={bolehBukaLandingAdmin(user.role)}
         canRiwayatBayar={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_sales'}
         canInspeksi={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_inspeksi'}
         hasDashboardAccess={!!s.dashboardUser} modules={visible}>

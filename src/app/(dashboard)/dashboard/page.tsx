@@ -3,6 +3,7 @@ import { getAuthState } from '@/lib/core/auth';
 import { DEFAULT_PERIOD, findPage } from '@/config/dashboard-nav';
 import { loadDashboardData } from '@/lib/dashboard/views/load';
 import DashboardShell from '@/components/dashboard/DashboardShell';
+import { bolehBukaLandingAdmin } from '@/lib/landing-admin';
 import OverviewFor from '@/components/dashboard/overviews/OverviewFor';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,7 @@ export default async function DashboardPage({
       userName={user.name || user.username}
       tfaEnabled={s.totpEnrolled}
       hasOpsAccess={!!s.user}
+      canLandingAdmin={bolehBukaLandingAdmin(s.user?.role)}
       view="overview"
       crumb={page.crumb}
       isDash

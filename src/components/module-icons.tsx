@@ -85,8 +85,12 @@ export const NAV_TEMAN_RARA: { href: string; label: string; icon: LucideIcon }[]
   { href: '/ops/admin/akun-penghuni', label: 'Akun Penghuni', icon: UsersRound }
 ];
 
-/** Halaman admin Landing Page — terpisah karena Marketing juga perlu akses (bukan hanya canKelola). */
-export const NAV_LANDING_PAGE = { href: '/ops/admin/landing-page', label: 'Landing Page', icon: Globe };
+/**
+ * Admin Landing Page ada di proyek landing sendiri. Tautan ini membuka tab baru lewat route penghubung yang
+ * menukar sesi dashboard jadi tiket masuk ke admin landing (tanpa mengetik password). Terpisah dari canKelola
+ * karena Marketing juga perlu akses.
+ */
+export const NAV_LANDING_PAGE = { href: '/api/ops/landing-admin/masuk', label: 'Setting Landing Page', icon: Globe };
 
 /** Riwayat Pembayaran — owner, staff_admin, staff_sales. */
 export const NAV_RIWAYAT_BAYAR = { href: '/ops/admin/riwayat-pembayaran', label: 'Riwayat Pembayaran', icon: History };

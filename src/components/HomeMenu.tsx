@@ -25,8 +25,16 @@ export default function HomeMenu({ isOwner, canKelola, canLandingPage, canRiwaya
 
   let cardIndex = 0;
 
-  function ModuleCard({ id, title, href, icon: Icon }: NavModule & { href: string; icon: ReturnType<typeof moduleIcon> }) {
+  function ModuleCard({ id, title, href, icon: Icon, external }: NavModule & { href: string; icon: ReturnType<typeof moduleIcon>; external?: boolean }) {
     const i = cardIndex++;
+    const isi = (
+      <>
+        <span className="icon-tile" aria-hidden>
+          <Icon size={20} />
+        </span>
+        <span className="module-card-title">{title}</span>
+      </>
+    );
     return (
       <motion.div
         key={id}
@@ -35,12 +43,15 @@ export default function HomeMenu({ isOwner, canKelola, canLandingPage, canRiwaya
         transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3), ease: EASE }}
         whileTap={{ scale: 0.97 }}
       >
-        <Link href={href} className="module-card border-beam">
-          <span className="icon-tile" aria-hidden>
-            <Icon size={20} />
-          </span>
-          <span className="module-card-title">{title}</span>
-        </Link>
+        {external ? (
+          <a href={href} target="_blank" rel="noopener noreferrer" className="module-card border-beam">
+            {isi}
+          </a>
+        ) : (
+          <Link href={href} className="module-card border-beam">
+            {isi}
+          </Link>
+        )}
       </motion.div>
     );
   }
@@ -76,18 +87,15 @@ export default function HomeMenu({ isOwner, canKelola, canLandingPage, canRiwaya
             {NAV_TEMAN_RARA.map((n) => (
               <ModuleCard key={n.href} id={n.href} title={n.label} href={n.href} icon={n.icon} />
             ))}
-            {canLandingPage && (
-              <ModuleCard id="landing-page" title={NAV_LANDING_PAGE.label} href={NAV_LANDING_PAGE.href} icon={NAV_LANDING_PAGE.icon} />
-            )}
           </div>
         </section>
       )}
 
-      {!canKelola && canLandingPage && (
-        <section aria-label="Marketing Admin">
-          <h2 className="section-title">Marketing Admin</h2>
+      {canLandingPage && (
+        <section aria-label="Website">
+          <h2 className="section-title">Website</h2>
           <div className="module-grid">
-            <ModuleCard id="landing-page" title={NAV_LANDING_PAGE.label} href={NAV_LANDING_PAGE.href} icon={NAV_LANDING_PAGE.icon} />
+            <ModuleCard id="landing-page" title={NAV_LANDING_PAGE.label} href={NAV_LANDING_PAGE.href} icon={NAV_LANDING_PAGE.icon} external />
           </div>
         </section>
       )}

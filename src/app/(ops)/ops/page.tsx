@@ -6,6 +6,7 @@ import HomeGreeting from '@/components/HomeGreeting';
 import HomeMenu from '@/components/HomeMenu';
 import Joblist from '@/components/Joblist';
 import PendingAnnouncement from '@/components/PendingAnnouncement';
+import { bolehBukaLandingAdmin } from '@/lib/landing-admin';
 
 export default async function HomePage() {
   const user = await getSessionUser();
@@ -32,7 +33,7 @@ export default async function HomePage() {
       <HomeMenu
         isOwner={user.role === 'owner'}
         canKelola={user.role === 'owner' || user.role === 'staff_admin'}
-        canLandingPage={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_marketing'}
+        canLandingPage={bolehBukaLandingAdmin(user.role)}
         canRiwayatBayar={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_sales'}
         canInspeksi={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_inspeksi'}
         modules={visible}

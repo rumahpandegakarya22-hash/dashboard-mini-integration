@@ -29,6 +29,8 @@ export interface DashboardShellProps {
   crumb: string;
   /** true bila akun ini juga punya akses Mini App Ops — menampilkan tautan silang. */
   hasOpsAccess?: boolean;
+  /** true bila akun ini boleh membuka admin Landing Page (aplikasi terpisah, tab baru). */
+  canLandingAdmin?: boolean;
   /** true bila view ini bergrup "dash" (menampilkan page-head). */
   isDash?: boolean;
   period: string;
@@ -44,6 +46,7 @@ export default function DashboardShell({
   view,
   crumb,
   hasOpsAccess,
+  canLandingAdmin,
   period,
   from,
   to,
@@ -110,6 +113,15 @@ export default function DashboardShell({
                   <IconCaret />
                 </span>
                 Inventory Stock
+              </a>
+            )}
+            {/* Setting Landing Page: aplikasi terpisah, dibuka di tab baru dan masuk otomatis lewat tiket SSO. */}
+            {canLandingAdmin && (
+              <a className="nav-link" href="/api/ops/landing-admin/masuk" target="_blank" rel="noopener noreferrer">
+                <span className="caret">
+                  <IconCaret />
+                </span>
+                Setting Landing Page
               </a>
             )}
           </div>

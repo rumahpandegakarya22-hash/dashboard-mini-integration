@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getAuthState } from '@/lib/core/auth';
 import { DEFAULT_PERIOD } from '@/config/dashboard-nav';
 import DashboardShell from '@/components/dashboard/DashboardShell';
+import { bolehBukaLandingAdmin } from '@/lib/landing-admin';
 import TotpSettings from '@/components/TotpSettings';
 import UnifiedUserAdmin from '@/components/dashboard/UnifiedUserAdmin';
 
@@ -24,6 +25,7 @@ export default async function DashboardAkunPage({
       userName={user.name || user.username}
       tfaEnabled={s.totpEnrolled}
       hasOpsAccess={!!s.user}
+      canLandingAdmin={bolehBukaLandingAdmin(s.user?.role)}
       view="akun"
       crumb="Akun & Keamanan"
       period={period}

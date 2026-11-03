@@ -163,18 +163,6 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
                   </SideLink>
                 );
               })}
-              <SideLink href={NAV_LANDING_PAGE.href} active={pathname.startsWith(NAV_LANDING_PAGE.href)} icon={NAV_LANDING_PAGE.icon}>
-                {NAV_LANDING_PAGE.label}
-              </SideLink>
-            </div>
-          )}
-
-          {!canKelola && canLandingPage && (
-            <div>
-              <div className="side-group-label">Marketing Admin</div>
-              <SideLink href={NAV_LANDING_PAGE.href} active={pathname.startsWith(NAV_LANDING_PAGE.href)} icon={NAV_LANDING_PAGE.icon}>
-                {NAV_LANDING_PAGE.label}
-              </SideLink>
             </div>
           )}
 
@@ -240,6 +228,13 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
               <Package size={18} />
               Inventory Stock
             </a>
+            {/* Admin landing page = aplikasi terpisah: buka di tab baru, masuk otomatis lewat tiket SSO. */}
+            {canLandingPage && (
+              <a href={NAV_LANDING_PAGE.href} target="_blank" rel="noopener noreferrer" className="side-item">
+                <NAV_LANDING_PAGE.icon size={18} />
+                {NAV_LANDING_PAGE.label}
+              </a>
+            )}
           </div>
         </nav>
 
