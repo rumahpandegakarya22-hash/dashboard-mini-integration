@@ -170,3 +170,57 @@ test('generateLaporan: owner-review tanpa folder tidak diarsipkan walau env keua
     assert.equal(Number((await db.execute('SELECT COUNT(*) AS n FROM laporan_riwayat')).rows[0].n), 1);
   } finally { pulih(); }
 });
+
+test('laporan keuangan: id sama dengan jenis riwayat lama, nama berkas format lama, tersembunyi dari panel baru', () => {
+  const p = parsePeriode('2026-10', SEKARANG);
+  for (const [id, nama] of [['Cashflow', '1026-Cashflow-Kost Tiga Dara.pdf'], ['LabaRugi', '1026-LabaRugi-Kost Tiga Dara.pdf'], ['Neraca', '1026-Neraca-Kost Tiga Dara.pdf']] as const) {
+    const def = cariLaporan(id);
+    assert.ok(def, id);
+    assert.equal(def.keluarga, 'keuangan');
+    assert.equal(def.tersembunyi, true);
+    assert.equal(def.email, true);
+    assert.equal(def.ownerOnly, undefined);
+    assert.equal(def.namaFile(p), nama);
+  }
+});
+
+test('nama berkas keuangan memakai kode periode (tahun 2 digit), bukan label', () => {
+  assert.equal(cariLaporan('Neraca')?.namaFile(parsePeriode('2027-01', new Date('2027-02-05'))), '0127-Neraca-Kost Tiga Dara.pdf');
+});
+
+test('email: 13 laporan ikut (3 keuangan + 5 kerja + 5 kinerja), owner-review tidak', () => {
+  const ikut = LAPORAN.filter(l => l.email);
+  assert.equal(ikut.length, 13);
+  assert.equal(ikut.filter(l => l.keluarga === 'keuangan').length, 3);
+  assert.equal(ikut.filter(l => l.keluarga === 'kerja').length, 5);
+  assert.equal(ikut.filter(l => l.keluarga === 'kinerja').length, 5);
+  assert.equal(cariLaporan('owner-review')?.email, false);
+});
+
+test('laporanUntukEmail: 13 item, tanpa owner-review, keluarga valid', async () => {
+  const { laporanUntukEmail } = await import('./registry');
+  const item = laporanUntukEmail();
+  assert.equal(item.length, 13);
+  assert.ok(!item.some(i => i.id === 'owner-review'));
+  assert.deepEqual([...new Set(item.map(i => i.keluarga))].sort(), ['kerja', 'keuangan', 'kinerja']);
+});
+
+test('hanya laporan keuangan yang tersembunyi dari panel', () => {
+  for (const l of LAPORAN) assert.equal(Boolean(l.tersembunyi), l.keluarga === 'keuangan', l.id);
+});
+
+test('renderPdf: menolak id tak dikenal dan bulan tak valid', async () => {
+  const { renderPdf } = await import('./registry');
+  await assert.rejects(() => renderPdf('tidak-ada', '2026-10'), /tidak valid/i);
+  await assert.rejects(() => renderPdf('kerja-admin', '2026-13'), /tidak valid/i);
+});
+
+test('renderPdf: memakai render + htmlKePdf yang disuntik dan mengembalikan nama berkas', async () => {
+  const { renderPdf } = await import('./registry');
+  const pulih = stubRender('kerja-admin');
+  try {
+    const r = await renderPdf('kerja-admin', '2026-10', { htmlKePdf: async () => Buffer.from('%PDF-uji'), sekarang: () => SEKARANG });
+    assert.equal(r.namaFile, 'Laporan ADMIN - Oktober 2026.pdf');
+    assert.equal(r.pdf.toString(), '%PDF-uji');
+  } finally { pulih(); }
+});

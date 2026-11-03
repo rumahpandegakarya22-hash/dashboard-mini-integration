@@ -20,13 +20,19 @@ import { htmlKerjaOperasional } from './templates/kerja-operasional';
 import { htmlKinerjaOperasional } from './templates/kinerja-operasional';
 import { ambilKinerjaAdmin } from './builders/admin';
 import { htmlKinerjaAdmin } from './templates/kinerja-admin';
+import { buildArusKas, buildLabaRugi, buildNeraca } from '@/lib/laporan/generator';
+import { htmlArusKas, htmlLabaRugi, htmlNeraca } from '@/lib/laporan/template';
 
 export interface LaporanDef {
   id: string;
-  keluarga: 'kerja' | 'kinerja' | 'owner';
+  keluarga: 'keuangan' | 'kerja' | 'kinerja' | 'owner';
   judul: string;
   ownerOnly?: boolean;
-  render(periode: Periode, dibuat: Date): Promise<string>;
+  // Tidak tampil di panel laporan bulanan (laporan keuangan sudah punya panel sendiri), tetap ikut cron dan email.
+  tersembunyi?: boolean;
+  // Ikut dilampirkan di email bulanan.
+  email?: boolean;
+  render(periode: Periode, dibuat: Date, oleh?: string): Promise<string>;
   namaFile(periode: Periode): string;
 }
 
@@ -49,8 +55,24 @@ function laporanKerja(divisi: DivisiPekerjaan): LaporanDef {
   };
 }
 
+// Id = jenis di riwayat laporan keuangan lama ('Cashflow' | 'LabaRugi' | 'Neraca'), nama berkas juga format lama.
+function laporanKeuangan(jenis: 'Cashflow' | 'LabaRugi' | 'Neraca', judul: string): LaporanDef {
+  return {
+    id: jenis,
+    keluarga: 'keuangan',
+    judul,
+    tersembunyi: true,
+    async render(periode, _dibuat, oleh = 'Sistem') {
+      if (jenis === 'LabaRugi') return htmlLabaRugi(await buildLabaRugi(periode.dari, periode.sampai), periode.kode, oleh);
+      if (jenis === 'Cashflow') return htmlArusKas(await buildArusKas(periode.dari, periode.sampai), periode.kode, oleh);
+      return htmlNeraca(await buildNeraca(periode.sampai), periode.kode, oleh);
+    },
+    namaFile: periode => `${periode.kode.slice(5, 7)}${periode.kode.slice(2, 4)}-${jenis}-Kost Tiga Dara.pdf`,
+  };
+}
+
 // Tugas berikutnya menambah satu objek per laporan ke array ini.
-export const LAPORAN: LaporanDef[] = [
+const DAFTAR: LaporanDef[] = [
   laporanKerja('Admin'),
   laporanKerja('Keuangan'),
   laporanKerja('Marketing'),
@@ -119,7 +141,19 @@ export const LAPORAN: LaporanDef[] = [
     },
     namaFile: periode => `Laporan Owner Review - ${periode.label}.pdf`,
   },
+  laporanKeuangan('Cashflow', 'Laporan Arus Kas'),
+  laporanKeuangan('LabaRugi', 'Laporan Laba Rugi'),
+  laporanKeuangan('Neraca', 'Laporan Neraca'),
 ];
+
+// Semua laporan ikut email bulanan kecuali Owner Review: alamat tujuan bisa diubah staf admin/sales dari halaman Laporan,
+// sedangkan Owner Review hanya untuk owner.
+export const LAPORAN: LaporanDef[] = DAFTAR.map(l => ({ ...l, email: l.keluarga !== 'owner' }));
+
+export function laporanUntukEmail(): { id: string; keluarga: 'keuangan' | 'kerja' | 'kinerja' }[] {
+  return LAPORAN.filter(l => l.email && l.keluarga !== 'owner')
+    .map(l => ({ id: l.id, keluarga: l.keluarga as 'keuangan' | 'kerja' | 'kinerja' }));
+}
 
 export function cariLaporan(id: string): LaporanDef | undefined {
   return LAPORAN.find(l => l.id === id);
@@ -172,7 +206,7 @@ export async function generateLaporan(
     throw new Error('Bulan berjalan belum selesai. Pilih bulan lalu atau sebelumnya.');
   }
 
-  const pdf = await d.htmlKePdf(await def.render(periode, sekarang));
+  const pdf = await d.htmlKePdf(await def.render(periode, sekarang, oleh));
   const namaFile = def.namaFile(periode);
 
   // Riwayat dicatat DULU: bila gagal (mis. migrasi 019 belum diterapkan) tidak ada file Drive yatim.
@@ -206,6 +240,21 @@ export async function generateLaporan(
     return { namaFile, pdf, driveUrl, riwayatId, catatanArsip: `Tautan Drive gagal disimpan ke riwayat: ${msg}` };
   }
   return { namaFile, pdf, driveUrl, riwayatId };
+}
+
+// PDF tanpa mencatat riwayat atau mengarsipkan: dipakai melampirkan laporan yang sudah ada ke email bulanan.
+export async function renderPdf(
+  id: string,
+  kode: string,
+  deps: Partial<Pick<DepsGenerate, 'htmlKePdf' | 'sekarang'>> = {},
+  oleh = 'Jadwal otomatis',
+): Promise<{ namaFile: string; pdf: Buffer }> {
+  const def = cariLaporan(id);
+  if (!def) throw new Error('Jenis laporan tidak valid.');
+  const sekarang = (deps.sekarang ?? (() => new Date()))();
+  const periode = parsePeriode(kode, sekarang);
+  const pdf = await (deps.htmlKePdf ?? htmlKePdf)(await def.render(periode, sekarang, oleh));
+  return { namaFile: def.namaFile(periode), pdf };
 }
 
 export async function laporanSudahAda(id: string, kode: string): Promise<boolean> {

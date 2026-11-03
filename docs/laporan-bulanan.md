@@ -32,12 +32,23 @@ Semua 11 laporan dibuat untuk Oktober 2026 (11 berhasil, 0 gagal, 1-4 detik per 
 
 ## Cara kerja cron
 
-- Jadwal di `vercel.json`: `0 1 1 * *` (UTC) = tanggal 1 pukul 08:00 WIB.
-- Membuat laporan bulan sebelumnya (WIB) untuk semua 11 laporan.
+- Jadwal di `vercel.json`: `0 1 1-3 * *` (UTC) = tanggal 1, 2, dan 3 pukul 08:00 WIB. Hari ke-2 dan ke-3 hanya mencoba ulang yang belum selesai: bila semuanya sudah ada dan email sudah terkirim, tidak ada yang dikerjakan lagi. Paket Hobby membolehkan cron paling sering sekali sehari.
+- Membuat laporan bulan sebelumnya (WIB) untuk semua 14 laporan: 11 laporan divisi/owner plus 3 laporan keuangan (Arus Kas, Laba Rugi, Neraca; id `Cashflow`, `LabaRugi`, `Neraca`, sama dengan riwayat laporan keuangan lama dan tidak ditampilkan dobel di panel baru).
 - Idempoten: laporan yang sudah punya baris di `laporan_riwayat` untuk periode itu dilewati. Menjalankan dua kali tidak membuat duplikat.
 - Satu laporan gagal tidak menghentikan yang lain. Bila ada yang gagal, respons HTTP 500 dengan badan `{ periode, hasil }` (tiap item `dibuat`, `dilewati`, atau `gagal` beserta pesannya), sehingga Vercel menandai eksekusi gagal. Jalankan ulang: hanya yang gagal yang dibuat.
 - Mengisi ulang bulan yang terlewat: panggil endpoint dengan `?periode=YYYY-MM` dan header `Authorization: Bearer <CRON_SECRET>`. Bulan berjalan ditolak (400).
 - Baris riwayat dicatat sebelum upload Drive. Bila upload gagal, baris tetap ada tanpa tautan Drive dan cron tidak mengulanginya; buat ulang file lewat Pratinjau/Unduh PDF di panel.
+
+## Email bulanan
+
+Setelah semua laporan periode itu ada, cron mengirim **satu email** berisi PDF 13 laporan ke alamat "Email Tujuan Laporan" (pengaturan yang sama di halaman Laporan, disimpan di `app_config` kunci `laporan_email_to`):
+
+- 3 laporan keuangan, 5 laporan kerja divisi, dan 5 laporan kinerja divisi. **Owner Review tidak ikut**: alamat tujuan bisa diubah staf admin/sales, sedangkan Owner Review hanya untuk owner. Untuk mengikutsertakannya, ubah aturan `email` di `registry.ts` (`l.keluarga !== 'owner'`).
+- Pengirim memakai Brevo (variabel `BREVO_API_KEY` dan `BREVO_SENDER_EMAIL` di Vercel). Alamat tujuan kosong: email dilewati dan dicoba lagi pada cron hari berikutnya (tanggal 2 dan 3).
+- Sekali per periode: penanda `laporan_email_terkirim_<YYYY-MM>` di `app_config` mencegah kiriman ganda. Untuk mengirim ulang periode tertentu, hapus penanda itu lalu panggil cron dengan `?periode=YYYY-MM`.
+- Bila ada laporan yang gagal dibuat, email **ditunda** (respons 500, bagian `email.status = "ditunda"`) sampai semuanya berhasil pada jalankan berikutnya.
+- Total lampiran dibatasi sekitar 3,5 MB per email (batas Brevo 4 MB). Bila lebih, otomatis dipecah menjadi beberapa email berlabel "(bagian 1/2)". Contoh uji Juni 2026: 13 berkas, 0,97 MB, satu email.
+- Laporan yang sudah ada sebelumnya dirender ulang dari data saat ini untuk dilampirkan, jadi isi lampiran bisa sedikit berbeda dari arsip Drive bila data berubah setelah arsip dibuat.
 
 ## Bulan berjalan
 

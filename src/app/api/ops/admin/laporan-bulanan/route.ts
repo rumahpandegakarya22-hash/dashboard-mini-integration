@@ -16,7 +16,7 @@ export async function GET() {
   if (gate.error) return gate.error;
 
   try {
-    const diizinkan = LAPORAN.filter(l => boleh(gate.user!.role, l));
+    const diizinkan = LAPORAN.filter(l => !l.tersembunyi && boleh(gate.user!.role, l));
     const ids = diizinkan.map(l => l.id);
     const riwayatRes = await turso().execute({
       sql: `SELECT * FROM laporan_riwayat WHERE jenis IN (${ids.map(() => '?').join(',')}) ORDER BY created_at DESC, id DESC LIMIT 50`,
