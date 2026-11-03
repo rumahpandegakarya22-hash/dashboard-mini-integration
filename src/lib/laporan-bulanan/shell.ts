@@ -50,7 +50,10 @@ const CSS_OWNER = `
 
 export type TemaDokumen = 'dokumen' | 'kinerja' | 'owner';
 
+// Dokumen cetak selalu terang: tanpa ini pratinjau di browser mode gelap berlatar gelap dengan teks gelap.
+const CSS_TERANG = `:root { color-scheme: light; } html, body { background: #fff; }`;
+
 export function kerangkaDokumen(isi: string, tema: TemaDokumen): string {
-  const css = tema === 'owner' ? cssFont() + CSS_OWNER : tema === 'kinerja' ? CSS_KINERJA : CSS_DOKUMEN;
-  return `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><style>${css}</style></head><body>${isi}</body></html>`;
+  const css = CSS_TERANG + (tema === 'owner' ? cssFont() + CSS_OWNER : tema === 'kinerja' ? CSS_KINERJA : CSS_DOKUMEN);
+  return `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="color-scheme" content="light"><style>${css}</style></head><body>${isi}</body></html>`;
 }

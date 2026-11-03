@@ -16,6 +16,14 @@ test('tema owner', () => {
   assert.ok(h.includes('Poppins'));
   assert.ok(!h.includes('#d9e2f3'));
 });
+test('semua tema memaksa tampilan terang dan latar putih (pratinjau mode gelap)', () => {
+  for (const tema of ['dokumen', 'kinerja', 'owner'] as const) {
+    const h = kerangkaDokumen('<p>x</p>', tema);
+    assert.ok(h.includes('color-scheme: light'), tema);
+    assert.ok(h.includes('<meta name="color-scheme" content="light">'), tema);
+    assert.ok(/html, body \{ background: #fff; \}/.test(h), tema);
+  }
+});
 test('tema kinerja: sel 9pt tanpa latar header', () => {
   const h = kerangkaDokumen('<p>x</p>', 'kinerja');
   assert.ok(h.includes('font-size: 9pt'));

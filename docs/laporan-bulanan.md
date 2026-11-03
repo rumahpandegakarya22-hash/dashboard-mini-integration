@@ -10,7 +10,7 @@ Lakukan berurutan. Jangan deploy sebelum langkah 1-4 selesai.
    `npx tsx scripts/apply-schema.ts db/schema/019_laporan_riwayat_jenis_bebas.sql --commit`
    Migrasi mengganti nama tabel lama menjadi `laporan_riwayat_lama` (cadangan), membuat `laporan_riwayat` baru tanpa batasan jenis, dan menyalin isinya.
 2. Cek `SELECT COUNT(*) FROM laporan_riwayat` sama dengan `SELECT COUNT(*) FROM laporan_riwayat_lama`. Bila sama, hapus tabel cadangan secara manual: `DROP TABLE laporan_riwayat_lama`.
-3. Set `CRON_SECRET` di Vercel: Project > Settings > Environment Variables > Key `CRON_SECRET`, Value string acak (buat dengan `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`), Environment: Production, centang Sensitive. Lalu redeploy (env var baru hanya berlaku di deployment baru). Vercel mengirimnya sebagai `Authorization: Bearer ...` ke endpoint cron. Tanpa nilai ini cron selalu ditolak 401. Paket Hobby (gratis) cukup: cron boleh berjalan paling sering sekali sehari (jadwal kita sebulan sekali) dan waktunya hanya dijamin dalam jam yang sama (01:00-01:59 UTC).
+3. **[SUDAH ADA di Vercel per 3 Nov 2026.]** Set `CRON_SECRET` di Vercel: Project > Settings > Environment Variables > Key `CRON_SECRET`, Value string acak (buat dengan `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`), Environment: Production, centang Sensitive. Lalu redeploy (env var baru hanya berlaku di deployment baru). Vercel mengirimnya sebagai `Authorization: Bearer ...` ke endpoint cron. Tanpa nilai ini cron selalu ditolak 401. Paket Hobby (gratis) cukup: cron boleh berjalan paling sering sekali sehari (jadwal kita sebulan sekali) dan waktunya hanya dijamin dalam jam yang sama (01:00-01:59 UTC).
 4. Set kunci `app_config` untuk folder Drive tiap laporan, bentuk `drive_folder_laporan_<id>` (isi: ID folder Drive).
    - `owner-review`: **wajib**. Tanpa kunci ini Owner Review tidak diarsipkan ke Drive (sengaja tidak jatuh ke folder keuangan). **[SUDAH DISET 3 Nov 2026 di produksi ke folder Owner Review. Akses akun OAuth ke folder ini belum terverifikasi; scope Drive aplikasi adalah `drive.file`, jadi bila upload gagal dengan 404, bagikan folder ke akun Google yang dipakai OAuth atau buat folder lewat aplikasi.]**
    - Laporan lain: opsional. Bila kosong, memakai `DRIVE_FOLDER_LAPORAN`.
@@ -19,6 +19,10 @@ Lakukan berurutan. Jangan deploy sebelum langkah 1-4 selesai.
 6. Dari panel Laporan Bulanan, generate manual satu laporan per keluarga (kerja, kinerja, owner) untuk bulan lalu, lalu buka PDF-nya dan periksa isinya.
 
 Sebelum migrasi 019 diterapkan, generate gagal di langkah pencatatan riwayat dan tidak ada file yang dikirim ke Drive.
+
+## Hasil uji generate (3 Nov 2026)
+
+Semua 11 laporan dibuat untuk Oktober 2026 (11 berhasil, 0 gagal, 1-4 detik per laporan) dan tercatat di `laporan_riwayat` dengan `dibuat_oleh = 'Uji generate'`. Hanya Owner Review yang terunggah ke Drive (folder `drive_folder_laporan_owner-review`). Sepuluh laporan lain belum punya folder: `DRIVE_FOLDER_LAPORAN` kosong di mesin lokal, dan belum ada kunci `drive_folder_laporan_<id>`. Setelah folder diisi, generate ulang laporan itu dari panel bila salinan Drive-nya diperlukan.
 
 ## Cara kerja cron
 
