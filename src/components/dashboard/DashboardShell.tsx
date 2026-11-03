@@ -97,17 +97,19 @@ export default function DashboardShell({
 
         {/* Navigasi silang (§9 Fase 5.2) — hanya muncul bila akun ini memang
             punya akses sisi lain, supaya tidak menawarkan pintu yang terkunci. */}
-        {hasOpsAccess && (
+        {(hasOpsAccess || canLandingAdmin) && (
           <div className="side-section">
             <div className="side-section__title">Aplikasi Lain</div>
-            <a className="nav-link" href="/ops">
-              <span className="caret">
-                <IconCaret />
-              </span>
-              Mini App Ops
-            </a>
+            {hasOpsAccess && (
+              <a className="nav-link" href="/ops">
+                <span className="caret">
+                  <IconCaret />
+                </span>
+                Mini App Ops
+              </a>
+            )}
             {/* Inventory Stock: hanya untuk role yang memang mengelola stok */}
-            {role !== 'marketing' && role !== 'sales' && (
+            {hasOpsAccess && role !== 'marketing' && role !== 'sales' && (
               <a className="nav-link" href="/inventory">
                 <span className="caret">
                   <IconCaret />

@@ -6,13 +6,31 @@ import { bolehBukaLandingAdmin, buatTokenSso, urlLandingAdmin, TTL_SSO_DETIK, IS
 const RAHASIA = 'rahasia-uji-yang-cukup-panjang-untuk-hs256-0123456789';
 const kunci = new TextEncoder().encode(RAHASIA);
 
-test('bolehBukaLandingAdmin: hanya owner, pengawas, staff_admin, staff_marketing', () => {
-  for (const r of ['owner', 'pengawas', 'staff_admin', 'staff_marketing']) assert.equal(bolehBukaLandingAdmin(r), true, r);
-  for (const r of ['staff_sales', 'staff_finance', 'staff_cleaning', 'staff_maintenance', 'staff_inspeksi', '', 'admin', 'OWNER']) {
-    assert.equal(bolehBukaLandingAdmin(r), false, r);
+test('bolehBukaLandingAdmin: peran Dashboard owner, admin, marketing diizinkan', () => {
+  for (const r of ['owner', 'admin', 'marketing']) assert.equal(bolehBukaLandingAdmin({ dashboard: r }), true, r);
+});
+
+test('bolehBukaLandingAdmin: peran Dashboard operasional dan sales ditolak', () => {
+  for (const r of ['operasional', 'sales', '', 'OWNER', 'staff_admin']) assert.equal(bolehBukaLandingAdmin({ dashboard: r }), false, r);
+});
+
+test('bolehBukaLandingAdmin: peran Ops owner, staff_admin, staff_marketing diizinkan', () => {
+  for (const r of ['owner', 'staff_admin', 'staff_marketing']) assert.equal(bolehBukaLandingAdmin({ ops: r }), true, r);
+});
+
+test('bolehBukaLandingAdmin: pengawas dan peran Ops lain ditolak', () => {
+  for (const r of ['pengawas', 'staff_sales', 'staff_finance', 'staff_cleaning', 'staff_maintenance', 'staff_inspeksi', 'marketing', 'admin', '']) {
+    assert.equal(bolehBukaLandingAdmin({ ops: r }), false, r);
   }
-  assert.equal(bolehBukaLandingAdmin(undefined), false);
-  assert.equal(bolehBukaLandingAdmin(null), false);
+});
+
+test('bolehBukaLandingAdmin: cukup salah satu sisi yang berhak; tanpa peran = ditolak', () => {
+  assert.equal(bolehBukaLandingAdmin({ ops: 'staff_sales', dashboard: 'marketing' }), true);
+  assert.equal(bolehBukaLandingAdmin({ ops: 'staff_admin', dashboard: 'sales' }), true);
+  assert.equal(bolehBukaLandingAdmin({ ops: 'staff_sales', dashboard: 'operasional' }), false);
+  assert.equal(bolehBukaLandingAdmin({}), false);
+  assert.equal(bolehBukaLandingAdmin({ ops: null, dashboard: null }), false);
+  assert.equal(bolehBukaLandingAdmin({ ops: undefined, dashboard: undefined }), false);
 });
 
 test('buatTokenSso: HS256, issuer/audience tetap, umur 60 detik, jti unik', async () => {

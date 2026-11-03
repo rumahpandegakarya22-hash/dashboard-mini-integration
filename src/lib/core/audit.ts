@@ -3,7 +3,8 @@ import type { SessionUser } from './auth';
 
 export interface AuditEntry {
   requestId: string;
-  user: SessionUser;
+  // Hanya username dan role yang ditulis; role bisa dari sisi Ops maupun Dashboard.
+  user: Pick<SessionUser, 'username'> & { role: string };
   moduleId: string;
   action: 'CREATE' | 'UPDATE';
   target: string; // "namaFile → sheet" (era Sheets) / "Turso → tabel"

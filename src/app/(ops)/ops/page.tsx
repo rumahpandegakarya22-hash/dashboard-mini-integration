@@ -33,7 +33,7 @@ export default async function HomePage() {
       <HomeMenu
         isOwner={user.role === 'owner'}
         canKelola={user.role === 'owner' || user.role === 'staff_admin'}
-        canLandingPage={bolehBukaLandingAdmin(user.role)}
+        canLandingPage={bolehBukaLandingAdmin({ ops: user.role })}
         canRiwayatBayar={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_sales'}
         canInspeksi={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_inspeksi'}
         modules={visible}
