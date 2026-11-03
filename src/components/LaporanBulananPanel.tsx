@@ -26,7 +26,7 @@ const KELUARGA: { kunci: LaporanItem['keluarga']; judul: string }[] = [
   { kunci: 'owner', judul: 'Owner' },
 ];
 
-const tombolKecil = { padding: '4px 10px', fontSize: '0.8em' } as const;
+const nonaktifStyle = { pointerEvents: 'none', opacity: 0.5 } as const;
 
 function SkeletonRow() {
   return (
@@ -119,7 +119,7 @@ export default function LaporanBulananPanel() {
         </div>
       )}
 
-      <div className="bento-card">
+      <div className="card">
         <h2 style={{ fontWeight: 600, fontSize: '1em', marginBottom: 12 }}>Laporan Bulanan Divisi</h2>
         <div style={{ marginBottom: 16 }}>
           <label htmlFor="periode-bulanan" style={{ display: 'block', fontWeight: 600, marginBottom: 6, fontSize: '0.9em' }}>
@@ -161,8 +161,8 @@ export default function LaporanBulananPanel() {
                           href={periodeOk ? urlPdf(l.id, periode, 'html') : undefined}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn secondary"
-                          style={{ ...tombolKecil, ...(!periodeOk || sibuk ? { pointerEvents: 'none', opacity: 0.5 } : {}) }}
+                          className="btn secondary compact"
+                          style={!periodeOk || sibuk ? nonaktifStyle : undefined}
                           aria-disabled={!periodeOk || sibuk}
                         >
                           Pratinjau
@@ -171,15 +171,14 @@ export default function LaporanBulananPanel() {
                           href={periodeOk ? urlPdf(l.id, periode, 'pdf') : undefined}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn secondary"
-                          style={{ ...tombolKecil, ...(!periodeOk || sibuk ? { pointerEvents: 'none', opacity: 0.5 } : {}) }}
+                          className="btn secondary compact"
+                          style={!periodeOk || sibuk ? nonaktifStyle : undefined}
                           aria-disabled={!periodeOk || sibuk}
                         >
                           Unduh PDF
                         </a>
                         <button
-                          className="btn"
-                          style={tombolKecil}
+                          className="btn compact"
                           onClick={() => void generate(l)}
                           disabled={sibuk || !periodeOk || berjalan}
                           title={berjalan ? 'Bulan berjalan belum selesai' : undefined}
@@ -196,10 +195,10 @@ export default function LaporanBulananPanel() {
         )}
       </div>
 
-      <div className="bento-card">
+      <div className="card">
         <h2 style={{ fontWeight: 600, fontSize: '1em', marginBottom: 12 }}>Riwayat Laporan Bulanan</h2>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table" style={{ width: '100%', fontSize: '0.9em' }}>
+        <div className="table-scroll">
+          <table className="data-table">
             <thead>
               <tr>
                 <th>Periode</th>
@@ -219,7 +218,7 @@ export default function LaporanBulananPanel() {
                 </>
               ) : riwayat.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '16px', color: 'var(--muted)' }}>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '16px', color: 'var(--ink-2)' }}>
                     Belum ada riwayat laporan bulanan.
                   </td>
                 </tr>
@@ -233,7 +232,7 @@ export default function LaporanBulananPanel() {
                     <td>{waktuRiwayatWib(r.created_at)}</td>
                     <td>
                       {r.drive_url ? (
-                        <a href={r.drive_url} target="_blank" rel="noopener noreferrer" className="btn secondary" style={tombolKecil}>
+                        <a href={r.drive_url} target="_blank" rel="noopener noreferrer" className="btn secondary compact">
                           Buka Drive
                         </a>
                       ) : '-'}

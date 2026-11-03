@@ -121,7 +121,7 @@ export default function LaporanKeuanganPanel() {
       )}
 
       {/* Setting email */}
-      <div className="bento-card">
+      <div className="card">
         <h2 style={{ fontWeight: 600, fontSize: '1em', marginBottom: 12 }}>Email Tujuan Laporan</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <input
@@ -133,7 +133,7 @@ export default function LaporanKeuanganPanel() {
             style={{ flex: 1, minWidth: 220 }}
           />
           <button
-            className="btn secondary"
+            className="btn secondary compact"
             onClick={() => void simpanEmail()}
             disabled={savingEmail}
           >
@@ -146,7 +146,7 @@ export default function LaporanKeuanganPanel() {
       </div>
 
       {/* Picker periode + tombol generate */}
-      <div className="bento-card">
+      <div className="card">
         <h2 style={{ fontWeight: 600, fontSize: '1em', marginBottom: 12 }}>Generate Laporan</h2>
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', fontWeight: 600, marginBottom: 6, fontSize: '0.9em' }}>
@@ -164,7 +164,7 @@ export default function LaporanKeuanganPanel() {
           {JENIS_LIST.map(({ jenis, label }) => (
             <button
               key={jenis}
-              className="btn"
+              className="btn compact"
               onClick={() => void generate(jenis)}
               disabled={generating !== null || !periodeInput}
             >
@@ -180,10 +180,10 @@ export default function LaporanKeuanganPanel() {
       </div>
 
       {/* Riwayat laporan */}
-      <div className="bento-card">
+      <div className="card">
         <h2 style={{ fontWeight: 600, fontSize: '1em', marginBottom: 12 }}>Riwayat Laporan</h2>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table" style={{ width: '100%', fontSize: '0.9em' }}>
+        <div className="table-scroll">
+          <table className="data-table">
             <thead>
               <tr>
                 <th>Periode</th>
@@ -202,7 +202,7 @@ export default function LaporanKeuanganPanel() {
                 </>
               ) : riwayat.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '16px', color: 'var(--muted)' }}>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '16px', color: 'var(--ink-2)' }}>
                     Belum ada riwayat laporan.
                   </td>
                 </tr>
@@ -219,13 +219,12 @@ export default function LaporanKeuanganPanel() {
                           href={`/api/ops/admin/laporan-keuangan/pdf?periode=${encodeURIComponent(r.periode)}&jenis=${encodeURIComponent(r.jenis)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn"
-                          style={{ padding: '4px 10px', fontSize: '0.8em' }}
+                          className="btn compact"
                         >
                           Unduh PDF
                         </a>
                         {r.drive_url && (
-                          <a href={r.drive_url} target="_blank" rel="noopener noreferrer" className="btn secondary" style={{ padding: '4px 10px', fontSize: '0.8em' }}>
+                          <a href={r.drive_url} target="_blank" rel="noopener noreferrer" className="btn secondary compact">
                             Buka Drive
                           </a>
                         )}
