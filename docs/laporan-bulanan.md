@@ -6,11 +6,11 @@
 
 Lakukan berurutan. Jangan deploy sebelum langkah 1-4 selesai.
 
-1. Terapkan migrasi 019. Jalankan dulu tanpa `--commit` (dry-run), baca hasilnya, lalu:
+1. **[SELESAI 3 Nov 2026 di produksi: 7 baris riwayat lama tersalin utuh, tabel cadangan `laporan_riwayat_lama` ada.]** Terapkan migrasi 019. Jalankan dulu tanpa `--commit` (dry-run), baca hasilnya, lalu:
    `npx tsx scripts/apply-schema.ts db/schema/019_laporan_riwayat_jenis_bebas.sql --commit`
    Migrasi mengganti nama tabel lama menjadi `laporan_riwayat_lama` (cadangan), membuat `laporan_riwayat` baru tanpa batasan jenis, dan menyalin isinya.
 2. Cek `SELECT COUNT(*) FROM laporan_riwayat` sama dengan `SELECT COUNT(*) FROM laporan_riwayat_lama`. Bila sama, hapus tabel cadangan secara manual: `DROP TABLE laporan_riwayat_lama`.
-3. Set `CRON_SECRET` di Vercel (Project Settings, Environment Variables). Nilainya string acak panjang. Vercel mengirimnya sebagai `Authorization: Bearer ...` ke endpoint cron. Tanpa nilai ini cron selalu ditolak 401.
+3. Set `CRON_SECRET` di Vercel: Project > Settings > Environment Variables > Key `CRON_SECRET`, Value string acak (buat dengan `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`), Environment: Production, centang Sensitive. Lalu redeploy (env var baru hanya berlaku di deployment baru). Vercel mengirimnya sebagai `Authorization: Bearer ...` ke endpoint cron. Tanpa nilai ini cron selalu ditolak 401. Paket Hobby (gratis) cukup: cron boleh berjalan paling sering sekali sehari (jadwal kita sebulan sekali) dan waktunya hanya dijamin dalam jam yang sama (01:00-01:59 UTC).
 4. Set kunci `app_config` untuk folder Drive tiap laporan, bentuk `drive_folder_laporan_<id>` (isi: ID folder Drive).
    - `owner-review`: **wajib**. Tanpa kunci ini Owner Review tidak diarsipkan ke Drive (sengaja tidak jatuh ke folder keuangan).
    - Laporan lain: opsional. Bila kosong, memakai `DRIVE_FOLDER_LAPORAN`.
