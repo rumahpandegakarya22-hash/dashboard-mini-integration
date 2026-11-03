@@ -22,7 +22,7 @@ Sebelum migrasi 019 diterapkan, generate gagal di langkah pencatatan riwayat dan
 
 ## Hasil uji generate (3 Nov 2026)
 
-Semua 11 laporan dibuat untuk Oktober 2026 (11 berhasil, 0 gagal, 1-4 detik per laporan) dan tercatat di `laporan_riwayat` dengan `dibuat_oleh = 'Uji generate'`. Hanya Owner Review yang terunggah ke Drive (folder `drive_folder_laporan_owner-review`). Sepuluh laporan lain belum punya folder: `DRIVE_FOLDER_LAPORAN` kosong di mesin lokal, dan belum ada kunci `drive_folder_laporan_<id>`. Setelah folder diisi, generate ulang laporan itu dari panel bila salinan Drive-nya diperlukan.
+Semua 11 laporan dibuat untuk Oktober 2026 (11 berhasil, 0 gagal, 1-4 detik per laporan) dan tercatat di `laporan_riwayat` dengan `dibuat_oleh = 'Uji generate'`. Hanya Owner Review yang terunggah ke Drive (folder `drive_folder_laporan_owner-review`). Sepuluh laporan lain saat itu belum punya folder, sehingga baris riwayatnya tercatat tanpa tautan Drive. **Sudah diatasi:** pada 3 Nov 2026 kunci `drive_folder_laporan_<id>` untuk ke-10 laporan itu diisi dengan subfolder divisi di Drive (Laporan Kerja Divisi/{Admin, Finance, Marketing, operasional, Sales} dan Laporan Kinerja/{Admin, Keuangan, Marketing, Operasional, Sales}), masing-masing sudah diverifikasi (nama sesuai, bisa menambah file). Untuk melengkapi arsip Oktober, generate ulang laporan itu dari panel atau unggah PDF yang sudah ada dan isi `drive_url` barisnya.
 
 ## Cara kerja cron
 
