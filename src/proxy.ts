@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse, type NextRequest } from 'next/server';
 import { buildCsp, SECURITY_HEADERS } from '@/lib/core/csp';
+import { bypassDevAktif } from '@/lib/core/dev-bypass';
 
 // Gerbang kasar: hanya memastikan ADA sesi Clerk. Gating halus (status
 // pending/disabled, role, step-up 2FA) dilakukan di layout tiap route group
@@ -45,8 +46,8 @@ export const proxy = clerkMiddleware(async (auth, req) => {
 
   if (isPublicRoute(req)) return pass();
 
-  // Bypass login lokal — syarat sama persis dengan bypassDev() di lib/core/auth.ts.
-  if (process.env.NODE_ENV !== 'production' && process.env.DEV_BYPASS_AUTH === '1') return pass();
+  // Bypass login lokal — keputusan yang sama dengan bypassDev() di lib/core/auth.ts (satu fungsi bersama).
+  if (bypassDevAktif()) return pass();
 
   const { userId } = await auth();
   if (!userId) {

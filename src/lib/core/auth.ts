@@ -17,6 +17,7 @@ import type { User } from '@clerk/nextjs/server';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { ROLE_LABEL, type Role } from './roles';
+import { bypassDevAktif } from './dev-bypass';
 import { DASHBOARD_ROLES, type DashboardRole } from '@/config/dashboard-access';
 
 export interface SessionUser {
@@ -178,15 +179,15 @@ const SIGNED_OUT: AuthState = {
 };
 
 /**
- * Bypass login KHUSUS pengembangan lokal. Aktif hanya bila DUA syarat terpenuhi
- * sekaligus: build bukan production DAN `DEV_BYPASS_AUTH=1` disetel manual di
- * .env.local. Satu syarat saja tidak cukup — `NODE_ENV` di Vercel selalu
- * 'production', jadi variabel yang tidak sengaja terbawa ke sana tetap mati.
+ * Bypass login KHUSUS pengembangan lokal. Syaratnya ada di `bypassDevAktif()`
+ * (lib/core/dev-bypass.ts): `next dev` lokal + `DEV_BYPASS_AUTH=1` disetel manual
+ * di .env.local, dan bukan di Vercel/CI. Variabel yang tidak sengaja terbawa ke
+ * deploy tetap mati.
  *
  * Tanpa ini, memeriksa tampilan /ops di lokal butuh sesi Clerk yang valid.
  */
 function bypassDev(): AuthState | null {
-  if (process.env.NODE_ENV === 'production' || process.env.DEV_BYPASS_AUTH !== '1') return null;
+  if (!bypassDevAktif()) return null;
   const palsu: SessionUser = { id: 'dev-bypass', username: 'dev', name: 'Dev Lokal', role: 'owner' };
   return {
     signedIn: true,
