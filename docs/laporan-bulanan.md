@@ -4,7 +4,7 @@
 
 ## Status deploy (3 Nov 2026)
 
-Sudah ter-deploy ke production lewat Vercel CLI (`vercel --prod`) ke proyek `dashboard-integrate-mini`, alias `https://dashboard-tiga-dara.vercel.app`. Build lolos dan rute `/api/cron/laporan-bulanan` ikut ter-build. Uji endpoint tanpa kunci dan dengan kunci salah: HTTP 401 JSON (tidak dialihkan ke login). Uji dengan kunci yang benar belum dijalankan dari luar karena `CRON_SECRET` bertipe Sensitive di Vercel (nilainya tidak bisa dibaca kembali); jalankan lewat tombol Run di Vercel (Settings > Cron Jobs).
+Sudah ter-deploy ke production lewat Vercel CLI (`vercel --prod`) ke proyek `dashboard-integrate-mini`, alias `https://dashboard-tiga-dara.vercel.app`. Build lolos dan rute `/api/cron/laporan-bulanan` ikut ter-build. Uji endpoint tanpa kunci dan dengan kunci salah: HTTP 401 JSON (tidak dialihkan ke login). Uji dengan kunci yang benar dijalankan lewat tombol Run di Vercel (Settings > Cron Jobs; `CRON_SECRET` bertipe Sensitive sehingga nilainya tidak bisa dibaca kembali): log runtime mencatat GET `/api/cron/laporan-bulanan` HTTP 200 pada 3 Nov 2026 18:39 UTC. Tidak ada baris riwayat baru (total tetap 18, Oktober tetap 11 baris), yaitu perilaku idempoten yang diharapkan karena Oktober sudah lengkap. Cara membaca log: `vercel logs --environment production --since 30m --json`.
 
 Peringatan: kode fitur ini hanya ada di repo lokal dan hasil deploy CLI, belum di repo GitHub. Bila proyek Vercel memakai integrasi Git, push berikutnya dari repo GitHub (yang belum memuat fitur ini) akan men-deploy versi tanpa fitur laporan bulanan. Salin perubahan ke repo GitHub sebelum push berikutnya.
 
