@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
-import { getConfig, setConfig } from '@/lib/app-config';
+import { getPenerimaLaporan } from '@/lib/app-config';
 import { buildLabaRugi, buildArusKas, buildNeraca } from '@/lib/laporan/generator';
 import { htmlLabaRugi, htmlArusKas, htmlNeraca } from '@/lib/laporan/template';
 import { htmlKePdf } from '@/lib/invoice/pdf';
@@ -23,25 +23,8 @@ export async function GET() {
   const gate = await requireAccess();
   if (gate.error) return gate.error;
 
-  const [riwayatRes, emailTo] = await Promise.all([
-    turso().execute("SELECT * FROM laporan_riwayat WHERE jenis IN ('Cashflow','LabaRugi','Neraca') ORDER BY created_at DESC LIMIT 50"),
-    getConfig('laporan_email_to'),
-  ]);
-
-  return NextResponse.json({ riwayat: riwayatRes.rows, emailTo });
-}
-
-export async function PATCH(req: NextRequest) {
-  const gate = await requireAccess();
-  if (gate.error) return gate.error;
-
-  const body = await req.json() as { emailTo?: string };
-  if (typeof body.emailTo !== 'string') {
-    return NextResponse.json({ error: 'emailTo wajib diisi.' }, { status: 400 });
-  }
-
-  await setConfig('laporan_email_to', body.emailTo, gate.user!.name);
-  return NextResponse.json({ ok: true });
+  const riwayatRes = await turso().execute("SELECT * FROM laporan_riwayat WHERE jenis IN ('Cashflow','LabaRugi','Neraca') ORDER BY created_at DESC LIMIT 50");
+  return NextResponse.json({ riwayat: riwayatRes.rows });
 }
 
 export async function POST(req: NextRequest) {
@@ -51,10 +34,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json() as {
     periode: string;
     jenis: 'Cashflow' | 'LabaRugi' | 'Neraca';
-    emailTo?: string;
   };
 
-  const { periode, jenis, emailTo } = body;
+  const { periode, jenis } = body;
   if (!periode || !jenis) {
     return NextResponse.json({ error: 'periode dan jenis wajib diisi.' }, { status: 400 });
   }
@@ -70,11 +52,6 @@ export async function POST(req: NextRequest) {
   const month = parseInt(monthStr, 10);
   const dari = `${periode}-01`;
   const sampai = new Date(year, month, 0).toISOString().slice(0, 10);
-
-  const savedEmail = await getConfig('laporan_email_to');
-  if (emailTo && emailTo !== savedEmail) {
-    await setConfig('laporan_email_to', emailTo, gate.user!.name);
-  }
 
   let html: string;
   try {
@@ -109,8 +86,8 @@ export async function POST(req: NextRequest) {
   const driveUrl = await arsipkanLaporan(namaFile, pdf);
 
   // Best-effort: email
-  const targetEmail = emailTo || savedEmail;
-  if (targetEmail) {
+  const targetEmail = await getPenerimaLaporan();
+  if (targetEmail.length > 0) {
     try {
       await kirimEmail({
         to: targetEmail,

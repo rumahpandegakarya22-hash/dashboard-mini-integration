@@ -10,14 +10,14 @@ const ITEM: ItemEmail[] = [
 ];
 
 function buatDeps(ganti: Partial<DepsEmail> = {}) {
-  const terkirim: { to: string; subject: string; html: string; lampiran: { namaFile: string; isi: Buffer }[] }[] = [];
+  const terkirim: { to: string[]; subject: string; html: string; lampiran: { namaFile: string; isi: Buffer }[] }[] = [];
   const ditandai: string[] = [];
   const deps: DepsEmail = {
     kode: '2026-10',
     label: 'Oktober 2026',
     laporan: ITEM,
     ambilPdf: async id => ({ namaFile: `${id}.pdf`, pdf: Buffer.alloc(100, 1) }),
-    tujuan: async () => 'pemilik@contoh.id',
+    tujuan: async () => ['pemilik@contoh.id'],
     sudahTerkirim: async () => false,
     tandaiTerkirim: async kode => { ditandai.push(kode); },
     kirim: async o => { terkirim.push({ to: o.to, subject: o.subject, html: o.html, lampiran: o.lampiran.map(l => ({ namaFile: l.namaFile, isi: l.isi })) }); },
@@ -83,13 +83,13 @@ test('kirimEmailBulanan: satu email berisi semua PDF, lalu ditandai terkirim', a
   assert.equal(h.jumlahEmail, 1);
   assert.equal(h.jumlahLampiran, 4);
   assert.equal(terkirim.length, 1);
-  assert.equal(terkirim[0].to, 'pemilik@contoh.id');
+  assert.deepEqual(terkirim[0].to, ['pemilik@contoh.id']);
   assert.deepEqual(terkirim[0].lampiran.map(l => l.namaFile), ['LabaRugi.pdf', 'kerja-admin.pdf', 'kerja-sales.pdf', 'kinerja-sales.pdf']);
   assert.deepEqual(ditandai, ['2026-10']);
 });
 
 test('kirimEmailBulanan: tanpa alamat tujuan dilewati dan tidak ditandai', async () => {
-  const { deps, terkirim, ditandai } = buatDeps({ tujuan: async () => '  ' });
+  const { deps, terkirim, ditandai } = buatDeps({ tujuan: async () => [] });
   const h = await kirimEmailBulanan(deps);
   assert.equal(h.status, 'dilewati');
   assert.match(h.alasan ?? '', /tujuan/i);
@@ -174,4 +174,16 @@ test('emailSetelahCron: pengiriman yang melempar error menjadi gagal, bukan cras
   const h = await emailSetelahCron([{ id: 'a', status: 'dibuat' }], async () => { throw new Error('putus'); });
   assert.equal(h.status, 'gagal');
   assert.match(h.error ?? '', /putus/);
+});
+
+test('kirimEmailBulanan: banyak penerima dalam satu email, owner-review di kelompok pertama', async () => {
+  const { deps, terkirim } = buatDeps({
+    laporan: [...ITEM, { id: 'owner-review', keluarga: 'owner' }],
+    tujuan: async () => ['a@contoh.id', 'b@contoh.id'],
+  });
+  const h = await kirimEmailBulanan(deps);
+  assert.equal(h.status, 'terkirim');
+  assert.deepEqual(terkirim[0].to, ['a@contoh.id', 'b@contoh.id']);
+  assert.equal(terkirim[0].lampiran[0].namaFile, 'owner-review.pdf');
+  assert.ok(terkirim[0].html.indexOf('Laporan Owner') < terkirim[0].html.indexOf('Laporan Keuangan'));
 });

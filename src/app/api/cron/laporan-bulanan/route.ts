@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getConfig, setConfig } from '@/lib/app-config';
+import { getConfig, getPenerimaLaporan, setConfig } from '@/lib/app-config';
 import { kirimEmail } from '@/lib/core/email';
 import { cronDiizinkan, jalankanCron } from '@/lib/laporan-bulanan/cron';
 import { emailSetelahCron, kirimEmailBulanan } from '@/lib/laporan-bulanan/email-bulanan';
@@ -39,14 +39,14 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  // Satu email berisi semua PDF ke alamat "Email Tujuan Laporan"; sekali per periode.
+  // Satu email berisi semua PDF (termasuk Owner Review) ke semua alamat "Email Tujuan Laporan"; sekali per periode.
   const email = await emailSetelahCron(hasil, () =>
     kirimEmailBulanan({
       kode,
       label: parsePeriode(kode).label,
       laporan: laporanUntukEmail(),
       ambilPdf: async id => pdfBaru.get(id) ?? renderPdf(id, kode),
-      tujuan: () => getConfig('laporan_email_to'),
+      tujuan: getPenerimaLaporan,
       sudahTerkirim: async k => Boolean(await getConfig(`laporan_email_terkirim_${k}`)),
       tandaiTerkirim: k => setConfig(`laporan_email_terkirim_${k}`, new Date().toISOString(), 'Jadwal otomatis'),
       kirim: kirimEmail,

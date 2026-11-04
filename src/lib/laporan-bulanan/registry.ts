@@ -146,13 +146,11 @@ const DAFTAR: LaporanDef[] = [
   laporanKeuangan('Neraca', 'Laporan Neraca'),
 ];
 
-// Semua laporan ikut email bulanan kecuali Owner Review: alamat tujuan bisa diubah staf admin/sales dari halaman Laporan,
-// sedangkan Owner Review hanya untuk owner.
-export const LAPORAN: LaporanDef[] = DAFTAR.map(l => ({ ...l, email: l.keluarga !== 'owner' }));
+// Semua laporan, termasuk Owner Review, ikut email bulanan. Daftar penerima hanya bisa diubah owner.
+export const LAPORAN: LaporanDef[] = DAFTAR.map(l => ({ ...l, email: true }));
 
-export function laporanUntukEmail(): { id: string; keluarga: 'keuangan' | 'kerja' | 'kinerja' }[] {
-  return LAPORAN.filter(l => l.email && l.keluarga !== 'owner')
-    .map(l => ({ id: l.id, keluarga: l.keluarga as 'keuangan' | 'kerja' | 'kinerja' }));
+export function laporanUntukEmail(): { id: string; keluarga: LaporanDef['keluarga'] }[] {
+  return LAPORAN.filter(l => l.email).map(l => ({ id: l.id, keluarga: l.keluarga }));
 }
 
 export function cariLaporan(id: string): LaporanDef | undefined {

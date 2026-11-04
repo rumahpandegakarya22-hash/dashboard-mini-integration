@@ -34,10 +34,8 @@ function SkeletonRow() {
 export default function LaporanKeuanganPanel() {
   const [riwayat, setRiwayat] = useState<RiwayatRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [emailTo, setEmailTo] = useState('');
   const [periodeInput, setPeriodeInput] = useState(bulanIni());
   const [generating, setGenerating] = useState<Jenis | null>(null);
-  const [savingEmail, setSavingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -46,9 +44,8 @@ export default function LaporanKeuanganPanel() {
     try {
       const res = await fetch('/api/ops/admin/laporan-keuangan');
       if (!res.ok) throw new Error('Gagal memuat data.');
-      const data = await res.json() as { riwayat: RiwayatRow[]; emailTo: string | null };
+      const data = await res.json() as { riwayat: RiwayatRow[] };
       setRiwayat(data.riwayat);
-      setEmailTo(data.emailTo ?? '');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Gagal memuat data.');
     } finally {
@@ -58,25 +55,6 @@ export default function LaporanKeuanganPanel() {
 
   useEffect(() => { void fetchData(); }, []);
 
-  async function simpanEmail() {
-    setSavingEmail(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const res = await fetch('/api/ops/admin/laporan-keuangan', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailTo }),
-      });
-      if (!res.ok) throw new Error('Gagal menyimpan email.');
-      setSuccess('Email tujuan disimpan.');
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Gagal menyimpan email.');
-    } finally {
-      setSavingEmail(false);
-    }
-  }
-
   async function generate(jenis: Jenis) {
     setGenerating(jenis);
     setError(null);
@@ -85,7 +63,7 @@ export default function LaporanKeuanganPanel() {
       const res = await fetch('/api/ops/admin/laporan-keuangan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ periode: periodeInput, jenis, emailTo: emailTo || undefined }),
+        body: JSON.stringify({ periode: periodeInput, jenis }),
       });
       const data = await res.json() as { ok?: boolean; namaFile?: string; driveUrl?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Gagal generate laporan.');
@@ -119,31 +97,6 @@ export default function LaporanKeuanganPanel() {
           <button onClick={() => setSuccess(null)} aria-label="Tutup" style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>×</button>
         </div>
       )}
-
-      {/* Setting email */}
-      <div className="card">
-        <h2 style={{ fontWeight: 600, fontSize: '1em', marginBottom: 12 }}>Email Tujuan Laporan</h2>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input
-            type="email"
-            className="input"
-            placeholder="contoh@email.com"
-            value={emailTo}
-            onChange={(e) => setEmailTo(e.target.value)}
-            style={{ flex: 1, minWidth: 220 }}
-          />
-          <button
-            className="btn secondary compact"
-            onClick={() => void simpanEmail()}
-            disabled={savingEmail}
-          >
-            {savingEmail ? 'Menyimpan…' : 'Simpan'}
-          </button>
-        </div>
-        <p className="muted" style={{ marginTop: 8, fontSize: '0.85em' }}>
-          Kosongkan untuk tidak mengirim email saat generate laporan.
-        </p>
-      </div>
 
       {/* Picker periode + tombol generate */}
       <div className="card">

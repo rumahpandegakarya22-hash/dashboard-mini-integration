@@ -4,6 +4,7 @@ import { getAuthState } from '@/lib/core/auth';
 import { guardOps } from '@/lib/core/routing';
 import LaporanKeuanganPanel from '@/components/LaporanKeuanganPanel';
 import LaporanBulananPanel from '@/components/LaporanBulananPanel';
+import EmailTujuanLaporanPanel from '@/components/EmailTujuanLaporanPanel';
 
 export default async function LaporanKeuanganPage() {
   const s = await getAuthState();
@@ -24,6 +25,7 @@ export default async function LaporanKeuanganPage() {
           <p className="page-head-sub">Laporan keuangan (PSAK) dan laporan bulanan divisi</p>
         </div>
       </header>
+      {role === 'owner' && <div style={{ marginBottom: 24 }}><EmailTujuanLaporanPanel /></div>}
       <LaporanKeuanganPanel />
       <div style={{ marginTop: 24 }}><LaporanBulananPanel /></div>
     </>

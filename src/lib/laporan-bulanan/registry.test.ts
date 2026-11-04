@@ -188,21 +188,22 @@ test('nama berkas keuangan memakai kode periode (tahun 2 digit), bukan label', (
   assert.equal(cariLaporan('Neraca')?.namaFile(parsePeriode('2027-01', new Date('2027-02-05'))), '0127-Neraca-Kost Tiga Dara.pdf');
 });
 
-test('email: 13 laporan ikut (3 keuangan + 5 kerja + 5 kinerja), owner-review tidak', () => {
+test('email: 14 laporan ikut (1 owner + 3 keuangan + 5 kerja + 5 kinerja)', () => {
   const ikut = LAPORAN.filter(l => l.email);
-  assert.equal(ikut.length, 13);
+  assert.equal(ikut.length, 14);
+  assert.equal(ikut.filter(l => l.keluarga === 'owner').length, 1);
   assert.equal(ikut.filter(l => l.keluarga === 'keuangan').length, 3);
   assert.equal(ikut.filter(l => l.keluarga === 'kerja').length, 5);
   assert.equal(ikut.filter(l => l.keluarga === 'kinerja').length, 5);
-  assert.equal(cariLaporan('owner-review')?.email, false);
+  assert.equal(cariLaporan('owner-review')?.email, true);
 });
 
-test('laporanUntukEmail: 13 item, tanpa owner-review, keluarga valid', async () => {
+test('laporanUntukEmail: 14 item termasuk owner-review, keluarga valid', async () => {
   const { laporanUntukEmail } = await import('./registry');
   const item = laporanUntukEmail();
-  assert.equal(item.length, 13);
-  assert.ok(!item.some(i => i.id === 'owner-review'));
-  assert.deepEqual([...new Set(item.map(i => i.keluarga))].sort(), ['kerja', 'keuangan', 'kinerja']);
+  assert.equal(item.length, 14);
+  assert.ok(item.some(i => i.id === 'owner-review'));
+  assert.deepEqual([...new Set(item.map(i => i.keluarga))].sort(), ['kerja', 'keuangan', 'kinerja', 'owner']);
 });
 
 test('hanya laporan keuangan yang tersembunyi dari panel', () => {

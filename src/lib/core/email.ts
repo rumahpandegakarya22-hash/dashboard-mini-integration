@@ -6,10 +6,11 @@ export type Lampiran = { namaFile: string; mime: string; isi: Buffer };
  * Migrasi dari Gmail API — interface tidak berubah agar semua pemanggil tetap kompatibel.
  */
 export async function kirimEmail(opts: {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   lampiran?: Lampiran[];
+  cc?: string[];
 }): Promise<void> {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) throw new Error('BREVO_API_KEY belum di-set di environment.');
@@ -17,12 +18,22 @@ export async function kirimEmail(opts: {
   const senderEmail = process.env.BREVO_SENDER_EMAIL || 'noreply@kosttgadara.com';
   const senderName = process.env.BREVO_SENDER_NAME || 'Kost Tiga Dara';
 
+  const tujuan = [...new Set((Array.isArray(opts.to) ? opts.to : [opts.to]).map((e) => sanitizeHeader(e)).filter(Boolean))];
+  if (tujuan.length === 0) throw new Error('Alamat tujuan email kosong.');
+
   const body: Record<string, unknown> = {
     sender: { name: senderName, email: senderEmail },
-    to: [{ email: sanitizeHeader(opts.to) }],
+    to: tujuan.map((email) => ({ email })),
     subject: opts.subject,
     htmlContent: opts.html
   };
+
+  // Brevo menolak CC yang sama dengan penerima utama.
+  const utama = new Set(tujuan.map((e) => e.toLowerCase()));
+  const cc = [...new Set((opts.cc ?? []).map((e) => sanitizeHeader(e)).filter(Boolean))].filter(
+    (e) => !utama.has(e.toLowerCase())
+  );
+  if (cc.length > 0) body.cc = cc.map((email) => ({ email }));
 
   if (opts.lampiran && opts.lampiran.length > 0) {
     body.attachment = opts.lampiran.map((l) => ({

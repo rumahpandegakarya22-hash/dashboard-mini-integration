@@ -2,7 +2,7 @@ import type { Lampiran } from '@/lib/core/email';
 import type { HasilCron } from './cron';
 import { esc, waktuWib } from './format';
 
-export type KeluargaEmail = 'keuangan' | 'kerja' | 'kinerja';
+export type KeluargaEmail = 'owner' | 'keuangan' | 'kerja' | 'kinerja';
 export interface ItemEmail { id: string; keluarga: KeluargaEmail }
 
 export interface HasilEmail {
@@ -18,10 +18,10 @@ export interface DepsEmail {
   label: string;
   laporan: ItemEmail[];
   ambilPdf(id: string): Promise<{ namaFile: string; pdf: Buffer }>;
-  tujuan(): Promise<string | null | undefined>;
+  tujuan(): Promise<string[]>;
   sudahTerkirim(kode: string): Promise<boolean>;
   tandaiTerkirim(kode: string): Promise<void>;
-  kirim(o: { to: string; subject: string; html: string; lampiran: Lampiran[] }): Promise<void>;
+  kirim(o: { to: string[]; subject: string; html: string; lampiran: Lampiran[] }): Promise<void>;
   sekarang?(): Date;
   batasBytes?: number;
 }
@@ -30,6 +30,7 @@ export interface DepsEmail {
 const BATAS_BAWAAN = 3.5 * 1024 * 1024;
 
 const KELOMPOK: [KeluargaEmail, string][] = [
+  ['owner', 'Laporan Owner'],
   ['keuangan', 'Laporan Keuangan'],
   ['kerja', 'Laporan Kerja Divisi'],
   ['kinerja', 'Laporan Kinerja Divisi'],
@@ -74,15 +75,15 @@ export function rakitEmail(o: {
     + `<p>Terlampir laporan bulanan <b>Kost Tiga Dara Putri UGM</b> periode <b>${esc(o.label)}</b> (${o.berkas.length} berkas PDF).</p>`
     + lanjutan
     + kelompok
-    + `<p style="margin-top:20px;color:#666;font-size:12px">Email ini dikirim otomatis pada ${esc(o.waktu)} WIB. Alamat tujuan diatur di halaman Laporan.</p>`
+    + `<p style="margin-top:20px;color:#666;font-size:12px">Email ini dikirim otomatis pada ${esc(o.waktu)} WIB. Alamat tujuan diatur owner di halaman Laporan.</p>`
     + `</div>`;
   return { subject, html };
 }
 
 export async function kirimEmailBulanan(d: DepsEmail): Promise<HasilEmail> {
   if (await d.sudahTerkirim(d.kode)) return { status: 'dilewati', alasan: 'Email periode ini sudah terkirim.' };
-  const to = (await d.tujuan())?.trim();
-  if (!to) return { status: 'dilewati', alasan: 'Alamat email tujuan belum diatur.' };
+  const to = await d.tujuan();
+  if (to.length === 0) return { status: 'dilewati', alasan: 'Alamat email tujuan belum diatur.' };
 
   // Kelompok Keuangan, Kerja, Kinerja; urutan dalam kelompok mengikuti registry.
   const urut = [...d.laporan].sort(

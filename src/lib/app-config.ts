@@ -1,4 +1,5 @@
 import { turso } from '@/lib/core/turso';
+import { penerimaDariConfig } from '@/lib/laporan-bulanan/penerima';
 
 // Simple in-memory cache — invalidated on setConfig
 const cache = new Map<string, string>();
@@ -17,6 +18,24 @@ export async function setConfig(key: string, value: string, updatedBy?: string):
     args: [key, value, updatedBy ?? null],
   });
   cache.set(key, value);
+}
+
+export const KUNCI_CC_INVOICE = 'invoice_email_cc';
+
+/** Daftar CC invoice (disimpan sebagai teks dipisah koma). */
+export async function getCcInvoice(): Promise<string[]> {
+  // Baca langsung dari DB (bukan cache): di serverless tiap instance punya cache sendiri.
+  const res = await turso().execute({ sql: 'SELECT value FROM app_config WHERE key = ?', args: [KUNCI_CC_INVOICE] });
+  const v = String(res.rows[0]?.[0] ?? '');
+  return v.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+export const KUNCI_EMAIL_LAPORAN = 'laporan_email_to';
+
+/** Penerima email laporan bulanan. Baca langsung dari DB (bukan cache) agar cron tidak memakai daftar basi. */
+export async function getPenerimaLaporan(): Promise<string[]> {
+  const res = await turso().execute({ sql: 'SELECT value FROM app_config WHERE key = ?', args: [KUNCI_EMAIL_LAPORAN] });
+  return penerimaDariConfig(res.rows[0]?.[0] as string | null | undefined);
 }
 
 export async function getAllConfig(): Promise<Record<string, string>> {
