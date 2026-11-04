@@ -7,7 +7,7 @@ import type { PreviewHandler } from '../types';
 // yang ditampilkan di preview mini app SAMA dengan yang bakal ada di PDF/email sungguhan. Baca sumber
 // data yg SAMA (spreadsheet INVOICE_SEWA/INVOICE_DP/DATABASE_PENGHUNI), BUKAN Room master Log Sales.
 
-function addMonthsSewa(d: Date, n: number): Date {
+export function addMonthsSewa(d: Date, n: number): Date {
   const r = new Date(d.getTime());
   const day = r.getDate();
   r.setMonth(r.getMonth() + n);
@@ -31,7 +31,7 @@ function rp(n: number): string {
   return (v < 0 ? '-Rp' : 'Rp') + s;
 }
 
-function toISO(d: Date): string {
+export function toISO(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 

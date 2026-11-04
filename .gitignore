@@ -28,8 +28,11 @@ RINGKASAN*.txt
 # SDD workspace
 .superpowers/
 
-# Folder tautan proyek Vercel (dibuat oleh `vercel link`).
-.vercel
+# clerk configuration (can include secrets)
+/.clerk/
 
-# .env.example dapat berisi nilai kredensial saat disalin ke mesin lokal: jangan di-commit.
+# .env.example berisi nilai kredensial asli di proyek ini: jangan di-commit/push.
 .env.example
+
+.vercel
+.env*

@@ -1,4 +1,5 @@
 import { kirimEmail } from '../core/email';
+import { getCcInvoice } from '../app-config';
 import { arsipkanInvoice } from './arsip';
 import { getInvoiceDp, getInvoiceSewa } from './data';
 import { htmlKePdf } from './pdf';
@@ -14,7 +15,11 @@ export type HasilKirimInvoice = { terkirim: boolean; email?: string; pesan: stri
  * Sengaja TIDAK melempar error: pemanggilnya (submit pembayaran) memperlakukan
  * pengiriman invoice sebagai best-effort — pembayaran tetap tercatat walau email gagal.
  */
-export async function kirimInvoice(noInv: string, jenis: 'DP' | 'Sewa'): Promise<HasilKirimInvoice> {
+export async function kirimInvoice(
+  noInv: string,
+  jenis: 'DP' | 'Sewa',
+  opts: { revisi?: boolean } = {}
+): Promise<HasilKirimInvoice> {
   try {
     const inv = jenis === 'Sewa' ? await getInvoiceSewa(noInv) : await getInvoiceDp(noInv);
     if (!inv) {
@@ -33,9 +38,15 @@ export async function kirimInvoice(noInv: string, jenis: 'DP' | 'Sewa'): Promise
 
     await kirimEmail({
       to: inv.email,
-      subject: `Invoice ${jenis} Kost Tiga Dara Putri UGM — ${inv.no_inv}`,
-      html: badanEmail(inv.nama, jenis === 'Sewa' ? (inv as any).periode_awal : null, jenis === 'Sewa' ? (inv as any).periode_akhir : null),
-      lampiran: [{ namaFile, mime: 'application/pdf', isi: pdf }]
+      subject: `${opts.revisi ? 'REVISI ' : ''}Invoice ${jenis} Kost Tiga Dara Putri UGM — ${inv.no_inv}`,
+      html: badanEmail(
+        inv.nama,
+        jenis === 'Sewa' ? (inv as any).periode_awal : null,
+        jenis === 'Sewa' ? (inv as any).periode_akhir : null,
+        !!opts.revisi
+      ),
+      lampiran: [{ namaFile, mime: 'application/pdf', isi: pdf }],
+      cc: await getCcInvoice()
     });
 
     // Arsip setelah email: penghuni lebih penting daripada salinan internal.
@@ -56,7 +67,7 @@ export async function kirimInvoice(noInv: string, jenis: 'DP' | 'Sewa'): Promise
  * Badan email — sekadar pengantar, karena invoicenya ada di lampiran PDF.
  * Kalimat periode hanya muncul untuk invoice Sewa; DP tidak punya periode.
  */
-function badanEmail(nama: string, periodeAwal: string | null, periodeAkhir: string | null): string {
+function badanEmail(nama: string, periodeAwal: string | null, periodeAkhir: string | null, revisi: boolean): string {
   const periode =
     periodeAwal && periodeAkhir
       ? ` untuk periode ${tanggalId(periodeAwal)} s.d ${tanggalId(periodeAkhir)}`
@@ -65,7 +76,11 @@ function badanEmail(nama: string, periodeAwal: string | null, periodeAkhir: stri
   return `<!DOCTYPE html><html lang="id"><body style="margin:0;padding:0;">
   <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#3a3635;max-width:560px;padding:16px;">
     <p style="margin:0 0 16px;">Halo Kak ${escHtml(nama)} !</p>
-    <p style="margin:0 0 16px;">Terima kasih atas pembayarannya ya! Terlampir invoice resmi${escHtml(periode)}. Mohon disimpan ya, Kak, siapa tahu suatu saat dibutuhkan.</p>
+    <p style="margin:0 0 16px;">${
+      revisi
+        ? `Ada penyesuaian data pada invoice Kakak. Terlampir invoice revisi${escHtml(periode)}; mohon gunakan invoice ini dan abaikan invoice sebelumnya.`
+        : `Terima kasih atas pembayarannya ya! Terlampir invoice resmi${escHtml(periode)}. Mohon disimpan ya, Kak, siapa tahu suatu saat dibutuhkan.`
+    }</p>
     <p style="margin:0;">Salam,<br>Pengelola Kost Tiga Dara Putri UGM</p>
   </div>
 </body></html>`;
