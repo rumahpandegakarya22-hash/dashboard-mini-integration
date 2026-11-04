@@ -62,3 +62,9 @@ Endpoint cron memakai `maxDuration = 300` detik. 11 PDF berurutan butuh sekitar 
 
 - Test unit: `npm run test:laporan`
 - Pengecekan data terhadap database (hanya membaca, tanpa menulis): `npx tsx scripts/laporan-bulanan-check.ts semua 2026-06`. Argumen: id laporan atau `semua`, periode `YYYY-MM`, opsi `--html <folder>` untuk menyimpan HTML, `--full`.
+
+## Arsip Drive laporan keuangan
+
+Folder per laporan (kunci `app_config`): `drive_folder_laporan_Cashflow`, `_LabaRugi`, `_Neraca`, dan `_KeuanganLengkap`. Laporan **Lengkap** (Arus Kas, Laba Rugi, Neraca dalam satu file, nama `MMYY-Lengkap-Kost Tiga Dara.pdf`) ikut cron dan diarsipkan, tetapi tidak dilampirkan di email karena isinya sudah ada di tiga laporan terpisah.
+
+Cron menganggap laporan "sudah ada" hanya bila barisnya dibuat **setelah** bulan itu berakhir. Baris uji coba yang dibuat di bulan berjalan diabaikan, jadi laporan resminya tetap dibuat saat cron bulan berikutnya.

@@ -21,7 +21,7 @@ import { htmlKinerjaOperasional } from './templates/kinerja-operasional';
 import { ambilKinerjaAdmin } from './builders/admin';
 import { htmlKinerjaAdmin } from './templates/kinerja-admin';
 import { buildArusKas, buildLabaRugi, buildNeraca } from '@/lib/laporan/generator';
-import { htmlArusKas, htmlLabaRugi, htmlNeraca } from '@/lib/laporan/template';
+import { htmlArusKas, htmlKeuanganLengkap, htmlLabaRugi, htmlNeraca } from '@/lib/laporan/template';
 
 export interface LaporanDef {
   id: string;
@@ -32,6 +32,8 @@ export interface LaporanDef {
   tersembunyi?: boolean;
   // Ikut dilampirkan di email bulanan.
   email?: boolean;
+  // Tidak dilampirkan di email (isinya sudah ada di laporan lain).
+  tanpaEmail?: boolean;
   render(periode: Periode, dibuat: Date, oleh?: string): Promise<string>;
   namaFile(periode: Periode): string;
 }
@@ -70,6 +72,24 @@ function laporanKeuangan(jenis: 'Cashflow' | 'LabaRugi' | 'Neraca', judul: strin
     namaFile: periode => `${periode.kode.slice(5, 7)}${periode.kode.slice(2, 4)}-${jenis}-Kost Tiga Dara.pdf`,
   };
 }
+
+// Arus Kas + Laba Rugi + Neraca dalam satu file; hanya diarsipkan ke Drive, tidak dilampirkan di email.
+const laporanKeuanganLengkap: LaporanDef = {
+  id: 'KeuanganLengkap',
+  keluarga: 'keuangan',
+  judul: 'Laporan Keuangan Lengkap',
+  tersembunyi: true,
+  tanpaEmail: true,
+  async render(periode, _dibuat, oleh = 'Sistem') {
+    const [ak, lr, neraca] = await Promise.all([
+      buildArusKas(periode.dari, periode.sampai),
+      buildLabaRugi(periode.dari, periode.sampai),
+      buildNeraca(periode.sampai),
+    ]);
+    return htmlKeuanganLengkap(ak, lr, neraca, periode.kode, oleh);
+  },
+  namaFile: periode => `${periode.kode.slice(5, 7)}${periode.kode.slice(2, 4)}-Lengkap-Kost Tiga Dara.pdf`,
+};
 
 // Tugas berikutnya menambah satu objek per laporan ke array ini.
 const DAFTAR: LaporanDef[] = [
@@ -144,10 +164,11 @@ const DAFTAR: LaporanDef[] = [
   laporanKeuangan('Cashflow', 'Laporan Arus Kas'),
   laporanKeuangan('LabaRugi', 'Laporan Laba Rugi'),
   laporanKeuangan('Neraca', 'Laporan Neraca'),
+  laporanKeuanganLengkap,
 ];
 
 // Semua laporan, termasuk Owner Review, ikut email bulanan. Daftar penerima hanya bisa diubah owner.
-export const LAPORAN: LaporanDef[] = DAFTAR.map(l => ({ ...l, email: true }));
+export const LAPORAN: LaporanDef[] = DAFTAR.map(l => ({ ...l, email: !l.tanpaEmail }));
 
 export function laporanUntukEmail(): { id: string; keluarga: LaporanDef['keluarga'] }[] {
   return LAPORAN.filter(l => l.email).map(l => ({ id: l.id, keluarga: l.keluarga }));
@@ -255,10 +276,11 @@ export async function renderPdf(
   return { namaFile: def.namaFile(periode), pdf };
 }
 
-export async function laporanSudahAda(id: string, kode: string): Promise<boolean> {
-  const res = await turso().execute({
-    sql: 'SELECT 1 FROM laporan_riwayat WHERE jenis = ? AND periode = ? LIMIT 1',
-    args: [id, kode],
+// Baris yang dibuat sebelum bulan itu berakhir (mis. uji coba di bulan berjalan) tidak dihitung: laporan resminya belum ada.
+export async function laporanSudahAda(id: string, kode: string, db: Client = turso()): Promise<boolean> {
+  const res = await db.execute({
+    sql: 'SELECT 1 FROM laporan_riwayat WHERE jenis = ? AND periode = ? AND substr(created_at, 1, 10) > ? LIMIT 1',
+    args: [id, kode, parsePeriode(kode).sampai],
   });
   return res.rows.length > 0;
 }

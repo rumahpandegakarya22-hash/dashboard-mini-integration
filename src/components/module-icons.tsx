@@ -116,7 +116,7 @@ export const NAV_CHECKIN: { href: string; label: string; icon: LucideIcon; admin
 ];
 
 /** Laporan Keuangan PSAK — owner, staff_admin, staff_sales. */
-export const NAV_LAPORAN_KEUANGAN = { href: '/ops/admin/laporan-keuangan', label: 'Laporan Keuangan', icon: BarChart3 };
+export const NAV_LAPORAN_KEUANGAN = { href: '/ops/admin/laporan-keuangan', label: 'Laporan', icon: BarChart3 };
 
 /** Navigasi grup Check-out — owner, staff_admin, staff_inspeksi. */
 export const NAV_CHECKOUT: { href: string; label: string; icon: LucideIcon; adminOnly?: true }[] = [

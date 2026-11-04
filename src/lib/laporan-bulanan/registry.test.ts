@@ -225,3 +225,36 @@ test('renderPdf: memakai render + htmlKePdf yang disuntik dan mengembalikan nama
     assert.equal(r.pdf.toString(), '%PDF-uji');
   } finally { pulih(); }
 });
+
+test('laporanSudahAda: baris yang dibuat sebelum bulan berakhir diabaikan', async () => {
+  const { laporanSudahAda } = await import('./registry');
+  const db = createClient({ url: ':memory:' });
+  await db.execute('CREATE TABLE laporan_riwayat (id INTEGER PRIMARY KEY AUTOINCREMENT, periode TEXT, jenis TEXT, nama_file TEXT, drive_url TEXT, dibuat_oleh TEXT, created_at TEXT)');
+  const isi = (jenis: string, periode: string, dibuat: string) =>
+    db.execute({ sql: 'INSERT INTO laporan_riwayat (periode, jenis, nama_file, created_at) VALUES (?, ?, ?, ?)', args: [periode, jenis, 'x.pdf', dibuat] });
+  await isi('Cashflow', '2026-11', '2026-11-04 12:00:00'); // uji di bulan berjalan
+  await isi('Neraca', '2026-10', '2026-10-31 09:00:00');   // masih di hari terakhir bulan itu: belum final
+  await isi('LabaRugi', '2026-10', '2026-11-01 01:00:00'); // sesudah bulan berakhir
+  assert.equal(await laporanSudahAda('Cashflow', '2026-11', db), false);
+  assert.equal(await laporanSudahAda('Neraca', '2026-10', db), false);
+  assert.equal(await laporanSudahAda('LabaRugi', '2026-10', db), true);
+});
+
+test('KeuanganLengkap: 3 laporan satu file, hanya Drive (tanpa email), nama file 1026-Lengkap', () => {
+  const def = cariLaporan('KeuanganLengkap');
+  assert.ok(def);
+  assert.equal(def.email, false);
+  assert.equal(def.tersembunyi, true);
+  assert.equal(def.namaFile(parsePeriode('2026-10', new Date('2026-11-04'))), '1026-Lengkap-Kost Tiga Dara.pdf');
+  assert.ok(!LAPORAN.filter(l => l.email).some(l => l.id === 'KeuanganLengkap'));
+});
+
+test('htmlKeuanganLengkap: urutan Arus Kas, Laba Rugi, Neraca; tiga halaman dipisah', async () => {
+  const { htmlKeuanganLengkap } = await import('@/lib/laporan/template');
+  const tabel = { judul: 't', baris: [{ label: 'Baris', nilai: 1000 }] };
+  const html = htmlKeuanganLengkap(tabel, tabel, { judul: 'n', sisi: { kiri: tabel.baris, kanan: tabel.baris } }, '2026-10', 'Tes');
+  assert.equal((html.match(/class="halaman"/g) ?? []).length, 3);
+  assert.equal((html.match(/page-break-after:always/g) ?? []).length, 2);
+  assert.ok(html.indexOf('Laporan Arus Kas') < html.indexOf('Laporan Laba Rugi'));
+  assert.ok(html.indexOf('Laporan Laba Rugi') < html.indexOf('Neraca'));
+});

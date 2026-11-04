@@ -110,35 +110,58 @@ function barisRow(b: Baris): string {
   return `<tr class="${cls}"><td>${b.label}</td><td class="angka">${fmt(b.nilai)}</td></tr>`;
 }
 
-function halaman(judul: string, periode: string, isi: string, by: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${gaya()}</style></head><body>
-<div class="halaman">
+function blokHalaman(judul: string, periode: string, isi: string, by: string): string {
+  return `<div class="halaman">
   ${header(judul, periode)}
   <div class="konten">${isi}</div>
   ${footer(by)}
-</div>
+</div>`;
+}
+
+function dokumen(blok: string): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${gaya()}</style></head><body>
+${blok}
 </body></html>`;
 }
 
-export function htmlLabaRugi(report: LaporanTable, periode: string, by: string): string {
-  const rows = report.baris.map(barisRow).join('');
-  return halaman('Laporan Laba Rugi', periode, `<table><tbody>${rows}</tbody></table>`, by);
+function halaman(judul: string, periode: string, isi: string, by: string): string {
+  return dokumen(blokHalaman(judul, periode, isi, by));
 }
 
-export function htmlArusKas(report: LaporanTable, periode: string, by: string): string {
-  const rows = report.baris.map(barisRow).join('');
-  return halaman('Laporan Arus Kas', periode, `<table><tbody>${rows}</tbody></table>`, by);
-}
+const tabelBaris = (r: LaporanTable) => `<table><tbody>${r.baris.map(barisRow).join('')}</tbody></table>`;
 
-export function htmlNeraca(report: NeracaTable, periode: string, by: string): string {
+function isiNeraca(report: NeracaTable): string {
   const kiri = report.sisi.kiri.map(barisRow).join('');
   const kanan = report.sisi.kanan.map(barisRow).join('');
-  const isi = `
+  return `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8mm">
       <div><div style="font-weight:700;color:${W.aksen};margin-bottom:2mm">ASET (AKTIVA)</div>
         <table><tbody>${kiri}</tbody></table></div>
       <div><div style="font-weight:700;color:${W.aksen};margin-bottom:2mm">LIABILITAS &amp; EKUITAS (PASIVA)</div>
         <table><tbody>${kanan}</tbody></table></div>
     </div>`;
-  return halaman('Laporan Posisi Keuangan (Neraca)', periode, isi, by);
+}
+
+export function htmlLabaRugi(report: LaporanTable, periode: string, by: string): string {
+  return halaman('Laporan Laba Rugi', periode, tabelBaris(report), by);
+}
+
+export function htmlArusKas(report: LaporanTable, periode: string, by: string): string {
+  return halaman('Laporan Arus Kas', periode, tabelBaris(report), by);
+}
+
+export function htmlNeraca(report: NeracaTable, periode: string, by: string): string {
+  return halaman('Laporan Posisi Keuangan (Neraca)', periode, isiNeraca(report), by);
+}
+
+/** Arus Kas + Laba Rugi + Neraca dalam satu file, satu laporan per halaman. */
+export function htmlKeuanganLengkap(
+  ak: LaporanTable, lr: LaporanTable, neraca: NeracaTable, periode: string, by: string,
+): string {
+  const sambung = '<div style="page-break-after:always"></div>';
+  return dokumen([
+    blokHalaman('Laporan Arus Kas', periode, tabelBaris(ak), by),
+    blokHalaman('Laporan Laba Rugi', periode, tabelBaris(lr), by),
+    blokHalaman('Laporan Posisi Keuangan (Neraca)', periode, isiNeraca(neraca), by),
+  ].join(sambung));
 }
