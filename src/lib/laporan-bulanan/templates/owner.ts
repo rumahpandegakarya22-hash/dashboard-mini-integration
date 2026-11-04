@@ -1,5 +1,6 @@
 import type { DataOwner } from '../builders/owner';
 import { esc, rupiah, tgl, waktuWib } from '../format';
+import { ringkasanHtml } from '../ringkasan';
 import { kerangkaDokumen } from '../shell';
 
 const tabel = (kepala: string[], baris: string[][], kosong: string) =>
@@ -11,7 +12,6 @@ export function htmlOwner(d: DataOwner): string {
   const label = esc(d.periode.label);
   const k = d.keuangan;
   const o = d.operasional;
-  const kerja = o.rincian.filter(r => r.jenis !== 'Inspeksi').length;
 
   const isi = `
 <h1 style="text-align:center">KOST TIGA DARA PUTRI UGM</h1>
@@ -19,15 +19,8 @@ export function htmlOwner(d: DataOwner): string {
 <p style="text-align:center">Periode: ${label}</p>
 <p style="text-align:center">Dibuat otomatis ${waktuWib(d.dibuat, true)} · Sumber: Database Kost Tiga Dara</p>
 <h2>1. Ringkasan Eksekutif</h2>
-<ul>
-<li>Penghuni baru masuk bulan ini: ${d.masuk.length} orang.</li>
-<li>Penghuni keluar: ${d.keluar.length} orang.</li>
-<li>Pendapatan diakui (${label}): ${rupiah(k.pendapatan)}</li>
-<li>Beban tercatat: ${rupiah(k.beban)} · Laba bersih: ${rupiah(k.laba)}</li>
-<li>Arus kas bersih: ${rupiah(k.arusBersih)}</li>
-<li>Pemeliharaan: ${kerja} pekerjaan, biaya ${rupiah(o.biaya)}, darurat ${o.darurat}.</li>
-<li>Leads marketing: ${d.marketing.leads} (booking ${d.marketing.booking}).</li>
-</ul>
+${ringkasanHtml(d.ringkasan)}
+<div style="page-break-after:always"></div>
 <h2>2. Hunian &amp; Penyewa</h2>
 <h3>Penghuni Baru Masuk — ${label}</h3>
 ${tabel(['Nama', 'Kamar', 'Institusi', 'Tanggal Masuk'],

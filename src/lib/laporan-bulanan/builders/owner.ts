@@ -3,6 +3,7 @@ import { buildArusKas, buildLabaRugi } from '@/lib/laporan/generator';
 import { ambilTransaksiJurnal, ekstrakKeuangan } from './keuangan';
 import type { Periode } from '../types';
 import { argTanggal, kondisiTanggal } from '../tanggal';
+import { labaRugiRingkas, metrikBulan, periodeLalu, rincianLabaRugi, type Ringkasan } from '../ringkasan';
 
 export { ekstrakKeuangan };
 
@@ -21,6 +22,7 @@ export interface DataOwner {
     rincian: { tanggal: string; jenis: string; item: string; biaya: number; status: string }[];
   };
   marketing: { leads: number; booking: number };
+  ringkasan: Ringkasan;
   rekomendasi: string[];
 }
 
@@ -35,10 +37,22 @@ export function susunRekomendasi(d: Omit<DataOwner, 'rekomendasi'>): string[] {
 const teks = (v: unknown) => (v == null ? '' : String(v));
 const angka = (v: unknown) => { const n = Number(v ?? 0); return Number.isFinite(n) ? n : 0; };
 
+// Penghuni yang masih tinggal pada tanggal tsb (mulai <= tgl, belum selesai atau selesai sesudahnya).
+function kamarTerisi(tgl: string): Promise<number> {
+  return turso()
+    .execute({
+      sql: `SELECT COUNT(DISTINCT no_kamar) AS n FROM occupancy_history
+            WHERE tanggal_mulai <= ? AND (tanggal_selesasi IS NULL OR tanggal_selesasi > ?)`,
+      args: [tgl, tgl],
+    })
+    .then(r => angka(r.rows[0]?.n));
+}
+
 export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): Promise<DataOwner> {
   const db = turso();
   const a = argTanggal(periode);
-  const [lr, ak, masuk, keluar, jurnal, cm, pm, insp, leads, booking] = await Promise.all([
+  const lalu = periodeLalu(periode);
+  const [lr, ak, masuk, keluar, jurnal, cm, pm, insp, leads, booking, lrLalu, diskon, isiKini, isiLalu, kamar] = await Promise.all([
     buildLabaRugi(periode.dari, periode.sampai),
     buildArusKas(periode.dari, periode.sampai),
     db.execute({
@@ -70,6 +84,17 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
       sql: `SELECT COUNT(*) AS n FROM booking WHERE ${kondisiTanggal('tanggal_booking')} AND LOWER(COALESCE(status_booking, '')) NOT LIKE '%cancel%' AND LOWER(COALESCE(status_booking, '')) NOT LIKE '%batal%'`,
       args: a,
     }),
+    buildLabaRugi(lalu.dari, lalu.sampai),
+    // Satu query untuk dua bulan (bulan lalu s/d bulan laporan), dipisah per bulan.
+    db.execute({
+      sql: `SELECT substr(j.tanggal, 1, 7) AS bln, COALESCE(SUM(j.nominal), 0) AS n
+            FROM jurnal_transaksi j JOIN coa d ON d.kode = j.akun_debit_kode
+            WHERE j.tanggal BETWEEN ? AND ? AND LOWER(d.nama_akun) LIKE '%beban diskon%' GROUP BY bln`,
+      args: [lalu.dari, periode.sampai],
+    }),
+    kamarTerisi(periode.sampai),
+    kamarTerisi(lalu.sampai),
+    db.execute('SELECT COUNT(*) AS n FROM kamar'),
   ]);
 
   const kerja = (rows: typeof cm.rows, jenis: string) =>
@@ -79,6 +104,16 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
   const inspeksi = insp.rows.map(r => ({ tanggal: teks(r.tanggal), jenis: 'Inspeksi', item: teks(r.area_fasilitas), biaya: 0, status: 'Terdokumentasi', darurat: false }));
   const semua = [...korektif, ...preventif, ...inspeksi].sort((x, y) => x.tanggal.localeCompare(y.tanggal));
   const selesai = (x: { status: string }) => x.status.toLowerCase() === 'selesai';
+
+  const totalKamar = angka(kamar.rows[0]?.n);
+  const diskonBulan = (kode: string) => angka(diskon.rows.find(r => teks(r.bln) === kode)?.n);
+  const susunRingkasan = (): Ringkasan => ({
+    kini: metrikBulan(labaRugiRingkas(lr), diskonBulan(periode.kode), isiKini, totalKamar),
+    lalu: metrikBulan(labaRugiRingkas(lrLalu), diskonBulan(lalu.kode), isiLalu, totalKamar),
+    labelLalu: lalu.label,
+    ...rincianLabaRugi(lr),
+    totalKamar,
+  });
 
   const d: Omit<DataOwner, 'rekomendasi'> = {
     periode,
@@ -101,6 +136,7 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
       rincian: semua.map(x => ({ tanggal: x.tanggal, jenis: x.jenis, item: x.item, biaya: x.biaya, status: x.status })),
     },
     marketing: { leads: angka(leads.rows[0]?.n), booking: angka(booking.rows[0]?.n) },
+    ringkasan: susunRingkasan(),
   };
   return { ...d, rekomendasi: susunRekomendasi(d) };
 }

@@ -46,6 +46,25 @@ const CSS_OWNER = `
   th, td { border: 1pt solid #e3d9d7; padding: 6pt 9pt; text-align: left; vertical-align: top; }
   th { background: #9e2227; color: #fff; font-family: 'Poppins', Arial, sans-serif; font-weight: 700; }
   tr { page-break-inside: avoid; }
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8pt; margin: 8pt 0 12pt; }
+  .kartu { border: 1pt solid #e3d9d7; border-radius: 6pt; padding: 8pt 10pt; background: #fbf7f6; page-break-inside: avoid; }
+  .k4 { grid-column: span 4; } .k3 { grid-column: span 3; }
+  .k-label { font-size: 8.5pt; color: #7a7170; text-transform: uppercase; letter-spacing: .4pt; }
+  .k-nilai { font-family: 'Poppins', Arial, sans-serif; font-weight: 700; font-size: 14pt; margin: 3pt 0 5pt; white-space: nowrap; }
+  .k3 .k-nilai { font-size: 12pt; }
+  .k-bawah { display: flex; align-items: center; gap: 5pt; }
+  .k-ket { font-size: 7.5pt; color: #7a7170; }
+  .pil { display: inline-flex; align-items: center; gap: 3pt; border-radius: 10pt; padding: 1.5pt 6pt; font-size: 8pt; font-weight: 700; }
+  .pil-baik { background: #e3f4e8; color: #1b7f3b; }
+  .pil-buruk { background: #fbe3e1; color: #b3261e; }
+  .pil-netral { background: #ece7e6; color: #7a7170; }
+  .donuts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8pt; }
+  .donut { border: 1pt solid #e3d9d7; border-radius: 6pt; padding: 8pt; text-align: center; page-break-inside: avoid; }
+  .d-judul { font-family: 'Poppins', Arial, sans-serif; font-weight: 700; font-size: 10pt; color: #9e2227; margin-bottom: 4pt; }
+  .lg { display: flex; gap: 5pt; text-align: left; font-size: 8pt; margin-top: 4pt; line-height: 1.25; }
+  .lg-warna { flex: none; width: 8pt; height: 8pt; border-radius: 2pt; margin-top: 2pt; }
+  .lg-kosong { font-size: 8pt; color: #7a7170; margin-top: 6pt; }
+  .catatan { font-size: 8pt; color: #7a7170; margin-top: 8pt; }
 `;
 
 export type TemaDokumen = 'dokumen' | 'kinerja' | 'owner';

@@ -29,6 +29,14 @@ function dasar(): Omit<DataOwner, 'rekomendasi'> {
       ],
     },
     marketing: { leads: 4, booking: 1 },
+    ringkasan: {
+      kini: { pendapatan: 3000000, beban: 3175000, laba: -175000, diskon: 100000, kamarIsi: 28, kamarKosong: 2, okupansi: 93.3 },
+      lalu: { pendapatan: 2500000, beban: 3000000, laba: -500000, diskon: 0, kamarIsi: 27, kamarKosong: 3, okupansi: 90 },
+      labelLalu: 'Mei 2026',
+      opex: [{ label: 'Listrik', nilai: 2000000 }, { label: 'Gaji Karyawan', nilai: 1175000 }],
+      income: [{ label: 'Penerimaan Sewa Kamar', nilai: 3000000 }],
+      totalKamar: 30,
+    },
   };
 }
 const lengkap = (): DataOwner => { const d = dasar(); return { ...d, rekomendasi: susunRekomendasi(d) }; };
@@ -57,15 +65,17 @@ test('header memuat tanggal dibuat dan sumber database', () => {
   assert.match(html, /Dibuat otomatis 03\/07\/2026 10:00 · Sumber: Database Kost Tiga Dara/);
 });
 
-test('kalimat ringkasan eksekutif', () => {
+test('ringkasan eksekutif visual: kartu, pil, donut, lalu halaman baru', () => {
   const html = htmlOwner(lengkap());
-  assert.match(html, /Penghuni baru masuk bulan ini: 1 orang\./);
-  assert.match(html, /Penghuni keluar: 1 orang\./);
-  assert.match(html, /Pendapatan diakui \(Juni 2026\): Rp3\.000\.000/);
-  assert.match(html, /Beban tercatat: Rp3\.175\.000\s+·\s+Laba bersih: -Rp175\.000/);
-  assert.match(html, /Arus kas bersih: Rp2\.500\.000/);
-  assert.match(html, /Pemeliharaan: 3 pekerjaan, biaya Rp250\.000, darurat 1\./);
-  assert.match(html, /Leads marketing: 4 \(booking 1\)\./);
+  const ringkas = html.slice(html.indexOf('1. Ringkasan Eksekutif'), html.indexOf('2. Hunian'));
+  for (const label of ['Pendapatan Kotor', 'Laba Bersih', 'OPEX', 'Total Diskon', 'Okupansi', 'Kamar Isi', 'Kamar Kosong']) {
+    assert.ok(ringkas.includes(label), label);
+  }
+  assert.equal((ringkas.match(/class="kartu /g) ?? []).length, 7);
+  assert.equal((ringkas.match(/<svg width="130"/g) ?? []).length, 3);
+  assert.ok(ringkas.includes('vs bln lalu') && ringkas.includes('Pembanding: Mei 2026'));
+  assert.ok(ringkas.includes('page-break-after:always'));
+  assert.ok(!ringkas.includes('Penghuni baru masuk bulan ini'));
 });
 
 test('data kosong tetap utuh dengan pesan kosong', () => {
@@ -112,19 +122,6 @@ test('susunRekomendasi: tanpa leads menyarankan isi rekap leads', () => {
 
 test('susunRekomendasi: data lengkap menghasilkan satu pesan', () => {
   assert.equal(susunRekomendasi(dasar()).length, 1);
-});
-
-test('bullet pemeliharaan menghitung semua pekerjaan apa pun statusnya', () => {
-  const d = dasar();
-  d.operasional = {
-    korektifSelesai: 0, preventifSelesai: 0, inspeksi: 1, darurat: 1, biaya: 300000,
-    rincian: [
-      { tanggal: '2026-06-03', jenis: 'Korektif', item: 'A', biaya: 200000, status: 'Proses' },
-      { tanggal: '2026-06-04', jenis: 'Preventif', item: 'B', biaya: 100000, status: 'Tertunda' },
-      { tanggal: '2026-06-05', jenis: 'Inspeksi', item: 'C', biaya: 0, status: 'Terdokumentasi' },
-    ],
-  };
-  assert.match(htmlOwner({ ...d, rekomendasi: [] }), /Pemeliharaan: 2 pekerjaan, biaya Rp300\.000, darurat 1\./);
 });
 
 test('transaksi dan rincian pekerjaan kosong menampilkan pesan kosong', () => {
