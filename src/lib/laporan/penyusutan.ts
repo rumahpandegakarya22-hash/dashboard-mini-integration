@@ -53,7 +53,7 @@ function bulanRange(mulai: string, akhir: string): string[] {
 }
 function akhirBulan(periode: string): string {
   const [y, m] = periode.split('-').map(Number);
-  return new Date(y, m, 0).toISOString().slice(0, 10);
+  return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
 }
 
 export async function listAset(): Promise<Aset[]> {

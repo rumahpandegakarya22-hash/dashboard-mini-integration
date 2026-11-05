@@ -536,6 +536,8 @@ export async function getMasterData(type: string): Promise<unknown> {
       return getAccounts();
     case 'tenants':
       return getActiveTenants();
+    case 'akun-pendapatan':
+      return (await getAccounts()).filter((a) => a.tipe === 'Pendapatan').map((a) => ({ id: a.nama, label: a.label }));
     case 'kaslist':
       return (await getKasList()).map((v) => ({ id: v, label: v }));
     case 'sumber-dana':

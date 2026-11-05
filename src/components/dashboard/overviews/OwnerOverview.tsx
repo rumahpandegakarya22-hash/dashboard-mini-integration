@@ -19,7 +19,7 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
   const tiketAktif = data.tiket.filter((t) => !/complete/i.test(t.status?.t || '')).length;
 
   const cards: StatCardData[] = [
-    { label: 'Pendapatan Kotor', value: fmtRpShort(F ? F.pendapatanKotor : 0), spark: F ? F.cashSeries : [], bg: G.ownPrimary, onDark: true },
+    { label: 'Pendapatan Kotor', value: fmtRpShort(F ? F.pendapatanKotor : 0), spark: F ? F.incSeries : [], bg: G.ownPrimary, onDark: true },
     { label: 'Laba Bersih', value: fmtRpShort(F ? F.labaBersih : 0), spark: F ? F.labaSeries : [], bg: G.ownPrimary, onDark: true },
     { label: 'Okupansi', value: (stats.okupansi ?? 0) + ' %', spark: moveIn, bg: G.ownRose, onDark: true },
     { label: 'OPEX', value: fmtRpShort(F ? F.beban : 0), spark: F ? F.expSeries : [], bg: G.ownGray, onDark: true },
@@ -43,7 +43,7 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
   if (nMaint) kamar.push({ t: 'Maintenance', value: nMaint, c: PAL.owner[3] });
 
   const lsc = hasFin
-    ? moneyScale(Math.max(1, ...F!.cashSeries, ...F!.expSeries, ...F!.labaSeries.map(Math.abs)))
+    ? moneyScale(Math.max(1, ...F!.incSeries, ...F!.expSeries, ...F!.labaSeries.map(Math.abs)))
     : null;
   const U = lsc?.unit ? ' (' + lsc.unit + ')' : '';
 
@@ -58,26 +58,26 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
       <Reveal tier={1} className="grid row-2 mt">
         {hasFin && lsc ? (
           <ChartCard
-            title="Pendapatan Kotor vs Beban Operasional vs Laba Bersih"
+            title="Pendapatan Kotor vs Beban vs Laba Bersih"
             legend={[
               { t: 'Pendapatan Kotor' + U, c: 'var(--teal)' },
-              { t: 'Beban Operasional' + U, c: 'var(--text-2)' },
+              { t: 'Total Beban' + U, c: 'var(--text-2)' },
               { t: 'Laba Bersih' + U, c: '#e0a13a' }
             ]}
           >
             <AreaLine
-              seriesList={[scaleVals(F!.cashSeries, lsc), scaleVals(F!.expSeries, lsc), scaleVals(F!.labaSeries, lsc)]}
+              seriesList={[scaleVals(F!.incSeries, lsc), scaleVals(F!.expSeries, lsc), scaleVals(F!.labaSeries, lsc)]}
               xLabels={F!.labels}
-              names={['Pendapatan Kotor', 'Beban Operasional', 'Laba Bersih']}
+              names={['Pendapatan Kotor', 'Total Beban', 'Laba Bersih']}
               unit={lsc.unit}
             />
           </ChartCard>
         ) : (
-          <EmptyCard title="Pendapatan Kotor vs Beban Operasional vs Laba Bersih" />
+          <EmptyCard title="Pendapatan Kotor vs Beban vs Laba Bersih" />
         )}
 
         {obars.length && bsc ? (
-          <ChartCard title="Beban Operasional" legend={[{ t: 'Beban' + (bsc.unit ? ' (' + bsc.unit + ')' : ''), c: OWN_BAR }]}>
+          <ChartCard title="Total Beban" legend={[{ t: 'Beban' + (bsc.unit ? ' (' + bsc.unit + ')' : ''), c: OWN_BAR }]}>
             <Bars
               cats={obars.map((e) => shortAcct(e[0]))}
               vals={scaleVals(obars.map((e) => e[1]), bsc)}
@@ -87,7 +87,7 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
             />
           </ChartCard>
         ) : (
-          <EmptyCard title="Beban Operasional" />
+          <EmptyCard title="Total Beban" />
         )}
       </Reveal>
 

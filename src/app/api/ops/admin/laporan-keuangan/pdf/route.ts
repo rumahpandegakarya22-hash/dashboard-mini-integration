@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
   const dari = `${periode}-01`;
-  const sampai = new Date(year, month, 0).toISOString().slice(0, 10);
+  const sampai = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
 
   let html: string;
   if (jenis === 'LabaRugi') html = htmlLabaRugi(await buildLabaRugi(dari, sampai), periode, user.name);

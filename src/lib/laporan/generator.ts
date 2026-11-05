@@ -81,7 +81,10 @@ export async function buildLabaRugi(dari: string, sampai: string): Promise<Lapor
 
   const sewa = sumGrup(a, 'Pendapatan Sewa', F);
   const tambahan = sumGrup(a, 'Pendapatan Tambahan', F);
-  const totalPendapatan = sewa + tambahan;
+  const pendapatanKotor = sewa + tambahan;
+  // Diskon = pengurang harga transaksi (PSAK 72), bukan beban. Akun 5129 tetap bertipe Beban di COA.
+  const diskon = sumKode(a, 5129, F);
+  const totalPendapatan = pendapatanKotor - diskon;
 
   const hpp = sumGrup(a, 'HPP Perawatan', F);
   const labaKotor = totalPendapatan - hpp;
@@ -92,8 +95,9 @@ export async function buildLabaRugi(dari: string, sampai: string): Promise<Lapor
   const pbb = sumKode(a, 5106, F);
   const iuran = sumKode(a, 5103, F);
   const pemasaran = sumKode(a, 5105, F);
-  const totalOperasional = sumGrup(a, 'Beban Operasional', F);
-  const bahan = totalOperasional - (listrik + gaji + internet + pbb + iuran + pemasaran);
+  const bebanPajak = sumKode(a, 5128, F);
+  const totalOperasional = sumGrup(a, 'Beban Operasional', F) - diskon;
+  const bahan = totalOperasional - (listrik + gaji + internet + pbb + iuran + pemasaran + bebanPajak);
   const labaOperasional = labaKotor - totalOperasional;
 
   const penyBangunan = sumKode(a, 6101, F);
@@ -110,6 +114,8 @@ export async function buildLabaRugi(dari: string, sampai: string): Promise<Lapor
       { label: 'PENDAPATAN PENJUALAN', nilai: null, seksi: true },
       { label: 'Penerimaan Sewa Kamar', nilai: sewa },
       { label: 'Pendapatan Tambahan', nilai: tambahan },
+      { label: 'Pendapatan Kotor', nilai: pendapatanKotor, bold: true },
+      { label: 'Diskon (pengurang pendapatan)', nilai: diskon === 0 ? 0 : -diskon },
       { label: 'Total Pendapatan', nilai: totalPendapatan, bold: true },
       { label: 'HARGA POKOK / BEBAN PERAWATAN', nilai: null, seksi: true },
       { label: 'Beban Perbaikan & Perawatan (HPP)', nilai: hpp },
@@ -121,6 +127,7 @@ export async function buildLabaRugi(dari: string, sampai: string): Promise<Lapor
       { label: 'PBB', nilai: pbb },
       { label: 'Iuran Lingkungan', nilai: iuran },
       { label: 'Pemasaran', nilai: pemasaran },
+      { label: 'Beban Pajak', nilai: bebanPajak },
       { label: 'Beban Bahan & Perlengkapan', nilai: bahan },
       { label: 'Total Beban Operasional', nilai: totalOperasional, bold: true },
       { label: 'Laba Operasional', nilai: labaOperasional, bold: true },
@@ -157,7 +164,8 @@ export async function buildArusKas(dari: string, sampai: string): Promise<Lapora
     sql: `
       SELECT jt.nominal,
              cd.grup_laporan AS d_grup, cd.kategori_arus_kas AS d_kat,
-             ck.grup_laporan AS k_grup, ck.kategori_arus_kas AS k_kat
+             ck.grup_laporan AS k_grup, ck.kategori_arus_kas AS k_kat,
+             jt.akun_debit_kode AS d_kode, jt.akun_kredit_kode AS k_kode
       FROM jurnal_transaksi jt
       JOIN coa cd ON cd.kode = jt.akun_debit_kode
       JOIN coa ck ON ck.kode = jt.akun_kredit_kode
@@ -168,9 +176,11 @@ export async function buildArusKas(dari: string, sampai: string): Promise<Lapora
     args: [dari, sampai],
   });
 
-  let sewaIn = 0, tambahanIn = 0, bungaOut = 0, opsLainOut = 0;
+  let sewaIn = 0, tambahanIn = 0, bungaOut = 0, opsLainOut = 0, titipanNet = 0;
   let jualAset = 0, beliAset = 0, setorModal = 0, priveOut = 0;
 
+  // Deposit penghuni (2104) & hutang pajak (2106) = uang titipan, bukan pendapatan: dipisah dari penerimaan tambahan.
+  const KODE_TITIPAN = new Set([2104, 2106]);
   const RENT_GRUPS = new Set(['Pendapatan Sewa', 'Pendapatan Dimuka', 'Piutang Sewa']);
 
   for (const r of res.rows) {
@@ -180,7 +190,10 @@ export async function buildArusKas(dari: string, sampai: string): Promise<Lapora
     const lawanGrup = kasDebit ? String(r[3] ?? '') : String(r[1] ?? '');
     const lawanKat = kasDebit ? (r[4] != null ? String(r[4]) : '') : (r[2] != null ? String(r[2]) : '');
 
-    if (kasDebit) {
+    const kodeLawan = Number(kasDebit ? r[6] ?? 0 : r[5] ?? 0);
+    if (KODE_TITIPAN.has(kodeLawan)) {
+      titipanNet += kasDebit ? nominal : -nominal;
+    } else if (kasDebit) {
       // inflow
       if (RENT_GRUPS.has(lawanGrup)) sewaIn += nominal;
       else if (lawanGrup === 'Pendapatan Tambahan') tambahanIn += nominal;
@@ -196,7 +209,7 @@ export async function buildArusKas(dari: string, sampai: string): Promise<Lapora
     }
   }
 
-  const netOperasional = sewaIn + tambahanIn - bungaOut - opsLainOut;
+  const netOperasional = sewaIn + tambahanIn + titipanNet - bungaOut - opsLainOut;
   const netInvestasi = jualAset - beliAset;
   const netPendanaan = setorModal - priveOut;
   const kenaikan = netOperasional + netInvestasi + netPendanaan;
@@ -209,6 +222,7 @@ export async function buildArusKas(dari: string, sampai: string): Promise<Lapora
       { label: 'AKTIVITAS OPERASIONAL', nilai: null, seksi: true },
       { label: 'Penerimaan Sewa Kamar', nilai: sewaIn },
       { label: 'Penerimaan Tambahan', nilai: tambahanIn },
+      { label: 'Titipan Deposit & Pajak (bersih)', nilai: titipanNet },
       { label: 'Pembayaran Bunga Hutang', nilai: bungaOut === 0 ? 0 : -bungaOut },
       { label: 'Pembayaran Operasional Lainnya', nilai: opsLainOut === 0 ? 0 : -opsLainOut },
       { label: 'Arus Kas Bersih Operasional', nilai: netOperasional, bold: true },
@@ -315,6 +329,7 @@ export async function buildNeraca(sampai: string): Promise<NeracaTable> {
         { label: 'Pengambilan Prive', nilai: prive === 0 ? 0 : -prive },
         { label: 'Total Ekuitas', nilai: totalEkuitas, bold: true },
         { label: 'TOTAL PASIVA', nilai: totalPasiva, bold: true },
+        ...(totalAset !== totalPasiva ? [{ label: 'SELISIH Aset − Pasiva (harus 0)', nilai: totalAset - totalPasiva, bold: true }] : []),
       ],
     },
   };

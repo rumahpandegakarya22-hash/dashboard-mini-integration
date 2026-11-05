@@ -54,34 +54,35 @@ export const submitAktivitasFinansial: SubmitHandler = async (values, ctx) => {
     };
   }
 
-  // Pemasukan
+  // Pemasukan: dicatat ke jurnal (debit kas/bank, kredit akun pendapatan) supaya masuk
+  // Laba Rugi, Arus Kas, Neraca, dan dashboard. Dulu hanya ke tabel income_non_rent yang tidak terbaca laporan.
   const tanggal = parseDateISO(String(values.tanggal ?? ''));
   const namaTransaksi = required(values.namaTransaksi, 'Nama Transaksi');
-  const jumlah = parseFloat(String(values.jumlah ?? '0').replace(/[^0-9.-]/g, '')) || 0;
-  if (jumlah <= 0) throw new Error('Jumlah nominal harus lebih dari 0.');
-  const keterangan = String(values.keteranganPemasukan ?? '').trim();
+  const nominal = parseRupiah(values.jumlah as string | number);
+  if (nominal <= 0) throw new Error('Jumlah nominal harus lebih dari 0.');
+  const akunKas = required(values.akunTujuanPemasukan, 'COA Tujuan (Kas/Bank)');
+  const akunPendapatan = required(values.akunPendapatan, 'Akun Pendapatan');
+  const catatan = String(values.keteranganPemasukan ?? '').trim();
 
   const db = turso();
-  await db.execute(
-    `CREATE TABLE IF NOT EXISTS income_non_rent (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      tanggal TEXT NOT NULL,
-      nama_transaksi TEXT NOT NULL,
-      jumlah REAL NOT NULL DEFAULT 0,
-      keterangan TEXT,
-      created_by TEXT,
-      created_at INTEGER DEFAULT (unixepoch())
-    )`
-  );
+  const kode = async (nama: string, syarat: string) => {
+    const r = await db.execute({ sql: `SELECT kode FROM coa WHERE nama_akun = ? AND ${syarat}`, args: [nama] });
+    return r.rows[0]?.kode ?? null;
+  };
+  const kodeKas = await kode(akunKas, "grup_laporan = 'Kas & Bank'");
+  const kodePendapatan = await kode(akunPendapatan, "tipe_akun = 'Pendapatan'");
+  if (kodeKas === null) throw new Error(`Akun "${akunKas}" bukan akun Kas & Bank — pemasukan TIDAK dicatat.`);
+  if (kodePendapatan === null) throw new Error(`Akun "${akunPendapatan}" bukan akun Pendapatan — pemasukan TIDAK dicatat.`);
+
+  const keterangan = `Pemasukan: ${namaTransaksi}${catatan ? ` — ${catatan}` : ''}`;
   const res = await db.execute({
-    sql: `INSERT INTO income_non_rent (tanggal, nama_transaksi, jumlah, keterangan, created_by) VALUES (?, ?, ?, ?, ?)`,
-    args: [tanggal, namaTransaksi, jumlah, keterangan || null, ctx.user.username]
+    sql: 'INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori) VALUES (?, ?, ?, ?, ?, ?)',
+    args: [tanggal, kodeKas, kodePendapatan, nominal, keterangan, 'Operasional']
   });
-  const id = Number(res.lastInsertRowid ?? 0);
 
   return {
-    target: `income_non_rent_${id}`,
-    row: id,
-    data: { tanggal, jenisAktivitas, namaTransaksi, jumlah, keterangan }
+    target: 'Turso → jurnal_transaksi',
+    row: Number(res.lastInsertRowid ?? -1),
+    data: { tanggal, jenisAktivitas, namaTransaksi, nominal, akunKas, akunPendapatan, keterangan: catatan }
   };
 };

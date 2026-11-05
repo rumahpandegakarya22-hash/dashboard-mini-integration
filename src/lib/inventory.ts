@@ -36,6 +36,48 @@ export async function fetchMaterials(category: string): Promise<InventoryMateria
   }));
 }
 
+type Exec = { execute: (q: { sql: string; args: any[] }) => Promise<any> };
+
+/**
+ * Kurangi batch pembelian secara FIFO sebanyak `qty` dan hitung harga pokoknya.
+ * Kalau satu batch tidak cukup, sisanya diambil dari batch berikutnya, jadi biaya
+ * = jumlah (qty tiap batch × harganya), bukan seluruh qty × harga batch tertua.
+ * `batchPilihan` (opsional) dipakai lebih dulu. Bagian yang tidak punya batch
+ * (stok lama tanpa harga pokok) tidak dinilai: totalCost null bila tak ada batch sama sekali.
+ */
+export async function konsumsiFifo(
+  tx: Exec,
+  materialId: number,
+  qty: number,
+  batchPilihan?: number | null
+): Promise<{ batchId: number | null; unitPrice: number | null; totalCost: number | null }> {
+  const rs = await tx.execute({
+    sql: `SELECT id, remaining_qty, price_per_unit FROM purchase_batches
+          WHERE material_id = ? AND remaining_qty > 0
+          ORDER BY (id = ?) DESC, purchase_date ASC, id ASC`,
+    args: [materialId, batchPilihan ?? -1]
+  });
+  let sisa = qty;
+  let biaya = 0;
+  let diambil = 0;
+  let batchPertama: number | null = null;
+  for (const b of rs.rows as any[]) {
+    if (sisa <= 0) break;
+    const ambil = Math.min(sisa, Number(b.remaining_qty));
+    await tx.execute({
+      sql: 'UPDATE purchase_batches SET remaining_qty = remaining_qty - ? WHERE id = ?',
+      args: [ambil, Number(b.id)]
+    });
+    batchPertama ??= Number(b.id);
+    biaya += ambil * Number(b.price_per_unit);
+    diambil += ambil;
+    sisa -= ambil;
+  }
+  if (diambil === 0) return { batchId: null, unitPrice: null, totalCost: null };
+  const totalCost = Math.round(biaya);
+  return { batchId: batchPertama, unitPrice: totalCost / diambil, totalCost };
+}
+
 /**
  * Catat pemakaian bahan: stok berkurang, batch pembelian tertua yang masih
  * bersisa dipakai sebagai dasar biaya (FIFO otomatis — Mini App tidak memilih
@@ -65,39 +107,19 @@ export async function postUsage(p: {
     if (mat.rows.length === 0) throw new Error('Bahan baku tidak ditemukan.');
     const material = mat.rows[0] as any;
     const newStock = Number(material.current_stock) - quantity;
+    if (newStock < 0) {
+      throw new Error(`Stok ${material.name} tidak cukup (tersisa ${Number(material.current_stock)} ${material.unit}).`);
+    }
 
-    // Batch dipilih manual → pakai itu, tapi tetap wajib milik bahan yang sama;
+    // Batch dipilih manual → tetap wajib milik bahan yang sama;
     // tanpa cek ini biaya bisa diambil dari harga pokok barang lain.
-    const batchRs = p.batchId
-      ? await tx.execute({
-          sql: 'SELECT id, remaining_qty, price_per_unit, material_id FROM purchase_batches WHERE id = ?',
-          args: [p.batchId]
-        })
-      : await tx.execute({
-          sql: `SELECT id, remaining_qty, price_per_unit, material_id FROM purchase_batches
-                WHERE material_id = ? AND remaining_qty > 0
-                ORDER BY purchase_date ASC LIMIT 1`,
-          args: [materialId]
-        });
     if (p.batchId) {
-      if (batchRs.rows.length === 0) throw new Error('Batch tidak ditemukan.');
-      if (Number((batchRs.rows[0] as any).material_id) !== materialId)
-        throw new Error('Batch tidak sesuai dengan bahan.');
+      const pilih = await tx.execute({ sql: 'SELECT material_id FROM purchase_batches WHERE id = ?', args: [p.batchId] });
+      if (pilih.rows.length === 0) throw new Error('Batch tidak ditemukan.');
+      if (Number((pilih.rows[0] as any).material_id) !== materialId) throw new Error('Batch tidak sesuai dengan bahan.');
     }
 
-    let batchId: number | null = null;
-    let unitPrice: number | null = null;
-    let totalCost: number | null = null;
-    if (batchRs.rows.length > 0) {
-      const b = batchRs.rows[0] as any;
-      batchId = Number(b.id);
-      unitPrice = Number(b.price_per_unit);
-      totalCost = quantity * unitPrice;
-      await tx.execute({
-        sql: 'UPDATE purchase_batches SET remaining_qty = ? WHERE id = ?',
-        args: [Math.max(0, Number(b.remaining_qty) - quantity), batchId]
-      });
-    }
+    const { batchId, unitPrice, totalCost } = await konsumsiFifo(tx, materialId, quantity, p.batchId);
 
     const ins = await tx.execute({
       sql: `INSERT INTO inventory_transactions

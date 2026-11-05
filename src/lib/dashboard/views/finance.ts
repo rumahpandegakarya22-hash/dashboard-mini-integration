@@ -97,7 +97,10 @@ export function computeFinance(
   };
 
   const from = range && range.from;
-  const to = range && range.to;
+  // Pengakuan sewa dijurnal di muka bertanggal masa depan; pendapatan baru diakui sampai hari ini.
+  const akhirHariIni = new Date();
+  akhirHariIni.setHours(23, 59, 59, 999);
+  const to = range && range.to && range.to < akhirHariIni ? range.to : akhirHariIni;
   const recs: { d: Date; arus: number; dl: number; kredit: string; debit: string }[] = [];
 
   rows.slice(1).forEach((r) => {
@@ -119,12 +122,19 @@ export function computeFinance(
   let beban = 0;
   const incomeBy: Record<string, number> = {};
   const opexBy: Record<string, number> = {};
+  let diskonTotal = 0;
+  // Diskon mengurangi pendapatan (PSAK 72): dipisah dari beban, dikurangkan di laba.
+  const isDiskon = (x: { debit: string }) => x.debit.toLowerCase().includes(NAMA_AKUN_DISKON);
   recs.forEach((x) => {
     if (x.dl > 0) {
       pendapatanKotor += x.dl;
       incomeBy[x.kredit] = (incomeBy[x.kredit] || 0) + x.dl;
     } else if (x.dl < 0) {
       const v = -x.dl;
+      if (isDiskon(x)) {
+        diskonTotal += v;
+        return;
+      }
       beban += v;
       opexBy[x.debit] = (opexBy[x.debit] || 0) + v;
     }
@@ -156,15 +166,17 @@ export function computeFinance(
     const b = buckets.get(k)!;
     if (x.arus > 0) b.cash += x.arus;
     if (x.dl > 0) b.inc += x.dl;
-    else if (x.dl < 0) b.exp += -x.dl;
-    if (x.debit.toLowerCase().includes(NAMA_AKUN_DISKON)) b.diskon += Math.abs(x.dl);
+    else if (x.dl < 0) {
+      if (isDiskon(x)) b.diskon += -x.dl;
+      else b.exp += -x.dl;
+    }
   });
   order.sort((a, b) => repT[a] - repT[b]);
 
   return {
     pendapatanKotor,
     beban,
-    labaBersih: pendapatanKotor - beban,
+    labaBersih: pendapatanKotor - diskonTotal - beban,
     incomeBy,
     opexBy,
     labels: order.map((k) => buckets.get(k)!.label),
@@ -173,9 +185,9 @@ export function computeFinance(
     expSeries: order.map((k) => buckets.get(k)!.exp),
     labaSeries: order.map((k) => {
       const b = buckets.get(k)!;
-      return b.inc - b.exp;
+      return b.inc - b.diskon - b.exp;
     }),
-    diskonTotal: order.reduce((t, k) => t + buckets.get(k)!.diskon, 0),
+    diskonTotal,
     diskonSeries: order.map((k) => buckets.get(k)!.diskon),
     daily,
     nBuckets: order.length

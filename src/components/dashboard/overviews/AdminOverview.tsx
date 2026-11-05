@@ -21,7 +21,7 @@ export default function AdminOverview({ data, finance: F, period, from, to }: Ov
   const tempoSpark = monthlyCount(filterByPeriod(penghuni, 'tempo', period, from, to), 'tempo');
 
   const cards: StatCardData[] = [
-    { label: 'Pendapatan', value: fmtRpShort(F ? F.pendapatanKotor : 0), spark: F ? F.cashSeries : [], bg: G.adminGreen },
+    { label: 'Pendapatan', value: fmtRpShort(F ? F.pendapatanKotor : 0), spark: F ? F.incSeries : [], bg: G.adminGreen },
     { label: 'Kontrak Aktif', value: String(stats.aktif ?? 0), spark: moveIn, bg: G.adminCyan },
     { label: 'Kamar Kosong', value: String(stats.kosong ?? 0), spark: moveIn, bg: G.adminOlive, onDark: true },
     { label: 'Tunggakan', value: String(stats.tunggakan ?? 0), spark: tempoSpark, bg: G.adminDarkO, onDark: true },
@@ -59,7 +59,7 @@ export default function AdminOverview({ data, finance: F, period, from, to }: Ov
   const bsc = obars.length ? moneyScale(Math.max(1, ...obars.map((e) => e[1]))) : null;
 
   const lsc = hasFin
-    ? moneyScale(Math.max(1, ...F!.cashSeries, ...F!.expSeries, ...F!.labaSeries.map(Math.abs)))
+    ? moneyScale(Math.max(1, ...F!.incSeries, ...F!.expSeries, ...F!.labaSeries.map(Math.abs)))
     : null;
   const U = lsc?.unit ? ' (' + lsc.unit + ')' : '';
 
@@ -98,18 +98,18 @@ export default function AdminOverview({ data, finance: F, period, from, to }: Ov
             title="Pendapatan Kotor vs Beban vs Laba Bersih"
             legend={[
               { t: 'Pendapatan Kotor' + U, c: 'var(--teal)' },
-              { t: 'Beban Operasional' + U, c: 'var(--text-2)' },
+              { t: 'Total Beban' + U, c: 'var(--text-2)' },
               { t: 'Laba Bersih' + U, c: '#e0a13a' }
             ]}
           >
             <AreaLine
               seriesList={[
-                scaleVals(F!.cashSeries, lsc),
+                scaleVals(F!.incSeries, lsc),
                 scaleVals(F!.expSeries, lsc),
                 scaleVals(F!.labaSeries, lsc)
               ]}
               xLabels={F!.labels}
-              names={['Pendapatan Kotor', 'Beban Operasional', 'Laba Bersih']}
+              names={['Pendapatan Kotor', 'Total Beban', 'Laba Bersih']}
               unit={lsc.unit}
             />
           </ChartCard>

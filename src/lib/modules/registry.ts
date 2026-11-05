@@ -469,12 +469,23 @@ export const MODULES: ModuleMeta[] = [
         name: 'akunTujuanPemasukan',
         label: 'COA Tujuan (Kas/Bank yang Menerima)',
         type: 'select-async',
-        required: false,
+        required: true,
         showIf: { field: 'jenisAktivitas', equals: 'Pemasukan' },
         master: 'kaslist',
         masterValue: 'id',
         masterLabel: 'label',
-        helpText: 'Akun kas/bank yang menerima dana — untuk pembukuan ganda (PSAK).'
+        helpText: 'Akun kas/bank yang menerima dana (didebet).'
+      },
+      {
+        name: 'akunPendapatan',
+        label: 'Akun Pendapatan (Kredit)',
+        type: 'select-async',
+        required: true,
+        showIf: { field: 'jenisAktivitas', equals: 'Pemasukan' },
+        master: 'akun-pendapatan',
+        masterValue: 'id',
+        masterLabel: 'label',
+        helpText: 'Jenis pendapatan yang diakui. Dicatat ke jurnal sehingga masuk Laba Rugi, Arus Kas, dan dashboard.'
       },
       {
         name: 'keteranganPemasukan',

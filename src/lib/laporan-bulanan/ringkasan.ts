@@ -147,7 +147,7 @@ export function ringkasanHtml(r: Ringkasan): string {
   const ket = 'vs bln lalu';
   const persen = (a: number, b: number, baik: boolean) => pilHtml(hitungDelta(a, b, 'persen'), 'persen', baik);
   const kartuAtas = [
-    kartu('Pendapatan Kotor', rupiah(k.pendapatan), persen(k.pendapatan, l.pendapatan, true), ket, 4),
+    kartu('Pendapatan Neto', rupiah(k.pendapatan), persen(k.pendapatan, l.pendapatan, true), ket, 4),
     kartu('Laba Bersih', rupiah(k.laba), persen(k.laba, l.laba, true), ket, 4),
     kartu('OPEX', rupiah(k.beban), persen(k.beban, l.beban, false), ket, 4),
   ];

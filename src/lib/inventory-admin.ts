@@ -6,7 +6,7 @@
 // Semua tulisan atas nama svc-miniapp; alasan foreign key ada di postPurchase().
 
 import { getInventoryClient, invalidateInventoryCache } from './dashboard/inventory';
-import { SERVICE_USER_ID } from './inventory';
+import { SERVICE_USER_ID, konsumsiFifo } from './inventory';
 
 type Executor = { execute: (q: { sql: string; args: any[] }) => Promise<any> };
 
@@ -232,8 +232,8 @@ export async function seedAlatIfEmpty(): Promise<void> {
 /**
  * Koreksi stok manual: `physicalStock` adalah saldo TUJUAN, bukan selisih.
  * Mutasi CORRECTION dicatat sebesar selisihnya supaya saldo tidak pernah
- * berubah tanpa jejak. Batch sengaja tidak disentuh — koreksi bukan pemakaian,
- * dan menebak batch mana yang salah hitung akan merusak dasar HPP.
+ * berubah tanpa jejak. Selisih kurang dinilai FIFO (kerugian persediaan);
+ * selisih lebih tidak membuat batch baru karena harga pokoknya tidak diketahui.
  */
 export async function postCorrection(p: {
   materialId: number;
@@ -261,11 +261,13 @@ export async function postCorrection(p: {
       return { newStock: lama, difference: 0, transactionId: null };
     }
 
+    // Selisih kurang = kehilangan persediaan: dinilai dengan harga pokok FIFO supaya nilainya terukur.
+    const nilai = difference < 0 ? await konsumsiFifo(tx, p.materialId, -difference) : null;
     const ins = await tx.execute({
       sql: `INSERT INTO inventory_transactions
               (material_id, user_id, type, quantity, batch_id, unit_price, total_cost, notes, created_at)
-            VALUES (?, ?, 'CORRECTION', ?, NULL, NULL, NULL, ?, ?) RETURNING id`,
-      args: [p.materialId, SERVICE_USER_ID, difference, `${p.by} — ${reason}`, now()]
+            VALUES (?, ?, 'CORRECTION', ?, ?, ?, ?, ?, ?) RETURNING id`,
+      args: [p.materialId, SERVICE_USER_ID, difference, nilai?.batchId ?? null, nilai?.unitPrice ?? null, nilai?.totalCost ?? null, `${p.by} — ${reason}`, now()]
     });
     const transactionId = Number(ins.rows[0].id);
 
@@ -426,15 +428,24 @@ export async function saveOpname(p: {
         args: [item.physicalStock, diff, item.notes || null, p.opnameId, item.materialId]
       });
 
-      if (p.finalize && diff !== 0) {
+      // Stok sistem bisa sudah bergerak sejak draf dibuka (pemakaian/pembelian) — mutasi
+      // koreksi harus sebesar selisih terhadap stok SAAT INI agar riwayat cocok dengan saldo.
+      const stokKini = p.finalize ? Number((await tx.execute({ sql: 'SELECT current_stock FROM materials WHERE id = ?', args: [item.materialId] })).rows[0].current_stock) : 0;
+      const diffKini = item.physicalStock - stokKini;
+      if (p.finalize && diffKini !== 0) {
+        const diff = diffKini;
+        const nilai = diff < 0 ? await konsumsiFifo(tx, item.materialId, -diff) : null;
         const ins = await tx.execute({
           sql: `INSERT INTO inventory_transactions
                   (material_id, user_id, type, quantity, batch_id, unit_price, total_cost, notes, created_at)
-                VALUES (?, ?, 'CORRECTION', ?, NULL, NULL, NULL, ?, ?) RETURNING id`,
+                VALUES (?, ?, 'CORRECTION', ?, ?, ?, ?, ?, ?) RETURNING id`,
           args: [
             item.materialId,
             SERVICE_USER_ID,
             diff,
+            nilai?.batchId ?? null,
+            nilai?.unitPrice ?? null,
+            nilai?.totalCost ?? null,
             `Opname ${h.period}${item.notes ? ` — ${item.notes}` : ''}`,
             now()
           ]

@@ -68,7 +68,7 @@ test('header memuat tanggal dibuat dan sumber database', () => {
 test('ringkasan eksekutif visual: kartu, pil, donut, lalu halaman baru', () => {
   const html = htmlOwner(lengkap());
   const ringkas = html.slice(html.indexOf('1. Ringkasan Eksekutif'), html.indexOf('2. Hunian'));
-  for (const label of ['Pendapatan Kotor', 'Laba Bersih', 'OPEX', 'Total Diskon', 'Okupansi', 'Kamar Isi', 'Kamar Kosong']) {
+  for (const label of ['Pendapatan Neto', 'Laba Bersih', 'OPEX', 'Total Diskon', 'Okupansi', 'Kamar Isi', 'Kamar Kosong']) {
     assert.ok(ringkas.includes(label), label);
   }
   assert.equal((ringkas.match(/class="kartu /g) ?? []).length, 7);

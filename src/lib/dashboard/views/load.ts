@@ -201,7 +201,7 @@ async function loadTransaksi(): Promise<TransaksiRow[]> {
       return {
         tanggal: String(r.tanggal ?? ''),
         namaTx: ket,
-        jenisTx: /^(terima sewa|diskon sewa|pelunasan)/i.test(ket) ? 'Pendapatan' : 'Pengeluaran',
+        jenisTx: /^(terima sewa|diskon sewa|pelunasan|pemasukan)/i.test(ket) ? 'Pendapatan' : 'Pengeluaran',
         jumlah: `Rp${Math.round(Number(r.nominal) || 0).toLocaleString('id-ID')}`,
         keterangan: ket
       };
