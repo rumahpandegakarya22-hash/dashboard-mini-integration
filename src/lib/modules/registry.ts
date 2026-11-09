@@ -422,6 +422,24 @@ export const MODULES: ModuleMeta[] = [
         ]
       },
       {
+        name: 'bebanDimuka',
+        label: 'Beban dimuka',
+        type: 'checkbox',
+        required: false,
+        showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' },
+        placeholder: 'Ya, dibayar di muka untuk beberapa bulan',
+        helpText: 'Pilih akun tujuan bertipe Beban. Nominal dicatat dulu sebagai aset (Beban Dibayar Dimuka), lalu dibebankan per bulan.'
+      },
+      {
+        name: 'jumlahBulanAmortisasi',
+        label: 'Jumlah Bulan Amortisasi',
+        type: 'number',
+        required: false,
+        showIf: { field: 'bebanDimuka', equals: 'ya' },
+        placeholder: 'Contoh: 12',
+        helpText: 'Dibebankan sama rata tiap bulan mulai bulan pembayaran, bertanggal akhir bulan.'
+      },
+      {
         name: 'divisi',
         label: 'Divisi Pengeluar Biaya',
         type: 'select',

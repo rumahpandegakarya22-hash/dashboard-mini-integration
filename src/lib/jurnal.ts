@@ -25,7 +25,8 @@ const AKUN = {
   denda: 4102,
   depositPenghuni: 2104,
   hutangPajak: 2106,
-  bebanDiskon: 5129
+  bebanDiskon: 5129,
+  bebanDibayarDimuka: 1170
 };
 
 const KATEGORI = 'Operasional';
@@ -60,6 +61,43 @@ function tambahBulan(iso: string, n: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+const tambahHari = (iso: string, n: number): string => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const selisihHari = (a: string, b: string): number =>
+  Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
+const akhirBulanIso = (iso: string): string => {
+  const [y, m] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+};
+
+/**
+ * Pecah rentang [mulai, akhir] per bulan kalender, nominal dibagi menurut jumlah hari.
+ * Irisan terakhir menyerap sisa pembulatan supaya totalnya tetap sama. Dipakai agar
+ * pendapatan sewa jatuh di bulan yang benar (date-to-date), bukan sebulan penuh di tanggal mulai.
+ */
+export function irisPerBulan(mulai: string, akhir: string, nominal: number): { mulai: string; akhir: string; nominal: number }[] {
+  const hariTotal = selisihHari(mulai, akhir) + 1;
+  const irisan: { mulai: string; akhir: string; nominal: number }[] = [];
+  let awal = mulai;
+  let terpakai = 0;
+  while (awal <= akhir) {
+    const eom = akhirBulanIso(awal);
+    const ujung = eom < akhir ? eom : akhir;
+    const hari = selisihHari(awal, ujung) + 1;
+    const porsi = ujung === akhir ? nominal - terpakai : Math.round((nominal * hari) / hariTotal);
+    irisan.push({ mulai: awal, akhir: ujung, nominal: porsi });
+    terpakai += porsi;
+    awal = tambahHari(ujung, 1);
+  }
+  return irisan;
+}
+
+/** Penanda akhir irisan di keterangan; dibaca dashboard untuk mengakui pendapatan sampai tanggal berjalan. */
+export const penandaAkhir = (akhir: string) => ` [s/d ${akhir}]`;
+
 export type InputJurnalSewa = {
   kodeKas: number;
   nama: string;
@@ -73,6 +111,8 @@ export type InputJurnalSewa = {
   diskon: number;
   pajak: number;
   grandTotal: number;
+  /** true = bentuk lama: sebulan penuh dijurnal di tanggal mulai. Hanya untuk mencocokkan jurnal lama saat edit invoice. */
+  lama?: boolean;
 };
 
 /**
@@ -165,26 +205,27 @@ export function barisJurnalSewa(p: InputJurnalSewa): BarisJurnal[] {
     const sisaSewa = i === p.jumlahBulan - 1 ? p.totalSewa - sewaPerBulan * (p.jumlahBulan - 1) : sewaPerBulan;
     const sisaListrik = i === p.jumlahBulan - 1 ? p.totalListrik - listrikPerBulan * (p.jumlahBulan - 1) : listrikPerBulan;
 
-    if (sisaSewa > 0) {
-      baris.push({
-        tanggal,
-        debit: AKUN.pendapatanDimuka,
-        kredit: AKUN.pendapatanSewa,
-        nominal: sisaSewa,
-        keterangan: `Pengakuan sewa bln-${ke} Sewa ${p.nama} (${p.noKamar})`,
-        kategori: KATEGORI
-      });
-    }
-    if (sisaListrik > 0) {
-      baris.push({
-        tanggal,
-        debit: AKUN.pendapatanDimuka,
-        kredit: AKUN.pendapatanSewa,
-        nominal: sisaListrik,
-        keterangan: `Pengakuan sewa bln-${ke} Listrik ${p.nama} (${p.noKamar})`,
-        kategori: KATEGORI
-      });
-    }
+    const akhirPeriode = tambahHari(tambahBulan(p.periodeAwal, i + 1), -1);
+    const tambahPengakuan = (jenis: string, nominal: number) => {
+      if (nominal <= 0) return;
+      const dasar = `Pengakuan sewa bln-${ke} ${jenis} ${p.nama} (${p.noKamar})`;
+      if (p.lama) {
+        baris.push({ tanggal, debit: AKUN.pendapatanDimuka, kredit: AKUN.pendapatanSewa, nominal, keterangan: dasar, kategori: KATEGORI });
+        return;
+      }
+      for (const s of irisPerBulan(tanggal, akhirPeriode, nominal)) {
+        baris.push({
+          tanggal: s.mulai,
+          debit: AKUN.pendapatanDimuka,
+          kredit: AKUN.pendapatanSewa,
+          nominal: s.nominal,
+          keterangan: dasar + penandaAkhir(s.akhir),
+          kategori: KATEGORI
+        });
+      }
+    };
+    tambahPengakuan('Sewa', sisaSewa);
+    tambahPengakuan('Listrik', sisaListrik);
   }
 
   if (p.totalDenda > 0) {
@@ -222,4 +263,46 @@ export function barisJurnalDp(p: {
     keteranganUtama: `Terima DP ${p.nama} KTD ${p.noKamar}`,
     keteranganEkor: `DP ${p.nama} KTD ${p.noKamar}`
   });
+}
+
+/**
+ * Beban dibayar di muka (PSAK: aset sampai dipakai). Bayar: debit 1170 / kredit sumber dana.
+ * Amortisasi: debit akun beban / kredit 1170, satu baris per bulan kalender, bertanggal akhir bulan,
+ * mulai bulan pembayaran. Bulan terakhir menyerap sisa pembulatan.
+ */
+export function barisBebanDimuka(p: {
+  tanggal: string;
+  kodeBeban: number;
+  kodeSumber: number;
+  nominal: number;
+  jumlahBulan: number;
+  keterangan: string;
+  kategori: string;
+}): BarisJurnal[] {
+  const bulan = Math.max(1, Math.floor(p.jumlahBulan));
+  const baris: BarisJurnal[] = [
+    {
+      tanggal: p.tanggal,
+      debit: AKUN.bebanDibayarDimuka,
+      kredit: p.kodeSumber,
+      nominal: p.nominal,
+      keterangan: `Bayar dimuka ${bulan} bln: ${p.keterangan}`,
+      kategori: p.kategori
+    }
+  ];
+  const perBulan = Math.round(p.nominal / bulan);
+  const [y0, m0] = p.tanggal.split('-').map(Number);
+  for (let i = 0; i < bulan; i++) {
+    const nominal = i === bulan - 1 ? p.nominal - perBulan * (bulan - 1) : perBulan;
+    if (nominal <= 0) continue;
+    baris.push({
+      tanggal: new Date(Date.UTC(y0, m0 - 1 + i + 1, 0)).toISOString().slice(0, 10),
+      debit: p.kodeBeban,
+      kredit: AKUN.bebanDibayarDimuka,
+      nominal,
+      keterangan: `Amortisasi bln-${i + 1}/${bulan}: ${p.keterangan}`,
+      kategori: p.kategori
+    });
+  }
+  return baris;
 }

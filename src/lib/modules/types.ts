@@ -1,6 +1,6 @@
 import type { SessionUser } from '../core/auth';
 
-export type FieldType = 'text' | 'number' | 'date' | 'time' | 'select' | 'select-async' | 'textarea' | 'file';
+export type FieldType = 'text' | 'number' | 'date' | 'time' | 'select' | 'select-async' | 'textarea' | 'file' | 'checkbox';
 
 export interface FieldOption {
   value: string;

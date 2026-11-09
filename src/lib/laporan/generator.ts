@@ -256,7 +256,8 @@ export async function buildNeraca(sampai: string): Promise<NeracaTable> {
   const kas = sumGrup(a, 'Kas & Bank', S);
   const piutang = sumGrup(a, 'Piutang Sewa', S);
   const perlengkapan = sumGrup(a, 'Perlengkapan', S);
-  const totalLancar = kas + piutang + perlengkapan;
+  const bebanDimuka = sumGrup(a, 'Beban Dibayar Dimuka', S);
+  const totalLancar = kas + piutang + perlengkapan + bebanDimuka;
 
   const tanah = sumGrup(a, 'Tanah', S);
   const bangunan = sumGrup(a, 'Bangunan', S);
@@ -302,6 +303,7 @@ export async function buildNeraca(sampai: string): Promise<NeracaTable> {
         { label: 'Kas dan Bank', nilai: kas },
         { label: 'Piutang Sewa', nilai: piutang },
         { label: 'Perlengkapan', nilai: perlengkapan },
+        { label: 'Beban Dibayar Dimuka', nilai: bebanDimuka },
         { label: 'Total Aset Lancar', nilai: totalLancar, bold: true },
         { label: 'ASET TETAP', nilai: null, seksi: true },
         { label: 'Tanah', nilai: tanah },

@@ -134,8 +134,9 @@ async function jalankan(input: InputEditInvoice): Promise<HasilEditInvoice> {
   if (!adaPayment) {
     peringatan = 'Invoice ini belum punya catatan pembayaran — jurnal tidak diubah.';
   } else {
-    const barisLama = jenis === 'Sewa' ? bangunLamaSewa(lama as any) : bangunLamaDp(lama as any);
-    const cari = await cocokkanJurnal(barisLama);
+    // Jurnal sebelum pengakuan date-to-date berbentuk sebulan penuh per tanggal mulai: coba bentuk baru, lalu bentuk lama.
+    let cari = await cocokkanJurnal(jenis === 'Sewa' ? bangunLamaSewa(lama as any) : bangunLamaDp(lama as any));
+    if (!cari && jenis === 'Sewa') cari = await cocokkanJurnal(bangunLamaSewa(lama as any, true));
     if (cari) {
       idJurnalLama = cari.ids;
       kodeKasLama = cari.kodeKas;
@@ -200,11 +201,11 @@ async function jalankan(input: InputEditInvoice): Promise<HasilEditInvoice> {
 
 type BarisCari = Pick<BarisJurnal, 'tanggal' | 'keterangan' | 'nominal'>;
 
-function bangunLamaSewa(l: any): BarisCari[] {
+function bangunLamaSewa(l: any, lama = false): BarisCari[] {
   return barisJurnalSewa({
     kodeKas: 0, nama: l.nama, noKamar: l.no_kamar, tanggalBayar: String(l.tanggal_pembayaran), periodeAwal: String(l.periode_awal),
     jumlahBulan: int(l.jumlah_bulan) || 1, totalSewa: int(l.total_sewa), totalListrik: int(l.total_listrik),
-    totalDenda: int(l.total_denda), diskon: int(l.diskon), pajak: int(l.pajak), grandTotal: int(l.grand_total)
+    totalDenda: int(l.total_denda), diskon: int(l.diskon), pajak: int(l.pajak), grandTotal: int(l.grand_total), lama
   });
 }
 

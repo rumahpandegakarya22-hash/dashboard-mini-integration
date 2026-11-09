@@ -517,6 +517,20 @@ function renderField(f: FieldDef, value: string, onChange: (v: string) => void, 
           buttonClassName="ou-datefield"
         />
       );
+    case 'checkbox':
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input
+            id={f.name}
+            name={f.name}
+            type="checkbox"
+            checked={value === 'ya'}
+            onChange={(e) => onChange(e.target.checked ? 'ya' : '')}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>{f.placeholder ?? 'Ya'}</span>
+        </div>
+      );
     case 'time':
       return <input id={f.name} name={f.name} type="time" value={value} onChange={onInputChange} />;
     case 'file':

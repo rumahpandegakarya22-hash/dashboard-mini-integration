@@ -1,6 +1,7 @@
 import { parseDateISO, parseRupiah, required } from '../../core/validate';
 import { turso } from '../../core/turso';
 import { saveLampiran } from './helpers';
+import { catatPengeluaran } from './beban-dimuka';
 import type { SubmitHandler } from '../types';
 
 /**
@@ -20,18 +21,15 @@ export const submitPengeluaran: SubmitHandler = async (values, ctx) => {
   const kategori = required(values.kategori, 'Kategori');
 
   const db = turso();
-  const kode = async (nama: string) => {
-    const r = await db.execute({ sql: 'SELECT kode FROM coa WHERE nama_akun = ?', args: [nama] });
-    return r.rows[0]?.kode ?? null;
-  };
-  const [kodeDebit, kodeKredit] = [await kode(akunDebit), await kode(akunKredit)];
-  if (kodeDebit === null || kodeKredit === null) {
-    const missing = [kodeDebit === null ? akunDebit : null, kodeKredit === null ? akunKredit : null].filter(Boolean);
-    throw new Error(`Akun "${missing.join('", "')}" tidak ditemukan di COA — pengeluaran TIDAK dicatat.`);
-  }
-  const res = await db.execute({
-    sql: 'INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori) VALUES (?, ?, ?, ?, ?, ?)',
-    args: [tanggal, kodeDebit, kodeKredit, nominal, keterangan, kategori]
+  const { row } = await catatPengeluaran({
+    tanggal,
+    akunDebit,
+    akunKredit,
+    nominal,
+    keterangan,
+    kategori,
+    bebanDimuka: String(values.bebanDimuka ?? '') === 'ya',
+    jumlahBulan: Number(values.jumlahBulanAmortisasi ?? 0)
   });
 
   // Konversi dari joblist Admin: tandai WO selesai. Best-effort — jurnal sudah tercatat.
@@ -73,7 +71,7 @@ export const submitPengeluaran: SubmitHandler = async (values, ctx) => {
 
   return {
     target: 'Turso → jurnal_transaksi',
-    row: Number(res.lastInsertRowid ?? -1),
+    row,
     data: { tanggal, akunDebit, akunKredit, nominal, keterangan, kategori },
     warning: [woWarning, lampiranWarning].filter(Boolean).join(' ') || undefined
   };

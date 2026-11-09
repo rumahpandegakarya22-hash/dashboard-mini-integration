@@ -1,6 +1,7 @@
 import { parseDateISO, parseRupiah, required } from '../../core/validate';
 import { turso } from '../../core/turso';
 import { saveLampiran } from './helpers';
+import { catatPengeluaran } from './beban-dimuka';
 import type { SubmitHandler } from '../types';
 
 export const submitAktivitasFinansial: SubmitHandler = async (values, ctx) => {
@@ -15,20 +16,17 @@ export const submitAktivitasFinansial: SubmitHandler = async (values, ctx) => {
     const kategori = required(values.kategori, 'Kategori');
     const divisi = required(values.divisi, 'Divisi Pengeluar Biaya');
 
-    const db = turso();
-    const kode = async (nama: string) => {
-      const r = await db.execute({ sql: 'SELECT kode FROM coa WHERE nama_akun = ?', args: [nama] });
-      return r.rows[0]?.kode ?? null;
-    };
-    const [kodeDebit, kodeKredit] = [await kode(akunDebit), await kode(akunKredit)];
-    if (kodeDebit === null || kodeKredit === null) {
-      const missing = [kodeDebit === null ? akunDebit : null, kodeKredit === null ? akunKredit : null].filter(Boolean);
-      throw new Error(`Akun "${missing.join('", "')}" tidak ditemukan di COA — pengeluaran TIDAK dicatat.`);
-    }
-    const res = await db.execute({
-      sql: 'INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori) VALUES (?, ?, ?, ?, ?, ?)',
-      args: [tanggal, kodeDebit, kodeKredit, nominal, keterangan, kategori]
+    const { row } = await catatPengeluaran({
+      tanggal,
+      akunDebit,
+      akunKredit,
+      nominal,
+      keterangan,
+      kategori,
+      bebanDimuka: String(values.bebanDimuka ?? '') === 'ya',
+      jumlahBulan: Number(values.jumlahBulanAmortisasi ?? 0)
     });
+    const db = turso();
 
     const prefixNota = `NOTA-${tanggal.slice(2, 4)}${tanggal.slice(5, 7)}-${divisi}`;
     const urut = await db.execute({
@@ -48,7 +46,7 @@ export const submitAktivitasFinansial: SubmitHandler = async (values, ctx) => {
 
     return {
       target: 'Turso → jurnal_transaksi',
-      row: Number(res.lastInsertRowid ?? -1),
+      row,
       data: { tanggal, jenisAktivitas, akunDebit, akunKredit, nominal, keterangan, kategori, divisi },
       warning: lampiranWarning || undefined
     };

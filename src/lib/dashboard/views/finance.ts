@@ -10,7 +10,7 @@
    Bucket harian vs bulanan ditentukan otomatis: rentang ≤ 62 hari → harian.
    ========================================================================= */
 
-import { parseDate, MONTH_ID3 } from '../format';
+import { parseDate, startOfDay, MONTH_ID3 } from '../format';
 import type { SheetGrid } from '../source';
 
 export interface FinanceResult {
@@ -82,6 +82,7 @@ export function computeFinance(
     tgl: idx('tanggal'),
     debit: idx('akun debit', 'debit'),
     kredit: idx('akun kredit', 'kredit'),
+    ket: idx('keterangan'),
     dampak: idx('dampak laba'),
     arus: idx('arus kas')
   };
@@ -108,10 +109,20 @@ export function computeFinance(
     if (!d) return;
     if (from && d < from) return;
     if (to && d > to) return;
+    // Pengakuan sewa bertanda "[s/d tgl]" diakui per hari (date-to-date): hanya bagian sampai `to`.
+    let dl = toSigned(r[ci.dampak]);
+    const tanda = ci.ket >= 0 ? /\[s\/d (\d{4}-\d{2}-\d{2})\]\s*$/.exec(String(r[ci.ket] || '')) : null;
+    if (dl > 0 && tanda) {
+      const akhir = parseDate(tanda[1]);
+      if (akhir) {
+        const hari = (a: Date, b: Date) => Math.round((startOfDay(b).getTime() - startOfDay(a).getTime()) / 86400000) + 1;
+        if (startOfDay(to) < startOfDay(akhir)) dl = Math.round((dl * hari(d, to)) / hari(d, akhir));
+      }
+    }
     recs.push({
       d,
       arus: ci.arus >= 0 ? toSigned(r[ci.arus]) : 0,
-      dl: toSigned(r[ci.dampak]),
+      dl,
       kredit: String(r[ci.kredit] || 'Pendapatan').trim(),
       debit: String(r[ci.debit] || 'Beban').trim()
     });
