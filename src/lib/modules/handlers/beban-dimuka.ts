@@ -37,8 +37,8 @@ export async function catatPengeluaran(p: {
   if (debit.tipe !== 'Beban' && debit.tipe !== 'Beban Non-Operasional') {
     throw new Error('Beban dimuka: pilih akun tujuan bertipe Beban (akun yang akan menerima amortisasi bulanan).');
   }
-  if (!Number.isInteger(p.jumlahBulan) || p.jumlahBulan < 2 || p.jumlahBulan > 120) {
-    throw new Error('Beban dimuka: jumlah bulan amortisasi harus bilangan bulat 2–120.');
+  if (!Number.isInteger(p.jumlahBulan) || p.jumlahBulan < 2 || p.jumlahBulan > 240) {
+    throw new Error('Beban dimuka: jumlah bulan amortisasi harus bilangan bulat 2–240.');
   }
   const ada = await db.execute('SELECT 1 FROM coa WHERE kode = 1170');
   if (ada.rows.length === 0) throw new Error('Akun 1170 "Beban Dibayar Dimuka" belum ada di COA. Terapkan db/schema/021_beban_dibayar_dimuka.sql dulu.');

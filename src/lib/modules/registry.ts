@@ -393,11 +393,11 @@ export const MODULES: ModuleMeta[] = [
         masterLabel: 'label',
         dependsOn: 'tipeAkun',
         filterBy: 'tipe',
-        helpText: 'Akun yang didebet: beban, aset, atau kontra akun yang bertambah.'
+        helpText: 'DEBIT: Aset & Beban BERTAMBAH; Liabilitas, Ekuitas & Pendapatan BERKURANG. Contoh: bayar listrik → pilih akun Beban Listrik (beban bertambah).'
       },
       {
         name: 'akunSumber',
-        label: 'COA Sumber (Kas/Bank yang Dipakai)',
+        label: 'COA Sumber (Akun Kredit)',
         type: 'select-async',
         required: true,
         showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' },
@@ -406,7 +406,7 @@ export const MODULES: ModuleMeta[] = [
         masterLabel: 'label',
         dependsOn: 'tipeAkun',
         filterBy: 'tipe',
-        helpText: 'Akun yang dikredit: sumber dana pembayaran (kas, bank, atau stok).'
+        helpText: 'KREDIT: Aset & Beban BERKURANG; Liabilitas, Ekuitas & Pendapatan BERTAMBAH. Contoh: dibayar dari Kas/Bank → saldo kas berkurang.'
       },
       { name: 'nominal', label: 'Nominal (Rp)', type: 'number', required: true, showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' } },
       { name: 'keterangan', label: 'Keterangan', type: 'text', required: true, showIf: { field: 'jenisAktivitas', equals: 'Pengeluaran' }, placeholder: 'Contoh: Beli galon - Toko Sumber Rejeki' },
@@ -437,7 +437,7 @@ export const MODULES: ModuleMeta[] = [
         required: false,
         showIf: { field: 'bebanDimuka', equals: 'ya' },
         placeholder: 'Contoh: 12',
-        helpText: 'Dibebankan sama rata tiap bulan mulai bulan pembayaran, bertanggal akhir bulan.'
+        helpText: 'Maksimal 240 bulan. Dibebankan sama rata tiap bulan mulai bulan pembayaran, bertanggal akhir bulan.'
       },
       {
         name: 'divisi',
@@ -492,7 +492,7 @@ export const MODULES: ModuleMeta[] = [
         master: 'kaslist',
         masterValue: 'id',
         masterLabel: 'label',
-        helpText: 'Akun kas/bank yang menerima dana (didebet).'
+        helpText: 'DEBIT: saldo Kas/Bank BERTAMBAH karena menerima dana.'
       },
       {
         name: 'akunPendapatan',
@@ -503,7 +503,7 @@ export const MODULES: ModuleMeta[] = [
         master: 'akun-pendapatan',
         masterValue: 'id',
         masterLabel: 'label',
-        helpText: 'Jenis pendapatan yang diakui. Dicatat ke jurnal sehingga masuk Laba Rugi, Arus Kas, dan dashboard.'
+        helpText: 'KREDIT: Pendapatan BERTAMBAH. Dicatat ke jurnal sehingga masuk Laba Rugi, Arus Kas, dan dashboard.'
       },
       {
         name: 'keteranganPemasukan',
