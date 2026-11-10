@@ -1013,6 +1013,24 @@
   font-size: 0.9375rem;
 }
 
+/* Tombol kecil untuk sel tabel: lebar mengikuti isi, tidak memenuhi kolom. */
+[data-app='ops'] .btn.tabel {
+  width: auto;
+  min-height: 34px;
+  padding: 0 12px;
+  gap: 6px;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+[data-app='ops'] .aksi-tabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
 [data-app='ops'] .btn-plain {
   display: inline-flex;
   align-items: center;

@@ -402,23 +402,25 @@ export default function RiwayatPembayaranPanel() {
                         {r.status}
                       </span>
                     </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      <button type="button" className="btn secondary" onClick={() => setPreviewInv(r)} title="Lihat invoice">
+                    <td>
+                      <div className="aksi-tabel">
+                      <button type="button" className="btn secondary tabel" onClick={() => setPreviewInv(r)} title="Lihat invoice">
                         <FileText size={14} /> Invoice
-                      </button>{' '}
+                      </button>
                       <button
                         type="button"
-                        className="btn secondary"
+                        className="btn secondary tabel"
                         onClick={() => setPreviewBukti(r)}
                         disabled={r.bukti.length === 0}
                         title={r.bukti.length ? 'Lihat bukti transfer' : 'Belum ada bukti transfer'}
                       >
                         <ImageIcon size={14} /> Bukti{r.bukti.length ? ` (${r.bukti.length})` : ''}
                       </button>
+                      </div>
                     </td>
                     {bolehEdit && (
                       <td>
-                        <button type="button" className="btn secondary" onClick={() => mulaiEdit(r)}>
+                        <button type="button" className="btn secondary tabel" onClick={() => mulaiEdit(r)}>
                           Edit
                         </button>
                       </td>
