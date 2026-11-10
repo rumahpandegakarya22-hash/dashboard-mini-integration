@@ -148,7 +148,9 @@ export function derivePenghuni(tables: DbTables): SheetGrid {
     'Nomor Darurat 2',
     'Relasi 2',
     'Nama Kontak 2',
-    'Email'
+    'Email',
+    'Nopol',
+    'Kendaraan'
   ];
 
   const aktif = (s: any): boolean => {
@@ -189,7 +191,9 @@ export function derivePenghuni(tables: DbTables): SheetGrid {
         v(pr.nomor_darurat_2),
         v(pr.hubungan_kontak_darurat_2),
         v(pr.nama_kontak_darurat_2),
-        v(pr.email)
+        v(pr.email),
+        v(pr.nopol),
+        v(pr.nama_kendaraan)
       ];
     });
 
@@ -236,7 +240,9 @@ export function derivePenghuni(tables: DbTables): SheetGrid {
       v(p.nomor_darurat_2),
       v(p.hubungan_kontak_darurat_2),
       v(p.nama_kontak_darurat_2),
-      v(p.email)
+      v(p.email),
+      v(p.nopol),
+      v(p.nama_kendaraan)
     ]);
   }
   return [header, ...body];

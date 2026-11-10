@@ -168,8 +168,11 @@ export default function Table({
     const gq = globalQuery.toLowerCase();
     return data.filter((r) => {
       const txt = rowText(r);
-      if (tq && !txt.includes(tq)) return false;
-      if (gq && !txt.includes(gq)) return false;
+      // Spasi diabaikan supaya "ab1234cd" tetap menemukan nopol "AB 1234 CD".
+      const polos = txt.replace(/\s+/g, '');
+      const cocok = (q: string) => txt.includes(q) || polos.includes(q.replace(/\s+/g, ''));
+      if (tq && !cocok(tq)) return false;
+      if (gq && !cocok(gq)) return false;
       for (const [idx, set] of Object.entries(colFilter)) {
         if (!set.size) continue;
         if (!set.has(cellText(r, cols[Number(idx)].key).toLowerCase())) return false;

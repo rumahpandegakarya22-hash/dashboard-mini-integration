@@ -20,6 +20,7 @@ export const COLS: Record<string, TableCol[]> = {
       {key:"darurat1",label:"Nomor Darurat 1"},{key:"relasi1",label:"Relasi 1"},{key:"namaDarurat1",label:"Nama Kontak 1"},
       {key:"darurat2",label:"Nomor Darurat 2"},{key:"relasi2",label:"Relasi 2"},{key:"namaDarurat2",label:"Nama Kontak 2"},
       {key:"email",label:"Email"},
+      {key:"nopol",label:"Nopol"},{key:"kendaraan",label:"Kendaraan"},
     ],
     penghuniSales: [{key:"kamar",label:"No Kamar"},{key:"panggil",label:"Nama Panggilan"},{key:"jenis",label:"Jenis Kamar"},{key:"tempo",label:"Tanggal Jatuh Tempo"},{key:"hp",label:"No HP Penghuni"},{key:"aksi",label:"WhatsApp"}],
     pembayaran: [

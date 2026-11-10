@@ -29,6 +29,8 @@ export interface Penghuni {
   darurat2: string;
   relasi2: string;
   namaDarurat2: string;
+  nopol: string;
+  kendaraan: string;
   sisa: number | null;
   flag: string;
   hp: string;

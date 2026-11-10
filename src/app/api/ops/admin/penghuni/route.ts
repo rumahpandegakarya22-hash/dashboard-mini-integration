@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
+import { galatNopol, namaKendaraanBersih, normalisasiNopol } from '@/lib/kendaraan';
 
 async function requireAccess() {
   const user = await getSessionUser();
@@ -21,7 +22,7 @@ export async function GET() {
             no_hp, pekerjaan, instansi, tanggal_lahir, asal_daerah, tanggal_masuk,
             nomor_darurat_1, hubungan_kontak_darurat_1, nama_kontak_darurat_1,
             nomor_darurat_2, hubungan_kontak_darurat_2, nama_kontak_darurat_2,
-            link_identitas, tambahan_listrik
+            link_identitas, tambahan_listrik, nopol, nama_kendaraan
      FROM active_tenant
      ORDER BY CAST(no_kamar AS INTEGER)`
   );
@@ -46,7 +47,9 @@ export async function GET() {
     hubunganDarurat2: String(r.hubungan_kontak_darurat_2 ?? ''),
     namaDarurat2: String(r.nama_kontak_darurat_2 ?? ''),
     linkIdentitas: String(r.link_identitas ?? ''),
-    tambahanListrik: Number(r.tambahan_listrik ?? 0)
+    tambahanListrik: Number(r.tambahan_listrik ?? 0),
+    nopol: String(r.nopol ?? ''),
+    namaKendaraan: String(r.nama_kendaraan ?? '')
   }));
 
   return NextResponse.json({ ok: true, data });
@@ -69,7 +72,9 @@ const EDITABLE_COLS: Record<string, { col: string; numeric?: boolean }> = {
   hubunganDarurat2: { col: 'hubungan_kontak_darurat_2' },
   namaDarurat2: { col: 'nama_kontak_darurat_2' },
   linkIdentitas: { col: 'link_identitas' },
-  tambahanListrik: { col: 'tambahan_listrik', numeric: true }
+  tambahanListrik: { col: 'tambahan_listrik', numeric: true },
+  nopol: { col: 'nopol' },
+  namaKendaraan: { col: 'nama_kendaraan' }
 };
 
 export async function PUT(req: NextRequest) {
@@ -94,6 +99,27 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: `Penghuni di kamar ${kamarId} tidak ditemukan.` }, { status: 404 });
   }
 
+  // Nopol dibakukan; satu nopol hanya boleh melekat pada satu penghuni aktif (dipakai untuk menelusuri pemilik motor).
+  if ('nopol' in body) {
+    const nopol = normalisasiNopol(body.nopol);
+    const galat = galatNopol(nopol);
+    if (galat) return NextResponse.json({ error: galat }, { status: 400 });
+    if (nopol) {
+      const kembar = await turso().execute({
+        sql: 'SELECT nama_lengkap, no_kamar FROM active_tenant WHERE nopol = ? AND kamar_id <> ? LIMIT 1',
+        args: [nopol, kamarId]
+      });
+      if (kembar.rows.length) {
+        return NextResponse.json(
+          { error: `Nopol ${nopol} sudah terdaftar atas nama ${String(kembar.rows[0].nama_lengkap)} (Kamar ${String(kembar.rows[0].no_kamar)}).` },
+          { status: 409 }
+        );
+      }
+    }
+    body.nopol = nopol;
+  }
+  if ('namaKendaraan' in body) body.namaKendaraan = namaKendaraanBersih(body.namaKendaraan);
+
   const set: string[] = [];
   const args: (string | number | null)[] = [];
   for (const [field, { col, numeric }] of Object.entries(EDITABLE_COLS)) {
@@ -116,6 +142,19 @@ export async function PUT(req: NextRequest) {
     sql: `UPDATE active_tenant SET ${set.join(', ')} WHERE kamar_id = ?`,
     args
   });
+
+  // Salinan permanen di riwayat hunian: kendaraan tetap tercatat setelah penghuni check-out.
+  if ('nopol' in body || 'namaKendaraan' in body) {
+    await turso().execute({
+      sql: `UPDATE occupancy_history SET nopol = COALESCE(?, nopol), nama_kendaraan = COALESCE(?, nama_kendaraan)
+            WHERE id_penghuni = (SELECT id_penghuni FROM active_tenant WHERE kamar_id = ?)`,
+      args: [
+        'nopol' in body ? String(body.nopol || '') : null,
+        'namaKendaraan' in body ? String(body.namaKendaraan || '') : null,
+        kamarId
+      ]
+    });
+  }
 
   await writeAudit({
     requestId: `penghuni-${Date.now()}`,

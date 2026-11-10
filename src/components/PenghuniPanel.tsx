@@ -26,6 +26,8 @@ interface Penghuni {
   namaDarurat2: string;
   linkIdentitas: string;
   tambahanListrik: number;
+  nopol: string;
+  namaKendaraan: string;
 }
 
 type Draft = Omit<Penghuni, 'kamarId' | 'idPenghuni' | 'noKamar'>;
@@ -47,7 +49,9 @@ const FIELDS: { key: keyof Draft; label: string; type?: string; required?: boole
   { key: 'hubunganDarurat2', label: 'Hubungan Kontak Darurat 2' },
   { key: 'namaDarurat2', label: 'Nama Kontak Darurat 2' },
   { key: 'linkIdentitas', label: 'Link Identitas (Drive)' },
-  { key: 'tambahanListrik', label: 'Tambahan Listrik (Rp/bln)', type: 'number' }
+  { key: 'tambahanListrik', label: 'Tambahan Listrik (Rp/bln)', type: 'number' },
+  { key: 'nopol', label: 'Nopol Kendaraan' },
+  { key: 'namaKendaraan', label: 'Nama Kendaraan' }
 ];
 
 function toDraft(p: Penghuni): Draft {
@@ -68,7 +72,9 @@ function toDraft(p: Penghuni): Draft {
     hubunganDarurat2: p.hubunganDarurat2,
     namaDarurat2: p.namaDarurat2,
     linkIdentitas: p.linkIdentitas,
-    tambahanListrik: p.tambahanListrik
+    tambahanListrik: p.tambahanListrik,
+    nopol: p.nopol,
+    namaKendaraan: p.namaKendaraan
   };
 }
 
@@ -133,7 +139,9 @@ export default function PenghuniPanel() {
     return (
       p.namaLengkap.toLowerCase().includes(q) ||
       p.noKamar.includes(q) ||
-      p.idPenghuni.toLowerCase().includes(q)
+      p.idPenghuni.toLowerCase().includes(q) ||
+      p.nopol.replace(/\s/g, '').toLowerCase().includes(q.replace(/\s/g, '')) ||
+      p.namaKendaraan.toLowerCase().includes(q)
     );
   });
 
@@ -154,7 +162,7 @@ export default function PenghuniPanel() {
       <div className="btn-row" style={{ marginBottom: 12 }}>
         <input
           type="search"
-          placeholder="Cari nama, kamar, atau ID penghuni…"
+          placeholder="Cari nama, kamar, ID penghuni, atau nopol…"
           value={cari}
           onChange={(e) => setCari(e.target.value)}
           style={{ flex: 1, maxWidth: 360 }}

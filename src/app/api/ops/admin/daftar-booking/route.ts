@@ -106,6 +106,19 @@ export async function POST(req: Request) {
                 WHERE id_penghuni = (SELECT id_penghuni FROM booking WHERE no_booking = ?) AND tambahan_listrik IS NULL`,
           args: [no_booking, no_booking],
         },
+        // Kendaraan dari isian booking ikut ke penghuni (hanya bila belum terisi).
+        {
+          sql: `UPDATE occupancy_history SET nopol = (SELECT nopol FROM booking WHERE no_booking = ?),
+                       nama_kendaraan = (SELECT nama_kendaraan FROM booking WHERE no_booking = ?)
+                WHERE id_penghuni = (SELECT id_penghuni FROM booking WHERE no_booking = ?) AND nopol IS NULL`,
+          args: [no_booking, no_booking, no_booking],
+        },
+        {
+          sql: `UPDATE active_tenant SET nopol = (SELECT nopol FROM booking WHERE no_booking = ?),
+                       nama_kendaraan = (SELECT nama_kendaraan FROM booking WHERE no_booking = ?)
+                WHERE id_penghuni = (SELECT id_penghuni FROM booking WHERE no_booking = ?) AND nopol IS NULL`,
+          args: [no_booking, no_booking, no_booking],
+        },
       ],
       'write'
     );

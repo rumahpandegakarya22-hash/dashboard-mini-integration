@@ -73,6 +73,15 @@ export const MODULES: ModuleMeta[] = [
         required: false,
         helpText: 'Untuk barang elektronik yang dibawa penghuni (kulkas, rice cooker, dsb). Kosongkan/0 kalau tidak ada.'
       },
+      {
+        name: 'nopol',
+        label: 'Nopol Kendaraan',
+        type: 'text',
+        required: false,
+        placeholder: 'AB 1234 CD',
+        helpText: 'Kosongkan kalau penghuni tidak membawa kendaraan. Dipakai untuk menelusuri pemilik motor.'
+      },
+      { name: 'namaKendaraan', label: 'Nama Kendaraan', type: 'text', required: false, placeholder: 'Contoh: Honda Beat hitam' },
       { name: 'statusBooking', label: 'Status Booking', type: 'select-async', required: true, master: 'status-booking' },
       { name: 'sumberLeads', label: 'Sumber Leads', type: 'select-async', required: true, master: 'sumber-leads' },
       { name: 'catatan', label: 'Catatan', type: 'textarea', required: false },

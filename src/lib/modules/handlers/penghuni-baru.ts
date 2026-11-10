@@ -4,6 +4,7 @@ import { normalizePhone, normalizeRoomId, parseDateISO, parseRupiah, required } 
 import { getActiveTenants, getRoomFresh, invalidateTenantsCache } from '../../master';
 import { resolveOccupancyId, saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
+import { galatNopol, namaKendaraanBersih, normalisasiNopol } from '../../kendaraan';
 
 /** Ejaan status_booking yang dipakai tabel `booking` & dicocokkan trigger.
  *  Kunci = ejaan apa adanya dari dropdown (warisan tab SETTING spreadsheet). */
@@ -86,6 +87,18 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
       );
     }
 
+    // Nopol: dibakukan, format dicek, dan satu nopol hanya untuk satu penghuni aktif.
+    const nopol = normalisasiNopol(values.nopol);
+    const galat = galatNopol(nopol);
+    if (galat) throw new Error(galat);
+    const namaKendaraan = namaKendaraanBersih(values.namaKendaraan);
+    if (nopol) {
+      const pakai = await turso().execute({ sql: 'SELECT nama_lengkap, no_kamar FROM active_tenant WHERE nopol = ? LIMIT 1', args: [nopol] });
+      if (pakai.rows.length) {
+        throw new Error(`Nopol ${nopol} sudah terdaftar atas nama ${String(pakai.rows[0].nama_lengkap)} (Kamar ${String(pakai.rows[0].no_kamar)}).`);
+      }
+    }
+
     // No. HP unik terhadap penghuni aktif.
     const tenants = await getActiveTenants();
     if (tenants.some((t) => tryNormalizePhone(t.hp) === noHp)) {
@@ -159,6 +172,20 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
       );
     }
 
+    // Kendaraan: simpan di booking (juga untuk yang belum check-in); bila sudah check-in, salin ke penghuni.
+    if (nopol || namaKendaraan) {
+      await turso().execute({ sql: 'UPDATE booking SET nopol = ?, nama_kendaraan = ? WHERE no_booking = ?', args: [nopol, namaKendaraan, noBooking] });
+      if (statusDb === 'Check-in' && idPenghuni !== noBooking) {
+        await turso().batch(
+          [
+            { sql: 'UPDATE occupancy_history SET nopol = ?, nama_kendaraan = ? WHERE id_penghuni = ?', args: [nopol, namaKendaraan, idPenghuni] },
+            { sql: 'UPDATE active_tenant SET nopol = ?, nama_kendaraan = ? WHERE id_penghuni = ?', args: [nopol, namaKendaraan, idPenghuni] }
+          ],
+          'write'
+        );
+      }
+    }
+
     const warningIdentitas = await saveLampiran(values, ctx, `Penghuni Baru — ${namaPenyewa} (Kamar ${kamarId})`, 'Admin', {
       penamaan: { idPenghuni, jenis: 'ID', namaLengkap: namaPenyewa }
     });
@@ -169,7 +196,7 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
 
     return {
       target: `Turso → booking (${noBooking})`,
-      data: { noBooking, tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, hargaDisepakati, statusBooking: statusDb, sumberLeads, catatan },
+      data: { noBooking, tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, hargaDisepakati, statusBooking: statusDb, sumberLeads, catatan, nopol, namaKendaraan },
       warning: [warningIdentitas, warningKontrak].filter(Boolean).join(' ') || undefined
     };
   });

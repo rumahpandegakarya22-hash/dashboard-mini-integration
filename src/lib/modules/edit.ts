@@ -382,6 +382,15 @@ const penghuniBaruEdit: CustomEditCfg = {
                 AND tambahan_listrik IS NULL`,
         args: [ref, ref]
       });
+      // Kendaraan dari booking ikut ke penghuni (hanya bila belum terisi).
+      for (const tabel of ['occupancy_history', 'active_tenant']) {
+        await turso().execute({
+          sql: `UPDATE ${tabel} SET nopol = (SELECT b.nopol FROM booking b WHERE b.no_booking = ?),
+                       nama_kendaraan = (SELECT b.nama_kendaraan FROM booking b WHERE b.no_booking = ?)
+                WHERE id_penghuni = (SELECT b.id_penghuni FROM booking b WHERE b.no_booking = ?) AND nopol IS NULL`,
+          args: [ref, ref, ref]
+        });
+      }
     }
     return 'Catatan: status kamar TIDAK diubah otomatis dari edit — kalau kamarnya diganti, sesuaikan status kamar manual.';
   }

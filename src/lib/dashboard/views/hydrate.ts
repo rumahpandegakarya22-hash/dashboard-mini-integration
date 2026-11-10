@@ -118,7 +118,9 @@ export function hydratePenghuni(sheets: SheetsOut): Penghuni[] {
     namaDarurat1: col('nama kontak 1', 'nama kontak'), darurat2: col('nomor darurat 2'),
     relasi2: col('relasi 2'), namaDarurat2: col('nama kontak 2'),
     sisa: col('sisa hari', 'sisa'), flag: col('flag tagih', 'flag'),
-    hp: col('no hp penghuni', 'no hp', 'hp penghuni')
+    hp: col('no hp penghuni', 'no hp', 'hp penghuni'),
+    nopol: col('nopol'),
+    kendaraan: col('kendaraan')
   };
   const get = (r: any[], i: number, d: any = '') => (i >= 0 && r[i] != null ? r[i] : d);
 
@@ -150,6 +152,8 @@ export function hydratePenghuni(sheets: SheetsOut): Penghuni[] {
         darurat2: String(get(r, ci.darurat2)),
         relasi2: String(get(r, ci.relasi2)),
         namaDarurat2: String(get(r, ci.namaDarurat2)),
+        nopol: String(get(r, ci.nopol)),
+        kendaraan: String(get(r, ci.kendaraan)),
         sisa: sisaRaw === '' ? null : +sisaRaw,
         flag: String(get(r, ci.flag)),
         // No HP Penghuni → tombol WA
