@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, useState } from 'react';
-import { CircleAlert, ExternalLink, FileText, ImageIcon, LoaderCircle, Receipt } from 'lucide-react';
+import { CircleAlert, ExternalLink, FileText, ImageIcon, Link2, LoaderCircle, Receipt, Trash2, Upload } from 'lucide-react';
 import Modal from '@/components/Modal';
 import { fmtTanggal } from '@/lib/format-tanggal';
 import { GlassDateField } from '@/components/ui/GlassCalendar';
@@ -29,7 +29,7 @@ interface InvoiceRow {
   dendaPerUnit: number;
   diskon: number;
   pajak: number;
-  bukti: { label: string; url: string; tipe: string }[];
+  bukti: { label: string; url: string; tipe: string; idDokumen?: string }[];
 }
 
 interface FormEdit {
@@ -101,13 +101,84 @@ function PreviewInvoice({ r, onClose }: { r: InvoiceRow | null; onClose: () => v
   );
 }
 
-/** Preview bukti transfer; gambar tampil di modal, PDF dibuka di tab baru. */
-function PreviewBukti({ r, onClose }: { r: InvoiceRow | null; onClose: () => void }) {
+/** Preview bukti transfer; gambar tampil di modal, PDF dibuka di tab baru. Owner/admin bisa menambah atau melepas bukti. */
+function PreviewBukti({
+  r,
+  bolehEdit,
+  onSaved,
+  onClose
+}: {
+  r: InvoiceRow;
+  bolehEdit: boolean;
+  onSaved: () => Promise<void>;
+  onClose: () => void;
+}) {
   const [gagal, setGagal] = useState<Record<string, boolean>>({});
+  const [link, setLink] = useState('');
+  const [sibuk, setSibuk] = useState(false);
+  const [pesan, setPesan] = useState('');
+  const [error, setError] = useState('');
+
+  async function tautkan(url: string) {
+    const res = await fetch('/api/ops/admin/riwayat-pembayaran/bukti', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ noInv: r.noInv, jenis: r.jenis, url })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || 'Gagal menautkan bukti.');
+    await onSaved();
+  }
+
+  async function jalankan(kerja: () => Promise<void>, sukses: string) {
+    setSibuk(true);
+    setError('');
+    setPesan('');
+    try {
+      await kerja();
+      setPesan(sukses);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Gagal.');
+    } finally {
+      setSibuk(false);
+    }
+  }
+
+  const unggah = (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Ukuran file melebihi 2 MB.');
+      return;
+    }
+    void jalankan(async () => {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('kind', r.jenis === 'DP' ? 'pembayaran-dp' : 'pembayaran-sewa');
+      const res = await fetch('/api/ops/upload', { method: 'POST', body: fd });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Unggah gagal.');
+      await tautkan(String(json.url));
+    }, 'Bukti berhasil diunggah dan ditautkan.');
+  };
+
+  const lepas = (idDokumen: string) => {
+    if (!window.confirm('Lepas bukti ini dari invoice? Berkas di Drive tidak dihapus.')) return;
+    void jalankan(async () => {
+      const res = await fetch('/api/ops/admin/riwayat-pembayaran/bukti', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idDokumen })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Gagal melepas bukti.');
+      await onSaved();
+    }, 'Bukti dilepas dari invoice.');
+  };
+
   return (
-    <Modal open={!!r} title={r ? `Bukti transfer ${r.noInv}` : ''} onClose={onClose}>
-      {r && r.bukti.length === 0 && <p className="muted">Belum ada bukti transfer untuk invoice ini.</p>}
-      {r?.bukti.map((b) => (
+    <Modal open title={`Bukti transfer ${r.noInv}`} onClose={onClose}>
+      {r.bukti.length === 0 && <p className="muted">Belum ada bukti transfer untuk invoice ini.</p>}
+      {r.bukti.map((b) => (
         <div key={b.url} style={{ marginBottom: 16 }}>
           <p style={{ margin: '0 0 6px', fontWeight: 600 }}>{b.label}</p>
           {!gagal[b.url] && b.tipe !== 'application/pdf' && (
@@ -120,13 +191,82 @@ function PreviewBukti({ r, onClose }: { r: InvoiceRow | null; onClose: () => voi
             />
           )}
           {(gagal[b.url] || b.tipe === 'application/pdf') && (
-            <p className="muted" style={{ margin: '0 0 6px' }}>Berkas ini tidak bisa ditampilkan di sini (PDF atau gagal dimuat) — gunakan tombol di bawah.</p>
+            <p className="muted" style={{ margin: '0 0 6px' }}>
+              Berkas ini tidak bisa ditampilkan di sini (PDF atau gagal dimuat) — gunakan tombol di bawah.
+            </p>
           )}
-          <a className="btn secondary" href={b.url} target="_blank" rel="noopener noreferrer">
-            <ExternalLink size={16} /> Buka di tab baru
-          </a>
+          <div className="aksi-tabel">
+            <a className="btn secondary tabel" href={b.url} target="_blank" rel="noopener noreferrer">
+              <ExternalLink size={14} /> Buka di tab baru
+            </a>
+            {bolehEdit && b.idDokumen && (
+              <button type="button" className="btn secondary tabel" disabled={sibuk} onClick={() => lepas(b.idDokumen!)}>
+                <Trash2 size={14} /> Lepas
+              </button>
+            )}
+          </div>
         </div>
       ))}
+
+      {bolehEdit && (
+        <div style={{ borderTop: '1px solid var(--line, #ddd)', paddingTop: 14, marginTop: 8 }}>
+          <p style={{ margin: '0 0 8px', fontWeight: 600 }}>Tambah bukti transfer</p>
+          <div className="field">
+            {/* Input file bawaan disembunyikan tema Ops, jadi label dipakai sebagai tombol. */}
+            <input
+              id="bukti-file"
+              type="file"
+              accept="image/png,image/jpeg,application/pdf"
+              disabled={sibuk}
+              onChange={(e) => {
+                unggah(e.target.files?.[0]);
+                e.target.value = '';
+              }}
+            />
+            <label htmlFor="bukti-file" className="btn secondary tabel" style={{ cursor: sibuk ? 'wait' : 'pointer' }}>
+              {sibuk ? <LoaderCircle size={14} className="spin" /> : <Upload size={14} />} Pilih &amp; unggah file (foto/PDF, maks 2 MB)
+            </label>
+          </div>
+          <div className="field">
+            <label htmlFor="bukti-link">…atau tempel link berkas Google Drive</label>
+            <input
+              id="bukti-link"
+              type="url"
+              inputMode="url"
+              placeholder="https://drive.google.com/file/d/..."
+              value={link}
+              disabled={sibuk}
+              onChange={(e) => setLink(e.target.value)}
+            />
+          </div>
+          <div className="btn-row">
+            <button
+              type="button"
+              className="btn tabel"
+              disabled={sibuk || !link.trim()}
+              onClick={() =>
+                void jalankan(async () => {
+                  await tautkan(link.trim());
+                  setLink('');
+                }, 'Link bukti ditautkan.')
+              }
+            >
+              {sibuk ? <LoaderCircle size={14} className="spin" /> : <Link2 size={14} />} Tautkan link
+            </button>
+          </div>
+          {error && (
+            <div className="banner error" role="alert" style={{ marginTop: 10 }}>
+              <CircleAlert size={16} />
+              <span>{error}</span>
+            </div>
+          )}
+          {pesan && (
+            <p className="muted" style={{ marginTop: 10 }}>
+              {pesan}
+            </p>
+          )}
+        </div>
+      )}
     </Modal>
   );
 }
@@ -205,7 +345,8 @@ export default function RiwayatPembayaranPanel() {
   const [info, setInfo] = useState('');
   const [bolehEdit, setBolehEdit] = useState(false);
   const [previewInv, setPreviewInv] = useState<InvoiceRow | null>(null);
-  const [previewBukti, setPreviewBukti] = useState<InvoiceRow | null>(null);
+  const [noBukti, setNoBukti] = useState<string | null>(null);
+  const previewBukti = rows?.find((x) => x.noInv === noBukti) ?? null;
   const [editNo, setEditNo] = useState<string | null>(null);
   const [form, setForm] = useState<FormEdit | null>(null);
   const [opsiKas, setOpsiKas] = useState<{ id: string; label: string }[]>([]);
@@ -225,11 +366,11 @@ export default function RiwayatPembayaranPanel() {
       .catch(() => setError('Gagal memuat daftar penghuni.'));
   }, []);
 
-  async function pilih(id: string) {
+  async function pilih(id: string, diam = false) {
     setSelected(id);
-    setEditNo(null);
+    if (!diam) setEditNo(null);
     if (!id) { setRows(null); setTotalLunas(''); return; }
-    setLoading(true);
+    if (!diam) setLoading(true);
     setError('');
     try {
       const res = await fetch(`/api/ops/admin/riwayat-pembayaran?id=${encodeURIComponent(id)}`);
@@ -241,7 +382,7 @@ export default function RiwayatPembayaranPanel() {
     } catch (e: any) {
       setError(e.message || 'Gagal memuat riwayat.');
     } finally {
-      setLoading(false);
+      if (!diam) setLoading(false);
     }
   }
 
@@ -303,7 +444,9 @@ export default function RiwayatPembayaranPanel() {
     <div>
       {/* Dipasang hanya saat dibuka: Modal memakai portal, dan itu tidak boleh ikut render di server. */}
       {previewInv && <PreviewInvoice r={previewInv} onClose={() => setPreviewInv(null)} />}
-      {previewBukti && <PreviewBukti r={previewBukti} onClose={() => setPreviewBukti(null)} />}
+      {previewBukti && (
+        <PreviewBukti r={previewBukti} bolehEdit={bolehEdit} onSaved={() => pilih(selected, true)} onClose={() => setNoBukti(null)} />
+      )}
       {error && (
         <div className="banner error" role="alert" style={{ marginBottom: 12 }}>
           <CircleAlert size={16} />
@@ -410,11 +553,11 @@ export default function RiwayatPembayaranPanel() {
                       <button
                         type="button"
                         className="btn secondary tabel"
-                        onClick={() => setPreviewBukti(r)}
-                        disabled={r.bukti.length === 0}
-                        title={r.bukti.length ? 'Lihat bukti transfer' : 'Belum ada bukti transfer'}
+                        onClick={() => setNoBukti(r.noInv)}
+                        disabled={r.bukti.length === 0 && !bolehEdit}
+                        title={r.bukti.length ? 'Lihat bukti transfer' : bolehEdit ? 'Tambah bukti transfer' : 'Belum ada bukti transfer'}
                       >
-                        <ImageIcon size={14} /> Bukti{r.bukti.length ? ` (${r.bukti.length})` : ''}
+                        <ImageIcon size={14} /> {r.bukti.length ? `Bukti (${r.bukti.length})` : bolehEdit ? '+ Bukti' : 'Bukti'}
                       </button>
                       </div>
                     </td>

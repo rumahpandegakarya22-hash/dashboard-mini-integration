@@ -86,13 +86,13 @@ export async function GET(req: NextRequest) {
       args: [idPenghuni]
     }),
     turso().execute({
-      sql: `SELECT judul, link_drive FROM dokumen WHERE judul LIKE 'Bukti Pembayaran%' AND judul LIKE ?`,
+      sql: `SELECT id_dokumen, judul, link_drive FROM dokumen WHERE judul LIKE 'Bukti Pembayaran%' AND judul LIKE ?`,
       args: [`%${idPenghuni}%`]
     })
   ]);
 
   const buktiDari = (jenis: string, invId: number, tanggal: string) => {
-    const hasil: { label: string; url: string; tipe: string }[] = [];
+    const hasil: { label: string; url: string; tipe: string; idDokumen?: string }[] = [];
     for (const p of proofs.rows) {
       const cocok = jenis === 'Sewa' ? Number(p.invoice_sewa_id) === invId : Number(p.invoice_dp_id) === invId;
       const url = urlBerkas(String(p.file_url ?? ''));
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
       const judul = String(d.judul ?? '');
       const url = urlBerkasDrive(String(d.link_drive ?? ''));
       const tglCocok = tanggal && (judul.includes(tanggal) || judul.includes(fmtTanggal(tanggal)));
-      if (url && judul.includes(`Bukti Pembayaran ${jenis}`) && tglCocok) hasil.push({ label: 'Lampiran admin', url, tipe: '' });
+      if (url && judul.includes(`Bukti Pembayaran ${jenis}`) && tglCocok) hasil.push({ label: 'Lampiran admin', url, tipe: '', idDokumen: String(d.id_dokumen) });
     }
     return hasil;
   };
