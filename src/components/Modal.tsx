@@ -9,12 +9,15 @@ export default function Modal({
   open,
   title,
   onClose,
-  children
+  children,
+  lebar
 }: {
   open: boolean;
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  /** Lebar maksimum panel (px) untuk isi lebar seperti preview dokumen. */
+  lebar?: number;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   // onClose dari induk berupa fungsi baru tiap render. Jika masuk dependency efek,
@@ -65,6 +68,7 @@ export default function Modal({
               aria-modal="true"
               aria-label={title}
               tabIndex={-1}
+              style={lebar ? { width: `min(${lebar}px, 94vw)`, maxWidth: 'none' } : undefined}
               initial={{ opacity: 0, y: 18, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.97 }}

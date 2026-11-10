@@ -4,6 +4,14 @@ import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
 import { editInvoice } from '@/lib/invoice/edit';
 import { kirimInvoice } from '@/lib/invoice';
+import { fmtTanggal } from '@/lib/format-tanggal';
+import { urlBerkas } from '@/lib/teman-rara';
+
+/** Link Google Drive (/file/d/<id>/view, ?id=<id>) -> penyaji berkas Ops yang memeriksa sesi. */
+function urlBerkasDrive(link: string): string | null {
+  const m = link.match(/\/d\/([A-Za-z0-9_-]{10,120})/) ?? link.match(/[?&]id=([A-Za-z0-9_-]{10,120})/);
+  return m ? `/api/ops/berkas/${m[1]}` : null;
+}
 
 const EDITOR = new Set(['owner', 'staff_admin']);
 const ALLOWED = new Set(['owner', 'staff_admin', 'staff_sales']);
@@ -46,7 +54,7 @@ export async function GET(req: NextRequest) {
   // Riwayat invoice untuk satu penghuni
   const [sewas, dps] = await Promise.all([
     turso().execute({
-      sql: `SELECT 'Sewa' AS jenis, no_inv, tanggal_pembayaran, periode_awal, periode_akhir,
+      sql: `SELECT 'Sewa' AS jenis, id AS inv_id, no_inv, tanggal_pembayaran, periode_awal, periode_akhir,
                    no_kamar, tipe_kamar, grand_total, jumlah_bulan, email, jumlah_denda, denda, diskon, pajak,
                    CASE WHEN tanggal_pembayaran IS NOT NULL THEN 'Lunas' ELSE 'Belum Bayar' END AS status
             FROM invoice_sewa
@@ -55,7 +63,7 @@ export async function GET(req: NextRequest) {
       args: [idPenghuni]
     }),
     turso().execute({
-      sql: `SELECT 'DP' AS jenis, no_inv, tanggal_pembayaran, tanggal_pembayaran AS periode_awal,
+      sql: `SELECT 'DP' AS jenis, id AS inv_id, no_inv, tanggal_pembayaran, tanggal_pembayaran AS periode_awal,
                    NULL AS periode_akhir, no_kamar, tipe_kamar, grand_total, NULL AS jumlah_bulan,
                    email, NULL AS jumlah_denda, NULL AS denda, diskon, pajak,
                    CASE WHEN tanggal_pembayaran IS NOT NULL THEN 'Lunas' ELSE 'Belum Bayar' END AS status
@@ -69,8 +77,42 @@ export async function GET(req: NextRequest) {
   const rp = (n: unknown) =>
     n != null && n !== '' ? 'Rp' + Number(n).toLocaleString('id-ID') : '—';
 
+  // Bukti transfer: (1) unggahan penghuni lewat Teman Rara (tr_payment_proof, terhubung ke invoice),
+  // (2) lampiran yang diunggah admin saat mencatat pembayaran (tabel dokumen, dicocokkan lewat judul).
+  const [proofs, dokumen] = await Promise.all([
+    turso().execute({
+      sql: `SELECT invoice_sewa_id, invoice_dp_id, file_url, file_type, verified_at, rejected_at
+            FROM tr_payment_proof WHERE id_penghuni = ? ORDER BY created_at`,
+      args: [idPenghuni]
+    }),
+    turso().execute({
+      sql: `SELECT judul, link_drive FROM dokumen WHERE judul LIKE 'Bukti Pembayaran%' AND judul LIKE ?`,
+      args: [`%${idPenghuni}%`]
+    })
+  ]);
+
+  const buktiDari = (jenis: string, invId: number, tanggal: string) => {
+    const hasil: { label: string; url: string; tipe: string }[] = [];
+    for (const p of proofs.rows) {
+      const cocok = jenis === 'Sewa' ? Number(p.invoice_sewa_id) === invId : Number(p.invoice_dp_id) === invId;
+      const url = urlBerkas(String(p.file_url ?? ''));
+      if (cocok && url) {
+        const st = p.verified_at ? 'terverifikasi' : p.rejected_at ? 'ditolak' : 'menunggu verifikasi';
+        hasil.push({ label: `Unggahan penghuni (${st})`, url, tipe: String(p.file_type ?? '') });
+      }
+    }
+    for (const d of dokumen.rows) {
+      const judul = String(d.judul ?? '');
+      const url = urlBerkasDrive(String(d.link_drive ?? ''));
+      const tglCocok = tanggal && (judul.includes(tanggal) || judul.includes(fmtTanggal(tanggal)));
+      if (url && judul.includes(`Bukti Pembayaran ${jenis}`) && tglCocok) hasil.push({ label: 'Lampiran admin', url, tipe: '' });
+    }
+    return hasil;
+  };
+
   const rows = [...sewas.rows, ...dps.rows]
     .map((r) => ({
+      bukti: buktiDari(String(r.jenis ?? ''), Number(r.inv_id), String(r.tanggal_pembayaran ?? '').slice(0, 10)),
       jenis: String(r.jenis ?? ''),
       noInv: String(r.no_inv ?? ''),
       tanggalBayar: String(r.tanggal_pembayaran ?? ''),

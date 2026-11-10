@@ -1,7 +1,8 @@
 'use client';
 
 import { Fragment, useEffect, useState } from 'react';
-import { CircleAlert, LoaderCircle, Receipt } from 'lucide-react';
+import { CircleAlert, ExternalLink, FileText, ImageIcon, LoaderCircle, Receipt } from 'lucide-react';
+import Modal from '@/components/Modal';
 import { fmtTanggal } from '@/lib/format-tanggal';
 import { GlassDateField } from '@/components/ui/GlassCalendar';
 
@@ -28,6 +29,7 @@ interface InvoiceRow {
   dendaPerUnit: number;
   diskon: number;
   pajak: number;
+  bukti: { label: string; url: string; tipe: string }[];
 }
 
 interface FormEdit {
@@ -40,6 +42,93 @@ interface FormEdit {
   diskon: string;
   pajak: string;
   akunKasBank: string;
+}
+
+const urlInvoice = (r: InvoiceRow, format?: 'pdf') =>
+  `/api/ops/admin/riwayat-pembayaran/invoice?noInv=${encodeURIComponent(r.noInv)}&jenis=${r.jenis}${format ? `&format=${format}` : ''}`;
+
+/** Preview invoice persis seperti yang dikirim ke penghuni (HTML di modal, PDF di tab baru). */
+function PreviewInvoice({ r, onClose }: { r: InvoiceRow | null; onClose: () => void }) {
+  const [html, setHtml] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!r) return;
+    let batal = false;
+    setHtml('');
+    setError('');
+    fetch(urlInvoice(r))
+      .then(async (res) => {
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Gagal memuat invoice.');
+        return res.text();
+      })
+      .then((t) => !batal && setHtml(t))
+      .catch((e: Error) => !batal && setError(e.message));
+    return () => {
+      batal = true;
+    };
+  }, [r]);
+
+  return (
+    <Modal open={!!r} title={r ? `Invoice ${r.noInv}` : ''} onClose={onClose} lebar={900}>
+      {error && (
+        <div className="banner error" role="alert">
+          <CircleAlert size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+      {!error && !html && (
+        <p className="muted" aria-busy="true">
+          <LoaderCircle size={16} className="spin" /> Memuat invoice...
+        </p>
+      )}
+      {html && (
+        <iframe
+          title={`Preview invoice ${r?.noInv}`}
+          srcDoc={html}
+          sandbox=""
+          style={{ width: '100%', height: '68vh', border: '1px solid var(--line, #ddd)', borderRadius: 8, background: '#fff' }}
+        />
+      )}
+      {r && (
+        <div className="btn-row" style={{ marginTop: 12 }}>
+          <a className="btn secondary" href={urlInvoice(r, 'pdf')} target="_blank" rel="noopener noreferrer">
+            <ExternalLink size={16} /> Buka PDF (sama persis dengan email)
+          </a>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+/** Preview bukti transfer; gambar tampil di modal, PDF dibuka di tab baru. */
+function PreviewBukti({ r, onClose }: { r: InvoiceRow | null; onClose: () => void }) {
+  const [gagal, setGagal] = useState<Record<string, boolean>>({});
+  return (
+    <Modal open={!!r} title={r ? `Bukti transfer ${r.noInv}` : ''} onClose={onClose}>
+      {r && r.bukti.length === 0 && <p className="muted">Belum ada bukti transfer untuk invoice ini.</p>}
+      {r?.bukti.map((b) => (
+        <div key={b.url} style={{ marginBottom: 16 }}>
+          <p style={{ margin: '0 0 6px', fontWeight: 600 }}>{b.label}</p>
+          {!gagal[b.url] && b.tipe !== 'application/pdf' && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={b.url}
+              alt={`Bukti transfer ${r.noInv}`}
+              style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 8, border: '1px solid var(--line, #ddd)' }}
+              onError={() => setGagal((g) => ({ ...g, [b.url]: true }))}
+            />
+          )}
+          {(gagal[b.url] || b.tipe === 'application/pdf') && (
+            <p className="muted" style={{ margin: '0 0 6px' }}>Berkas ini tidak bisa ditampilkan di sini (PDF atau gagal dimuat) — gunakan tombol di bawah.</p>
+          )}
+          <a className="btn secondary" href={b.url} target="_blank" rel="noopener noreferrer">
+            <ExternalLink size={16} /> Buka di tab baru
+          </a>
+        </div>
+      ))}
+    </Modal>
+  );
 }
 
 /** Kartu pengaturan email CC untuk semua invoice yang dikirim. */
@@ -115,6 +204,8 @@ export default function RiwayatPembayaranPanel() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [bolehEdit, setBolehEdit] = useState(false);
+  const [previewInv, setPreviewInv] = useState<InvoiceRow | null>(null);
+  const [previewBukti, setPreviewBukti] = useState<InvoiceRow | null>(null);
   const [editNo, setEditNo] = useState<string | null>(null);
   const [form, setForm] = useState<FormEdit | null>(null);
   const [opsiKas, setOpsiKas] = useState<{ id: string; label: string }[]>([]);
@@ -210,6 +301,9 @@ export default function RiwayatPembayaranPanel() {
 
   return (
     <div>
+      {/* Dipasang hanya saat dibuka: Modal memakai portal, dan itu tidak boleh ikut render di server. */}
+      {previewInv && <PreviewInvoice r={previewInv} onClose={() => setPreviewInv(null)} />}
+      {previewBukti && <PreviewBukti r={previewBukti} onClose={() => setPreviewBukti(null)} />}
       {error && (
         <div className="banner error" role="alert" style={{ marginBottom: 12 }}>
           <CircleAlert size={16} />
@@ -285,6 +379,7 @@ export default function RiwayatPembayaranPanel() {
                   <th>Durasi</th>
                   <th>Total</th>
                   <th>Status</th>
+                  <th>Dokumen</th>
                   {bolehEdit && <th></th>}
                 </tr>
               </thead>
@@ -307,6 +402,20 @@ export default function RiwayatPembayaranPanel() {
                         {r.status}
                       </span>
                     </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <button type="button" className="btn secondary" onClick={() => setPreviewInv(r)} title="Lihat invoice">
+                        <FileText size={14} /> Invoice
+                      </button>{' '}
+                      <button
+                        type="button"
+                        className="btn secondary"
+                        onClick={() => setPreviewBukti(r)}
+                        disabled={r.bukti.length === 0}
+                        title={r.bukti.length ? 'Lihat bukti transfer' : 'Belum ada bukti transfer'}
+                      >
+                        <ImageIcon size={14} /> Bukti{r.bukti.length ? ` (${r.bukti.length})` : ''}
+                      </button>
+                    </td>
                     {bolehEdit && (
                       <td>
                         <button type="button" className="btn secondary" onClick={() => mulaiEdit(r)}>
@@ -317,7 +426,7 @@ export default function RiwayatPembayaranPanel() {
                   </tr>
                   {editNo === r.noInv && form && (
                     <tr>
-                      <td colSpan={8}>
+                      <td colSpan={9}>
                         <div className="card" style={{ margin: '4px 0' }}>
                           <h3 style={{ fontSize: '1rem', margin: '0 0 10px' }}>Edit {r.noInv}</h3>
                           <div className="panel-grid">
