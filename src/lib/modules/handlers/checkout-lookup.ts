@@ -3,6 +3,7 @@ import { turso } from '../../core/turso';
 import { toISODateFlexible } from '../../core/validate';
 import { resolveOccupancyId } from './helpers';
 import type { AutoFillHandler } from '../types';
+import { fmtTanggal } from '../../format-tanggal';
 
 interface CheckoutDefaults {
   tglMasuk: string; // '' kalau tidak ditemukan otomatis
@@ -63,7 +64,7 @@ async function computeCheckoutDefaults(penghuniLabel: string, tanggalCheckoutISO
         adaTunggakan = 'Tidak'; // lunas s.d. tanggal setelah checkout
       } else {
         adaTunggakan = 'Ya';
-        notes.push(`Sewa lunas s.d. ${lunasSampai} (sudah lewat) — isi Nominal Tunggakan manual.`);
+        notes.push(`Sewa lunas s.d. ${fmtTanggal(lunasSampai)} (sudah lewat) — isi Nominal Tunggakan manual.`);
       }
     }
   } catch (e: any) {

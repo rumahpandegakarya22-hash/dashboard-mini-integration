@@ -16,7 +16,7 @@ test('kinerja admin: header, bagian, label, lampiran', () => {
   const h = htmlKinerjaAdmin(d);
   assert.match(h, /LAPORAN KINERJA ADMIN/);
   assert.match(h, /Kost Tiga Dara Putri UGM/);
-  assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05/07/2026 14:15'));
+  assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05 Jul 2026 14:15'));
   for (const s of [
     'A. Penanganan Feedback Penghuni — Juni 2026', 'Total Feedback Masuk', 'Selesai Ditangani', 'Masih Proses', 'Total Biaya Penanganan', 'Kategori',
     'B. Pelanggaran Peraturan', 'Total Pelanggaran', 'Jenis', 'C. Logbook Kecelakaan Kerja', 'Total Kecelakaan Kerja', 'Lokasi',
@@ -28,7 +28,7 @@ test('kinerja admin: header, bagian, label, lampiran', () => {
   assert.match(h, /<td>Total Biaya Penanganan<\/td><td>Rp0<\/td>/);
   assert.match(h, /<td>Kategori<\/td><td>Kebersihan \(4\)<\/td>/);
   assert.match(h, /<th>Tanggal<\/th><th>No\. Kamar<\/th><th>Kategori<\/th><th>Deskripsi<\/th><th>Status<\/th>/);
-  assert.match(h, /<td>03\/06\/2026<\/td><td>5<\/td><td>Kebersihan<\/td><td>Lantai licin<\/td><td>Selesai<\/td>/);
+  assert.match(h, /<td>03 Jun 2026<\/td><td>5<\/td><td>Kebersihan<\/td><td>Lantai licin<\/td><td>Selesai<\/td>/);
   assert.match(h, /Dibuat oleh,[\s\S]*Staf Divisi[\s\S]*Mengetahui,[\s\S]*Pengelola Kost/);
   assert.ok(h.includes('Tidak ada pelanggaran pada periode ini.'));
   assert.ok(h.includes('Tidak ada kecelakaan kerja pada periode ini.'));
@@ -54,9 +54,9 @@ test('kinerja admin: lampiran pelanggaran dan kecelakaan dirender bila ada baris
   assert.deepEqual([d.pelanggaran.total, d.pelanggaran.jenis, d.kecelakaan.total, d.kecelakaan.lokasi], [2, 'Tamu menginap (2)', 1, 'Dapur (1)']);
   const h = htmlKinerjaAdmin(d);
   assert.match(h, /<th>Tanggal<\/th><th>Jenis<\/th><th>Deskripsi<\/th><th>Penghuni\/Petugas<\/th><th>Tindakan<\/th>/);
-  assert.match(h, /<td>08\/06\/2026<\/td><td>Tamu menginap<\/td><td>Tamu lewat jam 22<\/td><td>Rina<\/td><td>Teguran<\/td>/);
+  assert.match(h, /<td>08 Jun 2026<\/td><td>Tamu menginap<\/td><td>Tamu lewat jam 22<\/td><td>Rina<\/td><td>Teguran<\/td>/);
   assert.match(h, /<th>Tanggal<\/th><th>Lokasi<\/th><th>Petugas<\/th><th>Kronologi<\/th><th>Tindakan<\/th>/);
-  assert.match(h, /<td>10\/06\/2026<\/td><td>Dapur<\/td><td>Dewi<\/td><td>Tersiram air panas<\/td><td>Diobati<\/td>/);
+  assert.match(h, /<td>10 Jun 2026<\/td><td>Dapur<\/td><td>Dewi<\/td><td>Tersiram air panas<\/td><td>Diobati<\/td>/);
   assert.ok(!h.includes('Tidak ada pelanggaran') && !h.includes('Tidak ada kecelakaan'));
   assert.equal(h.split('Tidak ada entri pada periode ini.').length - 1, 1);
 });

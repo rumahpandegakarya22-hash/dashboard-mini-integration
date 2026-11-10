@@ -1,3 +1,4 @@
+import { susun } from '../format-tanggal';
 /* =========================================================================
    Util format & tanggal Dashboard — PORT VERBATIM dari public/app.js (Fase 4).
 
@@ -132,10 +133,10 @@ export function parseDate(str: unknown): Date | null {
   return null;
 }
 
-/** Tampilkan tanggal apa pun formatnya sebagai "6 Jul 2026". */
+/** Tampilkan tanggal apa pun formatnya sebagai "06 Jul 2026" (format tunggal, lihat lib/format-tanggal). */
 export function fmtDateID(str: unknown): string {
   const d = parseDate(str);
-  return d ? d.getDate() + ' ' + MONTH_ID3[d.getMonth()] + ' ' + d.getFullYear() : String(str || '');
+  return d ? susun(d.getDate(), d.getMonth(), d.getFullYear()) : String(str || '');
 }
 
 /** Seperti parseDate, tapi menangkap jam:menit bila ada. */

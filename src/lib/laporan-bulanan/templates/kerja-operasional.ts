@@ -1,13 +1,11 @@
 import type { DataKerjaOperasional } from '../builders/operasional';
-import { esc, tgl, waktuWib } from '../format';
+import { esc, isoWib, tgl, waktuWib } from '../format';
 import { kerangkaDokumen } from '../shell';
 import { lewatDeadline } from '../tugas';
 
 const kv = (baris: [string, string | number][]) =>
   `<table>${baris.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>`;
 
-// Tanggal pembuatan (WIB) dalam bentuk ISO, pembanding deadline.
-const isoWib = (d: Date) => waktuWib(d, false).split('/').reverse().join('-');
 const HURUF = ['A', 'B', 'C'];
 
 export function htmlKerjaOperasional(d: DataKerjaOperasional): string {

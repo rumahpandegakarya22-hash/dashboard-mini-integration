@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { fmtTanggal } from '@/lib/format-tanggal';
 
 const DOW = ['M', 'S', 'S', 'R', 'K', 'J', 'S'];
 const BULAN = [
@@ -133,7 +134,8 @@ export function GlassDateField({
   className = '',
   /* Default-nya memakai token Dashboard. Ops & Inventory mengoper kelasnya
      sendiri karena token itu tidak ada di sana. */
-  buttonClassName = 'glass-cal-field__btn'
+  buttonClassName = 'glass-cal-field__btn',
+  disabled = false
 }: {
   id?: string;
   name?: string;
@@ -143,6 +145,7 @@ export function GlassDateField({
   placeholder?: string;
   className?: string;
   buttonClassName?: string;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number; appAttr: string | null } | null>(null);
@@ -197,9 +200,10 @@ export function GlassDateField({
         className={buttonClassName}
         aria-haspopup="dialog"
         aria-expanded={open}
+        disabled={disabled}
         onClick={() => setOpen((o) => !o)}
       >
-        <span>{value || placeholder}</span>
+        <span>{value ? fmtTanggal(value) : placeholder}</span>
         <CalIcon />
       </button>
       {typeof document !== 'undefined' &&

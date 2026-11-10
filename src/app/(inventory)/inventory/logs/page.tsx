@@ -15,6 +15,7 @@ import {
   XCircle
 } from "lucide-react";
 import type { InvUser } from "@/components/inventory/Navbar";
+import { fmtTanggal, fmtWaktu } from "@/lib/format-tanggal";
 
 interface ActivityLog {
   id: number;
@@ -266,13 +267,7 @@ export default function LogsPage() {
                           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-taupe-dark">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3.5 w-3.5" />
-                              {new Date(log.createdAt).toLocaleDateString("id-ID", {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {fmtWaktu(log.createdAt)}
                             </span>
                             <span>•</span>
                             <span className="flex items-center gap-1">

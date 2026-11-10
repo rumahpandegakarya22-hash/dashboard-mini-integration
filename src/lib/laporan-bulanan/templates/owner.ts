@@ -1,5 +1,5 @@
 import type { DataOwner } from '../builders/owner';
-import { esc, rupiah, tgl, waktuWib } from '../format';
+import { esc, rupiah, teksTgl, tgl, waktuWib } from '../format';
 import { ringkasanHtml } from '../ringkasan';
 import { kerangkaDokumen } from '../shell';
 
@@ -40,7 +40,7 @@ ${tabel(['Nama', 'Kamar', 'Tanggal Keluar'],
 <tr><td>Arus kas bersih</td><td>${rupiah(k.arusBersih)}</td></tr></table>
 <h3>Rincian Transaksi pada Periode</h3>
 ${tabel(['Tanggal', 'Keterangan', 'Debit', 'Kredit', 'Nominal'],
-  k.transaksi.map(t => [tgl(t.tanggal), esc(t.keterangan), esc(t.debit), esc(t.kredit), rupiah(t.nominal)]),
+  k.transaksi.map(t => [tgl(t.tanggal), esc(teksTgl(t.keterangan)), esc(t.debit), esc(t.kredit), rupiah(t.nominal)]),
   'Tidak ada transaksi keuangan tercatat pada periode ini.')}
 <h2>4. Operasional: Inspeksi, Perawatan &amp; Perbaikan — ${label}</h2>
 <table><tr><th>Indikator</th><th>Jumlah</th></tr>

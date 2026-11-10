@@ -2,6 +2,7 @@ import { normalizePhone, normalizeRoomId, parseDateISO, parseRupiah, required } 
 import { turso } from '../../core/turso';
 import { getTenantByLabel, getInvoiceSewaMaster, getListrikByKamar } from '../../master';
 import type { PreviewHandler } from '../types';
+import { susun } from '../../format-tanggal';
 
 // Replika PERSIS logika buildInvoiceData_() di Apps Script Invoice Generator (Sewa & DP) — supaya angka
 // yang ditampilkan di preview mini app SAMA dengan yang bakal ada di PDF/email sungguhan. Baca sumber
@@ -15,14 +16,9 @@ export function addMonthsSewa(d: Date, n: number): Date {
   return r;
 }
 
-const BULAN_ID = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli',
-  'Agustus', 'September', 'Oktober', 'November', 'Desember'
-];
-
 function fmtTanggalId(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
-  return `${d.getDate()} ${BULAN_ID[d.getMonth()]} ${d.getFullYear()}`;
+  return susun(d.getDate(), d.getMonth(), d.getFullYear());
 }
 
 function rp(n: number): string {

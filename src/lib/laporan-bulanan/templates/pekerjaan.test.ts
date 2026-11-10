@@ -25,7 +25,7 @@ test('urutan judul, ringkasan, rincian, catatan, tanda tangan', () => {
   const h = htmlPekerjaan(data());
   const urut = [
     'LAPORAN PEKERJAAN BULANAN', 'DIVISI ADMIN — KOST TIGA DARA', 'Periode: Juni 2026',
-    'Tanggal dibuat: 05/07/2026', 'A. RINGKASAN', 'Total Pekerjaan', 'Persentase Selesai', '33%',
+    'Tanggal dibuat: 05 Jul 2026', 'A. RINGKASAN', 'Total Pekerjaan', 'Persentase Selesai', '33%',
     'B. RINCIAN PEKERJAAN', 'No', 'Tanggal', 'Pekerjaan', 'Bidang', 'PIC', 'Deadline', 'Status',
     'C. CATATAN / KENDALA', 'Dibuat oleh,', 'Staf ADMIN', 'Disetujui oleh,', 'Pengelola',
   ];

@@ -5,6 +5,7 @@ import { barisJurnalDp, barisJurnalSewa, kodeAkunKas, type BarisJurnal } from '.
 import { addMonthsSewa, toISO } from '../modules/handlers/pembayaran-sewa-preview';
 import { parseDateISO } from '../core/validate';
 import { getInvoiceDp, getInvoiceSewa } from './data';
+import { fmtTanggal } from '../format-tanggal';
 
 export type InputEditInvoice = {
   noInv: string;
@@ -98,7 +99,7 @@ async function jalankan(input: InputEditInvoice): Promise<HasilEditInvoice> {
         args: [l.id_penghuni, noInv, periodeAkhir, periodeAwal]
       });
       const b = bentrok.rows[0];
-      if (b) throw new Error(`Periode tumpang tindih dengan pembayaran ${b.id_payment} (${b.periode_awal} s.d. ${b.periode_akhir}).`);
+      if (b) throw new Error(`Periode tumpang tindih dengan pembayaran ${b.id_payment} (${fmtTanggal(b.periode_awal)} s.d. ${fmtTanggal(b.periode_akhir)}).`);
     }
 
     setSql = `email = ?, tanggal_pembayaran = ?, periode_awal = ?, periode_akhir = ?, jumlah_bulan = ?, jumlah_denda = ?,

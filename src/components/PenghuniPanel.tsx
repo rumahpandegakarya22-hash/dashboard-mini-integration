@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronRight, CircleAlert, LoaderCircle, User } from 'lucide-react';
 import Modal from './Modal';
+import { GlassDateField } from '@/components/ui/GlassCalendar';
 
 interface Penghuni {
   kamarId: string;
@@ -209,14 +210,23 @@ export default function PenghuniPanel() {
                         {f.label}
                         {f.required && <span className="req"> *</span>}
                       </label>
-                      <input
-                        id={`${p.kamarId}-${f.key}`}
-                        type={f.type ?? 'text'}
-                        value={String(d[f.key] ?? '')}
-                        onChange={(e) =>
-                          ubah(p.kamarId, { [f.key]: f.type === 'number' ? Number(e.target.value) || 0 : e.target.value } as Partial<Draft>)
-                        }
-                      />
+                      {f.type === 'date' ? (
+                        <GlassDateField
+                          id={`${p.kamarId}-${f.key}`}
+                          value={String(d[f.key] ?? '')}
+                          onChange={(v) => ubah(p.kamarId, { [f.key]: v } as Partial<Draft>)}
+                          buttonClassName="ou-datefield"
+                        />
+                      ) : (
+                        <input
+                          id={`${p.kamarId}-${f.key}`}
+                          type={f.type ?? 'text'}
+                          value={String(d[f.key] ?? '')}
+                          onChange={(e) =>
+                            ubah(p.kamarId, { [f.key]: f.type === 'number' ? Number(e.target.value) || 0 : e.target.value } as Partial<Draft>)
+                          }
+                        />
+                      )}
                     </div>
                   ))}
 

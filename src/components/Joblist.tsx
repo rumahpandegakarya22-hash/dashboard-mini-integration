@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { BellRing, CircleAlert, ClipboardList, ImageIcon, ListChecks } from 'lucide-react';
 import type { WorkOrderRow } from '@/lib/joblist';
 import OriginSelect from '@/components/ui/OriginSelect';
+import { fmtTanggal } from '@/lib/format-tanggal';
 
 const STATUS_OPTIONS = ['Pending', 'In Progress', 'Complete'];
 
@@ -116,7 +117,7 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                   <AnimatePresence initial={false}>
                   {woRows.map((r) => (
                     <motion.tr key={r.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-                      <td>{r.tanggalInput}</td>
+                      <td>{fmtTanggal(r.tanggalInput)}</td>
                       <td>{r.lokasiItem}</td>
                       <td>{r.kategori}</td>
                       <td style={{ maxWidth: 220, whiteSpace: 'normal' }}>{r.deskripsi}</td>
@@ -128,7 +129,7 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                       <td>{r.divisiAsal}</td>
                       {readOnly && <td>{r.tujuanDivisi}</td>}
                       {readOnly && <td>{r.pic || '-'}</td>}
-                      <td>{r.targetDeadline || '-'}</td>
+                      <td>{fmtTanggal(r.targetDeadline)}</td>
                       <td>
                         {r.buktiFotoUrl ? (
                           <a href={r.buktiFotoUrl} target="_blank" rel="noopener noreferrer" title="Lihat bukti foto">

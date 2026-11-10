@@ -5,6 +5,7 @@ import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
 import { getPenghuniByIds, labelPenghuni, urlBerkas } from '@/lib/teman-rara';
 import { barisJurnalDp, barisJurnalSewa, kodeAkunKas } from '@/lib/jurnal';
+import { fmtTanggal } from '@/lib/format-tanggal';
 
 /**
  * Verifikasi bukti bayar yang diunggah penghuni lewat aplikasi Teman Rara.
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
       invoice: sewa ? String(r.sewa_no_inv) : r.dp_no_inv != null ? String(r.dp_no_inv) : null,
       jenisInvoice: sewa ? 'Sewa' : r.dp_no_inv != null ? 'DP' : null,
       nominalInvoice: Number((sewa ? r.sewa_total : r.dp_total) ?? 0),
-      periode: sewa && r.periode_awal ? `${String(r.periode_awal)} s/d ${String(r.periode_akhir ?? '')}` : null,
+      periode: sewa && r.periode_awal ? `${fmtTanggal(r.periode_awal)} s/d ${fmtTanggal(r.periode_akhir)}` : null,
       status: r.verified_at ? 'Terverifikasi' : r.rejected_at ? 'Ditolak' : 'Menunggu',
       diprosesOleh: r.verified_by ? String(r.verified_by) : r.rejected_by ? String(r.rejected_by) : null,
       diprosesPada: r.verified_at

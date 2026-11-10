@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CircleAlert, LoaderCircle, MessageSquare } from 'lucide-react';
+import { fmtTanggal } from '@/lib/format-tanggal';
 
 type Row = {
   no_booking: string;
@@ -132,7 +133,7 @@ export default function DaftarBookingPanel() {
                   <tr key={row.no_booking}>
                     <td style={{ whiteSpace: 'nowrap' }}>{row.kamar_no}</td>
                     <td>{row.nama_penyewa}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{row.tgl_masuk}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{fmtTanggal(row.tgl_masuk)}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{row.no_hp}</td>
                     <td>
                       <span style={{

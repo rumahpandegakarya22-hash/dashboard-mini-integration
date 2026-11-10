@@ -11,6 +11,7 @@
 import './_env';
 import { turso } from '../src/lib/core/turso';
 import { barisJurnalSewa } from '../src/lib/jurnal';
+import { fmtTanggal, fmtTeks } from '../src/lib/format-tanggal';
 
 const commit = process.argv.includes('--commit');
 const int = (v: unknown) => Math.round(Number(v ?? 0)) || 0;
@@ -116,7 +117,7 @@ async function main() {
   ringkas.forEach((n, a) => out(`      ${n} baris — ${a}`));
   const efek = (kode: number, sisi: 'd' | 'k') => dipilih.filter((j) => j[sisi] === kode).reduce((s, j) => s + j.n, 0);
   out(`      kas 1103 berkurang Rp${rp(efek(1103, 'd'))} | pendapatan 4101 berkurang Rp${rp(efek(4101, 'k'))} | 2105: debit Rp${rp(efek(2105, 'd'))} / kredit Rp${rp(efek(2105, 'k'))} | 2104 debit Rp${rp(efek(2104, 'd'))} / kredit Rp${rp(efek(2104, 'k'))}`);
-  if (process.argv.includes('--rinci')) for (const j of dipilih) out(`      #${j.id} ${j.tgl} ${j.n} ${j.ket}  <${hapus.get(j.id)}>`);
+  if (process.argv.includes('--rinci')) for (const j of dipilih) out(`      #${j.id} ${fmtTanggal(j.tgl)} ${j.n} ${fmtTeks(j.ket)}  <${hapus.get(j.id)}>`);
   for (const j of dipilih) stmts.push({ sql: 'DELETE FROM jurnal_transaksi WHERE id = ?', args: [j.id] });
 
   out(`\nTotal statement: ${stmts.length}`);

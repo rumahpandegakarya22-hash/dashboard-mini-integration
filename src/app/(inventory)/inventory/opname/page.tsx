@@ -20,6 +20,7 @@ import {
   X
 } from "lucide-react";
 import type { InvUser } from "@/components/inventory/Navbar";
+import { fmtTanggal, fmtWaktu } from "@/lib/format-tanggal";
 
 interface Opname {
   id: number;
@@ -269,7 +270,7 @@ export default function OpnamePage() {
           <tr><td colspan="6" style="font-weight:bold; font-size:16px">Laporan Stock Opname</td></tr>
           <tr><td colspan="6">Periode: ${escapeHtml(selectedOpname.period)}</td></tr>
           <tr><td colspan="6">Status: ${selectedOpname.status === "FINALIZED" ? "SELESAI (Final)" : "DRAF"}</td></tr>
-          <tr><td colspan="6">Tanggal Unduh: ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</td></tr>
+          <tr><td colspan="6">Tanggal Unduh: ${fmtTanggal(new Date())}</td></tr>
           <tr><td colspan="6">Verifikator: ${escapeHtml(selectedOpname.verifierName || "-")}</td></tr>
           <tr><td colspan="6"></td></tr>
           <tr style="font-weight:bold; background:#eef">
@@ -385,11 +386,7 @@ export default function OpnamePage() {
                           </span>
                         </td>
                         <td className="py-4 px-4 text-stone-700">
-                          {new Date(opname.createdAt).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric"
-                          })}
+                          {fmtTanggal(opname.createdAt)}
                         </td>
                         <td className="py-4 px-4 text-stone-700">{opname.verifierName}</td>
                         <td className="py-4 px-4 text-right">
@@ -473,7 +470,7 @@ export default function OpnamePage() {
                     Periode: {selectedOpname.period}
                   </span>
                   <span className="text-taupe print:hidden">|</span>
-                  <span>Dibuat: {new Date(selectedOpname.createdAt).toLocaleDateString("id-ID")}</span>
+                  <span>Dibuat: {fmtTanggal(selectedOpname.createdAt)}</span>
                   <span className="text-taupe print:hidden">|</span>
                   <span>Verifikator: {selectedOpname.verifierName}</span>
                 </div>

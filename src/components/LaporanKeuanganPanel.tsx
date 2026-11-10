@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { fmtWaktu } from '@/lib/format-tanggal';
 
 interface RiwayatRow {
   id: number;
@@ -165,7 +166,7 @@ export default function LaporanKeuanganPanel() {
                     <td>{r.periode}</td>
                     <td>{r.jenis}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: '0.85em' }}>{r.nama_file}</td>
-                    <td>{r.created_at.slice(0, 16).replace('T', ' ')}</td>
+                    <td>{fmtWaktu(r.created_at)}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <a

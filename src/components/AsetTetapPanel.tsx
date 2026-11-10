@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CircleAlert, LoaderCircle, Plus, Trash2, Save } from 'lucide-react';
+import { fmtTanggal } from '@/lib/format-tanggal';
+import { GlassDateField } from '@/components/ui/GlassCalendar';
 
 type Kategori = 'Bangunan' | 'Elektronik' | 'Furniture' | 'Peralatan Operasional';
 
@@ -150,7 +152,7 @@ export default function AsetTetapPanel() {
         </div>
         <div className="field">
           <label>Tanggal Perolehan</label>
-          <input type="date" value={form.tanggal_perolehan} onChange={(e) => setForm((f) => ({ ...f, tanggal_perolehan: e.target.value }))} />
+          <GlassDateField value={form.tanggal_perolehan} onChange={(v) => setForm((f) => ({ ...f, tanggal_perolehan: v }))} buttonClassName="ou-datefield" />
         </div>
         <div className="field">
           <label>Umur Manfaat (bulan)</label>
@@ -200,7 +202,7 @@ export default function AsetTetapPanel() {
                 <tr key={a.id}>
                   <td>{a.nama}{a.lunas && <span className="muted" style={{ fontSize: '0.72rem' }}> · lunas</span>}</td>
                   <td>{a.kategori}</td>
-                  <td style={{ whiteSpace: 'nowrap' }}>{a.tanggal_perolehan}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{fmtTanggal(a.tanggal_perolehan)}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{rp(a.harga_perolehan)}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{rp(a.per_bulan)}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{rp(a.akumulasi)}</td>

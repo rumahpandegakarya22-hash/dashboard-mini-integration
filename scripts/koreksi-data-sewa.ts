@@ -12,6 +12,7 @@
 import './_env';
 import { turso } from '../src/lib/core/turso';
 import { barisJurnalSewa, type BarisJurnal } from '../src/lib/jurnal';
+import { fmtTanggal, fmtTeks } from '../src/lib/format-tanggal';
 
 const commit = process.argv.includes('--commit');
 const KAS = 1103, DP_AKUN = 2104, DIMUKA = 2105;
@@ -146,7 +147,7 @@ async function main() {
     hapus.forEach((id) => add('DELETE FROM jurnal_transaksi WHERE id = ?', [id]));
     tulis(baris);
     if (!pay.has(Number(r.id))) buatPayment(r, tunai, String(r.no_inv));
-    out(`[${grup}] ${r.no_inv} ${namaResmi(r.id_penghuni, r.nama)}(${r.no_kamar}) bayar ${d10(r.tanggal_pembayaran)}: tunai Rp${rp(tunai)}${dpPakai ? ` + DP Rp${rp(dpPakai)}` : ''}, ${baris.length} baris${hapus.length ? `, ganti ${hapus.length} jurnal lama` : ''}${pay.has(Number(r.id)) ? '' : ', + payment'}`);
+    out(`[${grup}] ${r.no_inv} ${namaResmi(r.id_penghuni, r.nama)}(${r.no_kamar}) bayar ${fmtTanggal(d10(r.tanggal_pembayaran))}: tunai Rp${rp(tunai)}${dpPakai ? ` + DP Rp${rp(dpPakai)}` : ''}, ${baris.length} baris${hapus.length ? `, ganti ${hapus.length} jurnal lama` : ''}${pay.has(Number(r.id)) ? '' : ', + payment'}`);
   };
   for (const k of GRUP_A) await proses(k, 'A');
   for (const k of GRUP_B) await proses(k, 'B');
@@ -166,7 +167,7 @@ async function main() {
 
   // ---- E: Delinda
   add(INS, ['2026-04-01', KAS, DIMUKA, 850000, 'Terima sewa Kamar Delinda', 'Operasional']);
-  out('[E] Delinda: tambah penerimaan Rp850.000 (Debit 1103 / Kredit 2105) tgl 2026-04-01');
+  out('[E] Delinda: tambah penerimaan Rp850.000 (Debit 1103 / Kredit 2105) tgl 01 Apr 2026');
 
   // ---- nama salah ketik
   add("UPDATE invoice_sewa SET nama = 'Putri Hazna Nabilla' WHERE nama = 'Putri Hazna Nabila' AND id_penghuni = 'KTD-2604-003'", []);

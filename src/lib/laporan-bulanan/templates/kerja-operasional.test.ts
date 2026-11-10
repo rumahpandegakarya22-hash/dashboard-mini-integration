@@ -23,7 +23,7 @@ test('kerja operasional: header, ringkasan 44% (4 dari 9), bagian A-C', () => {
   const h = htmlKerjaOperasional(susunKerjaOperasional(periode, dibuat, sembilan));
   assert.match(h, /LAPORAN KERJA DIVISI OPERASIONAL/);
   assert.match(h, /Kost Tiga Dara Putri UGM/);
-  assert.ok(h.includes('Lingkup: Maintenance, Inspeksi, Kebersihan   |   Periode: Juni 2026   |   Dibuat: 06/07/2026 15:03'));
+  assert.ok(h.includes('Lingkup: Maintenance, Inspeksi, Kebersihan   |   Periode: Juni 2026   |   Dibuat: 06 Jul 2026 15:03'));
   assert.match(h, /Ringkasan Eksekutif/);
   assert.match(h, /<th>Divisi<\/th><th>Total Task<\/th><th>Complete<\/th><th>In Progress<\/th><th>Pending<\/th><th>Lewat Deadline<\/th>/);
   assert.match(h, /<tr><td>Maintenance<\/td><td>3<\/td><td>1<\/td><td>1<\/td><td>1<\/td><td>2<\/td><\/tr>/);
@@ -34,7 +34,7 @@ test('kerja operasional: header, ringkasan 44% (4 dari 9), bagian A-C', () => {
   for (const s of ['A. Divisi Maintenance', 'B. Divisi Inspeksi', 'C. Divisi Kebersihan']) assert.ok(h.includes(s), s);
   assert.equal(h.split('Lewat Deadline (belum complete)').length - 1, 3);
   assert.match(h, /<th>Tanggal<\/th><th>Task<\/th><th>PIC<\/th><th>Deadline<\/th><th>Status<\/th>/);
-  assert.match(h, /<td>10\/06\/2026<\/td><td>Task 1<\/td><td>Dewi<\/td><td>12\/06\/2026<\/td><td>Complete<\/td>/);
+  assert.match(h, /<td>10 Jun 2026<\/td><td>Task 1<\/td><td>Dewi<\/td><td>12 Jun 2026<\/td><td>Complete<\/td>/);
   assert.match(h, /<td>Lewat Deadline \(belum complete\)<\/td><td>2<\/td>/);
   assert.match(h, /Dibuat oleh,[\s\S]*Staf Divisi Operasional[\s\S]*Mengetahui,[\s\S]*Pengelola Kost/);
   assert.ok(!h.includes('Tidak ada task'));

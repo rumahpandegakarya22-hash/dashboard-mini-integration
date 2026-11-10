@@ -1,5 +1,6 @@
 import { createInsertHandler, type InsertConfig } from './helpers';
 import { parseDateISO, required } from '../../core/validate';
+import { fmtTanggal } from '../../format-tanggal';
 
 /* Wave 2 migrasi Sheets → Turso: dulu append ke LOGBOOK_INSPEKSI_KEBERSIHAN →
    'Sheet1'!B:E. Sekarang INSERT ke tabel `inspeksi_kebersihan` (tabel BARU).
@@ -25,7 +26,7 @@ export const inspeksiKebersihanInsertCfg: InsertConfig = {
      rowid barisnya sendiri, jadi berkas di Drive bisa dilacak ke catatannya.
      Kategori modul ini tetap 'Kebersihan' — formnya tidak punya field kategori. */
   lampiran: {
-    judul: (v) => `Inspeksi Kebersihan — ${String(v.area ?? '')} (${String(v.tanggal ?? '')})`,
+    judul: (v) => `Inspeksi Kebersihan — ${String(v.area ?? '')} (${fmtTanggal(String(v.tanggal ?? ''))})`,
     role: 'Inspeksi',
     penamaan: (v, rowId) => ({
       jenis: 'Foto Inspeksi',

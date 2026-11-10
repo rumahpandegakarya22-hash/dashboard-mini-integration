@@ -21,7 +21,7 @@ test('marketing: header, periode, bagian dan label', () => {
   const h = htmlKinerjaMarketing(dasar());
   assert.match(h, /LAPORAN KINERJA MARKETING/);
   assert.match(h, /Kost Tiga Dara Putri UGM/);
-  assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05/07/2026 14:15'));
+  assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05 Jul 2026 14:15'));
   for (const s of [
     'A. Akuisisi Leads — Juni 2026', 'Total Leads Masuk', 'Sumber Teratas', 'Status Leads',
     'B. Kinerja Konten Sosial Media', 'Jumlah Post', 'Total Reach', 'Total Likes', 'Total Komentar',

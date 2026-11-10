@@ -62,7 +62,7 @@ test('htmlOwner memuat judul dan bagian berurutan', () => {
 
 test('header memuat tanggal dibuat dan sumber database', () => {
   const html = htmlOwner(lengkap());
-  assert.match(html, /Dibuat otomatis 03\/07\/2026 10:00 · Sumber: Database Kost Tiga Dara/);
+  assert.match(html, /Dibuat otomatis 03 Jul 2026 10:00 · Sumber: Database Kost Tiga Dara/);
 });
 
 test('ringkasan eksekutif visual: kartu, pil, donut, lalu halaman baru', () => {

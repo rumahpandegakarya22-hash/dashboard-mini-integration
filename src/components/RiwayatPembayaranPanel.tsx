@@ -2,6 +2,8 @@
 
 import { Fragment, useEffect, useState } from 'react';
 import { CircleAlert, LoaderCircle, Receipt } from 'lucide-react';
+import { fmtTanggal } from '@/lib/format-tanggal';
+import { GlassDateField } from '@/components/ui/GlassCalendar';
 
 interface TenantItem {
   id: string;
@@ -198,11 +200,7 @@ export default function RiwayatPembayaranPanel() {
 
   const tenant = tenants?.find((t) => t.id === selected);
 
-  const fmtTgl = (s: string) => {
-    if (!s) return '—';
-    const d = new Date(s + 'T00:00:00');
-    return isNaN(d.getTime()) ? s : d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
+  const fmtTgl = (s: string) => fmtTanggal(s, '—');
 
   const periode = (r: InvoiceRow) => {
     if (r.jenis === 'DP') return fmtTgl(r.tanggalBayar);
@@ -329,13 +327,13 @@ export default function RiwayatPembayaranPanel() {
                             </div>
                             <div className="field">
                               <label htmlFor="e-tgl">Tanggal bayar</label>
-                              <input id="e-tgl" type="date" value={form.tanggalBayar} onChange={ubah('tanggalBayar')} />
+                              <GlassDateField id="e-tgl" value={form.tanggalBayar} onChange={(v) => setForm((f) => (f ? { ...f, tanggalBayar: v } : f))} buttonClassName="ou-datefield" />
                             </div>
                             {r.jenis === 'Sewa' && (
                               <>
                                 <div className="field">
                                   <label htmlFor="e-awal">Periode awal</label>
-                                  <input id="e-awal" type="date" value={form.periodeAwal} onChange={ubah('periodeAwal')} />
+                                  <GlassDateField id="e-awal" value={form.periodeAwal} onChange={(v) => setForm((f) => (f ? { ...f, periodeAwal: v } : f))} buttonClassName="ou-datefield" />
                                 </div>
                                 <div className="field">
                                   <label htmlFor="e-bln">Lama sewa (bulan)</label>

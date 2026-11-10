@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { cssFont } from './pdf';
+import { fmtTanggal } from '../format-tanggal';
 import type { InvoiceDp, InvoiceSewa } from './data';
 
 /* ==========================================================================
@@ -61,12 +62,9 @@ function rp(n: number | null | undefined): string {
   return (v < 0 ? '-Rp ' : 'Rp ') + Math.abs(v).toLocaleString('id-ID');
 }
 
-/** 'YYYY-MM-DD' → '4 Agustus 2026'. Tanggal kosong/rusak dikembalikan apa adanya. */
+/** 'YYYY-MM-DD' → '04 Agu 2026'. Tanggal kosong/rusak dikembalikan apa adanya. */
 export function tanggalId(iso: string | null): string {
-  if (!iso) return '-';
-  const d = new Date(`${iso}T00:00:00`);
-  if (isNaN(d.getTime())) return iso;
-  return `${d.getDate()} ${BULAN_ID[d.getMonth()]} ${d.getFullYear()}`;
+  return fmtTanggal(iso);
 }
 
 /** Nilai dari database bisa memuat < atau & — di-escape supaya tidak merusak markup. */

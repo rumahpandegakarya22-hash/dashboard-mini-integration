@@ -21,7 +21,7 @@ test('kinerja operasional: header, bagian, label', () => {
   const h = htmlKinerjaOperasional(terisi());
   assert.match(h, /LAPORAN KINERJA OPERASIONAL \(INSPEKSI &amp; MAINTENANCE\)/);
   assert.match(h, /Kost Tiga Dara Putri UGM/);
-  assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05/07/2026 14:15'));
+  assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05 Jul 2026 14:15'));
   for (const s of [
     'A. Inspeksi Harian — Juni 2026', 'Total Inspeksi Dilakukan', 'Temuan Perlu Tindak Lanjut',
     'B. Perawatan (Preventif)', 'Total Kegiatan Perawatan', 'Proses/Tertunda', 'Total Biaya Perawatan',
@@ -37,7 +37,7 @@ test('kinerja operasional: header, bagian, label', () => {
   assert.match(h, /<td>Prioritas Darurat<\/td><td>1<\/td>/);
   assert.match(h, /<td>Rata-rata Durasi Perbaikan \(hari\)<\/td><td>4<\/td>/);
   assert.match(h, /<td>Biaya Perawatan \+ Perbaikan<\/td><td>Rp500\.000<\/td>/);
-  assert.match(h, /<td>03\/06\/2026<\/td><td>AC Kamar 5<\/td><td>Cuci AC<\/td><td>Rendah<\/td><td>Rp150\.000<\/td><td>Selesai<\/td>/);
+  assert.match(h, /<td>03 Jun 2026<\/td><td>AC Kamar 5<\/td><td>Cuci AC<\/td><td>Rendah<\/td><td>Rp150\.000<\/td><td>Selesai<\/td>/);
   assert.ok(!h.includes('Tidak ada'));
   assert.ok(!h.includes('Narasi') && !h.includes('Rekomendasi'));
 });

@@ -3,6 +3,7 @@
    Tidak menulis apa pun ke database. */
 import './_env';
 import { turso } from '../src/lib/core/turso';
+import { fmtTanggal, fmtTeks } from '../src/lib/format-tanggal';
 
 const rp = (n: number) => n.toLocaleString('id-ID');
 
@@ -22,7 +23,7 @@ async function main() {
     ...dp.filter((r) => !cocok('Terima DP', String(r.nama), String(r.no_kamar))).map((r) => ({ jenis: 'DP', t: r.t, no_inv: r.no_inv, nama: r.nama, no_kamar: r.no_kamar, g: r.g }))
   ];
   console.log(`Invoice tanpa jurnal penerimaan: ${tanpaJurnal.length}, total Rp${rp(tanpaJurnal.reduce((s, r) => s + Number(r.g), 0))}`);
-  for (const r of tanpaJurnal) console.log(`  ${r.jenis}  ${r.t}  ${r.no_inv}  ${r.nama} (${r.no_kamar})  Rp${rp(Number(r.g))}`);
+  for (const r of tanpaJurnal) console.log(`  ${r.jenis}  ${fmtTanggal(r.t)}  ${r.no_inv}  ${r.nama} (${r.no_kamar})  Rp${rp(Number(r.g))}`);
 
   console.log(`\nTotal invoice sewa Rp${rp(sewa.reduce((s, r) => s + Number(r.g), 0))}, DP Rp${rp(dp.reduce((s, r) => s + Number(r.g), 0))}`);
   console.log(`Total jurnal 'Terima' Rp${rp(terima.reduce((s, r) => s + Number(r.n), 0))}`);

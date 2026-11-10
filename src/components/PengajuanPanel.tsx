@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CircleAlert, LoaderCircle, ArrowRightLeft, LogOut } from 'lucide-react';
+import { fmtTanggal } from '@/lib/format-tanggal';
 
 /* Panel pengelola untuk pengajuan Pindah Kamar / Checkout dari Teman Rara.
    Satu komponen, dua jenis — bedanya cuma teks & aksi 'Selesai':
@@ -116,7 +117,7 @@ export default function PengajuanPanel({ jenis }: { jenis: 'pindah' | 'checkout'
                 <span className={`badge ${onProcess ? 'badge-proc' : ''}`}>{onProcess ? 'On Process' : p.status}</span>
               </div>
               <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-                {jenis === 'pindah' ? `Kamar ${p.kamarLama} → ${p.kamarBaru}` : `Kamar ${p.kamarLama}`} · {p.tanggal}
+                {jenis === 'pindah' ? `Kamar ${p.kamarLama} → ${p.kamarBaru}` : `Kamar ${p.kamarLama}`} · {fmtTanggal(p.tanggal)}
               </div>
               {p.alasan && <div style={{ fontSize: 13, marginTop: 6 }}>Alasan: {p.alasan}</div>}
               {p.catatan && <div className="muted" style={{ fontSize: 13 }}>Catatan: {p.catatan}</div>}

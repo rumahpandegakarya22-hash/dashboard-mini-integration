@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Pagination from './Pagination';
 import { fmtDateID, fmtHP, initials } from '@/lib/dashboard/format';
+import { fmtTanggal, fmtTeks } from '@/lib/format-tanggal';
 
 
 export interface TableCol {
@@ -14,6 +15,8 @@ export type TableRow = Record<string, any>;
 
 /** Kolom yang tidak diberi tombol filter (verbatim NO_FILTER_COLS app.js). */
 const NO_FILTER_COLS = new Set(['check', 'aksi', 'open', 'tagihan']);
+
+const ISO_TGL = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?$/;
 
 /** Kolom yang dirender sebagai tanggal (verbatim DATE_KEYS app.js). */
 const DATE_KEYS = new Set(['tanggal', 'masuk', 'tempo', 'deadline', 'kategori']);
@@ -53,7 +56,8 @@ function cellText(row: TableRow, key: string): string {
   const v = row[key];
   if (v && typeof v === 'object' && 't' in v) return String(v.t ?? '');
   if (DATE_KEYS.has(key)) return fmtDateID(v);
-  return String(v ?? '');
+  if (typeof v === 'string' && ISO_TGL.test(v)) return fmtTanggal(v);
+  return typeof v === 'string' ? fmtTeks(v) : String(v ?? '');
 }
 
 function Cell({ col, row }: { col: TableCol; row: TableRow }) {
@@ -70,6 +74,10 @@ function Cell({ col, row }: { col: TableCol; row: TableRow }) {
       </td>
     );
   }
+
+  // Nilai ISO pada kolom lain (mis. tanggal_pembayaran) tetap tampil sebagai "26 Sep 2026".
+  if (typeof v === 'string' && ISO_TGL.test(v)) return <td>{fmtTanggal(v)}</td>;
+  if (typeof v === 'string' && /\d{4}-\d{2}-\d{2}/.test(v)) return <td>{fmtTeks(v)}</td>;
 
   switch (k) {
     case 'check':

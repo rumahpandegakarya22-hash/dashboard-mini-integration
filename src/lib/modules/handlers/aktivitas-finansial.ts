@@ -3,6 +3,7 @@ import { turso } from '../../core/turso';
 import { saveLampiran } from './helpers';
 import { catatPengeluaran } from './beban-dimuka';
 import type { SubmitHandler } from '../types';
+import { fmtTanggal } from '../../format-tanggal';
 
 export const submitAktivitasFinansial: SubmitHandler = async (values, ctx) => {
   const jenisAktivitas = required(values.jenisAktivitas, 'Jenis Aktivitas');
@@ -39,7 +40,7 @@ export const submitAktivitasFinansial: SubmitHandler = async (values, ctx) => {
     const lampiranWarning = await saveLampiran(
       { ...values, lampiran: values.lampiranPengeluaran },
       ctx,
-      `Nota Pengeluaran — ${keterangan} (${tanggal})`,
+      `Nota Pengeluaran — ${keterangan} (${fmtTanggal(tanggal)})`,
       'Admin',
       { idDokumen: nomorNota, penamaan: { jenis: 'Nota', idDocs: nomorNota.replace(/^NOTA-/, '') } }
     );

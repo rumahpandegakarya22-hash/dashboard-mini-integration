@@ -3,6 +3,7 @@ import { turso } from '../../core/turso';
 import { saveLampiran } from './helpers';
 import { catatPengeluaran } from './beban-dimuka';
 import type { SubmitHandler } from '../types';
+import { fmtTanggal } from '../../format-tanggal';
 
 /**
  * Pengeluaran — Turso-only (arahan 2026-07-19): jurnal_transaksi adalah pencatatan PRIMER
@@ -63,7 +64,7 @@ export const submitPengeluaran: SubmitHandler = async (values, ctx) => {
   const terakhir = parseInt(String(urut.rows[0]?.id_dokumen ?? '').slice(-3), 10) || 0;
   const nomorNota = `${prefixNota}-${String(Math.min(terakhir + 1, 999)).padStart(3, '0')}`;
 
-  const lampiranWarning = await saveLampiran(values, ctx, `Nota Pengeluaran — ${keterangan} (${tanggal})`, 'Admin', {
+  const lampiranWarning = await saveLampiran(values, ctx, `Nota Pengeluaran — ${keterangan} (${fmtTanggal(tanggal)})`, 'Admin', {
     idDokumen: nomorNota,
     // Prefix 'NOTA-' hanya penanda di database; nama berkasnya sudah diawali jenis.
     penamaan: { jenis: 'Nota', idDocs: nomorNota.replace(/^NOTA-/, '') }

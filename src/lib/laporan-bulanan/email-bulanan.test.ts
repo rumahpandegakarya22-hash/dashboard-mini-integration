@@ -50,7 +50,7 @@ test('bagiLampiran: daftar kosong tidak menghasilkan bagian', () => {
 test('rakitEmail: subjek, kelompok berurutan Keuangan, Kerja, Kinerja, dan nama berkas di-escape', () => {
   const { subject, html } = rakitEmail({
     label: 'Oktober 2026',
-    waktu: '01/11/2026 08:30',
+    waktu: '01 Nov 2026 08:30',
     berkas: [
       { keluarga: 'kinerja', namaFile: 'Laporan Kinerja Sales - Oktober 2026.pdf' },
       { keluarga: 'kerja', namaFile: 'Laporan <b>ADMIN</b> & Co.pdf' },
@@ -67,7 +67,7 @@ test('rakitEmail: subjek, kelompok berurutan Keuangan, Kerja, Kinerja, dan nama 
   assert.ok(html.includes('1026-LabaRugi-Kost Tiga Dara.pdf'));
   assert.ok(!html.includes('<b>ADMIN</b>'), 'html mentah tidak boleh lolos');
   assert.ok(html.includes('&lt;b&gt;ADMIN&lt;/b&gt; &amp; Co.pdf'));
-  assert.ok(html.includes('01/11/2026 08:30'));
+  assert.ok(html.includes('01 Nov 2026 08:30'));
   assert.ok(html.includes('3 berkas'));
 });
 

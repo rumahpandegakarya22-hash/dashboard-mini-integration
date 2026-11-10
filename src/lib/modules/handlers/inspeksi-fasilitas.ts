@@ -1,6 +1,7 @@
 import { createInsertHandler, type InsertConfig } from './helpers';
 import { parseDateISO, required } from '../../core/validate';
 import { kodeTanggal } from './inspeksi-kebersihan';
+import { fmtTanggal } from '../../format-tanggal';
 
 /* Wave 2 migrasi Sheets → Turso: dulu append ke LOG_INSPEKSI_PERAWATAN →
    'Log Inspeksi Harian'!B:H. Sekarang INSERT ke tabel `inspeksi_fasilitas`
@@ -23,7 +24,7 @@ export const inspeksiFasilitasInsertCfg: InsertConfig = {
   }),
   // Kategori diambil dari field form-nya (modul ini punya dropdown Kategori).
   lampiran: {
-    judul: (v) => `Inspeksi Fasilitas — ${String(v.areaFasilitas ?? '')} (${String(v.tanggal ?? '')})`,
+    judul: (v) => `Inspeksi Fasilitas — ${String(v.areaFasilitas ?? '')} (${fmtTanggal(String(v.tanggal ?? ''))})`,
     role: 'Inspeksi',
     penamaan: (v, rowId) => ({
       jenis: 'Foto Inspeksi',

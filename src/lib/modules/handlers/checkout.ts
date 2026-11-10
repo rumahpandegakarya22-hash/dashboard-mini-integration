@@ -4,6 +4,7 @@ import { parseDateISO, parseRupiahOptional, required } from '../../core/validate
 import { getTenantByLabel, invalidateTenantsCache, updateRoomStatus } from '../../master';
 import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
+import { fmtTanggal } from '../../format-tanggal';
 
 /**
  * Checkout penghuni — Wave 3 migrasi Sheets → Turso.
@@ -138,7 +139,7 @@ export const submitCheckout: SubmitHandler = async (values, ctx) => {
 
     // Lampiran checkout = foto kondisi kamar. Tidak punya nomor sendiri, jadi ID
     // Docs-nya memakai id_dokumen bentukan saveLampiran.
-    const lampiranWarning = await saveLampiran(values, ctx, `Checkout — ${penghuni} (${tanggalCheckout})`, 'Admin', {
+    const lampiranWarning = await saveLampiran(values, ctx, `Checkout — ${penghuni} (${fmtTanggal(tanggalCheckout)})`, 'Admin', {
       penamaan: { jenis: 'Kondisi Kamar', idPenghuni }
     });
     const tunggakanWarning =

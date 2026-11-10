@@ -1,5 +1,5 @@
 import type { DataKinerjaKeuangan } from '../builders/keuangan';
-import { esc, rupiah, tgl, waktuWib } from '../format';
+import { esc, rupiah, teksTgl, tgl, waktuWib } from '../format';
 import { kerangkaDokumen } from '../shell';
 
 const kv = (baris: [string, string][]) =>
@@ -11,7 +11,7 @@ export function htmlKinerjaKeuangan(d: DataKinerjaKeuangan): string {
     ? d.perKategori.map(k => `<tr><td>${esc(k.kategori)}</td><td>${rupiah(k.total)}</td></tr>`).join('')
     : '<tr><td>-</td><td>Rp0</td></tr>';
   const transaksi = d.transaksi.map(t =>
-    `<tr><td>${tgl(t.tanggal)}</td><td>${esc(t.debit)}</td><td>${esc(t.kredit)}</td><td>${rupiah(t.nominal)}</td><td>${esc(t.keterangan)}</td></tr>`).join('');
+    `<tr><td>${tgl(t.tanggal)}</td><td>${esc(t.debit)}</td><td>${esc(t.kredit)}</td><td>${rupiah(t.nominal)}</td><td>${esc(teksTgl(t.keterangan))}</td></tr>`).join('');
 
   const isi = `
 <h1 style="text-align:center">LAPORAN KINERJA KEUANGAN</h1>

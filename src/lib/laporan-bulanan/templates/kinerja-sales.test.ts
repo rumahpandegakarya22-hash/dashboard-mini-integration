@@ -25,7 +25,7 @@ test('sales: header, periode, bagian dan label', () => {
   const h = htmlKinerjaSales(dasar());
   assert.match(h, /LAPORAN KINERJA SALES/);
   assert.match(h, /Kost Tiga Dara Putri UGM/);
-  assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05/07/2026 14:15'));
+  assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05 Jul 2026 14:15'));
   for (const s of [
     'A. Aktivitas Booking — Juni 2026', 'Booking Check-in', 'Booking Konfirmasi', 'Booking Dibatalkan',
     'Nilai Booking (non-batal)', 'Sumber Leads Teratas',
@@ -35,7 +35,7 @@ test('sales: header, periode, bagian dan label', () => {
   assert.match(h, /<td>Sumber Leads Teratas<\/td><td>Mami Kos \(2\)<\/td>/);
   assert.match(h, /<td>Nilai Booking \(non-batal\)<\/td><td>Rp4\.000\.000<\/td>/);
   assert.match(h, /<td>Konversi Minat<\/td><td>75%<\/td>/);
-  assert.match(h, /<td>03\/06\/2026<\/td><td>Rina<\/td><td>5<\/td><td>Check-in<\/td><td>Rp2\.000\.000<\/td><td>Mami Kos<\/td>/);
+  assert.match(h, /<td>03 Jun 2026<\/td><td>Rina<\/td><td>5<\/td><td>Check-in<\/td><td>Rp2\.000\.000<\/td><td>Mami Kos<\/td>/);
   assert.match(h, /Dibuat oleh,[\s\S]*Staf Divisi[\s\S]*Mengetahui,[\s\S]*Pengelola Kost/);
 });
 

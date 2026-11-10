@@ -6,6 +6,7 @@ import Modal from './Modal';
 import FileUploadCard from './ui/FileUploadCard';
 import { KONDISI_ITEMS, KONDISI_OPTIONS } from '@/lib/kondisi-items';
 import type { KondisiValue } from '@/lib/kondisi-items';
+import { GlassDateField } from '@/components/ui/GlassCalendar';
 
 interface Props {
   fase: 'awal' | 'akhir';
@@ -470,13 +471,7 @@ export default function KondisiKamarPanel({ fase }: Props) {
 
             <div className="field" style={{ marginTop: 12 }}>
               <label htmlFor="kk-tanggal">Tanggal Cek</label>
-              <input
-                id="kk-tanggal"
-                type="date"
-                value={tanggal}
-                disabled={isReadonly}
-                onChange={(e) => setTanggal(e.target.value)}
-              />
+              <GlassDateField id="kk-tanggal" value={tanggal} disabled={isReadonly} onChange={setTanggal} buttonClassName="ou-datefield" />
             </div>
 
             <div className="field">

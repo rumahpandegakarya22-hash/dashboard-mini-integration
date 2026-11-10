@@ -1,30 +1,30 @@
-import { namaBulan } from './periode';
+import { bagianWib, fmtTanggal, fmtTeks, fmtWaktu } from '../format-tanggal';
+
+/** Teks bebas (keterangan, dsb.) dengan tanggal ISO di dalamnya diubah ke format tampilan. */
+export const teksTgl = fmtTeks;
 
 export function rupiah(n: number): string {
   const teks = Math.abs(Math.round(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return `${n < 0 ? '-' : ''}Rp${teks}`;
 }
 
+// Format tampilan tunggal "26 Sep 2026" (lihat lib/format-tanggal).
 export function tglPendek(iso: string): string {
-  const [y, m, d] = iso.slice(0, 10).split('-');
-  return `${d}/${m}/${y}`;
+  return fmtTanggal(iso);
 }
 
 export function tglPanjang(iso: string): string {
-  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
-  return `${d} ${namaBulan(m)} ${y}`;
+  return fmtTanggal(iso);
 }
 
 export function waktuWib(d: Date, denganJam: boolean): string {
-  const bagian = Object.fromEntries(
-    new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Asia/Jakarta',
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-    }).formatToParts(d).map(p => [p.type, p.value]),
-  );
-  const tgl = `${bagian.day}/${bagian.month}/${bagian.year}`;
-  return denganJam ? `${tgl} ${bagian.hour}:${bagian.minute}` : tgl;
+  return denganJam ? fmtWaktu(d) : fmtTanggal(d);
+}
+
+/** Tanggal (WIB) bentuk ISO untuk perbandingan, bukan untuk ditampilkan. */
+export function isoWib(d: Date): string {
+  const b = bagianWib(d);
+  return `${b.y}-${String(b.m0 + 1).padStart(2, '0')}-${String(b.d).padStart(2, '0')}`;
 }
 
 export function esc(s: unknown): string {
@@ -39,7 +39,7 @@ export function esc(s: unknown): string {
 
 const ISO_AWAL = /^\d{4}-\d{2}-\d{2}/;
 
-// Tanggal dari kolom teks DB: ISO -> dd/mm/yyyy, kosong -> '-', lainnya apa adanya (belum di-escape).
+// Tanggal dari kolom teks DB: ISO -> "26 Sep 2026", kosong -> '-', lainnya apa adanya (belum di-escape).
 export function tglMentah(v: unknown): string {
   if (v === null || v === undefined) return '-';
   const s = String(v).trim();
@@ -59,8 +59,5 @@ export function rfc5987(s: string): string {
 
 // created_at SQLite = 'YYYY-MM-DD HH:MM:SS' dalam UTC tanpa penanda zona; tampilkan sebagai WIB.
 export function waktuRiwayatWib(createdAt: string): string {
-  const s = createdAt.trim();
-  const iso = /(Z|[+-]\d{2}:?\d{2})$/.test(s) ? s.replace(' ', 'T') : `${s.replace(' ', 'T')}Z`;
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? s : waktuWib(d, true);
+  return fmtWaktu(createdAt, createdAt);
 }

@@ -7,6 +7,7 @@ import { saveLampiran, resolveOccupancyId } from './helpers';
 import { kirimInvoice } from '../../invoice';
 import { barisJurnalDp, barisJurnalSewa, kodeAkunKas, type BarisJurnal } from '../../jurnal';
 import type { AutoFillHandler, SubmitHandler } from '../types';
+import { fmtTanggal } from '../../format-tanggal';
 
 /* ==========================================================================
    SEPENUHNYA DI TURSO sejak 4 Agustus 2026 — Google Sheets sudah dilepas.
@@ -209,7 +210,7 @@ async function cekPeriodeTumpangTindih(occupancyId: string, periodeAwal: string,
   const b = res.rows[0];
   if (b) {
     throw new Error(
-      `Sudah ada pembayaran ${b.id_payment} untuk periode ${b.periode_awal} s.d. ${b.periode_akhir} yang tumpang tindih dengan periode ini.`
+      `Sudah ada pembayaran ${b.id_payment} untuk periode ${fmtTanggal(b.periode_awal)} s.d. ${fmtTanggal(b.periode_akhir)} yang tumpang tindih dengan periode ini.`
     );
   }
 }
@@ -296,7 +297,7 @@ export const submitPembayaranSewa: SubmitHandler = async (values, ctx) => {
     const lampiranWarning = await saveLampiran(
       values,
       ctx,
-      `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${tanggalBayar})`,
+      `Bukti Pembayaran ${jenisPembayaran} — ${penghuni} (${fmtTanggal(tanggalBayar)})`,
       'Admin',
       idPenghuni ? { penamaan: { jenis: `Bukti Bayar ${jenisPembayaran}`, idDocs: raw.noInv, idPenghuni } } : undefined
     );

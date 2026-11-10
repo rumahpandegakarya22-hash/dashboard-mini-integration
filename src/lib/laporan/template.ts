@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Baris, LaporanTable, NeracaTable } from './generator';
+import { fmtTanggal } from '../format-tanggal';
 
 const W = {
   latar: '#f7f6f2',
@@ -49,8 +50,7 @@ function periodeLabel(periode: string): string {
 }
 
 function tanggalSekarang(): string {
-  const d = new Date();
-  return `${d.getDate()} ${BULAN_ID[d.getMonth()]} ${d.getFullYear()}`;
+  return fmtTanggal(new Date());
 }
 
 function gaya(): string {

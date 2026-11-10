@@ -40,6 +40,7 @@ import { kontenInsertCfg } from './handlers/konten';
 import { promosiInsertCfg } from './handlers/promosi';
 import { KODE_KATEGORI } from './handlers/maintenance';
 import { inspeksiFasilitasInsertCfg } from './handlers/inspeksi-fasilitas';
+import { fmtTanggal } from '../format-tanggal';
 
 export interface EditEntry {
   ref: string; // sheet: nomor baris; turso: id
@@ -86,7 +87,7 @@ const dailyTaskEdit: CustomEditCfg = {
     );
     return res.rows.map((r) => ({
       ref: String(r.id),
-      label: `#${r.id} · ${r.tanggal} · ${r.task} (${r.pic})`,
+      label: `#${r.id} · ${fmtTanggal(r.tanggal)} · ${r.task} (${r.pic})`,
       values: {
         tanggal: String(r.tanggal ?? ''),
         task: String(r.task ?? ''),
@@ -128,7 +129,7 @@ function workOrderEdit(divisiAsal: 'Inspeksi' | 'Cleaning'): CustomEditCfg {
       });
       return res.rows.map((r) => ({
         ref: String(r.id),
-        label: `WO-${r.id} · ${r.tanggal_input} · ${r.lokasi_item} → ${r.tujuan_divisi}`,
+        label: `WO-${r.id} · ${fmtTanggal(r.tanggal_input)} · ${r.lokasi_item} → ${r.tujuan_divisi}`,
         values: {
           tanggalInput: String(r.tanggal_input ?? ''),
           petugas: String(r.petugas ?? ''),
@@ -181,7 +182,7 @@ const perawatanPreventifEdit: CustomEditCfg = {
     );
     return res.rows.map((r) => ({
       ref: String(r.id_tiket),
-      label: `${r.id_tiket} · ${r.tanggal_lapor} · ${r.sumber_laporan} (${r.status})`,
+      label: `${r.id_tiket} · ${fmtTanggal(r.tanggal_lapor)} · ${r.sumber_laporan} (${r.status})`,
       values: {
         tanggalJadwal: String(r.tanggal_lapor ?? ''),
         tanggalSelesai: String(r.tanggal_selesai ?? ''),
@@ -241,7 +242,7 @@ const perbaikanKorektifEdit: CustomEditCfg = {
     );
     return res.rows.map((r) => ({
       ref: String(r.id_tiket),
-      label: `${r.id_tiket} · ${r.tanggal_kerusakan} · ${r.lokasi_item} (${r.status})`,
+      label: `${r.id_tiket} · ${fmtTanggal(r.tanggal_kerusakan)} · ${r.lokasi_item} (${r.status})`,
       values: {
         tanggalKerusakan: String(r.tanggal_kerusakan ?? ''),
         tanggalLapor: String(r.tanggal_lapor ?? ''),
@@ -321,7 +322,7 @@ const penghuniBaruEdit: CustomEditCfg = {
         catatan: s(r.catatan)
       };
       const ref = s(r.no_booking);
-      return { ref, label: `${ref} · ${values.tanggalBooking} · ${values.namaPenyewa} · K${values.kamar}`, values };
+      return { ref, label: `${ref} · ${fmtTanggal(values.tanggalBooking)} · ${values.namaPenyewa} · K${values.kamar}`, values };
     });
   },
   save: async (ref, values) => {
@@ -414,7 +415,7 @@ const checkoutEdit: CustomEditCfg = {
         catatanKerusakan: s(r.catatan_kerusakan)
       };
       const ref = s(r.id);
-      return { ref, label: `#${ref} · ${values.tanggalCheckout} · ${values.penghuni}`, values };
+      return { ref, label: `#${ref} · ${fmtTanggal(values.tanggalCheckout)} · ${values.penghuni}`, values };
     });
   },
   save: async (ref, values) => {
@@ -459,7 +460,7 @@ const pengeluaranEdit: CustomEditCfg = {
     );
     return res.rows.map((r) => ({
       ref: String(r.id),
-      label: `#${r.id} · ${r.tanggal} · ${r.keterangan} · Rp${r.nominal}`,
+      label: `#${r.id} · ${fmtTanggal(r.tanggal)} · ${r.keterangan} · Rp${r.nominal}`,
       values: {
         tanggal: String(r.tanggal ?? ''),
         tipeAkun: String(r.debit_tipe ?? ''),
@@ -518,7 +519,7 @@ const feedbackEdit: CustomEditCfg = {
       const tanggal = String(r.reported_at ?? '').slice(0, 10);
       out.push({
         ref: `cmp-${r.id_complain}`,
-        label: `Komplain · ${tanggal} · ${labelById[String(r.id_penghuni)] ?? r.id_penghuni}`,
+        label: `Komplain · ${fmtTanggal(tanggal)} · ${labelById[String(r.id_penghuni)] ?? r.id_penghuni}`,
         values: {
           tanggal,
           sumber: labelById[String(r.id_penghuni)] ?? '',

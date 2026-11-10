@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CircleAlert, ClipboardCheck, LoaderCircle, Paperclip } from 'lucide-react';
+import { fmtTanggal } from '@/lib/format-tanggal';
 
 interface Pendaftar {
   noBooking: string;
@@ -155,7 +156,7 @@ export default function ReviewPendaftaranPanel() {
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
               <span className={p.status === 'Pending' ? 'prio-badge hot' : 'prio-badge'}>{p.status}</span>
               <span className="muted" style={{ fontSize: '0.8125rem' }}>
-                {p.noBooking} · daftar {p.tanggalDaftar}
+                {p.noBooking} · daftar {fmtTanggal(p.tanggalDaftar)}
               </span>
             </div>
 
@@ -166,7 +167,7 @@ export default function ReviewPendaftaranPanel() {
 
             <div className="receipt">
               <Baris label="Kamar" nilai={`K-${p.hunian.noKamar}`} />
-              <Baris label="Rencana masuk" nilai={p.hunian.rencanaMasuk} />
+              <Baris label="Rencana masuk" nilai={fmtTanggal(p.hunian.rencanaMasuk)} />
               <Baris
                 label="Durasi & harga"
                 nilai={

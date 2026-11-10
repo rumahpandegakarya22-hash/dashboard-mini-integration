@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CircleAlert, ClipboardCheck, LoaderCircle } from 'lucide-react';
 import Modal from './Modal';
 import { KONDISI_ITEMS } from '@/lib/kondisi-items';
+import { fmtTanggal } from '@/lib/format-tanggal';
 
 interface Props {
   fase: 'awal' | 'akhir';
@@ -166,7 +167,7 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
               <div className="bento-body">
                 <div style={{ fontSize: '0.8rem', color: 'var(--ink-2)' }}>
                   {row.pic && <div>PIC: {row.pic}</div>}
-                  {tanggal(row) && <div>Tgl Cek: {tanggal(row)}</div>}
+                  {tanggal(row) && <div>Tgl Cek: {fmtTanggal(tanggal(row))}</div>}
                 </div>
 
                 <div className="btn-row" style={{ marginTop: 10 }}>
@@ -214,7 +215,7 @@ export default function ApprovalKondisiPanel({ fase, userName }: Props) {
             <div className="form-col">
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 8 }}>
                 {preview.pic && <div>PIC: {preview.pic}</div>}
-                {tanggal(preview) && <div>Tanggal Cek: {tanggal(preview)}</div>}
+                {tanggal(preview) && <div>Tanggal Cek: {fmtTanggal(tanggal(preview))}</div>}
               </div>
 
               <div className="table-scroll">

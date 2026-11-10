@@ -25,7 +25,7 @@ test('keuangan: header, subjudul, periode dan waktu WIB', () => {
   const h = htmlKinerjaKeuangan(dasar());
   assert.match(h, /LAPORAN KINERJA KEUANGAN/);
   assert.match(h, /Kost Tiga Dara Putri UGM/);
-  assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05/07/2026 14:15'));
+  assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05 Jul 2026 14:15'));
   assert.ok(h.includes('Catatan: ini rekap kinerja kas &amp; laba bulanan. Laporan akuntansi formal (Laba Rugi, Neraca, Arus Kas) tetap dihasilkan melalui modul Laporan Keuangan.'));
 });
 
@@ -39,7 +39,7 @@ test('keuangan: bagian A-D dan label', () => {
   for (const k of ['Tgl', 'Debit', 'Kredit', 'Nominal', 'Keterangan']) assert.ok(h.includes(`<th>${k}</th>`), k);
   assert.match(h, /<td>Kas Masuk<\/td><td>Rp3\.000\.000<\/td>/);
   assert.match(h, /<td>Operasional<\/td><td>Rp3\.175\.000<\/td>/);
-  assert.match(h, /<td>02\/06\/2026<\/td><td>Kas<\/td><td>Pendapatan Sewa<\/td><td>Rp3\.000\.000<\/td><td>Sewa Rina<\/td>/);
+  assert.match(h, /<td>02 Jun 2026<\/td><td>Kas<\/td><td>Pendapatan Sewa<\/td><td>Rp3\.000\.000<\/td><td>Sewa Rina<\/td>/);
 });
 
 test('keuangan: laba negatif tampil -Rp', () => {

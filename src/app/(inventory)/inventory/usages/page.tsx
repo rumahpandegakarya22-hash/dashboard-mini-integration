@@ -16,6 +16,7 @@ import {
   Clock
 } from "lucide-react";
 import type { InvUser } from "@/components/inventory/Navbar";
+import { fmtTanggal, fmtWaktu } from "@/lib/format-tanggal";
 
 interface Material {
   id: number;
@@ -284,7 +285,7 @@ export default function UsagesPage() {
                     ...batches.map((b) => ({
                       value: String(b.id),
                       label:
-                        new Date(b.purchaseDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) +
+                        fmtTanggal(b.purchaseDate) +
                         ` · sisa ${b.remainingQty} ${b.materialUnit}` +
                         ` · ${rupiah(b.pricePerUnit)}/${b.materialUnit}`
                     }))
@@ -443,13 +444,7 @@ export default function UsagesPage() {
                       </div>
                       <p className="text-xs text-taupe-dark mt-1.5 flex items-center gap-1.5">
                         <Calendar className="h-3 w-3" />
-                        {new Date(tx.createdAt).toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {fmtWaktu(tx.createdAt)}
                       </p>
                       {tx.notes && (
                         <p className="text-xs text-stone-700 mt-2 bg-sand/40 px-3 py-1.5 rounded-xl border border-sand/70 w-fit">
