@@ -20,7 +20,8 @@ export default function AreaLine({ seriesList, xLabels, names, unit, gradId = 'l
   const w = 460;
   const h = 200;
   const padL = 48;
-  const padB = 24;
+  const rotasi = xLabels.some((l) => String(l).length >= 8);
+  const padB = rotasi ? 52 : 24;
   const padT = 14;
   const cw = w - padL - 6;
   const ch = h - padB - padT;
@@ -79,11 +80,22 @@ export default function AreaLine({ seriesList, xLabels, names, unit, gradId = 'l
           );
         })}
 
-        {xLabels.map((lab, i) => (
-          <text key={`x${i}`} className="chart-cat" x={X(i, xLabels.length)} y={h - 6} textAnchor="middle">
-            {lab}
-          </text>
-        ))}
+        {xLabels.map((lab, i) => {
+          // Label panjang: kecilkan, miringkan, dan jarangkan supaya tidak bertabrakan.
+          const langkah = rotasi ? Math.ceil(xLabels.length / 10) : 1;
+          if (i % langkah !== 0 && i !== xLabels.length - 1) return null;
+          if (i !== xLabels.length - 1 && xLabels.length - 1 - i < langkah / 2) return null;
+          const x = X(i, xLabels.length);
+          return rotasi ? (
+            <text key={`x${i}`} className="chart-cat" style={{ fontSize: 8 }} x={x} y={h - padB + 12} textAnchor="end" transform={`rotate(-35 ${x} ${h - padB + 12})`}>
+              {lab}
+            </text>
+          ) : (
+            <text key={`x${i}`} className="chart-cat" x={x} y={h - 6} textAnchor="middle">
+              {lab}
+            </text>
+          );
+        })}
 
         {series[0] && (
           <motion.path

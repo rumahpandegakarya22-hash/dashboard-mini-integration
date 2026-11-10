@@ -11,6 +11,7 @@
    ========================================================================= */
 
 import { parseDate, startOfDay, MONTH_ID3 } from '../format';
+import { susun } from '../../format-tanggal';
 import type { SheetGrid } from '../source';
 
 export interface FinanceResult {
@@ -160,8 +161,8 @@ export function computeFinance(
     ? (d: Date) => d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate()
     : (d: Date) => d.getFullYear() + '-' + d.getMonth();
   const labOf = daily
-    ? (d: Date) => d.getDate() + ' ' + MONTH_ID3[d.getMonth()]
-    : (d: Date) => MONTH_ID3[d.getMonth()] + " '" + String(d.getFullYear()).slice(2);
+    ? (d: Date) => susun(d.getDate(), d.getMonth(), d.getFullYear())
+    : (d: Date) => MONTH_ID3[d.getMonth()] + ' ' + d.getFullYear();
 
   const buckets = new Map<string, { label: string; cash: number; inc: number; exp: number; diskon: number }>();
   const order: string[] = [];
@@ -260,8 +261,8 @@ export function seriesByDate(
     ? (d: Date) => d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate()
     : (d: Date) => d.getFullYear() + '-' + d.getMonth();
   const labOf = daily
-    ? (d: Date) => d.getDate() + ' ' + MONTH_ID3[d.getMonth()]
-    : (d: Date) => MONTH_ID3[d.getMonth()] + " '" + String(d.getFullYear()).slice(2);
+    ? (d: Date) => susun(d.getDate(), d.getMonth(), d.getFullYear())
+    : (d: Date) => MONTH_ID3[d.getMonth()] + ' ' + d.getFullYear();
 
   const order: string[] = [];
   const repT: Record<string, number> = {};

@@ -18,7 +18,8 @@ export default function Bars({ cats, vals, gradId, gradStops, unit }: BarsProps)
   const w = 320;
   const h = 178;
   const padL = 38;
-  const padB = 30;
+  const rotasi = cats.some((c) => String(c).length >= 8);
+  const padB = rotasi ? 54 : 30;
   const padT = 16;
   const cw = w - padL;
   const ch = h - padB - padT;
@@ -80,9 +81,22 @@ export default function Bars({ cats, vals, gradId, gradStops, unit }: BarsProps)
               >
                 {fmtNum(v, unit)}
               </motion.text>
-              <text className="chart-cat" x={x + bw / 2} y={h - 8} textAnchor="middle">
-                {cats[i]}
-              </text>
+              {rotasi ? (
+                <text
+                  className="chart-cat"
+                  style={{ fontSize: 8 }}
+                  x={x + bw / 2}
+                  y={h - padB + 14}
+                  textAnchor="end"
+                  transform={`rotate(-35 ${x + bw / 2} ${h - padB + 14})`}
+                >
+                  {cats[i]}
+                </text>
+              ) : (
+                <text className="chart-cat" x={x + bw / 2} y={h - 8} textAnchor="middle">
+                  {cats[i]}
+                </text>
+              )}
             </g>
           );
         })}
