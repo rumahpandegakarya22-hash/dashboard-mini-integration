@@ -13,6 +13,7 @@ interface Pendaftar {
   aktivitas: { pekerjaan: string; institusi: string; programStudi: string };
   darurat: { nama: string; nomor: string; relasi: string }[];
   barang: { jumlahGadget: number; elektronik: string };
+  kendaraan: { nopol: string; nama: string };
   berkas: { identitas: string | null; buktiDp: string | null };
   alasanBatal: string;
 }
@@ -192,6 +193,7 @@ export default function ReviewPendaftaranPanel() {
                   .filter(Boolean)
                   .join(' · ')}
               />
+              <Baris label="Kendaraan" nilai={[p.kendaraan.nopol, p.kendaraan.nama].filter(Boolean).join(' · ')} />
             </div>
 
             {p.darurat.length > 0 && (

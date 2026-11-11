@@ -22,6 +22,7 @@
 // ditambahkan kapan saja, belum dilakukan agar cakupan Wave 2 tetap sempit.
 
 import { turso, DIVISI_DB, TASK_STATUS } from '../core/turso';
+import { salinDariTemanRara } from '../teman-rara-checkin';
 import { getActiveTenants, getTenantByLabel, getRoomFresh, invalidateTenantsCache } from '../master';
 import {
   toISODateFlexible,
@@ -369,7 +370,9 @@ const penghuniBaruEdit: CustomEditCfg = {
        membuat baris occupancy_history & active_tenant tapi tidak tahu kolom
        tambahan_listrik, jadi nilainya disalin dari booking di sini — kalau tidak,
        invoice penghuni itu tidak menagih listrik sama sekali tanpa pemberitahuan. */
+    let wTr = '';
     if (statusBooking === 'Check-in') {
+      wTr = await salinDariTemanRara(ref).catch(() => 'Data pendaftaran Teman Rara gagal disalin ke penghuni — lengkapi manual di Ubah Data Penghuni.');
       await turso().execute({
         sql: `UPDATE occupancy_history SET tambahan_listrik = (SELECT b.tambahan_listrik FROM booking b WHERE b.no_booking = ?)
               WHERE id_penghuni = (SELECT b.id_penghuni FROM booking b WHERE b.no_booking = ?)
@@ -392,7 +395,7 @@ const penghuniBaruEdit: CustomEditCfg = {
         });
       }
     }
-    return 'Catatan: status kamar TIDAK diubah otomatis dari edit — kalau kamarnya diganti, sesuaikan status kamar manual.';
+    return `Catatan: status kamar TIDAK diubah otomatis dari edit — kalau kamarnya diganti, sesuaikan status kamar manual.${wTr ? ' ' + wTr : ''}`;
   }
 };
 

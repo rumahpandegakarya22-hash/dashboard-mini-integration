@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
             p.rencana_masuk, p.pekerjaan, p.program_studi, p.institusi,
             p.darurat1_nama, p.darurat1_nomor, p.darurat1_relasi,
             p.darurat2_nama, p.darurat2_nomor, p.darurat2_relasi,
-            p.jumlah_gadget, p.barang_elektronik, p.url_identitas, p.url_bukti_dp, p.created_at,
+            p.jumlah_gadget, p.barang_elektronik, p.nopol, p.nama_kendaraan, p.url_identitas, p.url_bukti_dp, p.created_at,
             b.status_booking, b.harga_disepakati, b.durasi_bulan, b.alasan_cancel, b.tanggal_booking
      FROM tr_pendaftaran p
      JOIN booking b ON b.no_booking = p.no_booking
@@ -85,6 +85,7 @@ export async function GET(req: NextRequest) {
         jumlahGadget: Number(r.jumlah_gadget ?? 0),
         elektronik: s(r.barang_elektronik)
       },
+      kendaraan: { nopol: s(r.nopol), nama: s(r.nama_kendaraan) },
       berkas: {
         identitas: urlBerkas(s(r.url_identitas)),
         buktiDp: urlBerkas(s(r.url_bukti_dp))

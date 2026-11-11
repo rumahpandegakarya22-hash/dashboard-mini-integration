@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
 import { invalidateTenantsCache, updateRoomStatus } from '@/lib/master';
+import { salinDariTemanRara } from '@/lib/teman-rara-checkin';
 
 const ALLOWED_ROLES = ['owner', 'staff_admin'] as const;
 
@@ -93,6 +94,13 @@ export async function POST(req: Request) {
   // sama seperti jalur check-in Edit Data: salin tambahan listrik, set kamar Terisi, bersihkan cache.
   const db = turso();
   const warnings: string[] = [];
+  try {
+    const w = await salinDariTemanRara(no_booking);
+    if (w) warnings.push(w);
+  } catch (e) {
+    console.error('[daftar-booking] gagal salin data Teman Rara:', e instanceof Error ? e.message : e);
+    warnings.push('Data pendaftaran Teman Rara gagal disalin ke penghuni — lengkapi manual di Ubah Data Penghuni.');
+  }
   try {
     await db.batch(
       [
