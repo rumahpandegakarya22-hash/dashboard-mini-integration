@@ -19,7 +19,7 @@ export default async function DaftarBookingPage() {
         <span className="icon-tile lg" aria-hidden><ClipboardList size={24} /></span>
         <div>
           <h1 style={{ fontSize: '1.375rem' }}>Daftar Booking</h1>
-          <p className="page-head-sub">Booking yang menunggu check-in</p>
+          <p className="page-head-sub">Booking yang menunggu review atau check-in</p>
         </div>
       </header>
       <DaftarBookingPanel />

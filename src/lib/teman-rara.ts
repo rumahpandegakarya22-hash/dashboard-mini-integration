@@ -55,8 +55,8 @@ export async function getPenghuniByIds(ids: string[]): Promise<Map<string, Pengh
   return peta;
 }
 
-/** Label baku "Nama (K-12)" — dipakai seragam di semua panel Teman Rara. */
+/** Label baku "Nama (Kamar 12)" — dipakai seragam di semua panel Teman Rara. */
 export function labelPenghuni(p: PenghuniRingkas | undefined, fallbackId: string): string {
   if (!p) return fallbackId;
-  return p.no_kamar ? `${p.nama} (K-${p.no_kamar})` : p.nama;
+  return p.no_kamar ? `${p.nama} (Kamar ${p.no_kamar})` : p.nama;
 }

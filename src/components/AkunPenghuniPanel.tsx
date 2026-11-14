@@ -176,7 +176,7 @@ export default function AkunPenghuniPanel() {
                 <span className="bento-meta">
                   <span className="bento-title">{a.nama}</span>
                   <span className="bento-sub">
-                    {a.noKamar ? `K-${a.noKamar}` : 'tanpa kamar'} · {a.aktif ? 'Aktif' : 'Dicabut'}
+                    {a.noKamar ? `Kamar ${a.noKamar}` : 'tanpa kamar'} · {a.aktif ? 'Aktif' : 'Dicabut'}
                     {a.ganda && ' · akun ganda'}
                     {a.yatim && ' · sudah tidak tinggal'}
                   </span>
@@ -190,7 +190,7 @@ export default function AkunPenghuniPanel() {
                     <span className={bermasalah ? 'prio-badge hot' : 'prio-badge'}>
                       {a.aktif ? 'Aktif' : 'Dicabut'}
                     </span>
-                    {a.noKamar && <span className="prio-badge">K-{a.noKamar}</span>}
+                    {a.noKamar && <span className="prio-badge">{a.noKamar}</span>}
                   </div>
 
                   <p className="muted" style={{ margin: '10px 0 0', fontSize: '0.8125rem' }}>

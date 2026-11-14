@@ -167,7 +167,7 @@ export default function ReviewPendaftaranPanel() {
             </h3>
 
             <div className="receipt">
-              <Baris label="Kamar" nilai={`K-${p.hunian.noKamar}`} />
+              <Baris label="Kamar" nilai={p.hunian.noKamar} />
               <Baris label="Rencana masuk" nilai={fmtTanggal(p.hunian.rencanaMasuk)} />
               <Baris
                 label="Durasi & harga"

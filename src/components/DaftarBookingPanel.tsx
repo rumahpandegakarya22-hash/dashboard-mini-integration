@@ -110,7 +110,7 @@ export default function DaftarBookingPanel() {
 
       {rows?.length === 0 && (
         <div className="card">
-          <p className="muted" style={{ margin: 0 }}>Tidak ada booking yang menunggu check-in.</p>
+          <p className="muted" style={{ margin: 0 }}>Tidak ada booking yang menunggu review atau check-in.</p>
         </div>
       )}
 
@@ -127,12 +127,16 @@ export default function DaftarBookingPanel() {
             <tbody>
               {rows.map((row) => {
                 const badge = badgeFor(row.status_checkin);
-                const isApproved = row.status_checkin === 'Disetujui';
+                const dikonfirmasi = row.status_booking === 'Konfirmasi';
+                const isApproved = dikonfirmasi && row.status_checkin === 'Disetujui';
                 const isLoading = actionLoading === row.no_booking;
                 return (
                   <tr key={row.no_booking}>
                     <td style={{ whiteSpace: 'nowrap' }}>{row.kamar_no}</td>
-                    <td>{row.nama_penyewa}</td>
+                    <td>
+                      {row.nama_penyewa}
+                      {!dikonfirmasi && <span className="muted" style={{ marginLeft: 6, fontSize: '0.72rem' }}>(menunggu review)</span>}
+                    </td>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmtTanggal(row.tgl_masuk)}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{row.no_hp}</td>
                     <td>
@@ -155,7 +159,7 @@ export default function DaftarBookingPanel() {
                           className="btn"
                           style={{ padding: '4px 10px', fontSize: '0.78rem' }}
                           disabled={!isApproved || isLoading}
-                          title={!isApproved ? 'Inspeksi belum disetujui' : undefined}
+                          title={!dikonfirmasi ? 'Booking belum dikonfirmasi di Review Pendaftaran' : !isApproved ? 'Inspeksi belum disetujui' : undefined}
                           onClick={() => handleCheckin(row)}
                         >
                           {isLoading
