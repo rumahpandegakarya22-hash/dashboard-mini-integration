@@ -30,7 +30,7 @@ export default async function DashboardPage({
       userName={user.name || user.username}
       tfaEnabled={s.totpEnrolled}
       hasOpsAccess={!!s.user}
-      canLandingAdmin={bolehBukaLandingAdmin({ ops: s.user?.role, dashboard: user.role })}
+      canLandingAdmin={bolehBukaLandingAdmin({ dashboard: user.role })}
       view="overview"
       crumb={page.crumb}
       isDash
