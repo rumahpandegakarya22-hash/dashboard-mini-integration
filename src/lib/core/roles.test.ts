@@ -41,3 +41,16 @@ test('ROLE_DIVISI: nilai DB tidak digabung', () => {
   assert.deepEqual(ROLE_DIVISI.operasional, ['Maintenance', 'Inspeksi', 'Cleaning']);
   assert.deepEqual(ROLE_DIVISI.admin_finance, ['Admin', 'Finance']);
 });
+
+test('canUseInventory: Sales dan Marketing ditolak', async () => {
+  const { canUseInventory } = await import('./roles');
+  for (const r of ['owner', 'pengawas', 'admin_finance', 'operasional'] as const) assert.equal(canUseInventory(r), true, r);
+  for (const r of ['sales', 'marketing'] as const) assert.equal(canUseInventory(r), false, r);
+  assert.equal(canUseInventory(null), false);
+});
+
+test('canUsePreForm: hanya owner dan operasional', async () => {
+  const { canUsePreForm } = await import('./roles');
+  for (const r of ['owner', 'operasional'] as const) assert.equal(canUsePreForm(r), true, r);
+  for (const r of ['pengawas', 'admin_finance', 'sales', 'marketing'] as const) assert.equal(canUsePreForm(r), false, r);
+});

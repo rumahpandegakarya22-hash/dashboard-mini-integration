@@ -68,12 +68,16 @@ interface Props {
   canRiwayatBayar?: boolean;
   /** Owner, Admin, Inspeksi — akses form Pre-Check In & Pre-Check Out. */
   canInspeksi?: boolean;
+  /** Inventory Stock: tidak untuk Sales/Marketing. */
+  canInventory?: boolean;
+  /** Pre-Check In/Out Form: Owner dan Operasional saja. */
+  canPreForm?: boolean;
   modules: NavModule[];
   children: React.ReactNode;
 }
 
 export default function AppShell({ userName, roleLabel, isOwner, canKelola,
-  hasDashboardAccess, canLandingPage, canRiwayatBayar, canInspeksi, modules, children }: Props) {
+  hasDashboardAccess, canLandingPage, canRiwayatBayar, canInspeksi, canInventory, canPreForm, modules, children }: Props) {
   const pathname = usePathname();
   const { signOut } = useClerk();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -181,7 +185,7 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
           {canInspeksi && (
             <div>
               <div className="side-group-label">Check-in</div>
-              {NAV_CHECKIN.filter((n) => !n.adminOnly || canKelola).map((n) => (
+              {NAV_CHECKIN.filter((n) => (!n.adminOnly || canKelola) && (!n.preForm || canPreForm)).map((n) => (
                 <SideLink key={n.href} href={n.href} active={pathname.startsWith(n.href)} icon={n.icon}>
                   {n.label}
                 </SideLink>
@@ -192,7 +196,7 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
           {canInspeksi && (
             <div>
               <div className="side-group-label">Check-out</div>
-              {NAV_CHECKOUT.filter((n) => !n.adminOnly || canKelola).map((n) => (
+              {NAV_CHECKOUT.filter((n) => (!n.adminOnly || canKelola) && (!n.preForm || canPreForm)).map((n) => (
                 <SideLink key={n.href} href={n.href} active={pathname.startsWith(n.href)} icon={n.icon}>
                   {n.label}
                 </SideLink>
@@ -224,10 +228,12 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
             )}
             {/* Inventory dibuka dengan akses Ops yang sama, jadi tautannya
                 selalu ada — beda dari Dashboard yang butuh akses terpisah. */}
-            <a href="/inventory" className="side-item">
-              <Package size={18} />
-              Inventory Stock
-            </a>
+            {canInventory && (
+              <a href="/inventory" className="side-item">
+                <Package size={18} />
+                Inventory Stock
+              </a>
+            )}
             {/* Admin landing page = aplikasi terpisah: buka di tab baru, masuk otomatis lewat tiket SSO. */}
             {canLandingPage && (
               <a href={NAV_LANDING_PAGE.href} target="_blank" rel="noopener noreferrer" className="side-item">

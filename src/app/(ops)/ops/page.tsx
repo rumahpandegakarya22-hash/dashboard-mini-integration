@@ -1,5 +1,5 @@
 import { getSessionUser } from '@/lib/core/auth';
-import { canAccess, ROLE_LABEL } from '@/lib/core/roles';
+import { canAccess, canUsePreForm, ROLE_LABEL } from '@/lib/core/roles';
 import { MODULES } from '@/lib/modules/registry';
 import { getJoblist, joblistDivisi } from '@/lib/joblist';
 import HomeGreeting from '@/components/HomeGreeting';
@@ -36,6 +36,7 @@ export default async function HomePage() {
         canLandingPage={bolehBukaLandingAdmin({ ops: user.role })}
         canRiwayatBayar={user.role === 'owner' || user.role === 'admin_finance' || user.role === 'sales'}
         canInspeksi={user.role === 'owner' || user.role === 'admin_finance' || user.role === 'operasional'}
+        canPreForm={canUsePreForm(user.role)}
         modules={visible}
       />
     </>

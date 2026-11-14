@@ -6,15 +6,15 @@ import { bolehBukaLandingAdmin, buatTokenSso, urlLandingAdmin, TTL_SSO_DETIK, IS
 const RAHASIA = 'rahasia-uji-yang-cukup-panjang-untuk-hs256-0123456789';
 const kunci = new TextEncoder().encode(RAHASIA);
 
-test('bolehBukaLandingAdmin: owner, admin_finance, marketing diizinkan di kedua sisi', () => {
-  for (const r of ['owner', 'admin_finance', 'marketing']) {
+test('bolehBukaLandingAdmin: owner dan marketing diizinkan di kedua sisi', () => {
+  for (const r of ['owner', 'marketing']) {
     assert.equal(bolehBukaLandingAdmin({ dashboard: r }), true, r);
     assert.equal(bolehBukaLandingAdmin({ ops: r }), true, r);
   }
 });
 
 test('bolehBukaLandingAdmin: operasional, sales, pengawas, kunci lama, dan nilai asing ditolak', () => {
-  for (const r of ['operasional', 'sales', 'pengawas', '', 'OWNER', 'admin', 'staff_admin', 'staff_marketing']) {
+  for (const r of ['admin_finance', 'operasional', 'sales', 'pengawas', '', 'OWNER', 'admin', 'staff_admin', 'staff_marketing']) {
     assert.equal(bolehBukaLandingAdmin({ dashboard: r }), false, r);
     assert.equal(bolehBukaLandingAdmin({ ops: r }), false, r);
   }
@@ -22,7 +22,8 @@ test('bolehBukaLandingAdmin: operasional, sales, pengawas, kunci lama, dan nilai
 
 test('bolehBukaLandingAdmin: cukup salah satu sisi yang berhak; tanpa peran = ditolak', () => {
   assert.equal(bolehBukaLandingAdmin({ ops: 'sales', dashboard: 'marketing' }), true);
-  assert.equal(bolehBukaLandingAdmin({ ops: 'admin_finance', dashboard: 'sales' }), true);
+  assert.equal(bolehBukaLandingAdmin({ ops: 'admin_finance', dashboard: 'sales' }), false);
+  assert.equal(bolehBukaLandingAdmin({ ops: 'admin_finance', dashboard: 'marketing' }), true);
   assert.equal(bolehBukaLandingAdmin({ ops: 'sales', dashboard: 'operasional' }), false);
   assert.equal(bolehBukaLandingAdmin({}), false);
   assert.equal(bolehBukaLandingAdmin({ ops: null, dashboard: null }), false);

@@ -10,7 +10,7 @@ export default async function PreCheckInPage() {
   if (gate !== true) redirect(gate);
 
   const role = s.user!.role;
-  if (!['owner', 'admin_finance', 'operasional'].includes(role)) {
+  if (!['owner', 'operasional'].includes(role)) {
     return <div className="card"><p className="muted">Tidak punya akses.</p></div>;
   }
 

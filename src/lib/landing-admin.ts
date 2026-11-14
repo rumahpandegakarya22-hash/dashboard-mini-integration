@@ -10,8 +10,8 @@ export const TTL_SSO_DETIK = 60;
 const URL_LANDING_BAWAAN = 'https://tigadaralandingpage.vercel.app';
 const PANJANG_RAHASIA_MIN = 32;
 
-// Hanya owner, Admin and Finance, dan marketing. Role sama di Dashboard dan Ops; cukup salah satu sisi yang berhak.
-const ROLE_LANDING = new Set<string>(['owner', 'admin_finance', 'marketing']);
+// Hanya owner dan marketing. Role sama di Dashboard dan Ops; cukup salah satu sisi yang berhak.
+const ROLE_LANDING = new Set<string>(['owner', 'marketing']);
 
 export function bolehBukaLandingAdmin(peran: { ops?: string | null; dashboard?: string | null }): boolean {
   return (!!peran.ops && ROLE_LANDING.has(peran.ops)) || (!!peran.dashboard && ROLE_LANDING.has(peran.dashboard));

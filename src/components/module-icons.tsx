@@ -108,9 +108,9 @@ export const NAV_PENGATURAN: { href: string; label: string; icon: LucideIcon; ow
 export const NAV_PENGHUNI = { href: '/ops/admin/penghuni', label: 'Ubah Data Penghuni', icon: UserCog };
 
 /** Navigasi grup Check-in — owner, admin_finance, operasional. */
-export const NAV_CHECKIN: { href: string; label: string; icon: LucideIcon; adminOnly?: true }[] = [
+export const NAV_CHECKIN: { href: string; label: string; icon: LucideIcon; adminOnly?: true; preForm?: true }[] = [
   { href: '/ops/admin/daftar-booking', label: 'Daftar Booking', icon: CalendarCheck, adminOnly: true },
-  { href: '/ops/admin/pre-checkin', label: 'Pre-Check In Form', icon: ClipboardCheck },
+  { href: '/ops/admin/pre-checkin', label: 'Pre-Check In Form', icon: ClipboardCheck, preForm: true },
   { href: '/ops/admin/approval-checkin', label: 'Approval Check-in', icon: CheckSquare, adminOnly: true },
   { href: '/ops/m/penghuni-baru', label: 'Penghuni Baru & Review', icon: UserRoundPlus, adminOnly: true },
 ];
@@ -119,8 +119,8 @@ export const NAV_CHECKIN: { href: string; label: string; icon: LucideIcon; admin
 export const NAV_LAPORAN_KEUANGAN = { href: '/ops/admin/laporan-keuangan', label: 'Laporan', icon: BarChart3 };
 
 /** Navigasi grup Check-out — owner, admin_finance, operasional. */
-export const NAV_CHECKOUT: { href: string; label: string; icon: LucideIcon; adminOnly?: true }[] = [
+export const NAV_CHECKOUT: { href: string; label: string; icon: LucideIcon; adminOnly?: true; preForm?: true }[] = [
   { href: '/ops/m/checkout', label: 'Daftar Pengajuan Checkout', icon: DoorOpen, adminOnly: true },
-  { href: '/ops/admin/pre-checkout', label: 'Pre-Check Out Form', icon: ClipboardList },
+  { href: '/ops/admin/pre-checkout', label: 'Pre-Check Out Form', icon: ClipboardList, preForm: true },
   { href: '/ops/admin/approval-checkout', label: 'Approval Check-out', icon: CheckSquare, adminOnly: true },
 ];

@@ -7,6 +7,7 @@ import { SignOutButton } from '@clerk/nextjs';
 import { ROLE_NAV } from '@/config/dashboard-nav';
 import type { DashboardRole } from '@/config/dashboard-access';
 import { initials } from '@/lib/dashboard/format';
+import { canUseInventory } from '@/lib/core/roles';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import PeriodFilter from './PeriodFilter';
 import {
@@ -109,7 +110,7 @@ export default function DashboardShell({
               </a>
             )}
             {/* Inventory Stock: hanya untuk role yang memang mengelola stok */}
-            {hasOpsAccess && role !== 'marketing' && role !== 'sales' && (
+            {hasOpsAccess && canUseInventory(role) && (
               <a className="nav-link" href="/inventory">
                 <span className="caret">
                   <IconCaret />

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getAuthState } from '@/lib/core/auth';
 import { guardOps } from '@/lib/core/routing';
-import { canAccess, ROLE_LABEL } from '@/lib/core/roles';
+import { canAccess, canUseInventory, canUsePreForm, ROLE_LABEL } from '@/lib/core/roles';
 import { MODULES } from '@/lib/modules/registry';
 import AppShell from '@/components/AppShell';
 import { bolehBukaLandingAdmin } from '@/lib/landing-admin';
@@ -29,6 +29,8 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
         canLandingPage={bolehBukaLandingAdmin({ ops: user.role })}
         canRiwayatBayar={user.role === 'owner' || user.role === 'admin_finance' || user.role === 'sales'}
         canInspeksi={user.role === 'owner' || user.role === 'admin_finance' || user.role === 'operasional'}
+        canPreForm={canUsePreForm(user.role)}
+        canInventory={canUseInventory(user.role)}
         hasDashboardAccess={!!s.dashboardUser} modules={visible}>
         {children}
       </AppShell>

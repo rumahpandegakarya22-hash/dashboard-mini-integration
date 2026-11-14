@@ -81,5 +81,12 @@ export const ROLE_DIVISI: Partial<Record<Role, string[]>> = {
   operasional: ['Maintenance', 'Inspeksi', 'Cleaning']
 };
 
+/** Inventory Stock: Sales dan Marketing tidak memakainya. */
+export const canUseInventory = (r: Role | null | undefined): boolean =>
+  r === 'owner' || r === 'pengawas' || r === 'admin_finance' || r === 'operasional';
+
+/** Pre-Check In/Out Form (inspeksi kondisi kamar): Owner dan Operasional saja. */
+export const canUsePreForm = (r: Role | null | undefined): boolean => r === 'owner' || r === 'operasional';
+
 /** Pengelola Mini App (Kelola Kamar/User, Setting): owner + Admin and Finance. */
 export const isAdminFinance = (r: Role | null | undefined): boolean => r === 'owner' || r === 'admin_finance';

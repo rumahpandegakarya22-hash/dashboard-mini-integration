@@ -8,6 +8,7 @@
    ========================================================================= */
 
 import type { AuthState } from './auth';
+import { canUseInventory } from './roles';
 
 export type Landing = '/login' | '/2fa' | '/dashboard' | '/ops' | '/inventory' | '/pending';
 
@@ -48,5 +49,7 @@ export function guardOps(s: AuthState): true | Landing {
  * tautan silang, bukan tujuan akar.
  */
 export function guardInventory(s: AuthState): true | Landing {
-  return guardOps(s);
+  const g = guardOps(s);
+  if (g !== true) return g;
+  return canUseInventory(s.user!.role) ? true : '/ops';
 }
