@@ -55,7 +55,13 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
     <div className="view">
       <StatGrid cards={cards} cols={8} />
 
-      <Reveal tier={1} className="grid row-2 mt">
+      <Reveal tier={1} className="grid row-3 mt">
+        <DonutBlock label="Komposisi OPEX" segs={opex} money centerLabel="Total OPEX" />
+        <DonutBlock label="Komposisi Income" segs={income} money centerLabel="Total Income" />
+        <DonutBlock label="Komposisi Status Kamar" segs={kamar} centerLabel="Total Kamar" />
+      </Reveal>
+
+      <Reveal tier={2} className="grid mt">
         {hasFin && lsc ? (
           <ChartCard
             title="Pendapatan Kotor vs Beban vs Laba Bersih"
@@ -75,6 +81,22 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
         ) : (
           <EmptyCard title="Pendapatan Kotor vs Beban vs Laba Bersih" />
         )}
+      </Reveal>
+
+      <Reveal tier={3} className="grid row-2 mt">
+        {hasFin && F!.diskonTotal > 0 ? (
+          <ChartCard title="Pemberian Diskon" legend={[{ t: 'Diskon' + (dsc?.unit ? ' (' + dsc.unit + ')' : ''), c: OWN_BAR }]}>
+            <Bars
+              cats={F!.labels}
+              vals={scaleVals(F!.diskonSeries, dsc!)}
+              gradId="gOwnDiskon"
+              gradStops={<BarStopsOwner />}
+              unit={dsc!.unit}
+            />
+          </ChartCard>
+        ) : (
+          <EmptyCard title="Pemberian Diskon" />
+        )}
 
         {obars.length && bsc ? (
           <ChartCard title="Total Beban" legend={[{ t: 'Beban' + (bsc.unit ? ' (' + bsc.unit + ')' : ''), c: OWN_BAR }]}>
@@ -91,27 +113,6 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
         )}
       </Reveal>
 
-      <Reveal tier={2} className="grid row-2 mt">
-        {hasFin && F!.diskonTotal > 0 ? (
-          <ChartCard title="Pemberian Diskon" legend={[{ t: 'Diskon' + (dsc?.unit ? ' (' + dsc.unit + ')' : ''), c: OWN_BAR }]}>
-            <Bars
-              cats={F!.labels}
-              vals={scaleVals(F!.diskonSeries, dsc!)}
-              gradId="gOwnDiskon"
-              gradStops={<BarStopsOwner />}
-              unit={dsc!.unit}
-            />
-          </ChartCard>
-        ) : (
-          <EmptyCard title="Pemberian Diskon" />
-        )}
-      </Reveal>
-
-      <Reveal tier={3} className="grid row-3 mt">
-        <DonutBlock label="Komposisi OPEX" segs={opex} money centerLabel="Total OPEX" />
-        <DonutBlock label="Komposisi Income" segs={income} money centerLabel="Total Income" />
-        <DonutBlock label="Komposisi Status Kamar" segs={kamar} centerLabel="Total Kamar" />
-      </Reveal>
     </div>
   );
 }
