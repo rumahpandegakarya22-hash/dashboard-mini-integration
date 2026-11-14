@@ -2,8 +2,8 @@
 // Satu gaya ikon (stroke 24×24) di seluruh app — tidak ada emoji sebagai ikon.
 
 import {
-  ArrowLeftRight,
   BarChart3,
+  BedDouble,
   CalendarCheck,
   CheckSquare,
   Clapperboard,
@@ -23,6 +23,7 @@ import {
   MessagesSquare,
   PackageMinus,
   ReceiptText,
+  Smile,
   Sparkles,
   Store,
   Tag,
@@ -40,7 +41,6 @@ import {
 const MODULE_ICONS: Record<string, LucideIcon> = {
   'penghuni-baru': UserRoundPlus,
   'pembayaran-sewa': Wallet,
-  'pindah-kamar': ArrowLeftRight,
   'checkout': DoorOpen,
   'pengeluaran': ReceiptText,
   'feedback': MessagesSquare,
@@ -58,6 +58,8 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   'pemakaian-stok-maintenance': PackageMinus,
   'daily-task': ListTodo,
   'aktivitas-finansial': ReceiptText,
+  'kepuasan-penghuni': Smile,
+  'kamar-siap': BedDouble,
   'tambah-vendor': Store,
   'tambah-waiting-list': ClipboardPlus
 };
@@ -71,12 +73,12 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Umum', ids: ['daily-task'] },
   {
     label: 'Administrasi',
-    ids: ['pembayaran-sewa', 'pindah-kamar', 'aktivitas-finansial', 'feedback']
+    ids: ['pembayaran-sewa', 'aktivitas-finansial', 'feedback', 'kepuasan-penghuni']
   },
   { label: 'Sales', ids: ['survey', 'tambah-waiting-list'] },
   { label: 'Marketing', ids: ['leads', 'konten', 'promosi'] },
   { label: 'Maintenance', ids: ['perawatan-preventif', 'perbaikan-korektif', 'pemakaian-stok-maintenance', 'tambah-vendor'] },
-  { label: 'Inspeksi', ids: ['inspeksi-kebersihan', 'inspeksi-fasilitas', 'wo-inspeksi'] },
+  { label: 'Inspeksi', ids: ['inspeksi-kebersihan', 'inspeksi-fasilitas', 'wo-inspeksi', 'kamar-siap'] },
   { label: 'Cleaning', ids: ['wo-cleaning', 'pemakaian-stok-cleaning'] }
 ];
 

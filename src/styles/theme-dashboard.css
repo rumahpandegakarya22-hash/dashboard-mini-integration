@@ -335,7 +335,9 @@
    min() jaga di layar sempit: track gak pernah lebih lebar dari induk. */
 [data-app='dashboard'] .stat-grid {
   display: grid; gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  /* Lebar minimum = 1/cols dari induk, jadi N kartu satu baris muat PAS satu baris
+     (tidak lagi 5+1 yatim). Di induk sempit batas 168px membuatnya wrap rapi. */
+  grid-template-columns: repeat(auto-fit, minmax(min(max(168px, calc((100% - (var(--cols, 4) - 1) * 14px) / var(--cols, 4))), 100%), 1fr));
 }
 /* container-type: inline-size -> teks di dalam bisa diukur relatif LEBAR
    KARTU (cqi), bukan lebar viewport. Kartu yg sama jadi otomatis nyesuaikan
@@ -344,8 +346,8 @@
   position: relative; overflow: hidden;
   container-type: inline-size;
   border-radius: var(--r-card);
-  padding: 14px 16px 0;
-  min-height: 116px;
+  padding: 11px 14px 14px;
+  min-height: 92px;
   display: flex; flex-direction: column;
   color: var(--on-grad);
   isolation: isolate;
@@ -361,13 +363,28 @@
   box-shadow: 0 18px 46px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.45);
 }
 [data-app='dashboard'] .stat-card__label { font-size: 13px; font-weight: 500; opacity: .85; }
+[data-app='dashboard'] .stat-card__sub { margin-top: auto; padding-top: 8px; font-size: 12px; font-weight: 500; opacity: .85; line-height: 1.3; }
+[data-app='dashboard'] .stat-card__bar { position: absolute; left: 16px; right: 16px; bottom: 8px; height: 4px; border-radius: 99px; background: rgba(0,0,0,.18); overflow: hidden; }
+[data-app='dashboard'] .stat-card__bar i { display: block; height: 100%; border-radius: inherit; background: rgba(255,255,255,.85); }
+/* Penanda kelompok: pita kiri + pill kecil. Admin = biru, Finance = hijau-emas. */
+[data-app='dashboard'] .grp-pill { font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: 99px; background: rgba(255,255,255,.22); opacity: 1; }
+[data-app='dashboard'] .grp::after, [data-app='dashboard'] .card.grp-admin::after, [data-app='dashboard'] .card.grp-finance::after {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--g); pointer-events: none; z-index: 2;
+}
+[data-app='dashboard'] .grp-admin { --g: #4aa3ff; }
+[data-app='dashboard'] .grp-finance { --g: #e0b13a; }
+[data-app='dashboard'] .card.grp-admin, [data-app='dashboard'] .card.grp-finance { position: relative; overflow: hidden; }
+[data-app='dashboard'] .grp-admin .grp-pill, [data-app='dashboard'] .card.grp-admin .grp-pill { background: rgba(74,163,255,.28); color: #8cc4ff; }
+[data-app='dashboard'] .grp-finance .grp-pill, [data-app='dashboard'] .card.grp-finance .grp-pill { background: rgba(224,177,58,.28); color: #f0cb6a; }
+[data-app='dashboard'] .grp-head { display: flex; align-items: center; gap: 8px; margin: 18px 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
+[data-app='dashboard'] .grp-head::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--g, #888); }
+
 /* nilai: dulu 30px mati -> di kartu sempit teksnya wrap & ketabrak badge
    (yg absolut di kanan). clamp+cqi bikin ngecil mulus ngikut lebar kartu.
    padding-right nyediain lorong buat badge, jadi gak numpuk lagi. */
 [data-app='dashboard'] .stat-card__value {
-  font-size: clamp(19px, 13cqi, 30px);
-  font-weight: 700; line-height: 1.1; margin-top: 6px; letter-spacing: -.02em;
-  padding-right: 74px;
+  font-size: clamp(18px, 12cqi, 26px);
+  font-weight: 700; line-height: 1.1; margin-top: 4px; letter-spacing: -.02em;
   overflow-wrap: anywhere;
 }
 [data-app='dashboard'] .stat-card__badge {
@@ -403,7 +420,15 @@
   border-radius: var(--r-sm);
   background-image: linear-gradient(90deg, var(--card) 25%, var(--card-2) 50%, var(--card) 75%);
 }
+[data-app='dashboard'] .card { display: flex; flex-direction: column; }
+/* Kartu satu baris grid melar mengikuti saudaranya; isi chart ditaruh di tengah
+   ruang sisa (bukan nempel atas), legenda turun ke dasar kartu. */
+[data-app='dashboard'] .card > .donut { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
+[data-app='dashboard'] .card > .funnel-wrap { flex: 1 1 auto; align-items: center; }
+[data-app='dashboard'] .card > .chart-legend:not(.chart-legend--detailed) { margin-top: auto; padding-top: 10px; }
 [data-app='dashboard'] .card__title { font-size: 13.5px; font-weight: 600; }
+[data-app='dashboard'] .card__title .grp-pill { float: right; }
+[data-app='dashboard'] .donut__note { font-size: 12px; color: var(--text-2); text-align: center; font-weight: 600; }
 [data-app='dashboard'] .card__sub { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
 
 [data-app='dashboard'] .grid { display: grid; gap: 14px; }
@@ -441,13 +466,15 @@
 [data-app='dashboard'] .legend-item i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
 /* generic chart svg wrapper */
-[data-app='dashboard'] .chart { width: 100%; }
-[data-app='dashboard'] .chart svg { width: 100%; height: auto; overflow: visible; }
+[data-app='dashboard'] .chart { width: 100%; position: relative; flex: 1 1 auto; }
+[data-app='dashboard'] .chart svg { position: absolute; left: 0; top: 0; overflow: visible; }
 [data-app='dashboard'] .chart-axis { font-size: 10px; fill: var(--text-3); }
 [data-app='dashboard'] .chart-cat { font-size: 10px; fill: var(--text-3); }
 
 /* funnel */
-[data-app='dashboard'] .funnel-wrap { display: flex; gap: 14px; align-items: center; }
+[data-app='dashboard'] .funnel-wrap { display: flex; flex-direction: row; gap: 22px; align-items: center; }
+[data-app='dashboard'] .funnel-wrap .funnel { flex: 1 1 55%; min-width: 0; }
+[data-app='dashboard'] .funnel-wrap .funnel-stats { flex: 0 1 42%; min-width: 150px; }
 [data-app='dashboard'] .funnel { flex: 1; }
 [data-app='dashboard'] .funnel-stats { display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
 [data-app='dashboard'] .funnel-stats div b { display: block; font-size: 16px; font-weight: 700; }
@@ -1300,3 +1327,15 @@
   border-radius: 50%;
   background: currentColor;
 }
+
+/* Kartu KPI: tanpa sparkline; badge tren di sebelah label, kontras tinggi di atas gradien apa pun. */
+[data-app='dashboard'] .stat-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+[data-app='dashboard'] .stat-card .stat-card__badge {
+  position: static; margin: 0; flex: none; padding: 2px 7px; border-radius: 99px;
+  font-size: 10.5px; font-weight: 700; line-height: 1.3; background: rgba(8,14,24,.72); color: #fff;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.14);
+}
+[data-app='dashboard'] .stat-card__badge.up { color: #6ff0aa; }
+[data-app='dashboard'] .stat-card__badge.down { color: #ff9b9b; }
+[data-app='dashboard'] .stat-card__sub { padding-top: 6px; }
+[data-app='dashboard'] .mt-lg { margin-top: 28px; }

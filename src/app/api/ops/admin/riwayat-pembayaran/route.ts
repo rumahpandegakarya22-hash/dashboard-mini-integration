@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
-import { editInvoice } from '@/lib/invoice/edit';
+import { koreksiInvoice, voidInvoice } from '@/lib/invoice/edit';
 import { kirimInvoice } from '@/lib/invoice';
 import { fmtTanggal } from '@/lib/format-tanggal';
 import { urlBerkas } from '@/lib/teman-rara';
@@ -56,7 +56,8 @@ export async function GET(req: NextRequest) {
     turso().execute({
       sql: `SELECT 'Sewa' AS jenis, id AS inv_id, no_inv, tanggal_pembayaran, periode_awal, periode_akhir,
                    no_kamar, tipe_kamar, grand_total, jumlah_bulan, email, jumlah_denda, denda, diskon, pajak,
-                   CASE WHEN tanggal_pembayaran IS NOT NULL THEN 'Lunas' ELSE 'Belum Bayar' END AS status
+                   CASE WHEN void_pada IS NOT NULL THEN 'Void' WHEN tanggal_pembayaran IS NOT NULL THEN 'Lunas' ELSE 'Belum Bayar' END AS status,
+                   void_alasan, koreksi_dari
             FROM invoice_sewa
             WHERE id_penghuni = ?
             ORDER BY id DESC`,
@@ -66,7 +67,8 @@ export async function GET(req: NextRequest) {
       sql: `SELECT 'DP' AS jenis, id AS inv_id, no_inv, tanggal_pembayaran, tanggal_pembayaran AS periode_awal,
                    NULL AS periode_akhir, no_kamar, tipe_kamar, grand_total, NULL AS jumlah_bulan,
                    email, NULL AS jumlah_denda, NULL AS denda, diskon, pajak,
-                   CASE WHEN tanggal_pembayaran IS NOT NULL THEN 'Lunas' ELSE 'Belum Bayar' END AS status
+                   CASE WHEN void_pada IS NOT NULL THEN 'Void' WHEN tanggal_pembayaran IS NOT NULL THEN 'Lunas' ELSE 'Belum Bayar' END AS status,
+                   void_alasan, koreksi_dari
             FROM invoice_dp
             WHERE id_penghuni = ?
             ORDER BY id DESC`,
@@ -124,6 +126,8 @@ export async function GET(req: NextRequest) {
       total: rp(r.grand_total),
       totalRaw: Number(r.grand_total ?? 0),
       status: String(r.status ?? ''),
+      voidAlasan: r.void_alasan ? String(r.void_alasan) : '',
+      koreksiDari: r.koreksi_dari ? String(r.koreksi_dari) : '',
       email: String(r.email ?? ''),
       jumlahDenda: Number(r.jumlah_denda ?? 0),
       dendaPerUnit: Number(r.denda ?? 0),
@@ -143,7 +147,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ ok: true, rows, totalLunas: rp(totalLunas), bolehEdit: EDITOR.has(gate.user!.role) });
 }
 
-/** Edit invoice → payment & jurnal ikut berubah → invoice dikirim ulang (REVISI). */
+/** Koreksi: invoice lama di-void (+ jurnal dibalik), invoice baru bernomor -K<n> dibuat dan dikirim (REVISI). */
 export async function PATCH(req: NextRequest) {
   const gate = await requireAccess();
   if (gate.error) return gate.error;
@@ -162,7 +166,8 @@ export async function PATCH(req: NextRequest) {
   if (!jenis || !noInv) return NextResponse.json({ error: 'Invoice tidak valid.' }, { status: 400 });
 
   try {
-    const hasil = await editInvoice({
+    const hasil = await koreksiInvoice({
+      oleh: user.username,
       noInv,
       jenis,
       email: String(b.email ?? ''),
@@ -177,22 +182,65 @@ export async function PATCH(req: NextRequest) {
     });
 
     // Email dikirim setelah data tersimpan; gagal kirim tidak membatalkan edit.
-    const email = await kirimInvoice(noInv, jenis, { revisi: true });
+    const email = await kirimInvoice(hasil.noInvBaru, jenis, { revisi: true });
 
     await writeAudit({
       requestId: `edit-inv-${noInv}-${Date.now()}`,
       user,
       moduleId: 'riwayat-pembayaran',
       action: 'UPDATE',
-      target: `Turso → ${jenis === 'Sewa' ? 'invoice_sewa' : 'invoice_dp'}, payment, jurnal_transaksi (${noInv})`,
+      target: `Turso → ${jenis === 'Sewa' ? 'invoice_sewa' : 'invoice_dp'}, payment, jurnal_transaksi (koreksi ${noInv} -> ${hasil.noInvBaru})`,
       oldData: hasil.sebelum,
       newData: hasil.sesudah,
       durationSec: (Date.now() - t0) / 1000,
       status: 'sukses'
     });
 
-    return NextResponse.json({ ok: true, pesan: email.pesan, peringatan: hasil.peringatan, terkirim: email.terkirim });
+    return NextResponse.json({ ok: true, pesan: email.pesan, noInvBaru: hasil.noInvBaru, terkirim: email.terkirim });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Gagal menyimpan perubahan.' }, { status: 400 });
+  }
+}
+
+/** Void: invoice dibatalkan, payment Cancelled, semua baris jurnalnya dibalik. Tidak ada pengganti. */
+export async function POST(req: NextRequest) {
+  const gate = await requireAccess();
+  if (gate.error) return gate.error;
+  const user = gate.user!;
+  if (!EDITOR.has(user.role)) return NextResponse.json({ error: 'Hanya owner dan admin yang boleh mem-void pembayaran.' }, { status: 403 });
+  const t0 = Date.now();
+
+  let b: Record<string, unknown>;
+  try {
+    b = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Body bukan JSON yang valid.' }, { status: 400 });
+  }
+  const jenis = b.jenis === 'DP' ? 'DP' : b.jenis === 'Sewa' ? 'Sewa' : null;
+  const noInv = String(b.noInv ?? '').trim();
+  if (!jenis || !noInv) return NextResponse.json({ error: 'Invoice tidak valid.' }, { status: 400 });
+
+  try {
+    const hasil = await voidInvoice({ noInv, jenis, alasan: String(b.alasan ?? ''), oleh: user.username });
+    await writeAudit({
+      requestId: `void-inv-${noInv}-${Date.now()}`,
+      user,
+      moduleId: 'riwayat-pembayaran',
+      action: 'UPDATE',
+      target: `Turso → ${jenis === 'Sewa' ? 'invoice_sewa' : 'invoice_dp'}, payment, jurnal_transaksi (void ${noInv})`,
+      oldData: hasil.sebelum,
+      newData: { void: true, alasan: b.alasan },
+      durationSec: (Date.now() - t0) / 1000,
+      status: 'sukses'
+    });
+    // Penghuni sudah memegang PDF invoice lama, jadi kirim ulang salinan bercap DIBATALKAN (best-effort).
+    const email = await kirimInvoice(noInv, jenis, { batal: { alasan: String(b.alasan ?? '').trim() } });
+    return NextResponse.json({
+      ok: true,
+      pesan: `Invoice ${noInv} di-void dan jurnalnya dibalik. ${email.pesan}`,
+      terkirim: email.terkirim
+    });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || 'Gagal mem-void pembayaran.' }, { status: 400 });
   }
 }

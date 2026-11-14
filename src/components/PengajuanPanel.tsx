@@ -2,20 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CircleAlert, LoaderCircle, ArrowRightLeft, LogOut } from 'lucide-react';
+import { CircleAlert, LoaderCircle, LogOut } from 'lucide-react';
 import { fmtTanggal } from '@/lib/format-tanggal';
 
-/* Panel pengelola untuk pengajuan Pindah Kamar / Checkout dari Teman Rara.
-   Satu komponen, dua jenis — bedanya cuma teks & aksi 'Selesai':
-     - pindah  : Selesai dieksekusi di sini (perpindahan langsung jalan)
-     - checkout: Selesai lewat modul Checkout (tombol mengarahkan ke sana) */
+/* Panel pengelola untuk pengajuan Checkout dari Teman Rara.
+   Selesai lewat modul Checkout (tombol mengarahkan ke sana). */
 
 interface Pengajuan {
   id: string;
   penghuni: string;
   idPenghuni: string;
   kamarLama: string;
-  kamarBaru: string | null;
   tanggal: string;
   alasan: string;
   catatan: string;
@@ -24,13 +21,7 @@ interface Pengajuan {
   responseNote: string | null;
 }
 
-const TEKS = {
-  pindah: { judul: 'Pengajuan Pindah Kamar', Ikon: ArrowRightLeft },
-  checkout: { judul: 'Pengajuan Checkout', Ikon: LogOut }
-} as const;
-
-export default function PengajuanPanel({ jenis }: { jenis: 'pindah' | 'checkout' }) {
-  const { judul, Ikon } = TEKS[jenis];
+export default function PengajuanPanel() {
   const [list, setList] = useState<Pengajuan[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -41,7 +32,7 @@ export default function PengajuanPanel({ jenis }: { jenis: 'pindah' | 'checkout'
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/ops/pengajuan?jenis=${jenis}`);
+      const res = await fetch('/api/ops/pengajuan');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Gagal memuat pengajuan.');
       setList(json.data ?? []);
@@ -54,10 +45,9 @@ export default function PengajuanPanel({ jenis }: { jenis: 'pindah' | 'checkout'
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jenis]);
+  }, []);
 
-  async function proses(p: Pengajuan, aksi: 'setuju' | 'tolak' | 'selesai') {
+  async function proses(p: Pengajuan, aksi: 'setuju' | 'tolak') {
     setBusy(p.id);
     setInfo('');
     setErr('');
@@ -65,19 +55,11 @@ export default function PengajuanPanel({ jenis }: { jenis: 'pindah' | 'checkout'
       const res = await fetch('/api/ops/pengajuan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jenis, id: p.id, aksi, alasan: alasan[p.id] ?? '' })
+        body: JSON.stringify({ id: p.id, aksi, alasan: alasan[p.id] ?? '' })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Gagal memproses.');
-      setInfo(
-        aksi === 'setuju'
-          ? `Pengajuan ${p.penghuni} disetujui.`
-          : aksi === 'tolak'
-            ? `Pengajuan ${p.penghuni} ditolak.`
-            : json.peringatan
-              ? `Pindah kamar ${p.penghuni} selesai. ${json.peringatan}`
-              : `Pindah kamar ${p.penghuni} selesai — data sudah diperbarui.`
-      );
+      setInfo(aksi === 'setuju' ? `Pengajuan ${p.penghuni} disetujui.` : `Pengajuan ${p.penghuni} ditolak.`);
       await load();
     } catch (e: any) {
       setErr(e.message);
@@ -89,7 +71,7 @@ export default function PengajuanPanel({ jenis }: { jenis: 'pindah' | 'checkout'
   return (
     <section className="panel" style={{ marginTop: 24 }}>
       <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Ikon size={20} /> {judul}
+        <LogOut size={20} /> Pengajuan Checkout
       </h2>
 
       {info && (
@@ -117,7 +99,7 @@ export default function PengajuanPanel({ jenis }: { jenis: 'pindah' | 'checkout'
                 <span className={`badge ${onProcess ? 'badge-proc' : ''}`}>{onProcess ? 'On Process' : p.status}</span>
               </div>
               <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-                {jenis === 'pindah' ? `Kamar ${p.kamarLama} → ${p.kamarBaru}` : `Kamar ${p.kamarLama}`} · {fmtTanggal(p.tanggal)}
+                Kamar {p.kamarLama} · {fmtTanggal(p.tanggal)}
               </div>
               {p.alasan && <div style={{ fontSize: 13, marginTop: 6 }}>Alasan: {p.alasan}</div>}
               {p.catatan && <div className="muted" style={{ fontSize: 13 }}>Catatan: {p.catatan}</div>}
@@ -150,23 +132,16 @@ export default function PengajuanPanel({ jenis }: { jenis: 'pindah' | 'checkout'
                 </>
               )}
 
-              {onProcess &&
-                (jenis === 'pindah' ? (
-                  <div className="btn-row" style={{ marginTop: 12 }}>
-                    <button type="button" className="btn" disabled={busy === p.id} onClick={() => proses(p, 'selesai')}>
-                      {busy === p.id && <LoaderCircle size={18} className="spin" />} Tandai Selesai (pindahkan sekarang)
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ marginTop: 12 }}>
-                    <Link className="btn" href={`/ops/m/checkout?penghuni=${encodeURIComponent(p.penghuniLabel || p.idPenghuni)}`}>
-                      Lanjut ke Checkout →
-                    </Link>
-                    <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                      Deposit, kondisi kamar, dan tunggakan diisi di modul Checkout. Pengajuan otomatis Selesai begitu checkout dicatat.
-                    </p>
-                  </div>
-                ))}
+              {onProcess && (
+                <div style={{ marginTop: 12 }}>
+                  <Link className="btn" href={`/ops/m/checkout?penghuni=${encodeURIComponent(p.penghuniLabel || p.idPenghuni)}`}>
+                    Lanjut ke Checkout →
+                  </Link>
+                  <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    Deposit, kondisi kamar, dan tunggakan diisi di modul Checkout. Pengajuan otomatis Selesai begitu checkout dicatat.
+                  </p>
+                </div>
+              )}
             </div>
           );
         })

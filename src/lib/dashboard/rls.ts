@@ -11,6 +11,7 @@
    ========================================================================= */
 
 import { SHEET_ACCESS, PII_COLS } from '@/config/dashboard-access';
+import { isFullView } from '@/lib/core/roles';
 import { SHEET_MAP } from './sheet-map';
 import type { DbTables } from './compute';
 import type { SheetsOut } from './source';
@@ -18,7 +19,7 @@ import type { SheetsOut } from './source';
 /* ---- Filter tab spreadsheet per role (untuk /api/dashboard/sheets).
    Owner = semua. ---- */
 export function filterSheetsForRole(sheets: SheetsOut, role: string): SheetsOut {
-  if (role === 'owner') return sheets;
+  if (isFullView(role)) return sheets;
   const allow = SHEET_ACCESS[role] || [];
   const out: SheetsOut = {};
   for (const [title, rows] of Object.entries(sheets)) {
@@ -37,7 +38,7 @@ export function filterSheetsForRole(sheets: SheetsOut, role: string): SheetsOut 
 /* ---- Filter tabel Turso per role (untuk /api/dashboard/db), reuse aturan
    SHEET_ACCESS dengan menguji NAMA TAB dari SHEET_MAP. Owner = semua. ---- */
 export function filterTablesForRole(tables: DbTables, role: string): DbTables {
-  if (role === 'owner') return tables;
+  if (isFullView(role)) return tables;
   const allow = SHEET_ACCESS[role] || [];
   const out: DbTables = {};
   for (const [table, rows] of Object.entries(tables)) {

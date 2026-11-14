@@ -52,7 +52,7 @@ async function computeCheckoutDefaults(penghuniLabel: string, tanggalCheckoutISO
       );
     } else {
       const res = await turso().execute({
-        sql: 'SELECT MAX(periode_akhir) mx FROM payment WHERE id_penghuni = ? AND periode_akhir IS NOT NULL',
+        sql: "SELECT MAX(periode_akhir) mx FROM payment WHERE id_penghuni = ? AND status <> 'Cancelled' AND periode_akhir IS NOT NULL",
         args: [occupancyId]
       });
       const lunasSampai = res.rows[0]?.mx ? String(res.rows[0].mx) : null;

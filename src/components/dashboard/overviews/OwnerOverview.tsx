@@ -10,14 +10,16 @@ import { G, PAL, OWN_BAR } from '@/config/dashboard-palette';
 import { fmtRpShort, topEntries, shortAcct } from '@/lib/dashboard/views/finance';
 import { monthlyCount, filterByPeriod, moneyScale, scaleVals } from '@/lib/dashboard/format';
 import type { OverviewProps } from './shared';
+import { kartuOwner, turunanKeuangan, diskonSub } from './kpi-cards';
 
-export default function OwnerOverview({ data, finance: F, period, from, to }: OverviewProps) {
+export default function OwnerOverview({ data, finance: F, period, from, to, kpi, range }: OverviewProps) {
   const { penghuni, stats, rooms } = data;
   const hasFin = !!F && F.nBuckets >= 1;
   const moveIn = monthlyCount(filterByPeriod(penghuni, 'masuk', period, from, to), 'masuk');
 
   const tiketAktif = data.tiket.filter((t) => !/complete/i.test(t.status?.t || '')).length;
 
+  const turunan = turunanKeuangan(F, stats.kapasitas, range);
   const cards: StatCardData[] = [
     { label: 'Pendapatan Kotor', value: fmtRpShort(F ? F.pendapatanKotor : 0), spark: F ? F.incSeries : [], bg: G.ownPrimary, onDark: true },
     { label: 'Laba Bersih', value: fmtRpShort(F ? F.labaBersih : 0), spark: F ? F.labaSeries : [], bg: G.ownPrimary, onDark: true },
@@ -26,7 +28,7 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
     { label: 'Kamar Kosong', value: String(stats.kosong ?? 0), spark: moveIn, bg: G.ownGray, onDark: true },
     { label: 'Kamar Isi', value: String(stats.occupied ?? 0), spark: moveIn, bg: G.ownRose, onDark: true },
     { label: 'Tiket Aktif', value: String(tiketAktif), spark: [], bg: G.ownGray, onDark: true },
-    { label: 'Total Diskon', value: fmtRpShort(F ? F.diskonTotal : 0), spark: F ? F.diskonSeries : [], bg: G.ownGray, onDark: true }
+    { label: 'Total Diskon', value: fmtRpShort(F ? F.diskonTotal : 0), sub: diskonSub(turunan), spark: F ? F.diskonSeries : [], bg: G.ownGray, onDark: true }
   ];
 
   const opex = F ? topEntries(F.opexBy, 6).map((e, i) => ({ t: shortAcct(e[0]), value: e[1], c: PAL.owner[i % 4] })) : [];
@@ -53,7 +55,10 @@ export default function OwnerOverview({ data, finance: F, period, from, to }: Ov
 
   return (
     <div className="view">
-      <StatGrid cards={cards} cols={8} />
+      <StatGrid cards={cards.slice(0, 6)} cols={6} />
+      <div className="mt">
+        <StatGrid cards={[...cards.slice(6), ...kartuOwner(kpi, turunan, F ? F.labaBersih : 0)]} cols={6} />
+      </div>
 
       <Reveal tier={1} className="grid row-3 mt">
         <DonutBlock label="Komposisi OPEX" segs={opex} money centerLabel="Total OPEX" />

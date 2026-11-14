@@ -1,5 +1,5 @@
 import { createInsertHandler, type InsertConfig } from './helpers';
-import { parseDateISO, parseRupiahOptional, normalizePhone, required } from '../../core/validate';
+import { parseDateISO, parseDateTimeLocal, parseRupiahOptional, normalizePhone, required } from '../../core/validate';
 
 /* Wave 2 migrasi Sheets → Turso: dulu append ke Log Marketing → 'Log Leads Harian'!A:L.
    Sekarang INSERT ke tabel `leads`. Pemetaan kolom sheet → Turso:
@@ -12,8 +12,16 @@ import { parseDateISO, parseRupiahOptional, normalizePhone, required } from '../
 export const leadsInsertCfg: InsertConfig = {
   table: 'leads',
   target: 'Turso → leads',
-  buildRow: (values) => ({
-    tanggal: parseDateISO(String(values.tanggal ?? '')),
+  buildRow: (values) => {
+    const masukPada = parseDateTimeLocal(String(values.masukPada ?? ''));
+    const chatPertamaPada = values.chatPertamaPada ? parseDateTimeLocal(String(values.chatPertamaPada)) : null;
+    if (chatPertamaPada && chatPertamaPada < masukPada) {
+      throw new Error('Waktu chat pertama tidak boleh lebih awal dari waktu lead masuk.');
+    }
+    return {
+    tanggal: masukPada.slice(0, 10),
+    masuk_pada: masukPada,
+    chat_pertama_pada: chatPertamaPada,
     nama_leads: required(values.namaLeads, 'Nama Leads'),
     no_hp_wa: normalizePhone(String(values.noHp ?? '')),
     sumber_leads: required(values.sumberLeads, 'Sumber Leads'),
@@ -25,7 +33,8 @@ export const leadsInsertCfg: InsertConfig = {
     tindak_lanjut: String(values.tindakLanjut ?? '').trim(),
     pic: String(values.picCs ?? '').trim(),
     tanggal_fu: values.waktuFollowUp ? parseDateISO(String(values.waktuFollowUp)) : null
-  })
+    };
+  }
 };
 
 export const submitLeads = createInsertHandler(leadsInsertCfg);

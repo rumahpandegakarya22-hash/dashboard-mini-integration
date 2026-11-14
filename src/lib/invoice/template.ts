@@ -161,13 +161,20 @@ function gaya(): string {
   `;
 }
 
-function layout(o: { noInv: string; tanggal: string; kepada: string; items: string; note: string; rekap: string }): string {
+/** Cap diagonal untuk invoice yang di-void: PDF yang sudah di tangan penghuni jadi jelas tidak berlaku. */
+function blokVoid(alasan?: string): string {
+  if (alasan === undefined) return '';
+  return `<div class="watermark" style="left:0;right:0;top:95mm;width:auto;opacity:1;text-align:center;transform:rotate(-20deg);font:700 26mm Arial,sans-serif;letter-spacing:2mm;color:rgba(200,30,30,.22);z-index:2;">DIBATALKAN</div>`;
+}
+
+function layout(o: { noInv: string; tanggal: string; kepada: string; items: string; note: string; rekap: string; voidAlasan?: string }): string {
   return `<!DOCTYPE html>
 <html lang="id">
 <head><meta charset="UTF-8"><title>${esc(o.noInv)}</title><style>${gaya()}</style></head>
 <body>
   <div class="halaman">
     ${blokWatermark()}
+    ${blokVoid(o.voidAlasan)}
 
     <div class="kepala">
       <div>
@@ -193,7 +200,7 @@ function layout(o: { noInv: string; tanggal: string; kepada: string; items: stri
     <div class="bawah">
       <div class="note">
         <div class="serif label" style="padding-top:0">Note:</div>
-        <div class="note-isi">${o.note}</div>
+        <div class="note-isi">${o.note}${o.voidAlasan ? `<br><b>Invoice ini DIBATALKAN.</b> Alasan: ${esc(o.voidAlasan)}` : ''}</div>
       </div>
       <div class="rekap">
         <table>${o.rekap}</table>
@@ -235,7 +242,7 @@ function blokRekap(subtotal: number | null, pajak: number | null, diskon: number
   );
 }
 
-export function renderInvoiceSewa(inv: InvoiceSewa): string {
+export function renderInvoiceSewa(inv: InvoiceSewa, voidAlasan?: string): string {
   const bulan = Number(inv.jumlah_bulan) || 0;
 
   // Tiga baris ini SELALU tampil walau nilainya 0, mengikuti bentuk tetap desain.
@@ -255,11 +262,12 @@ export function renderInvoiceSewa(inv: InvoiceSewa): string {
     kepada: blokKepada(inv.nama, [`Nomor Kamar: ${inv.no_kamar}`]),
     items,
     note,
-    rekap: blokRekap(inv.subtotal, inv.pajak, inv.diskon, inv.grand_total)
+    rekap: blokRekap(inv.subtotal, inv.pajak, inv.diskon, inv.grand_total),
+    voidAlasan
   });
 }
 
-export function renderInvoiceDp(inv: InvoiceDp): string {
+export function renderInvoiceDp(inv: InvoiceDp, voidAlasan?: string): string {
   const items = barisItem({
     nama: 'Down Payment',
     hargaUnit: rp(inv.harga_kamar),
@@ -273,6 +281,7 @@ export function renderInvoiceDp(inv: InvoiceDp): string {
     kepada: blokKepada(inv.nama, [`Tipe Kamar: ${inv.tipe_kamar || '-'}`, `Nomor: ${inv.no_kamar}`]),
     items,
     note: 'Harap bukti disimpan untuk proses check-in.',
-    rekap: blokRekap(inv.subtotal, inv.pajak, inv.diskon, inv.grand_total)
+    rekap: blokRekap(inv.subtotal, inv.pajak, inv.diskon, inv.grand_total),
+    voidAlasan
   });
 }

@@ -1,40 +1,36 @@
 
 
-import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
+import { StatGrid } from '@/components/ui/StatCard';
 import Reveal from '@/components/ui/Reveal';
 import ChartCard, { EmptyCard } from '@/components/charts/ChartCard';
 import Bars from '@/components/charts/Bars';
 import AreaLine from '@/components/charts/AreaLine';
 import Funnel from '@/components/charts/Funnel';
-import Table from '@/components/ui/Table';
+import DataTablePage from '../pages/DataTablePage';
 import DonutBlock from '../DonutBlock';
 import { BarStopsWarm } from '../BarStops';
-import { G, PAL } from '@/config/dashboard-palette';
+import { PAL } from '@/config/dashboard-palette';
 import { COLS } from '@/config/dashboard-cols';
 import { seriesByDate } from '@/lib/dashboard/views/finance';
-import { monthlyCount, filterByPeriod } from '@/lib/dashboard/format';
+import { monthlyCount, filterByPeriod, fmtNum } from '@/lib/dashboard/format';
 import type { OverviewProps } from './shared';
+import { kartuMarketing } from './kpi-cards';
 
-export default function MarketingOverview({ data, period, from, to, range }: OverviewProps) {
-  const { leads, survey, penghuni, stats } = data;
+export default function MarketingOverview({ data, period, from, to, range, kpi }: OverviewProps) {
+  const { leads, survey } = data;
 
   const leadsP = filterByPeriod(leads, 'tanggal', period, from, to);
-  const surveyP = filterByPeriod(survey, 'tanggal', period, from, to);
   const nLeads = leadsP.length;
-  const nSurvey = surveyP.length;
-  const konv = nLeads ? Math.round((nSurvey / nLeads) * 100) : 0;
-
   const leadSpark = monthlyCount(leadsP, 'tanggal');
-  const survSpark = monthlyCount(surveyP, 'tanggal');
-  const moveIn = monthlyCount(filterByPeriod(penghuni, 'masuk', period, from, to), 'masuk');
 
-  const cards: StatCardData[] = [
-    { label: 'Leads', value: String(nLeads), spark: leadSpark, bg: G.mkLeads },
-    { label: 'Survey', value: String(nSurvey), spark: survSpark, bg: G.mkSurvey, onDark: true },
-    { label: 'Konversi Leads-Survey', value: konv + ' %', spark: survSpark, bg: G.mkConv },
-    { label: 'Unit Tersewa', value: String(stats.occupied ?? 0), spark: moveIn, bg: G.mkUnit },
-    { label: 'CAC', value: '—', spark: leadSpark, bg: G.mkCac }
-  ];
+  // Funnel konten: View -> Action (like + komentar + share) -> Leads. Bentuk pakai skala log
+  // karena View ribuan dan Leads puluhan; angka asli tetap tampil di samping.
+  const view = kpi.marketing?.view ?? 0;
+  const aksi = kpi.marketing?.aksi ?? 0;
+  const leadsFunnel = kpi.marketing?.leads ?? nLeads;
+  const bentuk = (v: number) => Math.log10(v + 1) + 0.15;
+  const rasio = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
+  const kartu = kartuMarketing(kpi, leadSpark);
 
   // Komposisi channel dari kolom Asal/Sumber leads (periode)
   const chMap: Record<string, number> = {};
@@ -49,58 +45,68 @@ export default function MarketingOverview({ data, period, from, to, range }: Ove
 
   const ts = seriesByDate(
     [
-      { name: 'Leads', rows: leads, dateKey: 'tanggal' },
-      { name: 'Survey', rows: survey, dateKey: 'tanggal' }
+      { name: 'Leads', rows: leads, dateKey: 'tanggal' }
     ],
     range
   );
 
   return (
     <div className="view">
-      <StatGrid cards={cards} cols={5} />
+      <StatGrid cards={kartu.baris1} cols={4} />
+      <div className="mt">
+        <StatGrid cards={kartu.baris2} cols={3} />
+      </div>
 
       <Reveal tier={1} className="grid row-2 mt">
         {ts ? (
           <ChartCard
-            title="Tren Leads & Survey"
-            legend={[{ t: 'Leads', c: 'var(--teal)' }, { t: 'Survey', c: 'var(--text-2)' }]}
+            title="Tren Leads"
+            legend={[{ t: 'Leads', c: 'var(--teal)' }]}
           >
             <AreaLine seriesList={ts.seriesList} xLabels={ts.labels} names={ts.names} gradId="lcMk" />
           </ChartCard>
         ) : (
-          <EmptyCard title="Tren Leads & Survey" />
+          <EmptyCard title="Tren Leads" />
         )}
         <DonutBlock label="Komposisi Leads Channel" segs={channelDonut} />
       </Reveal>
 
       <Reveal tier={2} className="grid row-2 mt">
-        {nLeads || nSurvey ? (
+        {view || aksi || leadsFunnel ? (
           <ChartCard
-            title="Funnel Penjualan"
-            legend={[{ t: 'Leads', c: '#9a8a78' }, { t: 'Survey', c: '#d8c8b0' }]}
+            title="Funnel Konten"
+            legend={[{ t: 'View', c: '#7a6f63' }, { t: 'Action', c: '#9a8a78' }, { t: 'Leads', c: '#b8a890' }]}
           >
             <div className="funnel-wrap">
               <Funnel
                 stages={[
-                  { value: nLeads || 1 },
-                  { value: nSurvey || 1 },
-                  { value: Math.max(1, Math.round(nSurvey * 0.6)) }
+                  { label: 'View', value: view, shape: bentuk(view) },
+                  { label: 'Action', value: aksi, shape: bentuk(aksi) },
+                  { label: 'Leads', value: leadsFunnel, shape: bentuk(leadsFunnel) }
                 ]}
               />
               <div className="funnel-stats">
                 <div>
-                  <span>Leads masuk</span>
-                  <b>{nLeads}</b>
+                  <span>View (jangkauan)</span>
+                  <b>{fmtNum(view, '')}</b>
                 </div>
                 <div>
-                  <span>Survey / Viewing</span>
-                  <b>{nSurvey}</b>
+                  <span>Action (like, komentar, share)</span>
+                  <b>
+                    {fmtNum(aksi, '')} <small>· {rasio(aksi, view)} % dari View</small>
+                  </b>
+                </div>
+                <div>
+                  <span>Leads</span>
+                  <b>
+                    {fmtNum(leadsFunnel, '')} <small>· {rasio(leadsFunnel, aksi)} % dari Action</small>
+                  </b>
                 </div>
               </div>
             </div>
           </ChartCard>
         ) : (
-          <EmptyCard title="Funnel Penjualan" />
+          <EmptyCard title="Funnel Konten" />
         )}
 
         {chTop.length ? (
@@ -118,7 +124,7 @@ export default function MarketingOverview({ data, period, from, to, range }: Ove
       </Reveal>
 
       <Reveal tier={3}>
-        <Table title="DAFTAR FOLLOW UP" cols={COLS.leads} data={leadsP.slice(0, 4)} periodLabel={period} />
+        <DataTablePage title="DAFTAR FOLLOW UP" cols={COLS.leads} data={leadsP.slice(0, 4)} period={period} />
       </Reveal>
     </div>
   );

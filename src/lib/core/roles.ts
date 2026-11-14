@@ -1,4 +1,5 @@
 // Satu daftar role untuk Dashboard, Mini App Ops, dan Inventory Stock.
+// Pengawas hanya ada di Dashboard (baca semua halaman seperti Owner), bukan di Mini App Ops.
 export const ROLES = ['owner', 'pengawas', 'admin_finance', 'operasional', 'sales', 'marketing'] as const;
 export type Role = (typeof ROLES)[number];
 
@@ -11,9 +12,19 @@ export const ROLE_LABEL: Record<Role, string> = {
   marketing: 'Marketing'
 };
 
-/** Role yang boleh masuk Dashboard (Pengawas hanya ada di Mini App Ops). */
-export const DASHBOARD_ROLES = ['owner', 'admin_finance', 'marketing', 'operasional', 'sales'] as const;
+/** Role yang boleh masuk Dashboard. */
+export const DASHBOARD_ROLES = ['owner', 'pengawas', 'admin_finance', 'marketing', 'operasional', 'sales'] as const;
 export type DashboardRole = (typeof DASHBOARD_ROLES)[number];
+
+/** Role yang boleh masuk Mini App Ops (semua kecuali Pengawas). */
+export const OPS_ROLES = ROLES.filter((r) => r !== 'pengawas') as Exclude<Role, 'pengawas'>[];
+
+export function isOpsRole(r: unknown): r is Exclude<Role, 'pengawas'> {
+  return typeof r === 'string' && (OPS_ROLES as readonly string[]).includes(r);
+}
+
+/** Role yang melihat semua halaman Dashboard tanpa redaksi data (Owner dan Pengawas). */
+export const isFullView = (r: unknown): boolean => r === 'owner' || r === 'pengawas';
 
 /** Kunci lama yang masih tersimpan di Clerk sebelum migrasi → kunci baru. */
 export const LEGACY_ROLE_ALIAS: Record<string, Role> = {
@@ -38,11 +49,10 @@ export function isDashboardRole(r: unknown): r is DashboardRole {
   return typeof r === 'string' && (DASHBOARD_ROLES as readonly string[]).includes(r);
 }
 
-/** Modul yang boleh diakses tiap role (owner & pengawas: semua). */
+/** Modul yang boleh diakses tiap role (owner: semua). */
 export const MODULE_ACCESS: Record<string, Role[]> = {
   'penghuni-baru': ['admin_finance'],
   'pembayaran-sewa': ['admin_finance'],
-  'pindah-kamar': ['admin_finance'],
   'checkout': ['admin_finance'],
   'pengeluaran': ['admin_finance'],
   'pendapatan-non-sewa': ['admin_finance'],
@@ -62,11 +72,13 @@ export const MODULE_ACCESS: Record<string, Role[]> = {
   'wo-cleaning': ['operasional'],
   'pemakaian-stok-cleaning': ['operasional'],
   'pemakaian-stok-maintenance': ['operasional'],
+  'kepuasan-penghuni': ['admin_finance'],
+  'kamar-siap': ['operasional'],
   'daily-task': ['admin_finance', 'sales', 'marketing', 'operasional']
 };
 
 export function canAccess(role: Role, moduleId: string): boolean {
-  if (role === 'owner' || role === 'pengawas') return true;
+  if (role === 'owner') return true;
   return (MODULE_ACCESS[moduleId] || []).includes(role);
 }
 
@@ -83,7 +95,7 @@ export const ROLE_DIVISI: Partial<Record<Role, string[]>> = {
 
 /** Inventory Stock: Sales dan Marketing tidak memakainya. */
 export const canUseInventory = (r: Role | null | undefined): boolean =>
-  r === 'owner' || r === 'pengawas' || r === 'admin_finance' || r === 'operasional';
+  r === 'owner' || r === 'admin_finance' || r === 'operasional';
 
 /** Pre-Check In/Out Form (inspeksi kondisi kamar): Owner dan Operasional saja. */
 export const canUsePreForm = (r: Role | null | undefined): boolean => r === 'owner' || r === 'operasional';

@@ -1,7 +1,7 @@
 
 
 import Donut from '@/components/charts/Donut';
-import { EmptyCard } from '@/components/charts/ChartCard';
+import { EmptyCard, GrpPill, type Grp } from '@/components/charts/ChartCard';
 import { fmtNum } from '@/lib/dashboard/format';
 import { fmtRpShort } from '@/lib/dashboard/views/finance';
 
@@ -20,15 +20,18 @@ export interface DonutBlockProps {
   unit?: string;
   center?: false;
   centerLabel?: string;
+  grp?: Grp;
+  /** Baris keterangan di bawah donut (mis. total nominal). */
+  note?: string;
 }
 
-export default function DonutBlock({ label, segs, money, unit, center, centerLabel }: DonutBlockProps) {
+export default function DonutBlock({ label, segs, money, unit, center, centerLabel, grp, note }: DonutBlockProps) {
   let arr = (segs || [])
     .filter((s) => Number(s.value) > 0)
     .slice()
     .sort((a, b) => Number(b.value) - Number(a.value));
 
-  if (!arr.length) return <EmptyCard title={label} />;
+  if (!arr.length) return <EmptyCard title={label} grp={grp} />;
 
   if (arr.length > 6) {
     const head = arr.slice(0, 5);
@@ -51,9 +54,10 @@ export default function DonutBlock({ label, segs, money, unit, center, centerLab
   const centerObj = center === false ? undefined : { label: centerLabel || 'Total', value: fmtV(sum) };
 
   return (
-    <div className="card">
+    <div className={`card${grp ? ` grp-${grp}` : ''}`}>
       <div className="card__title" style={{ textAlign: 'center', marginBottom: 8 }}>
         {label}
+        <GrpPill grp={grp} />
       </div>
       <div className="donut">
         <Donut segments={segObjs} center={centerObj} />
@@ -71,6 +75,7 @@ export default function DonutBlock({ label, segs, money, unit, center, centerLab
             );
           })}
         </div>
+        {note && <div className="donut__note">{note}</div>}
       </div>
     </div>
   );

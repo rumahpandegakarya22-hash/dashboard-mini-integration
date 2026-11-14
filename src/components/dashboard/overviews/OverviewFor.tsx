@@ -13,6 +13,7 @@ const MAP = {
   marketing: MarketingOverview,
   operasional: OpsOverview,
   owner: OwnerOverview,
+  pengawas: OwnerOverview,
   sales: SalesOverview
 } as const;
 
@@ -39,6 +40,7 @@ export default function OverviewFor({
       finance={loaded.finance}
       txGrid={loaded.txGrid}
       range={loaded.range}
+      kpi={loaded.kpi}
       period={period}
       from={from}
       to={to}

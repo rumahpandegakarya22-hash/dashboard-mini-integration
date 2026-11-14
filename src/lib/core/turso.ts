@@ -1,6 +1,6 @@
 // Turso (libSQL) — database bersama dgn Dashboard Figma. Dipakai modul yang
 // per file "Mini App Improvement" pindah dari Google Sheets ke database:
-// daily task, work order/joblist, pindah kamar (rooms_transfer + occupancy_history),
+// daily task, work order/joblist,
 // dan URL dokumen upload.
 
 import { createClient, type Client } from '@libsql/client';

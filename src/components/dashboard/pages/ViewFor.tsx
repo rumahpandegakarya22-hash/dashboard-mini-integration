@@ -12,7 +12,9 @@ import {
 } from '@/lib/dashboard/views/pages';
 import InventoryOverview from '../overviews/InventoryOverview';
 import type { DashboardPageData } from '@/lib/dashboard/views/load';
+import { buildProspek } from '@/lib/dashboard/views/prospek';
 import type { DashboardRole } from '@/config/dashboard-access';
+import { isFullView } from '@/lib/core/roles';
 
 
 export interface ViewForProps {
@@ -77,21 +79,11 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
       );
 
     case 'leads':
-      // Marketing: Leads dan Survey ditumpuk — verbatim stackTables(...).
+      // Marketing berhenti di leads; survey ke atas dipantau Sales lewat Daftar Prospek.
       return (
-        <div className="view">
-          <Reveal tier={0}>
-            <DataTablePage title="DAFTAR LEADS" cols={COLS.leads} data={d.leads} period={period} />
-          </Reveal>
-          <Reveal tier={1}>
-            <DataTablePage
-              title="DAFTAR SURVEY"
-              cols={COLS.prospek}
-              data={withName(d.survey, 'nama')}
-              period={period}
-            />
-          </Reveal>
-        </div>
+        <Reveal tier={0}>
+          <DataTablePage title="DAFTAR LEADS" cols={COLS.leads} data={d.leads} period={period} />
+        </Reveal>
       );
 
     case 'konten':
@@ -114,7 +106,7 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
           <DataTablePage
             title="DAFTAR PROSPEK"
             cols={COLS.prospek}
-            data={withName(d.survey, 'nama')}
+            data={buildProspek(d.leads, d.survey, d.booking)}
             period={period}
           />
         </Reveal>
@@ -122,7 +114,7 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
 
     case 'dokumen': {
       const cols =
-        role === 'owner' ? COLS.dokumenOwner :
+        isFullView(role) ? COLS.dokumenOwner :
         role === 'operasional' ? COLS.dokumenOps :
         COLS.dokumen;
       return (
@@ -175,7 +167,7 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
         );
       }
       const title =
-        role === 'owner'
+        isFullView(role)
           ? 'LOGBOOK · SEMUA DIVISI'
           : role === 'admin_finance'
             ? 'LOGBOOK ADMIN AND FINANCE'

@@ -1,22 +1,25 @@
 
 
-import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
+import { StatGrid } from '@/components/ui/StatCard';
 import Reveal from '@/components/ui/Reveal';
 import ChartCard, { EmptyCard } from '@/components/charts/ChartCard';
 import Bars from '@/components/charts/Bars';
 import AreaLine from '@/components/charts/AreaLine';
 import Funnel from '@/components/charts/Funnel';
-import Table from '@/components/ui/Table';
+import DataTablePage from '../pages/DataTablePage';
 import DonutBlock from '../DonutBlock';
 import { BarStopsWarm } from '../BarStops';
-import { G, PAL } from '@/config/dashboard-palette';
+import { PAL } from '@/config/dashboard-palette';
 import { COLS } from '@/config/dashboard-cols';
 import { seriesByDate } from '@/lib/dashboard/views/finance';
+import { buildProspek } from '@/lib/dashboard/views/prospek';
 import { monthlyCount } from '@/lib/dashboard/format';
 import type { OverviewProps } from './shared';
+import { kartuSales } from './kpi-cards';
 
-export default function SalesOverview({ data, period, range }: OverviewProps) {
+export default function SalesOverview({ data, period, range, kpi }: OverviewProps) {
   const { booking, leads, survey, stats, retention } = data;
+  const prospek = buildProspek(leads, survey, booking);
 
   const allBooking = booking || [];
   const nLeads = leads.length;
@@ -24,29 +27,27 @@ export default function SalesOverview({ data, period, range }: OverviewProps) {
   const nBooking = allBooking.length;
   const nCancel = allBooking.filter((x) => /batal|cancel/i.test(x.status || '')).length;
   const cancelRate = nBooking ? Math.round((nCancel / nBooking) * 100) : 0;
-  const convRate = nLeads ? ((nBooking / nLeads) * 100).toFixed(1).replace('.', ',') : '0';
-
-  // AVG Durasi Sewa: lama tinggal aktual dari Historical Customer (keluar − masuk)
-  const avgDurTxt = retention && retention.avgTenure != null ? retention.avgTenure + ' bln' : '—';
 
   const bookSpark = monthlyCount(allBooking, 'tanggal');
   const survSpark = monthlyCount(survey, 'tanggal');
 
-  const cards: StatCardData[] = [
-    { label: 'Booking', value: String(nBooking), spark: bookSpark, bg: G.salePink },
-    { label: 'Cancellation Rate', value: cancelRate + ' %', spark: bookSpark, bg: G.saleRed },
-    { label: 'Conversion Rate', value: convRate + ' %', spark: survSpark, bg: G.saleGold },
-    { label: 'Retention Rate', value: retention ? retention.rate + ' %' : '—', spark: [], bg: G.salePeach },
-    { label: 'Rata-Rata Sewa', value: avgDurTxt, spark: [], bg: G.salePink },
-    { label: 'Kamar Isi', value: String(stats.occupied ?? 0), spark: [], bg: G.saleGold }
-  ];
+  // Rata-rata lama sewa: lama tinggal aktual dari Historical Customer (keluar − masuk)
+  const kartu = kartuSales(kpi, {
+    survey: nSurvey,
+    booking: nBooking,
+    cancelRate,
+    avgTenure: retention?.avgTenure ?? null,
+    okupansi: stats.okupansi ?? 0,
+    sparkSurvey: survSpark,
+    sparkBooking: bookSpark
+  });
 
   const prospekDonut = [
     { t: 'Leads', value: nLeads, c: PAL.sales[0] },
     { t: 'Booking', value: nBooking, c: PAL.sales[1] },
     { t: 'Cancel', value: nCancel, c: PAL.sales[2] }
   ];
-  const kontrak = stats.occupied || 0;
+  const checkin = stats.occupied || 0;
 
   const ts = seriesByDate(
     [
@@ -68,7 +69,10 @@ export default function SalesOverview({ data, period, range }: OverviewProps) {
 
   return (
     <div className="view">
-      <StatGrid cards={cards} cols={6} />
+      <StatGrid cards={kartu.baris1} cols={5} />
+      <div className="mt">
+        <StatGrid cards={kartu.baris2} cols={6} />
+      </div>
 
       <Reveal tier={1} className="grid row-2 mt">
         {ts ? (
@@ -92,7 +96,7 @@ export default function SalesOverview({ data, period, range }: OverviewProps) {
               { t: 'Leads', c: '#7a6f63' },
               { t: 'Survey', c: '#9a8a78' },
               { t: 'Booking', c: '#b8a890' },
-              { t: 'Kontrak', c: '#d8c8b0' }
+              { t: 'Check-in', c: '#d8c8b0' }
             ]}
           >
             <div className="funnel-wrap">
@@ -101,14 +105,14 @@ export default function SalesOverview({ data, period, range }: OverviewProps) {
                   { value: nLeads || 1 },
                   { value: nSurvey || 1 },
                   { value: nBooking || 1 },
-                  { value: kontrak || 1 }
+                  { value: checkin || 1 }
                 ]}
               />
               <div className="funnel-stats">
                 <div><span>Leads</span><b>{nLeads}</b></div>
                 <div><span>Survey</span><b>{nSurvey}</b></div>
                 <div><span>Booking</span><b>{nBooking}</b></div>
-                <div><span>Kontrak</span><b>{kontrak}</b></div>
+                <div><span>Check-in</span><b>{checkin}</b></div>
               </div>
             </div>
           </ChartCard>
@@ -130,8 +134,8 @@ export default function SalesOverview({ data, period, range }: OverviewProps) {
         )}
       </Reveal>
 
-      <Reveal tier={3}>
-        <Table title="DAFTAR PROSPEK" cols={COLS.prospek} data={survey} periodLabel={period} />
+      <Reveal tier={3} className="mt-lg">
+        <DataTablePage title="DAFTAR PROSPEK" cols={COLS.prospek} data={prospek} period={period} />
       </Reveal>
     </div>
   );

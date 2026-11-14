@@ -24,10 +24,17 @@ export function EmptyChart({ msg }: { msg?: string }) {
   return <div className="chart-empty">{msg || 'Tidak ada data pada periode ini'}</div>;
 }
 
-export function EmptyCard({ title, msg }: { title: string; msg?: string }) {
+export type Grp = 'admin' | 'finance';
+
+/** Pill penanda kelompok kerja (Admin / Finance) di judul kartu. */
+export function GrpPill({ grp }: { grp?: Grp }) {
+  return grp ? <i className="grp-pill">{grp === 'admin' ? 'Admin' : 'Finance'}</i> : null;
+}
+
+export function EmptyCard({ title, msg, grp }: { title: string; msg?: string; grp?: Grp }) {
   return (
-    <div className="card">
-      <div className="card__title">{title}</div>
+    <div className={`card${grp ? ` grp-${grp}` : ''}`}>
+      <div className="card__title">{title}<GrpPill grp={grp} /></div>
       <EmptyChart msg={msg} />
     </div>
   );
@@ -36,15 +43,17 @@ export function EmptyCard({ title, msg }: { title: string; msg?: string }) {
 export default function ChartCard({
   title,
   legend,
-  children
+  children,
+  grp
 }: {
   title: React.ReactNode;
   legend?: LegendItem[];
   children: React.ReactNode;
+  grp?: Grp;
 }) {
   return (
-    <div className="card">
-      <div className="card__title">{title}</div>
+    <div className={`card${grp ? ` grp-${grp}` : ''}`}>
+      <div className="card__title">{title}<GrpPill grp={grp} /></div>
       {children}
       {legend && <ChartLegend items={legend} />}
     </div>

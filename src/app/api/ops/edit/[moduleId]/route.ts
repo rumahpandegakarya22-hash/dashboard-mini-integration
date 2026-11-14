@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { canAccess } from '@/lib/core/roles';
-import { listEntries, saveEntry, isEditable } from '@/lib/modules/edit';
+import { listEntries, saveEntry, isEditable, isKoreksi, isVoidable, voidEntry } from '@/lib/modules/edit';
 import { writeAudit } from '@/lib/core/audit';
 
 /**
@@ -28,7 +28,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ mod
   if (g.err) return g.err;
   try {
     const entries = await listEntries(moduleId);
-    return NextResponse.json({ ok: true, entries });
+    return NextResponse.json({ ok: true, entries, koreksi: isKoreksi(moduleId), voidable: isVoidable(moduleId) });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Gagal memuat data.' }, { status: 400 });
   }
@@ -43,18 +43,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mod
   const ref = String(body?.ref || '');
   const values: Record<string, unknown> = body?.values || {};
   if (!ref) return NextResponse.json({ error: 'ref (entri yang diedit) wajib disertakan.' }, { status: 400 });
+  const aksi = body?.aksi === 'void' ? 'void' : 'simpan';
 
   const start = Date.now();
   const requestId = String(body?.requestId || `edit-${Date.now()}`);
   try {
-    const warning = await saveEntry(moduleId, ref, values);
+    const warning =
+      aksi === 'void'
+        ? await voidEntry(moduleId, ref, String(body?.alasan ?? ''))
+        : await saveEntry(moduleId, ref, values);
     await writeAudit({
       requestId,
       user: g.user!,
       moduleId,
       action: 'UPDATE',
-      target: `${moduleId} ref=${ref}`,
-      newData: values,
+      target: `${moduleId} ${aksi} ref=${ref}`,
+      newData: aksi === 'void' ? { aksi, alasan: body?.alasan } : values,
       durationSec: (Date.now() - start) / 1000,
       status: 'sukses'
     });

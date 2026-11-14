@@ -4,7 +4,6 @@ import { turso } from '@/lib/core/turso';
 import type { Role } from '@/lib/core/roles';
 
 interface Counts {
-  pindah: number;
   checkout: number;
   pengaduan: number;
 }
@@ -12,30 +11,26 @@ interface Counts {
 async function fetchCounts(): Promise<Counts> {
   try {
     const db = turso();
-    const [pindahRes, checkoutRes, pengaduanRes] = await Promise.all([
-      db.execute("SELECT COUNT(*) AS n FROM tr_pindah_request WHERE status = 'Menunggu'"),
+    const [checkoutRes, pengaduanRes] = await Promise.all([
       db.execute("SELECT COUNT(*) AS n FROM tr_checkout_request WHERE status = 'Menunggu'"),
       db.execute("SELECT COUNT(*) AS n FROM tenant_complain WHERE status NOT IN ('Selesai','Dibatalkan')")
     ]);
     return {
-      pindah: Number(pindahRes.rows[0]?.n ?? 0),
       checkout: Number(checkoutRes.rows[0]?.n ?? 0),
       pengaduan: Number(pengaduanRes.rows[0]?.n ?? 0)
     };
   } catch {
-    return { pindah: 0, checkout: 0, pengaduan: 0 };
+    return { checkout: 0, pengaduan: 0 };
   }
 }
 
 export default async function PendingAnnouncement({ role }: { role: Role }) {
-  const isAdmin = role === 'owner' || role === 'pengawas' || role === 'admin_finance';
+  const isAdmin = role === 'owner' || role === 'admin_finance';
   if (!isAdmin) return null;
 
   const counts = await fetchCounts();
   const items: { label: string; href: string; count: number }[] = [];
 
-  if (counts.pindah > 0)
-    items.push({ label: `${counts.pindah} pengajuan pindah kamar menunggu tindak lanjut`, href: '/ops/m/pindah-kamar', count: counts.pindah });
   if (counts.checkout > 0)
     items.push({ label: `${counts.checkout} pengajuan checkout menunggu tindak lanjut`, href: '/ops/m/checkout', count: counts.checkout });
   if (counts.pengaduan > 0)

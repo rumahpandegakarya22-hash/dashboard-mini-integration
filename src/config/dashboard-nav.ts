@@ -29,6 +29,23 @@ export interface RoleNav {
   pages: NavPage[];
 }
 
+const OWNER_PAGES: NavPage[] = [
+  { id: 'overview', label: 'Overview', group: 'dash', crumb: '__ROLE__' },
+  { id: 'sales', label: 'Sales', group: 'dash', crumb: 'Sales' },
+  { id: 'marketing', label: 'Marketing', group: 'dash', crumb: 'Marketing' },
+  { id: 'admin', label: 'Admin and Finance', group: 'dash', crumb: 'Admin and Finance' },
+  { id: 'operasional', label: 'Operasional', group: 'dash', crumb: 'Operasional' },
+  { id: 'penghuni', label: 'Daftar Penghuni', group: 'page', crumb: 'Daftar Penghuni' },
+  { id: 'kamar', label: 'Data Kamar', group: 'page', crumb: 'Data Kamar' },
+  { id: 'pembayaran', label: 'Data Pembayaran', group: 'page', crumb: 'Data Pembayaran' },
+  { id: 'vendor', label: 'Daftar Vendor', group: 'page', crumb: 'Daftar Vendor' },
+  { id: 'tiket', label: 'Daftar Tiket', group: 'page', crumb: 'Daftar Tiket' },
+  { id: 'waiting-list', label: 'Waiting List', group: 'page', crumb: 'Waiting List' },
+  { id: 'stok', label: 'Stok Inventory', group: 'dash', crumb: 'Stok Inventory' },
+  { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
+];
+const pagesFor = (crumb: string): NavPage[] => OWNER_PAGES.map((p) => (p.id === 'overview' ? { ...p, crumb } : p));
+
 export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
   admin_finance: {
     label: 'Admin and Finance',
@@ -47,7 +64,7 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
     sidebarName: 'Marketing',
     pages: [
       { id: 'overview', label: 'Overview', group: 'dash', crumb: 'Marketing' },
-      { id: 'leads', label: 'Leads dan Survey', group: 'page', crumb: 'Leads dan Survey' },
+      { id: 'leads', label: 'Daftar Leads', group: 'page', crumb: 'Daftar Leads' },
       { id: 'konten', label: 'Konten', group: 'page', crumb: 'Konten' },
       { id: 'promosi', label: 'Promosi', group: 'page', crumb: 'Promosi' },
       { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
@@ -77,25 +94,8 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
       { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
     ]
   },
-  owner: {
-    label: 'Owner',
-    sidebarName: 'Owner',
-    pages: [
-      { id: 'overview', label: 'Overview', group: 'dash', crumb: 'Owner' },
-      { id: 'sales', label: 'Sales', group: 'dash', crumb: 'Sales' },
-      { id: 'marketing', label: 'Marketing', group: 'dash', crumb: 'Marketing' },
-      { id: 'admin', label: 'Admin and Finance', group: 'dash', crumb: 'Admin and Finance' },
-      { id: 'operasional', label: 'Operasional', group: 'dash', crumb: 'Operasional' },
-      { id: 'penghuni', label: 'Daftar Penghuni', group: 'page', crumb: 'Daftar Penghuni' },
-      { id: 'kamar', label: 'Data Kamar', group: 'page', crumb: 'Data Kamar' },
-      { id: 'pembayaran', label: 'Data Pembayaran', group: 'page', crumb: 'Data Pembayaran' },
-      { id: 'vendor', label: 'Daftar Vendor', group: 'page', crumb: 'Daftar Vendor' },
-      { id: 'tiket', label: 'Daftar Tiket', group: 'page', crumb: 'Daftar Tiket' },
-      { id: 'waiting-list', label: 'Waiting List', group: 'page', crumb: 'Waiting List' },
-      { id: 'stok', label: 'Stok Inventory', group: 'dash', crumb: 'Stok Inventory' },
-      { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
-    ]
-  }
+  owner: { label: 'Owner', sidebarName: 'Owner', pages: pagesFor('Owner') },
+  pengawas: { label: 'Pengawas', sidebarName: 'Pengawas', pages: pagesFor('Pengawas') }
 };
 
 /** Periode filter — verbatim `PERIODS` app.js. Default lama: "Tahun ini". */

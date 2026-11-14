@@ -35,7 +35,7 @@ export const COLS: Record<string, TableCol[]> = {
     jatuhTempo: [{key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"tempo",label:"Jatuh Tempo"},{key:"sisa",label:"Sisa Hari"},{key:"tagihan",label:"Tagihan"}],
     vendor: [{key:"name",label:"Nama Vendor"},{key:"kategori",label:"Kategori"},{key:"kontak",label:"Nomor Telepon"},{key:"hasil",label:"Hasil"},{key:"aksi",label:"WhatsApp"}],
     vendorOps: [{key:"name",label:"Nama Vendor"},{key:"kategori",label:"Kategori"},{key:"kontak",label:"Nomor Telepon"},{key:"hasil",label:"Hasil"},{key:"aksi",label:"WhatsApp"}],
-    leads:  [{key:"id",label:"ID"},{key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"asal",label:"Asal"},{key:"tanggal",label:"Tanggal"},{key:"status",label:"Status"}],
+    leads:  [{key:"id",label:"ID"},{key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"asal",label:"Asal"},{key:"tanggal",label:"Tanggal"},{key:"status",label:"Status"},{key:"chatLead",label:"Chat"}],
     konten: [{key:"id",label:"ID"},{key:"tanggal",label:"Tanggal Post"},{key:"platform",label:"Platform"},{key:"tipe",label:"Tipe"},{key:"name",label:"Judul/Caption"},{key:"jam",label:"Jam"},{key:"status",label:"Status"},{key:"likes",label:"Likes"},{key:"komentar",label:"Komentar"},{key:"share",label:"Share/Saves"},{key:"reach",label:"Reach"},{key:"er",label:"ER"}],
     promosi: [{key:"id",label:"ID"},{key:"name",label:"Nama Promosi"},{key:"platform",label:"Platform"},{key:"tipe",label:"Tipe"},{key:"mulai",label:"Mulai"},{key:"selesai",label:"Selesai"},{key:"budget",label:"Budget"},{key:"spend",label:"Spend Aktual"},{key:"targetLeads",label:"Target Leads"},{key:"leadsAktual",label:"Leads Aktual"},{key:"booking",label:"Booking"},{key:"cpl",label:"CPL"},{key:"roi",label:"ROI"},{key:"status",label:"Status"}],
     tiket:  [{key:"id",label:"ID"},{key:"pekerjaan",label:"Pekerjaan"},{key:"jenis",label:"Jenis"},{key:"lokasi",label:"Lokasi"},{key:"tanggal",label:"Tanggal"},{key:"status",label:"Status"}],
@@ -49,7 +49,7 @@ export const COLS: Record<string, TableCol[]> = {
     ],
     // Daftar Prospek/Survey — Nomor WA (teks) + kolom Pertimbangan + Aksi (tombol WA)
     prospek: [
-    {key:"name",label:"Nama"},{key:"wa",label:"Nomor WA"},{key:"pertimbangan",label:"Pertimbangan"},
+    {key:"name",label:"Nama"},{key:"tahap",label:"Tahap"},{key:"wa",label:"Nomor WA"},{key:"pertimbangan",label:"Pertimbangan"},
     {key:"asal",label:"Asal"},{key:"tanggal",label:"Tanggal"},{key:"aksi",label:"Aksi"},
   ],
     waitingList: [

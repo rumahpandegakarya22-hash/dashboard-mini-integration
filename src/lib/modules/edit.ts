@@ -13,13 +13,8 @@
 // baris + assertHeaders) dengan 'turso-row'. Sisa yang MASIH Sheets ada di
 // config 'custom': penghuni-baru & checkout (dijadwalkan Wave 3).
 //
-// SENGAJA TIDAK ada edit utk: pembayaran-sewa & pindah-kamar (submitnya memicu
-// efek berantai — invoice/email/payment, perpindahan atomik antar tabel — edit
-// aman butuh proses void/koreksi sendiri).
-// CATATAN: inspeksi-kebersihan dulu dikecualikan karena 5 field form dipadatkan
-// jadi 4 kolom sheet sehingga tidak bisa dibalik utuh. Setelah pindah ke tabel
-// `inspeksi_kebersihan` (kolom terpisah) alasan itu HILANG — edit bisa
-// ditambahkan kapan saja, belum dilakukan agar cakupan Wave 2 tetap sempit.
+// Jurnal (aktivitas-finansial) dan pembayaran sewa TIDAK diedit di tempat: pakai
+// void + koreksi (lihat lib/koreksi.ts, modules/edit-jurnal.ts, invoice/edit.ts).
 
 import { turso, DIVISI_DB, TASK_STATUS } from '../core/turso';
 import { salinDariTemanRara } from '../teman-rara-checkin';
@@ -39,9 +34,15 @@ import { surveyInsertCfg } from './handlers/survey';
 import { leadsInsertCfg } from './handlers/leads';
 import { kontenInsertCfg } from './handlers/konten';
 import { promosiInsertCfg } from './handlers/promosi';
-import { KODE_KATEGORI } from './handlers/maintenance';
+import { KODE_KATEGORI, hitungWaktuTiket } from './handlers/maintenance';
 import { inspeksiFasilitasInsertCfg } from './handlers/inspeksi-fasilitas';
 import { fmtTanggal } from '../format-tanggal';
+import { csatInsertCfg } from './handlers/kepuasan-penghuni';
+import { aktivitasFinansialEdit } from './edit-jurnal';
+import { vendorInsertCfg } from './handlers/tambah-vendor';
+import { waitingListInsertCfg } from './handlers/tambah-waiting-list';
+import { inspeksiKebersihanInsertCfg } from './handlers/inspeksi-kebersihan';
+import { parseDateTimeLocal } from '../core/validate';
 
 export interface EditEntry {
   ref: string; // sheet: nomor baris; turso: id
@@ -74,6 +75,10 @@ interface CustomEditCfg {
   kind: 'custom';
   list: () => Promise<EditEntry[]>;
   save: (ref: string, values: Record<string, unknown>) => Promise<string | undefined | void>;
+  /** 'koreksi' = Simpan berarti void entri lama + catat entri baru (bukan menimpa). */
+  mode?: 'koreksi';
+  /** Void tanpa pengganti. Ada hanya bila modul mendukungnya. */
+  void?: (ref: string, alasan: string) => Promise<string | undefined | void>;
 }
 
 type EditCfg = TursoRowEditCfg | CustomEditCfg;
@@ -237,7 +242,7 @@ const perbaikanKorektifEdit: CustomEditCfg = {
   kind: 'custom',
   list: async () => {
     const res = await turso().execute(
-      `SELECT id_tiket, tanggal_kerusakan, tanggal_lapor, tanggal_selesai, sumber_laporan, lokasi_item, kategori,
+      `SELECT id_tiket, tanggal_kerusakan, tanggal_lapor, lapor_pada, ditindak_pada, tanggal_selesai, sumber_laporan, lokasi_item, kategori,
               penyebab, deskripsi_kerusakan, prioritas, pelaksana, vendor, biaya, status, catatan_dokumentasi
        FROM maintenance_cm ORDER BY no_urut DESC LIMIT ${LIST_LIMIT}`
     );
@@ -246,7 +251,9 @@ const perbaikanKorektifEdit: CustomEditCfg = {
       label: `${r.id_tiket} · ${fmtTanggal(r.tanggal_kerusakan)} · ${r.lokasi_item} (${r.status})`,
       values: {
         tanggalKerusakan: String(r.tanggal_kerusakan ?? ''),
-        tanggalLapor: String(r.tanggal_lapor ?? ''),
+        // Tiket lama belum punya lapor_pada: form dikosongkan, bukan ditebak dari tanggal_lapor.
+        laporPada: String(r.lapor_pada ?? '').replace(' ', 'T'),
+        ditindakPada: String(r.ditindak_pada ?? '').replace(' ', 'T'),
         tanggalSelesai: String(r.tanggal_selesai ?? ''),
         sumberLaporan: String(r.sumber_laporan ?? ''),
         lokasiItem: String(r.lokasi_item ?? ''),
@@ -266,14 +273,18 @@ const perbaikanKorektifEdit: CustomEditCfg = {
     const kategori = required(values.kategori, 'Kategori');
     const kode = KODE_KATEGORI[kategori];
     if (!kode) throw new Error(`Kategori tidak valid: "${kategori}".`);
+    const waktu = hitungWaktuTiket(values);
     const res = await turso().execute({
-      sql: `UPDATE maintenance_cm SET tanggal_kerusakan = ?, tanggal_lapor = ?, tanggal_selesai = ?, sumber_laporan = ?,
+      sql: `UPDATE maintenance_cm SET tanggal_kerusakan = ?, tanggal_lapor = ?, lapor_pada = ?,
+                   ditindak_pada = COALESCE(?, ditindak_pada), tanggal_selesai = ?, sumber_laporan = ?,
                    lokasi_item = ?, kategori = ?, kode = ?, penyebab = ?, deskripsi_kerusakan = ?, prioritas = ?,
                    pelaksana = ?, vendor = ?, biaya = ?, status = ?, catatan_dokumentasi = ?
             WHERE id_tiket = ?`,
       args: [
         parseDateISO(String(values.tanggalKerusakan ?? '')),
-        parseDateISO(String(values.tanggalLapor ?? '')),
+        waktu.laporPada.slice(0, 10),
+        waktu.laporPada,
+        waktu.ditindakPada,
         values.tanggalSelesai ? parseDateISO(String(values.tanggalSelesai)) : null,
         required(values.sumberLaporan, 'Sumber Laporan'),
         required(values.lokasiItem, 'Lokasi/Item Rusak'),
@@ -454,63 +465,6 @@ const checkoutEdit: CustomEditCfg = {
   }
 };
 
-// ---- Sheet custom: Pencatatan Pengeluaran (Transaksi A:F) ----
-// tipeAkun tidak tersimpan di sheet (cuma pengarah dropdown) → di-infer balik dari
-// nama akun debit via master Daftar Akun supaya dropdown dependen langsung hidup.
-
-// Turso-only (arahan 2026-07-19): edit langsung ke jurnal_transaksi (ref = id), bukan sheet.
-const pengeluaranEdit: CustomEditCfg = {
-  kind: 'custom',
-  list: async () => {
-    const res = await turso().execute(
-      `SELECT j.id, j.tanggal, j.nominal, j.keterangan, j.kategori,
-              d.nama_akun AS debit_nama, d.tipe_akun AS debit_tipe, k.nama_akun AS kredit_nama
-       FROM jurnal_transaksi j
-       LEFT JOIN coa d ON d.kode = j.akun_debit_kode
-       LEFT JOIN coa k ON k.kode = j.akun_kredit_kode
-       ORDER BY j.id DESC LIMIT ${LIST_LIMIT}`
-    );
-    return res.rows.map((r) => ({
-      ref: String(r.id),
-      label: `#${r.id} · ${fmtTanggal(r.tanggal)} · ${r.keterangan} · Rp${r.nominal}`,
-      values: {
-        tanggal: String(r.tanggal ?? ''),
-        tipeAkun: String(r.debit_tipe ?? ''),
-        akunDebit: String(r.debit_nama ?? ''),
-        dibayarDari: String(r.kredit_nama ?? ''),
-        nominal: String(r.nominal ?? ''),
-        keterangan: String(r.keterangan ?? ''),
-        kategori: String(r.kategori ?? '')
-      }
-    }));
-  },
-  save: async (ref, values) => {
-    const tanggal = parseDateISO(String(values.tanggal ?? ''));
-    const akunDebit = required(values.akunDebit, 'Kategori Pengeluaran');
-    const akunKredit = required(values.dibayarDari, 'Dibayar Dari');
-    const nominal = parseRupiah(values.nominal as string | number);
-    const keterangan = required(values.keterangan, 'Keterangan');
-    const kategori = required(values.kategori, 'Kategori');
-    const db = turso();
-    const kode = async (nama: string) => {
-      const r = await db.execute({ sql: 'SELECT kode FROM coa WHERE nama_akun = ?', args: [nama] });
-      return r.rows[0]?.kode ?? null;
-    };
-    const [kodeDebit, kodeKredit] = [await kode(akunDebit), await kode(akunKredit)];
-    if (kodeDebit === null || kodeKredit === null) {
-      const missing = [kodeDebit === null ? akunDebit : null, kodeKredit === null ? akunKredit : null].filter(Boolean);
-      throw new Error(`Akun "${missing.join('", "')}" tidak ditemukan di COA.`);
-    }
-    const res = await db.execute({
-      sql: `UPDATE jurnal_transaksi SET tanggal = ?, akun_debit_kode = ?, akun_kredit_kode = ?,
-                   nominal = ?, keterangan = ?, kategori = ?
-            WHERE id = ?`,
-      args: [tanggal, kodeDebit, kodeKredit, nominal, keterangan, kategori, Number(ref)]
-    });
-    if (res.rowsAffected === 0) throw new Error('Transaksi tidak ditemukan (mungkin sudah dihapus).');
-  }
-};
-
 // ---- Turso custom: Feedback (2 tabel — tenant_complain & feedback) ----
 
 const isKomplain = (kategori: string) => /komplain|complain/i.test(kategori);
@@ -599,6 +553,35 @@ const feedbackEdit: CustomEditCfg = {
   }
 };
 
+// ---- Turso: Kamar Siap Sewa (ubah waktu kamar siap pada checkout yang sudah ditandai) ----
+
+const kamarSiapEdit: CustomEditCfg = {
+  kind: 'custom',
+  list: async () => {
+    const res = await turso().execute(
+      `SELECT id, no_kamar, penghuni_label, tanggal_checkout, kamar_siap_pada FROM checkout_log
+       WHERE kamar_siap_pada IS NOT NULL ORDER BY kamar_siap_pada DESC LIMIT ${LIST_LIMIT}`
+    );
+    return res.rows.map((r) => ({
+      ref: String(r.id),
+      label: `Kamar ${r.no_kamar} - ${r.penghuni_label} (checkout ${fmtTanggal(r.tanggal_checkout)})`,
+      values: {
+        checkout: String(r.id),
+        kamarSiapPada: String(r.kamar_siap_pada ?? '').replace(' ', 'T')
+      }
+    }));
+  },
+  save: async (ref, values) => {
+    const siapPada = parseDateTimeLocal(String(values.kamarSiapPada ?? ''));
+    const row = (await turso().execute({ sql: 'SELECT tanggal_checkout FROM checkout_log WHERE id = ?', args: [Number(ref)] })).rows[0];
+    if (!row) throw new Error('Data checkout tidak ditemukan.');
+    if (siapPada.slice(0, 10) < String(row.tanggal_checkout).slice(0, 10)) {
+      throw new Error('Waktu kamar siap tidak boleh lebih awal dari tanggal checkout.');
+    }
+    await turso().execute({ sql: 'UPDATE checkout_log SET kamar_siap_pada = ? WHERE id = ?', args: [siapPada, Number(ref)] });
+  }
+};
+
 // ---- Registry edit config ----
 
 export const EDIT_CONFIGS: Record<string, EditCfg> = {
@@ -607,7 +590,31 @@ export const EDIT_CONFIGS: Record<string, EditCfg> = {
   'wo-cleaning': workOrderEdit('Cleaning'),
   'penghuni-baru': penghuniBaruEdit,
   checkout: checkoutEdit,
-  pengeluaran: pengeluaranEdit,
+  'aktivitas-finansial': aktivitasFinansialEdit,
+  'tambah-vendor': {
+    kind: 'turso-row',
+    insert: vendorInsertCfg,
+    fieldByColumn: { nama_vendor: 'nama_vendor', kategori: 'kategori', nomor_telp: 'nomor_telp', hasil: 'hasil' },
+    labelFields: ['nama_vendor', 'kategori']
+  },
+  'tambah-waiting-list': {
+    kind: 'turso-row',
+    insert: waitingListInsertCfg,
+    fieldByColumn: {
+      nama: 'nama', nomor_whatsapp: 'nomor_whatsapp', tipe: 'tipe', rencana_tanggal: 'rencana_tanggal',
+      budget_max: 'budget_max', status: 'status', keterangan: 'keterangan'
+    },
+    labelFields: ['nama', 'status']
+  },
+  'inspeksi-kebersihan': {
+    kind: 'turso-row',
+    insert: inspeksiKebersihanInsertCfg,
+    fieldByColumn: {
+      tanggal: 'tanggal', area: 'area', hasil_kondisi: 'hasilKondisi', temuan: 'temuan',
+      tindak_lanjut: 'tindakLanjut', petugas: 'petugas'
+    },
+    labelFields: ['tanggal', 'area', 'hasilKondisi']
+  },
   feedback: feedbackEdit,
   survey: {
     kind: 'turso-row',
@@ -633,7 +640,8 @@ export const EDIT_CONFIGS: Record<string, EditCfg> = {
     kind: 'turso-row',
     insert: leadsInsertCfg,
     fieldByColumn: {
-      tanggal: 'tanggal',
+      masuk_pada: 'masukPada',
+      chat_pertama_pada: 'chatPertamaPada',
       nama_leads: 'namaLeads',
       no_hp_wa: 'noHp',
       sumber_leads: 'sumberLeads',
@@ -646,7 +654,7 @@ export const EDIT_CONFIGS: Record<string, EditCfg> = {
       pic: 'picCs',
       tanggal_fu: 'waktuFollowUp'
     },
-    labelFields: ['tanggal', 'namaLeads', 'statusLeads']
+    labelFields: ['masukPada', 'namaLeads', 'statusLeads']
   },
   konten: {
     kind: 'turso-row',
@@ -665,6 +673,7 @@ export const EDIT_CONFIGS: Record<string, EditCfg> = {
       komentar: 'komentar',
       share_saves: 'shareSaves',
       reach: 'reach',
+      biaya_produksi: 'biayaProduksi',
       catatan: 'catatan'
     },
     labelFields: ['tanggalPost', 'platform', 'judulCaption']
@@ -688,6 +697,13 @@ export const EDIT_CONFIGS: Record<string, EditCfg> = {
     },
     labelFields: ['tanggalMulai', 'namaPromosi', 'status']
   },
+  'kepuasan-penghuni': {
+    kind: 'turso-row',
+    insert: csatInsertCfg,
+    fieldByColumn: { periode: 'periode', id_penghuni: 'penghuni', skor: 'skor', komentar: 'komentar' },
+    labelFields: ['periode', 'penghuni', 'skor']
+  },
+  'kamar-siap': kamarSiapEdit,
   'perawatan-preventif': perawatanPreventifEdit,
   'perbaikan-korektif': perbaikanKorektifEdit,
   'inspeksi-fasilitas': {
@@ -731,6 +747,7 @@ function tursoRowToValues(
       const m = v.match(/(\d{1,2}):(\d{2})/);
       v = m ? `${m[1].padStart(2, '0')}:${m[2]}` : v;
     }
+    if (t === 'datetime' && v) v = v.replace(' ', 'T').slice(0, 16);
     if (t === 'number' && v) v = v.replace(/[^0-9-]/g, '');
     values[fieldName] = v;
   }
@@ -778,4 +795,21 @@ export async function saveEntry(moduleId: string, ref: string, values: Record<st
   });
   if (res.rowsAffected === 0) throw new Error(`Entri ${ref} tidak ditemukan.`);
   return undefined;
+}
+
+/** Modul ini koreksi (bukan timpa)? */
+export function isKoreksi(moduleId: string): boolean {
+  const cfg = EDIT_CONFIGS[moduleId];
+  return cfg?.kind === 'custom' && cfg.mode === 'koreksi';
+}
+
+export function isVoidable(moduleId: string): boolean {
+  const cfg = EDIT_CONFIGS[moduleId];
+  return cfg?.kind === 'custom' && typeof cfg.void === 'function';
+}
+
+export async function voidEntry(moduleId: string, ref: string, alasan: string): Promise<string | undefined> {
+  const cfg = EDIT_CONFIGS[moduleId];
+  if (!cfg || cfg.kind !== 'custom' || !cfg.void) throw new Error('Modul ini tidak mendukung void.');
+  return (await cfg.void(ref, alasan)) || undefined;
 }

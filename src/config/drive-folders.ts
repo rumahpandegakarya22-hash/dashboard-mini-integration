@@ -26,6 +26,7 @@ import type { DashboardRole } from './dashboard-access';
 
 export const DRIVE_FOLDER_BY_ROLE: Record<DashboardRole, string | undefined> = {
   owner: process.env.DRIVE_FOLDER_ROLE_OWNER,
+  pengawas: undefined, // baca saja, tanpa pembuatan dokumen
   admin_finance: process.env.DRIVE_FOLDER_ROLE_ADMIN,
   marketing: process.env.DRIVE_FOLDER_ROLE_MARKETING,
   operasional: process.env.DRIVE_FOLDER_ROLE_OPERASIONAL,

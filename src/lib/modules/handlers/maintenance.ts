@@ -1,5 +1,5 @@
 import { turso } from '../../core/turso';
-import { parseDateISO, parseRupiah, required } from '../../core/validate';
+import { nowWib, parseDateISO, parseDateTimeLocal, parseRupiah, required } from '../../core/validate';
 import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 
@@ -137,9 +137,24 @@ export const submitPerawatanPreventif: SubmitHandler = async (values, ctx) => {
   };
 };
 
+/**
+ * Waktu laporan masuk dan penindakan tiket korektif (response time = ditindak - lapor).
+ * ditindak otomatis = sekarang bila status "Proses" dan belum diisi; null = jangan ubah/isi.
+ */
+export function hitungWaktuTiket(values: Record<string, unknown>): { laporPada: string; ditindakPada: string | null } {
+  const laporPada = parseDateTimeLocal(String(values.laporPada ?? ''));
+  let ditindakPada = values.ditindakPada ? parseDateTimeLocal(String(values.ditindakPada)) : null;
+  if (!ditindakPada && String(values.status ?? '') === 'Proses') ditindakPada = nowWib();
+  if (ditindakPada && ditindakPada < laporPada) {
+    throw new Error('Waktu mulai ditindak tidak boleh lebih awal dari waktu laporan masuk.');
+  }
+  return { laporPada, ditindakPada };
+}
+
 export const submitPerbaikanKorektif: SubmitHandler = async (values, ctx) => {
   const tanggalKerusakan = parseDateISO(String(values.tanggalKerusakan ?? ''));
-  const tanggalLapor = parseDateISO(String(values.tanggalLapor ?? ''));
+  const { laporPada, ditindakPada } = hitungWaktuTiket(values);
+  const tanggalLapor = laporPada.slice(0, 10);
   const tanggalSelesai = values.tanggalSelesai ? parseDateISO(String(values.tanggalSelesai)) : null;
   const sumberLaporan = required(values.sumberLaporan, 'Sumber Laporan');
   const lokasiItem = required(values.lokasiItem, 'Lokasi/Item Rusak');
@@ -160,9 +175,9 @@ export const submitPerbaikanKorektif: SubmitHandler = async (values, ctx) => {
     'K',
     kode,
     mmYY(tanggalLapor),
-    ['tanggal_kerusakan', 'tanggal_lapor', 'tanggal_selesai', 'sumber_laporan', 'lokasi_item', 'kategori',
+    ['tanggal_kerusakan', 'tanggal_lapor', 'lapor_pada', 'ditindak_pada', 'tanggal_selesai', 'sumber_laporan', 'lokasi_item', 'kategori',
      'penyebab', 'deskripsi_kerusakan', 'prioritas', 'pelaksana', 'vendor', 'biaya', 'status', 'catatan_dokumentasi'],
-    [tanggalKerusakan, tanggalLapor, tanggalSelesai, sumberLaporan, lokasiItem, kategori,
+    [tanggalKerusakan, tanggalLapor, laporPada, ditindakPada, tanggalSelesai, sumberLaporan, lokasiItem, kategori,
      penyebab, deskripsi, prioritas, pelaksana, vendor, biaya || null, status, catatan]
   );
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { motion, animate } from 'framer-motion';
-import Sparkline from '@/components/charts/Sparkline';
 import { trendBadge } from '@/lib/dashboard/format';
 
 /** Ubah warna hex dalam string gradien jadi rgba dengan alpha — verbatim `glassify()`. */
@@ -70,6 +69,12 @@ export interface StatCardData {
   /** Gradien latar kartu. */
   bg: string;
   onDark?: boolean;
+  /** Baris keterangan di bawah nilai (target, satuan kedua, konteks). */
+  sub?: string;
+  /** Penanda kelompok kerja (Admin / Finance) untuk kartu satu halaman multi-divisi. */
+  grp?: 'admin' | 'finance';
+  /** 0-100: bar pencapaian tipis di dasar kartu. */
+  progress?: number | null;
 }
 
 export function StatCard(c: StatCardData & { index?: number }) {
@@ -77,18 +82,24 @@ export function StatCard(c: StatCardData & { index?: number }) {
   const t = hasSeries ? trendBadge(c.spark) : c.badge ? { badge: c.badge, dir: c.dir || 'up' } : null;
 
   const up = t ? t.dir !== 'down' : true;
-  const col = up ? '#13a05f' : '#e23d3d';
   const arrow = up ? '▲' : '▼';
 
   return (
     <motion.article
-      className={`stat-card${c.onDark ? ' on-dark' : ''}`}
+      className={`stat-card${c.onDark ? ' on-dark' : ''}${c.grp ? ` grp grp-${c.grp}` : ''}${t ? ' has-badge' : ''}`}
       style={{ background: glassify(c.bg, 0.58), position: 'relative' }}
       initial={{ opacity: 0, y: 10, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, delay: Math.min((c.index ?? 0) * 0.04, 0.32), ease: [0.22, 0.61, 0.36, 1] }}
     >
-      <span className="stat-card__label">{c.label}</span>
+      <span className="stat-card__head">
+        <span className="stat-card__label">{c.label}</span>
+        {t && (
+          <span className={`stat-card__badge ${up ? 'up' : 'down'}`} title="Dibanding periode sebelumnya">
+            {arrow} {t.badge}
+          </span>
+        )}
+      </span>
       <motion.span
         className="stat-card__value"
         initial={{ opacity: 0, y: 6 }}
@@ -97,32 +108,12 @@ export function StatCard(c: StatCardData & { index?: number }) {
       >
         <CountUpValue value={c.value} delay={Math.min((c.index ?? 0) * 0.04, 0.32) + 0.08} />
       </motion.span>
-      {t && (
-        <span
-          className="stat-card__badge"
-          style={{
-            position: 'absolute',
-            right: 12,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 3,
-            color: col,
-            background: 'var(--badge-bg,rgba(255,255,255,.22))',
-            padding: '3px 8px',
-            borderRadius: 999,
-            fontWeight: 700,
-            fontSize: 11,
-            lineHeight: 1
-          }}
-        >
-          {arrow} {t.badge}
+      {c.sub && <span className="stat-card__sub">{c.sub}</span>}
+      {c.progress != null && (
+        <span className="stat-card__bar" aria-hidden>
+          <i style={{ width: `${Math.max(0, Math.min(100, c.progress))}%` }} />
         </span>
       )}
-      <span className="stat-card__wave">
-        <Sparkline series={c.spark || []} color={c.onDark ? 'rgba(255,255,255,.7)' : 'rgba(20,40,60,.45)'} />
-      </span>
     </motion.article>
   );
 }

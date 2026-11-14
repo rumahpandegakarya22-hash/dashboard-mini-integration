@@ -73,6 +73,13 @@ export default function DynamicForm({ moduleId, fields, hasPreview, autoFillTrig
       if (f.type === 'date' && f.defaultToday && !initial[f.name]) {
         initial[f.name] = new Date().toISOString().slice(0, 10);
       }
+      if (f.type === 'month' && f.defaultToday && !initial[f.name]) {
+        initial[f.name] = new Date().toISOString().slice(0, 7);
+      }
+      if (f.type === 'datetime' && f.defaultNow && !initial[f.name]) {
+        const n = new Date();
+        initial[f.name] = new Date(n.getTime() - n.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      }
     }
     setValues(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -533,6 +540,10 @@ function renderField(f: FieldDef, value: string, onChange: (v: string) => void, 
       );
     case 'time':
       return <input id={f.name} name={f.name} type="time" value={value} onChange={onInputChange} />;
+    case 'datetime':
+      return <input id={f.name} name={f.name} type="datetime-local" value={value.replace(' ', 'T')} onChange={onInputChange} />;
+    case 'month':
+      return <input id={f.name} name={f.name} type="month" value={value} onChange={onInputChange} />;
     case 'file':
       return <FileField f={f} value={value} onChange={onChange} kindExtra={kindExtra} />;
     case 'select':

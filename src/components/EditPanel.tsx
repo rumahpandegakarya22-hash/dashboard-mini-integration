@@ -19,6 +19,11 @@ export default function EditPanel({ moduleId, fields }: { moduleId: string; fiel
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<Entry | null>(null);
+  const [koreksi, setKoreksi] = useState(false);
+  const [voidable, setVoidable] = useState(false);
+  const [alasanVoid, setAlasanVoid] = useState('');
+  const [voidBusy, setVoidBusy] = useState(false);
+  const [voidInfo, setVoidInfo] = useState('');
 
   async function buka() {
     setOpen(true);
@@ -35,10 +40,36 @@ export default function EditPanel({ moduleId, fields }: { moduleId: string; fiel
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Gagal memuat data.');
       setEntries(json.entries);
+      setKoreksi(!!json.koreksi);
+      setVoidable(!!json.voidable);
     } catch (e: any) {
       setError(e.message || 'Gagal memuat data.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function jalankanVoid() {
+    if (!selected) return;
+    setVoidBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/ops/edit/${moduleId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: selected.ref, aksi: 'void', alasan: alasanVoid })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Gagal void.');
+      setVoidInfo(json.warning || 'Transaksi di-void.');
+      setSelected(null);
+      setAlasanVoid('');
+      setEntries(null);
+      await muat();
+    } catch (e: any) {
+      setError(e.message || 'Gagal void.');
+    } finally {
+      setVoidBusy(false);
     }
   }
 
@@ -57,6 +88,11 @@ export default function EditPanel({ moduleId, fields }: { moduleId: string; fiel
         title={selected ? `Edit: ${selected.label}` : 'Edit Data'}
         onClose={() => setOpen(false)}
       >
+        {voidInfo && (
+          <div className="banner ok" role="status" style={{ marginBottom: 12 }}>
+            {voidInfo}
+          </div>
+        )}
         {error && (
           <div className="banner error" role="alert" style={{ marginBottom: 12 }}>
             <CircleAlert size={16} />
@@ -84,6 +120,11 @@ export default function EditPanel({ moduleId, fields }: { moduleId: string; fiel
                 <ChevronLeft size={16} />
                 Kembali ke daftar
               </button>
+              {koreksi && (
+                <p className="muted" style={{ marginTop: 0 }}>
+                  Menyimpan di sini = KOREKSI: entri lama di-void (dibalik, tidak dihapus) lalu entri baru dicatat.
+                </p>
+              )}
               <div className="form-col">
                 <DynamicForm
                   key={selected.ref}
@@ -98,6 +139,27 @@ export default function EditPanel({ moduleId, fields }: { moduleId: string; fiel
                   }}
                 />
               </div>
+              {voidable && (
+                <div className="field" style={{ marginTop: 20 }}>
+                  <label htmlFor="alasan-void">Void tanpa pengganti (salah catat / dibatalkan)</label>
+                  <input
+                    id="alasan-void"
+                    maxLength={300}
+                    value={alasanVoid}
+                    placeholder="Alasan wajib diisi (minimal 5 karakter)"
+                    onChange={(e) => setAlasanVoid(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ marginTop: 8 }}
+                    disabled={voidBusy || alasanVoid.trim().length < 5}
+                    onClick={jalankanVoid}
+                  >
+                    {voidBusy && <LoaderCircle size={18} className="spin" />} Void Transaksi
+                  </button>
+                </div>
+              )}
             </motion.div>
           ) : loading ? (
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-busy="true" aria-label="Memuat data">
@@ -112,7 +174,9 @@ export default function EditPanel({ moduleId, fields }: { moduleId: string; fiel
           ) : (
             <motion.div key="list" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2, ease: [0.22, 0.61, 0.36, 1] }}>
               <p className="muted" style={{ marginTop: 0 }}>
-                Salah input? Pilih entri di bawah lalu perbaiki — data lama ditimpa, bukan menambah baris baru.
+                {koreksi
+                  ? 'Salah input? Pilih entri di bawah untuk dikoreksi atau di-void. Entri lama tetap tercatat sebagai riwayat.'
+                  : 'Salah input? Pilih entri di bawah lalu perbaiki — data lama ditimpa, bukan menambah baris baru.'}
               </p>
               <div className="table-scroll">
                 <table className="joblist-table">

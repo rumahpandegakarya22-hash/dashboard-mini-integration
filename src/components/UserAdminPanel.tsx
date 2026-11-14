@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CircleAlert, LoaderCircle, RotateCcw, UserRoundCheck, UserRoundX } from 'lucide-react';
-import { ROLE_LABEL, type Role } from '@/lib/core/roles';
+import { ROLE_LABEL, OPS_ROLES, type Role } from '@/lib/core/roles';
 import OriginSelect from '@/components/ui/OriginSelect';
 
 interface UserRow {
@@ -16,7 +16,7 @@ interface UserRow {
   createdAt: string;
 }
 
-const ROLES = Object.keys(ROLE_LABEL) as Role[];
+const ROLES = OPS_ROLES as Role[];
 
 export default function UserAdminPanel({ currentUserId }: { currentUserId: string }) {
   const [users, setUsers] = useState<UserRow[]>([]);

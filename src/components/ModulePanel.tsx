@@ -10,8 +10,7 @@ const PANEL: Record<string, () => React.ReactNode> = {
   feedback: () => <PengaduanPanel />,
   'pembayaran-sewa': () => <VerifikasiBuktiPanel />,
   'penghuni-baru': () => <ReviewPendaftaranPanel />,
-  'pindah-kamar': () => <PengajuanPanel jenis="pindah" />,
-  checkout: () => <PengajuanPanel jenis="checkout" />
+  checkout: () => <PengajuanPanel />
 };
 
 export default function ModulePanel({ moduleId }: { moduleId: string }) {

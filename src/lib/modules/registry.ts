@@ -244,39 +244,6 @@ export const MODULES: ModuleMeta[] = [
     ]
   },
   {
-    id: 'pindah-kamar',
-    title: 'Pindah Kamar',
-    ready: true,
-    // Skema baru (Mini App Improvement §5): tulis ke Turso rooms_transfer +
-    // update penghuni + occupancy_history, dengan validasi kamar kosong /
-    // booking aktif / penghuni aktif di handler.
-    fields: [
-      { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
-      {
-        name: 'penghuni',
-        label: 'Penghuni',
-        type: 'select-async',
-        required: true,
-        master: 'penghuni-turso',
-        masterValue: 'id',
-        masterLabel: 'label',
-        helpText: 'Kamar lama otomatis terdeteksi dari data penghuni ini.'
-      },
-      {
-        name: 'kamarBaru',
-        label: 'Kamar Baru',
-        type: 'select-async',
-        required: true,
-        master: 'kamar-kosong-turso',
-        masterValue: 'id',
-        masterLabel: 'label',
-        helpText: 'Hanya kamar kosong tanpa booking aktif yang muncul di sini.'
-      },
-      { name: 'alasan', label: 'Alasan', type: 'textarea', required: true },
-      { name: 'notes', label: 'Catatan', type: 'textarea', required: false }
-    ]
-  },
-  {
     id: 'checkout',
     title: 'Checkout',
     ready: true,
@@ -603,7 +570,21 @@ export const MODULES: ModuleMeta[] = [
     title: 'Log Leads Harian',
     ready: true,
     fields: [
-      { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
+      {
+        name: 'masukPada',
+        label: 'Waktu Lead Masuk',
+        type: 'datetime',
+        required: true,
+        defaultNow: true,
+        helpText: 'Isi dengan waktu lead BENAR-BENAR masuk (bukan waktu mencatat). Dipakai menghitung respons leads pertama.'
+      },
+      {
+        name: 'chatPertamaPada',
+        label: 'Waktu Chat Pertama Dikirim',
+        type: 'datetime',
+        required: false,
+        helpText: 'Kosongkan kalau belum dibalas; isi lewat Edit setelah chat pertama dikirim.'
+      },
       { name: 'namaLeads', label: 'Nama Leads', type: 'text', required: true, placeholder: 'Nama calon penyewa' },
       { name: 'noHp', label: 'No. HP / WA', type: 'text', required: true, placeholder: '081234567890' },
       {
@@ -680,6 +661,7 @@ export const MODULES: ModuleMeta[] = [
       { name: 'komentar', label: 'Komentar', type: 'number', required: false },
       { name: 'shareSaves', label: 'Share/Saves', type: 'number', required: false },
       { name: 'reach', label: 'Reach', type: 'number', required: false },
+      { name: 'biayaProduksi', label: 'Biaya Produksi (Rp)', type: 'number', required: false, helpText: 'Biaya membuat konten (fotografer, editor, properti). Dipakai menghitung CAC.' },
       { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
     ]
   },
@@ -791,7 +773,21 @@ export const MODULES: ModuleMeta[] = [
     ready: true,
     fields: [
       { name: 'tanggalKerusakan', label: 'Tanggal Kerusakan', type: 'date', required: true, defaultToday: true },
-      { name: 'tanggalLapor', label: 'Tanggal Lapor', type: 'date', required: true, defaultToday: true },
+      {
+        name: 'laporPada',
+        label: 'Waktu Laporan Masuk',
+        type: 'datetime',
+        required: true,
+        defaultNow: true,
+        helpText: 'Awal hitungan response time.'
+      },
+      {
+        name: 'ditindakPada',
+        label: 'Waktu Mulai Ditindak',
+        type: 'datetime',
+        required: false,
+        helpText: 'Akhir hitungan response time. Terisi otomatis saat status diubah ke Proses; bisa diisi manual.'
+      },
       { name: 'tanggalSelesai', label: 'Tanggal Selesai', type: 'date', required: false },
       {
         name: 'sumberLaporan',
@@ -925,6 +921,55 @@ export const MODULES: ModuleMeta[] = [
         maxSizeMb: 2,
         placeholder: 'Pilih foto (maks 2 MB)'
       }
+    ]
+  },
+  {
+    id: 'kepuasan-penghuni',
+    title: 'Kepuasan Penghuni',
+    ready: true,
+    fields: [
+      { name: 'periode', label: 'Periode', type: 'month', required: true, defaultToday: true },
+      {
+        name: 'penghuni',
+        label: 'Penghuni',
+        type: 'select-async',
+        required: true,
+        master: 'penghuni-csat',
+        masterValue: 'id',
+        masterLabel: 'label'
+      },
+      {
+        name: 'skor',
+        label: 'Skor Kepuasan',
+        type: 'select',
+        required: true,
+        options: [
+          { value: '5', label: '5 - Sangat puas' },
+          { value: '4', label: '4 - Puas' },
+          { value: '3', label: '3 - Cukup' },
+          { value: '2', label: '2 - Kurang puas' },
+          { value: '1', label: '1 - Tidak puas' }
+        ]
+      },
+      { name: 'komentar', label: 'Komentar', type: 'textarea', required: false }
+    ]
+  },
+  {
+    id: 'kamar-siap',
+    title: 'Kamar Siap Sewa',
+    ready: true,
+    fields: [
+      {
+        name: 'checkout',
+        label: 'Kamar yang baru checkout',
+        type: 'select-async',
+        required: true,
+        master: 'checkout-belum-siap',
+        masterValue: 'id',
+        masterLabel: 'label',
+        helpText: 'Hanya checkout yang belum ditandai siap.'
+      },
+      { name: 'kamarSiapPada', label: 'Waktu Kamar Siap', type: 'datetime', required: true, defaultNow: true }
     ]
   },
   {

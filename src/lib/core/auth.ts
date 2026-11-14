@@ -72,7 +72,8 @@ export interface AuthState {
 // Role satu per akun: tiap sisi membaca kunci miliknya dulu, lalu kunci sisi lain (kunci lama ikut diterjemahkan).
 function metaRole(u: User): Role | null {
   const m = u.publicMetadata as Record<string, unknown>;
-  return normalizeRole(m?.miniappRole) ?? normalizeRole(m?.role);
+  const r = normalizeRole(m?.miniappRole) ?? normalizeRole(m?.role);
+  return r === 'pengawas' ? null : r; // Pengawas hanya Dashboard
 }
 
 function metaStatus(u: User): UserStatus {
@@ -397,7 +398,9 @@ export async function approveDashboardUser(username: string, role: DashboardRole
   const u = await findByUsername(username);
   if (!u) return 'notfound';
   const client = await clerkClient();
-  await client.users.updateUserMetadata(u.id, { publicMetadata: { role, miniappRole: role, status: 'active' } });
+  // Pengawas hanya Dashboard: jangan beri miniappRole.
+  const meta = role === 'pengawas' ? { role, status: 'active' } : { role, miniappRole: role, status: 'active' };
+  await client.users.updateUserMetadata(u.id, { publicMetadata: meta });
   // Best-effort: bersihkan ban lama (dari versi sebelumnya sebelum banUser diketahui
   // Pro-only). Akses tidak lagi bergantung pada ini, jadi kegagalan sengaja diabaikan.
   try {

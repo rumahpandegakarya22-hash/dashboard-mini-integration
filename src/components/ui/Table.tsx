@@ -14,7 +14,7 @@ export interface TableCol {
 export type TableRow = Record<string, any>;
 
 /** Kolom yang tidak diberi tombol filter (verbatim NO_FILTER_COLS app.js). */
-const NO_FILTER_COLS = new Set(['check', 'aksi', 'open', 'tagihan']);
+const NO_FILTER_COLS = new Set(['check', 'aksi', 'open', 'tagihan', 'chatLead']);
 
 const ISO_TGL = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?$/;
 
@@ -98,6 +98,7 @@ function Cell({ col, row }: { col: TableCol; row: TableRow }) {
       );
     }
     case 'status':
+    case 'tahap':
     case 'jenisTx':
     case 'prioritas':
       return v && typeof v === 'object' && v.t ? (

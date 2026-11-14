@@ -114,9 +114,9 @@ async function simpanPembayaran(
 
       for (const b of baris) {
         await tx.execute({
-          sql: `INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori)
-                VALUES (?,?,?,?,?,?)`,
-          args: [b.tanggal, b.debit, b.kredit, b.nominal, b.keterangan, b.kategori]
+          sql: `INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori, grup_id)
+                VALUES (?,?,?,?,?,?,?)`,
+          args: [b.tanggal, b.debit, b.kredit, b.nominal, b.keterangan, b.kategori, raw.noInv]
         });
       }
 
@@ -202,7 +202,7 @@ async function siapkanJurnal(
 async function cekPeriodeTumpangTindih(occupancyId: string, periodeAwal: string, periodeAkhir: string): Promise<void> {
   const res = await turso().execute({
     sql: `SELECT id_payment, periode_awal, periode_akhir FROM payment
-          WHERE id_penghuni = ? AND periode_akhir IS NOT NULL
+          WHERE id_penghuni = ? AND status <> 'Cancelled' AND periode_akhir IS NOT NULL
             AND periode_awal < ? AND periode_akhir > ?
           LIMIT 1`,
     args: [occupancyId, periodeAkhir, periodeAwal]
@@ -238,7 +238,7 @@ export const autoFillPembayaranSewa: AutoFillHandler = async (values) => {
       };
     }
     const res = await turso().execute({
-      sql: 'SELECT MAX(periode_akhir) mx FROM payment WHERE id_penghuni = ? AND periode_akhir IS NOT NULL',
+      sql: "SELECT MAX(periode_akhir) mx FROM payment WHERE id_penghuni = ? AND status <> 'Cancelled' AND periode_akhir IS NOT NULL",
       args: [occupancyId]
     });
     const lunasSampai = res.rows[0]?.mx ? String(res.rows[0].mx) : null;

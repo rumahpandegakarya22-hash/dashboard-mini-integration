@@ -68,6 +68,10 @@ export interface Pill {
 export interface LeadRow {
   check: boolean;
   id: string;
+  /** id baris di tabel leads (untuk mencatat chat pertama). */
+  dbId: string;
+  /** Waktu chat pertama ('YYYY-MM-DD HH:MM') atau kosong. */
+  chatPertama: string;
   name: string;
   wa: string;
   asal: string;

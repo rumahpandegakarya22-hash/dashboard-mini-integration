@@ -18,8 +18,14 @@ test('label: Admin and Finance dan Operasional', () => {
   assert.equal(ROLE_LABEL.operasional, 'Operasional');
 });
 
-test('DASHBOARD_ROLES = semua role kecuali pengawas', () => {
-  assert.deepEqual([...DASHBOARD_ROLES].sort(), ROLES.filter((r) => r !== 'pengawas').sort());
+test('DASHBOARD_ROLES = semua role; OPS_ROLES = semua kecuali pengawas', async () => {
+  const { OPS_ROLES, isOpsRole, isFullView } = await import('./roles');
+  assert.deepEqual([...DASHBOARD_ROLES].sort(), [...ROLES].sort());
+  assert.deepEqual([...OPS_ROLES].sort(), ROLES.filter((r) => r !== 'pengawas').sort());
+  assert.equal(isOpsRole('pengawas'), false);
+  assert.equal(isFullView('pengawas'), true);
+  assert.equal(isFullView('owner'), true);
+  assert.equal(isFullView('sales'), false);
 });
 
 test('akses modul: operasional mewarisi maintenance + inspeksi + cleaning; admin_finance mewarisi admin + finance', () => {
@@ -29,7 +35,7 @@ test('akses modul: operasional mewarisi maintenance + inspeksi + cleaning; admin
   }
   for (const m of ['pembayaran-sewa', 'pengeluaran', 'aktivitas-finansial']) assert.equal(canAccess('admin_finance', m), true, m);
   assert.equal(canAccess('owner', 'pembayaran-sewa'), true);
-  assert.equal(canAccess('pengawas', 'pembayaran-sewa'), true);
+  assert.equal(canAccess('pengawas', 'pembayaran-sewa'), false, 'pengawas tidak punya akses Mini App');
   assert.equal(canAccess('marketing', 'pembayaran-sewa'), false);
 });
 
@@ -42,10 +48,10 @@ test('ROLE_DIVISI: nilai DB tidak digabung', () => {
   assert.deepEqual(ROLE_DIVISI.admin_finance, ['Admin', 'Finance']);
 });
 
-test('canUseInventory: Sales dan Marketing ditolak', async () => {
+test('canUseInventory: Pengawas, Sales, dan Marketing ditolak', async () => {
   const { canUseInventory } = await import('./roles');
-  for (const r of ['owner', 'pengawas', 'admin_finance', 'operasional'] as const) assert.equal(canUseInventory(r), true, r);
-  for (const r of ['sales', 'marketing'] as const) assert.equal(canUseInventory(r), false, r);
+  for (const r of ['owner', 'admin_finance', 'operasional'] as const) assert.equal(canUseInventory(r), true, r);
+  for (const r of ['pengawas', 'sales', 'marketing'] as const) assert.equal(canUseInventory(r), false, r);
   assert.equal(canUseInventory(null), false);
 });
 

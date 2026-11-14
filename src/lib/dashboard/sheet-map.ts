@@ -52,6 +52,7 @@ export const SHEET_MAP: Record<string, SheetDef> = {
       c("checkin_rencana", "Rencana Check-in"), c("status_leads", "Status Leads"),
       c("tindak_lanjut", "Tindak Lanjut"), c("pic", "PIC"), c("tanggal_fu", "Tanggal FU"),
       c("keterangan", "Keterangan"),
+      c("masuk_pada", "Waktu Lead Masuk"), c("chat_pertama_pada", "Waktu Chat Pertama"),
     ],
   },
   survey: {
@@ -95,6 +96,7 @@ export const SHEET_MAP: Record<string, SheetDef> = {
       c("biaya", "Biaya"), c("status", "Status"),
       c("catatan_dokumentasi", "Catatan/Dokumentasi"),
       c("durasi_perbaikan_hari", "Durasi Perbaikan (Hari)"), c("sla", "SLA"),
+      c("lapor_pada", "Waktu Lapor Masuk"), c("ditindak_pada", "Waktu Ditindak"),
     ],
   },
   maintenance_pm: {
@@ -126,6 +128,7 @@ export const SHEET_MAP: Record<string, SheetDef> = {
       c("status", "Status"), c("likes", "Likes"), c("komentar", "Komentar"),
       c("share_saves", "Share/Saves"), c("reach", "Reach"), c("catatan", "Catatan"),
       c("engagement", "Engagement"), c("er_persen", "ER (%)"),
+      c("biaya_produksi", "Biaya Produksi"),
     ],
   },
   promotion: {

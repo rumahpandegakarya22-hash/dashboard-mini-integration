@@ -2,6 +2,7 @@
 
 import Table, { type TableCol, type TableRow } from '@/components/ui/Table';
 import { WaBtn, OpenBtn, TagihanBtn } from '../CellButtons';
+import { LeadChatBtn } from '../LeadChatBtn';
 
 
 export interface DataTablePageProps {
@@ -17,6 +18,8 @@ export default function DataTablePage({ title, titleRight, cols, data, period }:
     switch (col.key) {
       case 'aksi':
         return <WaBtn num={row.wa} label="Chat" />;
+      case 'chatLead':
+        return <LeadChatBtn num={row.wa} dbId={String(row.dbId ?? '')} sudah={String(row.chatPertama ?? '')} />;
       case 'open':
         return <OpenBtn url={row.link} />;
       case 'tagihan':

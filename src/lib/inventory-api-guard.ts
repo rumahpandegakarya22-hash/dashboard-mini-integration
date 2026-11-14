@@ -7,7 +7,7 @@ import { canUseInventory } from './core/roles';
  * Gerbang API Inventory. Padanan `getAuthenticatedUser()` app lama, tapi
  * identitasnya sesi Clerk repo ini — bukan tabel `users` DB Inventory.
  *
- * Role dipetakan ke dua tingkat app lama: owner/pengawas = OWNER (boleh
+ * Role dipetakan ke dua tingkat app lama: owner = OWNER (boleh
  * mengelola), sisanya STAFF (baca + catat pemakaian).
  */
 export type InvRole = 'OWNER' | 'STAFF';
@@ -21,7 +21,7 @@ export async function requireInventoryAuth(): Promise<InvAuth | NextResponse> {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!canUseInventory(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  const role: InvRole = user.role === 'owner' || user.role === 'pengawas' ? 'OWNER' : 'STAFF';
+  const role: InvRole = user.role === 'owner' ? 'OWNER' : 'STAFF';
   return { user, role };
 }
 

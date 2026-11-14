@@ -1,5 +1,5 @@
 import { createInsertHandler, type InsertConfig } from './helpers';
-import { parseDateISO, required } from '../../core/validate';
+import { parseDateISO, parseRupiahOptional, required } from '../../core/validate';
 
 function num(v: unknown): number {
   const n = parseInt(String(v ?? '0').replace(/[^0-9]/g, ''), 10);
@@ -36,6 +36,7 @@ export const kontenInsertCfg: InsertConfig = {
     komentar: num(values.komentar),
     share_saves: num(values.shareSaves),
     reach: num(values.reach),
+    biaya_produksi: parseRupiahOptional(values.biayaProduksi),
     catatan: String(values.catatan ?? '').trim()
   })
 };

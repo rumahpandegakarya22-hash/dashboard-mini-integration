@@ -50,6 +50,33 @@ export function parseDateISO(input: string): string {
   return input;
 }
 
+/** 'YYYY-MM-DDTHH:MM' atau 'YYYY-MM-DD HH:MM' → 'YYYY-MM-DD HH:MM' (waktu WIB tanpa zona, sama dengan kolom tanggal lain). */
+export function parseDateTimeLocal(input: string): string {
+  const m = String(input).trim().match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::\d{2})?$/);
+  if (!m) throw new Error(`Tanggal-jam tidak valid: "${input}".`);
+  const [, tgl, jam, menit] = m;
+  if (Number(jam) > 23 || Number(menit) > 59) throw new Error(`Jam tidak valid: "${input}".`);
+  return `${parseDateISO(tgl)} ${jam}:${menit}`;
+}
+
+/** Waktu sekarang di WIB, format 'YYYY-MM-DD HH:MM'. Server berjalan UTC, jadi zona dipaksa eksplisit. */
+export function nowWib(d: Date = new Date()): string {
+  const p = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(d);
+  const g = (t: string) => p.find((x) => x.type === t)!.value;
+  return `${g('year')}-${g('month')}-${g('day')} ${g('hour')}:${g('minute')}`;
+}
+
+/** Selisih menit antara dua 'YYYY-MM-DD HH:MM'; null bila salah satu kosong/tidak valid atau urutannya terbalik. */
+export function selisihMenit(dari: string | null | undefined, sampai: string | null | undefined): number | null {
+  if (!dari || !sampai) return null;
+  const a = Date.parse(String(dari).replace(' ', 'T') + ':00Z');
+  const b = Date.parse(String(sampai).replace(' ', 'T') + ':00Z');
+  if (Number.isNaN(a) || Number.isNaN(b) || b < a) return null;
+  return Math.round((b - a) / 60000);
+}
+
 /**
  * Format nomor kamar baku: angka polos tanpa leading zero (mis. "9", "01" → "1").
  * ⚠️ "KTD-x" BUKAN format kamar — itu ID Penghuni Aktif (dikoreksi user 8 Jul). Lihat Tenant.id di master.ts.

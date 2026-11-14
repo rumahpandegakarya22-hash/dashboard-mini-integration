@@ -224,6 +224,10 @@ function computePromotion(r: DbRow): DbRow {
   return o;
 }
 
+/** Parameter formula yang dipakai KPI di luar compute.ts (satu sumber dengan spreadsheet asli). */
+export const SLA_TARGET_HARI = FORMULA_CONFIG.slaTargetHari;
+export const HARGA_ECO_BULAN = FORMULA_CONFIG.priceByTipe['Eco (Non AC)']!.bulan;
+
 /* maintenance (CM & PM): kode [LOOKUP], durasi [VERIFIED], sla [VERIFIED]. */
 function computeMaintenance(r: DbRow, isPM: boolean): DbRow {
   const o: DbRow = { ...r };

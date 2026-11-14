@@ -24,6 +24,8 @@ interface InvoiceRow {
   jumlahBulan: number | null;
   total: string;
   status: string;
+  voidAlasan: string;
+  koreksiDari: string;
   email: string;
   jumlahDenda: number;
   dendaPerUnit: number;
@@ -405,7 +407,7 @@ export default function RiwayatPembayaranPanel() {
 
   async function simpanEdit(r: InvoiceRow) {
     if (!form) return;
-    if (!window.confirm(`Simpan perubahan ${r.noInv}? Pembayaran & jurnal ikut berubah dan invoice REVISI dikirim ulang ke ${form.email}.`)) return;
+    if (!window.confirm(`Koreksi ${r.noInv}? Invoice lama di-void (jurnalnya dibalik), invoice baru bernomor -K dibuat dan dikirim ke ${form.email}.`)) return;
     setMenyimpan(true);
     setError('');
     setInfo('');
@@ -417,11 +419,34 @@ export default function RiwayatPembayaranPanel() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Gagal menyimpan.');
-      setInfo([json.pesan, json.peringatan].filter(Boolean).join(' '));
+      setInfo([json.noInvBaru ? `Invoice koreksi ${json.noInvBaru} dibuat.` : '', json.pesan].filter(Boolean).join(' '));
       setEditNo(null);
       await pilih(selected);
     } catch (e: any) {
       setError(e.message || 'Gagal menyimpan.');
+    } finally {
+      setMenyimpan(false);
+    }
+  }
+
+  async function voidPembayaran(r: InvoiceRow) {
+    const alasan = window.prompt(`Void ${r.noInv}? Jurnalnya dibalik, tidak ada invoice pengganti, dan salinan invoice bercap DIBATALKAN dikirim ke email penghuni.\n\nAlasan (minimal 5 karakter):`);
+    if (alasan === null) return;
+    setMenyimpan(true);
+    setError('');
+    setInfo('');
+    try {
+      const res = await fetch('/api/ops/admin/riwayat-pembayaran', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ noInv: r.noInv, jenis: r.jenis, alasan })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Gagal mem-void.');
+      setInfo(json.pesan);
+      await pilih(selected);
+    } catch (e: any) {
+      setError(e.message || 'Gagal mem-void.');
     } finally {
       setMenyimpan(false);
     }
@@ -541,9 +566,10 @@ export default function RiwayatPembayaranPanel() {
                     <td style={{ textAlign: 'center' }}>{r.jumlahBulan ? `${r.jumlahBulan} bln` : '—'}</td>
                     <td style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{r.total}</td>
                     <td>
-                      <span className={r.status === 'Lunas' ? 'tag tag-ok' : 'tag tag-warn'}>
+                      <span className={r.status === 'Lunas' ? 'tag tag-ok' : 'tag tag-warn'} title={r.voidAlasan || (r.koreksiDari ? `Koreksi dari ${r.koreksiDari}` : '')}>
                         {r.status}
                       </span>
+                      {r.koreksiDari && r.status !== 'Void' && <div className="muted" style={{ fontSize: 11 }}>koreksi dari {r.koreksiDari}</div>}
                     </td>
                     <td>
                       <div className="aksi-tabel">
@@ -563,9 +589,18 @@ export default function RiwayatPembayaranPanel() {
                     </td>
                     {bolehEdit && (
                       <td>
-                        <button type="button" className="btn secondary tabel" onClick={() => mulaiEdit(r)}>
-                          Edit
-                        </button>
+                        {r.status === 'Void' ? (
+                          <span className="muted" style={{ fontSize: 12 }}>{r.voidAlasan}</span>
+                        ) : (
+                          <div className="aksi-tabel">
+                            <button type="button" className="btn secondary tabel" onClick={() => mulaiEdit(r)}>
+                              Koreksi
+                            </button>
+                            <button type="button" className="btn secondary tabel" disabled={menyimpan} onClick={() => voidPembayaran(r)}>
+                              Void
+                            </button>
+                          </div>
+                        )}
                       </td>
                     )}
                   </tr>
@@ -573,7 +608,7 @@ export default function RiwayatPembayaranPanel() {
                     <tr>
                       <td colSpan={9}>
                         <div className="card" style={{ margin: '4px 0' }}>
-                          <h3 style={{ fontSize: '1rem', margin: '0 0 10px' }}>Edit {r.noInv}</h3>
+                          <h3 style={{ fontSize: '1rem', margin: '0 0 10px' }}>Koreksi {r.noInv}</h3>
                           <div className="panel-grid">
                             <div className="field">
                               <label htmlFor="e-email">Email penghuni</label>
@@ -622,13 +657,13 @@ export default function RiwayatPembayaranPanel() {
                             </div>
                           </div>
                           <p className="help">
-                            Total dihitung ulang. Pembayaran dan jurnal ikut berubah, lalu invoice REVISI dikirim ulang ke email di atas.
-                            No. invoice tidak berubah.
+                            Total dihitung ulang. Invoice lama di-void dan jurnalnya dibalik (tetap tercatat sebagai riwayat), lalu invoice
+                            baru bernomor -K1, -K2, dst. dibuat dan dikirim ke email di atas.
                           </p>
                           <div className="btn-row">
                             <button type="button" className="btn" disabled={menyimpan} onClick={() => simpanEdit(r)}>
                               {menyimpan && <LoaderCircle size={18} className="spin" />}
-                              Simpan & kirim ulang
+                              Koreksi & kirim invoice baru
                             </button>
                             <button type="button" className="btn secondary" disabled={menyimpan} onClick={() => setEditNo(null)}>
                               Batal

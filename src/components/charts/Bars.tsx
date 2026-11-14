@@ -3,6 +3,7 @@
 
 import { motion } from 'framer-motion';
 import { fmtNum, niceTicks } from '@/lib/dashboard/format';
+import { useBox } from './useBox';
 
 export interface BarsProps {
   cats: string[];
@@ -15,8 +16,7 @@ export interface BarsProps {
 }
 
 export default function Bars({ cats, vals, gradId, gradStops, unit }: BarsProps) {
-  const w = 320;
-  const h = 178;
+  const { ref, w, h } = useBox(320, 230);
   const padL = 38;
   const rotasi = cats.some((c) => String(c).length >= 8);
   const padB = rotasi ? 54 : 30;
@@ -26,13 +26,13 @@ export default function Bars({ cats, vals, gradId, gradStops, unit }: BarsProps)
 
   const rawMax = Math.max(1, ...vals.map(Number));
   const max = rawMax * 1.18;
-  const bw = (cw / cats.length) * 0.42;
+  const bw = Math.min((cw / cats.length) * 0.42, 56);
   const gap = cw / cats.length;
   const ticks = niceTicks(rawMax, 4, unit);
 
   return (
-    <div className="chart">
-      <svg viewBox={`0 0 ${w} ${h}`}>
+    <div className="chart" ref={ref} style={{ minHeight: 230 }}>
+      <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h}>
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             {gradStops}

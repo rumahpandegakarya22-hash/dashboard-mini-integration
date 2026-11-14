@@ -1,5 +1,5 @@
 
-import { StatGrid, StatCard, type StatCardData } from '@/components/ui/StatCard';
+import { StatGrid, type StatCardData } from '@/components/ui/StatCard';
 import Reveal from '@/components/ui/Reveal';
 import ChartCard, { EmptyCard } from '@/components/charts/ChartCard';
 import Bars from '@/components/charts/Bars';
@@ -12,8 +12,9 @@ import { COLS } from '@/config/dashboard-cols';
 import { fmtRpShort, topEntries, shortAcct, seriesByDate } from '@/lib/dashboard/views/finance';
 import { monthlyCount, filterByPeriod, moneyScale, scaleVals } from '@/lib/dashboard/format';
 import type { OverviewProps } from './shared';
+import { kartuOps } from './kpi-cards';
 
-export default function OpsOverview({ data, finance: F, period, from, to, range }: OverviewProps) {
+export default function OpsOverview({ data, finance: F, period, from, to, range, kpi }: OverviewProps) {
   const { tiket, logbook } = data;
 
   const tP = filterByPeriod(tiket || [], 'tanggal', period, from, to);
@@ -35,17 +36,10 @@ export default function OpsOverview({ data, finance: F, period, from, to, range 
     { label: 'Biaya Perbaikan', value: fmtRpShort(cost), spark: tikSpark, bg: G.opGreen }
   ];
 
-  const respArr = tP.map((x) => x._respJam).filter((v): v is number => v != null);
   const resolArr = tP.map((x) => x._resolHari).filter((v): v is number => v != null);
   const avg = (a: number[]) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : null);
-  const fmtDur = (n: number) => (Math.round(n * 10) / 10).toLocaleString('id-ID');
-  const avgResp = avg(respArr);
   const avgResol = avg(resolArr);
-
-  const mid: StatCardData[] = [
-    { label: 'Response Time', value: avgResp != null ? fmtDur(avgResp) + ' jam' : '—', spark: respArr, bg: G.opOrange, onDark: true },
-    { label: 'Resolution Time', value: avgResol != null ? fmtDur(avgResol) + ' hari' : '—', spark: resolArr, bg: G.opRed, onDark: true }
-  ];
+  const kartu = kartuOps(kpi, { resolusiHari: avgResol, sparkResolusi: resolArr });
 
   const nInspeksi = filterByPeriod(logbook, 'tanggal', period, from, to).filter((r) => r.divisi === 'Inspeksi').length;
   const tiketDonut = [
@@ -67,9 +61,12 @@ export default function OpsOverview({ data, finance: F, period, from, to, range 
 
   return (
     <div className="view">
-      <StatGrid cards={top} cols={5} />
+      <StatGrid cards={[...top, kartu.sla]} cols={6} />
+      <div className="mt">
+        <StatGrid cards={kartu.baris2} cols={6} />
+      </div>
 
-      <Reveal tier={1} className="grid row-3 mt" style={{ gridTemplateColumns: 'minmax(0,1.4fr) repeat(2,minmax(0,1fr))' }}>
+      <Reveal tier={1} className="grid row-3 mt">
         {ebars.length && es ? (
           <ChartCard title="Expense Category" legend={[{ t: 'Beban' + (es.unit ? ' (' + es.unit + ')' : ''), c: '#e58a6f' }]}>
             <Bars
@@ -83,11 +80,6 @@ export default function OpsOverview({ data, finance: F, period, from, to, range 
         ) : (
           <EmptyCard title="Expense Category" />
         )}
-        <StatCard {...mid[0]} />
-        <StatCard {...mid[1]} />
-      </Reveal>
-
-      <Reveal tier={2} className="grid row-2 mt">
         {ts ? (
           <ChartCard
             title="Tren Tiket Maintenance"

@@ -75,7 +75,7 @@ export function dokumenRows(dokumen: DokumenRow[], role: string): DokumenTableRo
   if (!dokumen || !dokumen.length) return [];
   const OPS_DIVISI = ['kebersihan', 'inspeksi', 'maintenance', 'operasional'];
   const base =
-    rl === 'owner'
+    rl === 'owner' || rl === 'pengawas'
       ? dokumen
       : rl === 'operasional'
         ? dokumen.filter((d) => OPS_DIVISI.includes((d.role || '').toLowerCase()))

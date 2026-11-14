@@ -19,6 +19,7 @@ import { periodRange, DEFAULT_PERIOD_FALLBACK } from './period';
 import type { DashboardData, PaymentRaw, TransaksiRow, Tempo, TempoEntry, WaitingListRow } from './types';
 import { turso } from '../../core/turso';
 import { startOfDay, parseDate } from '../format';
+import { loadKpi, type KpiData } from '../kpi';
 
 export interface DashboardPageData {
   data: DashboardData;
@@ -29,6 +30,8 @@ export interface DashboardPageData {
   /** Hanya terisi bila halaman memintanya (view "stok"); null = tak tersedia. */
   inventory: InventoryData | null;
   waitingList: WaitingListRow[];
+  /** Angka KPI agregat sesuai role (lihat kpi.ts). */
+  kpi: KpiData;
 }
 
 export async function loadDashboardData(
@@ -67,7 +70,8 @@ export async function loadDashboardData(
       range,
       configured: false,
       inventory,
-      waitingList
+      waitingList,
+      kpi: {}
     };
   }
 
@@ -77,7 +81,12 @@ export async function loadDashboardData(
   const txGrid = findTransaksiGrid(sheets);
   const finance = computeFinance(txGrid, range);
 
-  return { data, finance, txGrid, range, configured: true, inventory, waitingList };
+  const kpi = await loadKpi(role, range, data.stats.kapasitas).catch((e) => {
+    console.error('[dashboard] gagal hitung KPI:', e);
+    return {} as KpiData;
+  });
+
+  return { data, finance, txGrid, range, configured: true, inventory, waitingList, kpi };
 }
 
 /** Baca semua invoice dari Turso (invoice_sewa), termasuk yang belum dibayar. */
@@ -94,7 +103,7 @@ async function loadTursoPayments(): Promise<PaymentRaw[]> {
                 ELSE 'Pending'
               END AS status_computed
        FROM invoice_sewa
-       WHERE id_penghuni IS NOT NULL
+       WHERE id_penghuni IS NOT NULL AND void_pada IS NULL
        ORDER BY COALESCE(tanggal_pembayaran, periode_akhir) DESC, id DESC`
     );
     return rs.rows.map((r: any) => ({
@@ -128,7 +137,7 @@ async function loadTursoTempo(): Promise<Tempo | null> {
               MAX(inv.periode_akhir) AS max_akhir
        FROM active_tenant at
        LEFT JOIN invoice_sewa inv ON inv.id_penghuni = at.id_penghuni
-                                 AND inv.periode_akhir IS NOT NULL
+                                 AND inv.periode_akhir IS NOT NULL AND inv.void_pada IS NULL
        GROUP BY at.id_penghuni, at.nama_lengkap, at.no_hp`
     );
     if (!rs.rows.length) return null;

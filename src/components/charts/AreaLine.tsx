@@ -4,6 +4,7 @@
 
 import { motion } from 'framer-motion';
 import { fmtNum } from '@/lib/dashboard/format';
+import { useBox } from './useBox';
 
 const LINE_COLORS =['var(--teal)', 'var(--text-2)', '#e0a13a'];
 
@@ -17,8 +18,7 @@ export interface AreaLineProps {
 }
 
 export default function AreaLine({ seriesList, xLabels, names, unit, gradId = 'lcArea' }: AreaLineProps) {
-  const w = 460;
-  const h = 200;
+  const { ref, w, h } = useBox(460, 260);
   const padL = 48;
   const rotasi = xLabels.some((l) => String(l).length >= 8);
   const padB = rotasi ? 52 : 24;
@@ -59,8 +59,8 @@ export default function AreaLine({ seriesList, xLabels, names, unit, gradId = 'l
   const ticks = Array.from({ length: 4 }, (_, i) => fmtNum(Math.round(rawMin + (span / 3) * i), unit));
 
   return (
-    <div className="chart">
-      <svg viewBox={`0 0 ${w} ${h}`}>
+    <div className="chart" ref={ref} style={{ minHeight: 260 }}>
+      <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h}>
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--teal)" stopOpacity=".28" />

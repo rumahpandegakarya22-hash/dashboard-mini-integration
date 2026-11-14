@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { DASHBOARD_ROLES, type DashboardRole } from '@/config/dashboard-access';
-import { ROLE_LABEL, type Role as OpsRole } from '@/lib/core/roles';
+import { ROLE_LABEL, OPS_ROLES, type Role as OpsRole } from '@/lib/core/roles';
 import OriginSelect from '@/components/ui/OriginSelect';
 
 
@@ -223,7 +223,7 @@ export default function UnifiedUserAdmin() {
                                   onChange={(v) =>
                                     setPickOps((p) => ({ ...p, [u.username]: v as OpsRole }))
                                   }
-                                  options={(Object.keys(ROLE_LABEL) as OpsRole[]).map((r) => ({
+                                  options={(OPS_ROLES as OpsRole[]).map((r) => ({
                                     value: r,
                                     label: ROLE_LABEL[r]
                                   }))}

@@ -19,6 +19,7 @@
    ========================================================================= */
 
 import { parseDate, parseDateTime, fmtDateID, fmtNum, startOfDay } from '../format';
+import { selisihMenit } from '../../core/validate';
 import type { SheetsOut, SheetGrid } from '../source';
 import type {
   DashboardData,
@@ -197,7 +198,8 @@ export function hydrateLeads(sheets: SheetsOut): LeadRow[] {
   if (!rows) return [];
   const o = objs(rows, {
     name: ['nama leads'], wa: ['no hp', 'no. hp', 'wa'], asal: ['sumber leads', 'sumber'],
-    platform: ['platform'], tanggal: ['tanggal'], status: ['status leads']
+    platform: ['platform'], tanggal: ['tanggal'], status: ['status leads'],
+    dbId: ['id'], chat: ['waktu chat pertama']
   });
   const pill = (s: string): Pill => {
     const t = s.toLowerCase();
@@ -209,7 +211,7 @@ export function hydrateLeads(sheets: SheetsOut): LeadRow[] {
   return o
     .filter((x) => x.name)
     .map((x, i) => ({
-      check: false, id: 'LD-' + pad3(i + 1), name: x.name, wa: x.wa,
+      check: false, id: 'LD-' + pad3(i + 1), dbId: x.dbId, chatPertama: x.chat, name: x.name, wa: x.wa,
       asal: x.asal || x.platform, tanggal: x.tanggal, status: pill(x.status)
     }));
 }
@@ -299,7 +301,8 @@ export function hydrateTiket(sheets: SheetsOut): TiketRow[] {
     prioritas: ['prioritas'], biaya: ['biaya'], status: ['status'],
     tgl: ['tanggal lapor', 'tgl lapor', 'tanggal'], idTiket: ['id tiket'],
     durasiHari: ['durasi perbaikan'], tglKerusakan: ['tanggal kerusakan', 'tgl kerusakan'],
-    tglLapor: ['tanggal lapor', 'tgl lapor'], tglSelesai: ['tanggal selesai', 'tgl selesai']
+    tglLapor: ['tanggal lapor', 'tgl lapor'], tglSelesai: ['tanggal selesai', 'tgl selesai'],
+    laporPada: ['waktu lapor masuk'], ditindakPada: ['waktu ditindak']
   };
   const tpill = (s: string): Pill => {
     const t = s.toLowerCase();
@@ -314,8 +317,10 @@ export function hydrateTiket(sheets: SheetsOut): TiketRow[] {
         const tK = parseDateTime(x.tglKerusakan);
         const tL = parseDateTime(x.tglLapor || x.tgl);
         const tS = parseDateTime(x.tglSelesai);
-        // Response Time (jam) & Resolution Time (hari) dihitung sendiri, bukan dari kolom.
-        const _respJam = tK && tL && tL >= tK ? (tL.getTime() - tK.getTime()) / 3600000 : null;
+        // Response Time (jam) = waktu laporan masuk -> mulai ditindak (tiket lama tanpa waktu itu = null,
+        // tidak ditebak). Resolution Time (hari) dihitung sendiri, bukan dari kolom.
+        const menit = selisihMenit(x.laporPada, x.ditindakPada);
+        const _respJam = menit == null ? null : menit / 60;
         const _resolHari = tK && tS && tS >= tK ? (tS.getTime() - tK.getTime()) / 86400000 : null;
         return {
           check: false,

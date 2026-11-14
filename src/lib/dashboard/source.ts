@@ -81,7 +81,9 @@ export async function readAllTables(): Promise<DbTables> {
   const hasil = await Promise.all(
     TABLES.map(async (t): Promise<[string, DbRow[]]> => {
       try {
-        return [t, await readTable(t)];
+        const rows = await readTable(t);
+        // Payment yang di-void/dikoreksi tidak ikut hitungan dashboard.
+        return [t, t === 'payment' ? rows.filter((r) => r.status !== 'Cancelled') : rows];
       } catch (e: any) {
         console.warn(`[turso] gagal baca tabel ${t}: ${e?.message}`);
         return [t, []];

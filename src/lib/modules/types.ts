@@ -1,6 +1,6 @@
 import type { SessionUser } from '../core/auth';
 
-export type FieldType = 'text' | 'number' | 'date' | 'time' | 'select' | 'select-async' | 'textarea' | 'file' | 'checkbox';
+export type FieldType = 'text' | 'number' | 'date' | 'datetime' | 'month' | 'time' | 'select' | 'select-async' | 'textarea' | 'file' | 'checkbox';
 
 export interface FieldOption {
   value: string;
@@ -17,7 +17,8 @@ export interface FieldDef {
   masterValue?: string; // properti objek master dipakai sbg value (default 'id')
   masterLabel?: string; // properti objek master dipakai sbg label (default = masterValue)
   placeholder?: string;
-  defaultToday?: boolean; // type=date: isi otomatis hari ini
+  defaultToday?: boolean; // type=date/month: isi otomatis hari ini / bulan ini
+  defaultNow?: boolean; // type=datetime: isi otomatis waktu sekarang (WIB)
   helpText?: string;
   dependsOn?: string; // type=select-async: nama field lain yg mengontrol filter (mis. "tipeAkun")
   filterBy?: string; // properti objek master dicocokkan dgn nilai field dependsOn (mis. "tipe")

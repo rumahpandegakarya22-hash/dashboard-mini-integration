@@ -5,6 +5,7 @@
 import type { DashboardData } from '@/lib/dashboard/views/types';
 import type { FinanceResult } from '@/lib/dashboard/views/finance';
 import type { SheetGrid } from '@/lib/dashboard/source';
+import type { KpiData } from '@/lib/dashboard/kpi';
 
 export interface OverviewProps {
   data: DashboardData;
@@ -17,4 +18,6 @@ export interface OverviewProps {
   to?: string;
   /** Rentang periode yang sudah dihitung, dipakai seriesByDate. */
   range: { from: Date | null; to: Date | null };
+  /** KPI agregat sesuai role (kartu SOW). */
+  kpi: KpiData;
 }

@@ -29,9 +29,9 @@ export interface WorkOrderRow {
   refTiket: string | null; // id_tiket maintenance asal (audit trail)
 }
 
-/** Divisi joblist utk role ini; null = lihat semua (owner/pengawas). */
+/** Divisi joblist utk role ini; null = lihat semua (owner). */
 export function joblistDivisi(role: Role): string[] | null {
-  if (role === 'owner' || role === 'pengawas') return null;
+  if (role === 'owner') return null;
   return ROLE_DIVISI[role] ?? null;
 }
 

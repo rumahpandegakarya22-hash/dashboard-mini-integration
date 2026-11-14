@@ -460,41 +460,26 @@ export async function getInvoiceDpMaster(): Promise<InvoiceDpPenghuni[]> {
   return cached('invoice-dp', fetchInvoiceDpMasterUncached);
 }
 
-// ---- Master dari Turso (Mini App Improvement §5 — pindah kamar berbasis database) ----
-
-/** Penghuni aktif dari Turso. id efektif = id_penghuni bila terisi, fallback kamar_id (PK).
- *
- *  BUG DIPERBAIKI 2026-07-21: dulu query `FROM penghuni` dengan kolom `"ID Penghuni"`.
- *  Tabel `penghuni` TIDAK PERNAH ADA di Turso (dikonfirmasi ke sqlite_master: 24 tabel,
- *  tidak satupun bernama penghuni) sehingga master ini SELALU melempar error — modul
- *  Pindah Kamar praktis tidak bisa dipakai (kedua dropdown-nya gagal memuat; dicek
- *  langsung di produksi: /api/ops/master/penghuni-turso → 400). Tabel yang benar adalah
- *  `active_tenant`, dengan kolom `id_penghuni` (snake_case, bukan berspasi). */
-async function getPenghuniTurso(): Promise<{ id: string; label: string }[]> {
+/** Penghuni aktif untuk modul Kepuasan Penghuni. id = id_penghuni (FK csat_response). */
+async function getPenghuniCsat(): Promise<{ id: string; label: string }[]> {
   const { turso } = await import('./core/turso');
   const res = await turso().execute(
-    `SELECT COALESCE(id_penghuni, kamar_id) id, nama_lengkap, no_kamar
-     FROM active_tenant WHERE COALESCE(no_kamar, '') != '' ORDER BY nama_lengkap`
+    `SELECT id_penghuni, nama_lengkap, no_kamar FROM active_tenant
+     WHERE COALESCE(id_penghuni, '') != '' ORDER BY nama_lengkap`
   );
-  return res.rows.map((r) => ({ id: String(r.id), label: `${r.nama_lengkap} — Kamar ${r.no_kamar}` }));
+  return res.rows.map((r) => ({ id: String(r.id_penghuni), label: `${r.nama_lengkap} - Kamar ${r.no_kamar}` }));
 }
 
-/**
- * Kamar layak jadi tujuan pindah: status bukan Terisi, tidak sedang ditempati
- * penghuni mana pun, dan tanpa booking aktif (Konfirmasi/Check-in).
- */
-async function getKamarKosongTurso(): Promise<{ id: string; label: string }[]> {
+/** Checkout yang kamarnya belum ditandai siap sewa (modul Kamar Siap Sewa). */
+async function getCheckoutBelumSiap(): Promise<{ id: string; label: string }[]> {
   const { turso } = await import('./core/turso');
   const res = await turso().execute(
-    `SELECT k.no_kamar, k.tipe_kamar, k.harga_bulan FROM kamar k
-     WHERE LOWER(COALESCE(k.status,'')) != 'terisi'
-       AND NOT EXISTS (SELECT 1 FROM active_tenant p WHERE CAST(p.no_kamar AS TEXT) = CAST(k.no_kamar AS TEXT))
-       AND NOT EXISTS (SELECT 1 FROM booking b WHERE b.kamar_no = k.no_kamar AND b.status_booking IN ('Konfirmasi','Check-in'))
-     ORDER BY k.no_kamar`
+    `SELECT id, no_kamar, penghuni_label, tanggal_checkout FROM checkout_log
+     WHERE kamar_siap_pada IS NULL ORDER BY tanggal_checkout DESC, id DESC LIMIT 50`
   );
   return res.rows.map((r) => ({
-    id: String(r.no_kamar),
-    label: `${r.no_kamar} — ${r.tipe_kamar ?? ''} · Rp${Number(r.harga_bulan ?? 0).toLocaleString('id-ID')}/bln`
+    id: String(r.id),
+    label: `Kamar ${r.no_kamar} - ${r.penghuni_label} (checkout ${String(r.tanggal_checkout).slice(0, 10)})`
   }));
 }
 
@@ -528,10 +513,10 @@ export async function getMasterData(type: string): Promise<unknown> {
       return getRooms();
     case 'rooms-available':
       return getAvailableRooms();
-    case 'penghuni-turso':
-      return cached('penghuni-turso', getPenghuniTurso);
-    case 'kamar-kosong-turso':
-      return cached('kamar-kosong-turso', getKamarKosongTurso);
+    case 'penghuni-csat':
+      return getPenghuniCsat();
+    case 'checkout-belum-siap':
+      return getCheckoutBelumSiap();
     case 'accounts':
       return getAccounts();
     case 'tenants':

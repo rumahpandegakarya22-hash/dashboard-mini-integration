@@ -18,7 +18,7 @@ export type HasilKirimInvoice = { terkirim: boolean; email?: string; pesan: stri
 export async function kirimInvoice(
   noInv: string,
   jenis: 'DP' | 'Sewa',
-  opts: { revisi?: boolean } = {}
+  opts: { revisi?: boolean; batal?: { alasan: string } } = {}
 ): Promise<HasilKirimInvoice> {
   try {
     const inv = jenis === 'Sewa' ? await getInvoiceSewa(noInv) : await getInvoiceDp(noInv);
@@ -29,21 +29,23 @@ export async function kirimInvoice(
       return { terkirim: false, pesan: `Email penghuni ${inv.nama} kosong di database — invoice tidak dikirim.` };
     }
 
-    const html = jenis === 'Sewa' ? renderInvoiceSewa(inv as any) : renderInvoiceDp(inv as any);
+    const alasanBatal = opts.batal?.alasan ?? undefined;
+    const html = jenis === 'Sewa' ? renderInvoiceSewa(inv as any, alasanBatal) : renderInvoiceDp(inv as any, alasanBatal);
     const pdf = await htmlKePdf(html);
     // Format: NoInv-IdPenghuni-NamaLengkap.pdf (karakter tidak sah diganti '-')
     const sanitize = (v: string) => String(v ?? '').replace(/[/\\:*?"<>|]+/g, '-').trim();
     const bagian = [sanitize(inv.no_inv), sanitize(inv.id_penghuni ?? ''), sanitize(inv.nama)].filter(Boolean).join('-');
-    const namaFile = `${bagian}.pdf`;
+    const namaFile = `${bagian}${opts.batal ? '-VOID' : ''}.pdf`;
 
     await kirimEmail({
       to: inv.email,
-      subject: `${opts.revisi ? 'REVISI ' : ''}Invoice ${jenis} Kost Tiga Dara Putri UGM — ${inv.no_inv}`,
+      subject: `${opts.batal ? 'DIBATALKAN ' : opts.revisi ? 'REVISI ' : ''}Invoice ${jenis} Kost Tiga Dara Putri UGM — ${inv.no_inv}`,
       html: badanEmail(
         inv.nama,
         jenis === 'Sewa' ? (inv as any).periode_awal : null,
         jenis === 'Sewa' ? (inv as any).periode_akhir : null,
-        !!opts.revisi
+        !!opts.revisi,
+        opts.batal?.alasan
       ),
       lampiran: [{ namaFile, mime: 'application/pdf', isi: pdf }],
       cc: await getCcInvoice()
@@ -67,7 +69,7 @@ export async function kirimInvoice(
  * Badan email — sekadar pengantar, karena invoicenya ada di lampiran PDF.
  * Kalimat periode hanya muncul untuk invoice Sewa; DP tidak punya periode.
  */
-function badanEmail(nama: string, periodeAwal: string | null, periodeAkhir: string | null, revisi: boolean): string {
+function badanEmail(nama: string, periodeAwal: string | null, periodeAkhir: string | null, revisi: boolean, alasanBatal?: string): string {
   const periode =
     periodeAwal && periodeAkhir
       ? ` untuk periode ${tanggalId(periodeAwal)} s.d ${tanggalId(periodeAkhir)}`
@@ -77,7 +79,9 @@ function badanEmail(nama: string, periodeAwal: string | null, periodeAkhir: stri
   <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#3a3635;max-width:560px;padding:16px;">
     <p style="margin:0 0 16px;">Halo Kak ${escHtml(nama)} !</p>
     <p style="margin:0 0 16px;">${
-      revisi
+      alasanBatal !== undefined
+        ? `Invoice${escHtml(periode)} dibatalkan oleh pengelola (alasan: ${escHtml(alasanBatal)}). Terlampir salinan invoice bertanda DIBATALKAN; mohon abaikan invoice tersebut. Bila ada pertanyaan, silakan hubungi kami.`
+        : revisi
         ? `Ada penyesuaian data pada invoice Kakak. Terlampir invoice revisi${escHtml(periode)}; mohon gunakan invoice ini dan abaikan invoice sebelumnya.`
         : `Terima kasih atas pembayarannya ya! Terlampir invoice resmi${escHtml(periode)}. Mohon disimpan ya, Kak, siapa tahu suatu saat dibutuhkan.`
     }</p>

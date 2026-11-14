@@ -1,3 +1,5 @@
+> **DIHAPUS 14 Nov 2026:** alur Pindah Kamar (modul Mini App, handler, panel pengajuan, form di Teman Rara) sudah dibuang. Hanya bagian Checkout di dokumen ini yang masih berlaku. Tabel `rooms_transfer` dan `tr_pindah_request` dipertahankan sebagai riwayat sampai migrasi `030_hapus_pindah_kamar.sql` dijalankan.
+
 # Rencana: Verifikasi Pindah Kamar & Checkout di Mini App Ops
 
 Ditulis 5 Agustus 2026, sebelum dibangun. Alur di bawah adalah keputusan
