@@ -16,9 +16,9 @@ import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import type { User } from '@clerk/nextjs/server';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import { ROLE_LABEL, type Role } from './roles';
+import { normalizeRole, isDashboardRole, type Role } from './roles';
 import { bypassDevAktif } from './dev-bypass';
-import { DASHBOARD_ROLES, type DashboardRole } from '@/config/dashboard-access';
+import type { DashboardRole } from '@/config/dashboard-access';
 
 export interface SessionUser {
   id: string; // Clerk userId — dipakai panel admin & metadata ops
@@ -69,9 +69,10 @@ export interface AuthState {
 
 // ---- pembacaan metadata (namespace Mini App) ----
 
+// Role satu per akun: tiap sisi membaca kunci miliknya dulu, lalu kunci sisi lain (kunci lama ikut diterjemahkan).
 function metaRole(u: User): Role | null {
-  const r = (u.publicMetadata as Record<string, unknown>)?.miniappRole;
-  return typeof r === 'string' && r in ROLE_LABEL ? (r as Role) : null;
+  const m = u.publicMetadata as Record<string, unknown>;
+  return normalizeRole(m?.miniappRole) ?? normalizeRole(m?.role);
 }
 
 function metaStatus(u: User): UserStatus {
@@ -83,10 +84,9 @@ function metaStatus(u: User): UserStatus {
 // Kunci `role`/`status` tanpa prefix — persis seperti server.js Dashboard lama.
 
 function dashRole(u: User): DashboardRole | null {
-  const r = (u.publicMetadata as Record<string, unknown>)?.role;
-  return typeof r === 'string' && (DASHBOARD_ROLES as readonly string[]).includes(r)
-    ? (r as DashboardRole)
-    : null;
+  const m = u.publicMetadata as Record<string, unknown>;
+  const r = normalizeRole(m?.role) ?? normalizeRole(m?.miniappRole);
+  return isDashboardRole(r) ? r : null;
 }
 
 function dashStatus(u: User): UserStatus {
@@ -316,7 +316,9 @@ export async function listAllUsers(): Promise<AdminUserRow[]> {
 /** Merge per-key oleh Clerk — miniappRole/miniappStatus tidak menimpa metadata milik dashboard. */
 async function patchMiniappMetadata(userId: string, patch: { miniappRole?: Role; miniappStatus?: UserStatus }): Promise<void> {
   const client = await clerkClient();
-  await client.users.updateUserMetadata(userId, { publicMetadata: patch });
+  // Role disalin ke kunci Dashboard juga (satu role per akun); status Dashboard tidak disentuh.
+  const sync = patch.miniappRole && isDashboardRole(patch.miniappRole) ? { role: patch.miniappRole } : {};
+  await client.users.updateUserMetadata(userId, { publicMetadata: { ...patch, ...sync } });
 }
 
 export async function approveUser(userId: string, role: Role): Promise<void> {
@@ -331,7 +333,12 @@ export async function deactivateUser(userId: string): Promise<void> {
   await patchMiniappMetadata(userId, { miniappStatus: 'disabled' });
 }
 
-export async function reactivateUser(userId: string): Promise<void> {
+/** `role` diisi → role baru ditulis atomik bersama status (satu patch), bukan role lama. */
+export async function reactivateUser(userId: string, role?: Role): Promise<void> {
+  if (role) {
+    await patchMiniappMetadata(userId, { miniappRole: role, miniappStatus: 'active' });
+    return;
+  }
   const client = await clerkClient();
   const u = await client.users.getUser(userId);
   if (!metaRole(u)) throw new Error('User belum punya role Mini App — approve dulu, bukan aktifkan.');
@@ -390,7 +397,7 @@ export async function approveDashboardUser(username: string, role: DashboardRole
   const u = await findByUsername(username);
   if (!u) return 'notfound';
   const client = await clerkClient();
-  await client.users.updateUserMetadata(u.id, { publicMetadata: { role, status: 'active' } });
+  await client.users.updateUserMetadata(u.id, { publicMetadata: { role, miniappRole: role, status: 'active' } });
   // Best-effort: bersihkan ban lama (dari versi sebelumnya sebelum banUser diketahui
   // Pro-only). Akses tidak lagi bergantung pada ini, jadi kegagalan sengaja diabaikan.
   try {

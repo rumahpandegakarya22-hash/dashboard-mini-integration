@@ -30,9 +30,9 @@ export interface RoleNav {
 }
 
 export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
-  admin: {
-    label: 'Admin & Keuangan',
-    sidebarName: 'Admin & Keuangan',
+  admin_finance: {
+    label: 'Admin and Finance',
+    sidebarName: 'Admin and Finance',
     pages: [
       { id: 'overview', label: 'Overview', group: 'dash', crumb: 'Admin' },
       { id: 'penghuni', label: 'Daftar Penghuni', group: 'page', crumb: 'Daftar Penghuni' },
@@ -82,7 +82,7 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
       { id: 'overview', label: 'Overview', group: 'dash', crumb: 'Owner' },
       { id: 'sales', label: 'Sales', group: 'dash', crumb: 'Sales' },
       { id: 'marketing', label: 'Marketing', group: 'dash', crumb: 'Marketing' },
-      { id: 'admin', label: 'Admin & Keuangan', group: 'dash', crumb: 'Admin' },
+      { id: 'admin', label: 'Admin and Finance', group: 'dash', crumb: 'Admin and Finance' },
       { id: 'operasional', label: 'Operasional', group: 'dash', crumb: 'Operasional' },
       { id: 'penghuni', label: 'Daftar Penghuni', group: 'page', crumb: 'Daftar Penghuni' },
       { id: 'kamar', label: 'Data Kamar', group: 'page', crumb: 'Data Kamar' },

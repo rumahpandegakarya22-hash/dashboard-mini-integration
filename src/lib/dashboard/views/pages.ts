@@ -22,7 +22,7 @@ import { fmtNum } from '../format';
 /** Divisi logbook yang boleh dilihat tiap role — verbatim LOG_DIVISI_BY_ROLE. */
 const LOG_DIVISI_BY_ROLE: Record<string, string[] | null> = {
   owner: null, // null = semua divisi
-  admin: ['Admin', 'Keuangan'],
+  admin_finance: ['Admin', 'Keuangan'],
   marketing: ['Marketing'],
   sales: ['Sales'],
   operasional: ['Kebersihan', 'Inspeksi', 'Maintenance']
@@ -44,7 +44,8 @@ export function logbookForRole(logbook: LogbookRow[], role: string): LogbookRow[
 
 const DIVISI_LABEL: Record<string, string> = {
   owner: 'Owner',
-  admin: 'Admin & Keuangan',
+  admin: 'Admin and Finance',
+  admin_finance: 'Admin and Finance',
   keuangan: 'Keuangan',
   marketing: 'Marketing',
   operasional: 'Operasional',
@@ -70,7 +71,7 @@ interface DokumenTableRow {
  * mengisi `nama`. Keduanya diisi agar aman untuk kedua set kolom.
  */
 export function dokumenRows(dokumen: DokumenRow[], role: string): DokumenTableRow[] {
-  const rl = String(role).toLowerCase();
+  const rl = String(role).toLowerCase() === 'admin_finance' ? 'admin' : String(role).toLowerCase();
   if (!dokumen || !dokumen.length) return [];
   const OPS_DIVISI = ['kebersihan', 'inspeksi', 'maintenance', 'operasional'];
   const base =

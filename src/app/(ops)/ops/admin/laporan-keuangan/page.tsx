@@ -12,7 +12,7 @@ export default async function LaporanKeuanganPage() {
   if (gate !== true) redirect(gate);
 
   const role = s.user!.role;
-  if (!['owner', 'staff_admin', 'staff_sales'].includes(role)) {
+  if (!['owner', 'admin_finance', 'sales'].includes(role)) {
     return <div className="card"><p className="muted">Tidak punya akses.</p></div>;
   }
 

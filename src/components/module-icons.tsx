@@ -92,10 +92,10 @@ export const NAV_TEMAN_RARA: { href: string; label: string; icon: LucideIcon }[]
  */
 export const NAV_LANDING_PAGE = { href: '/api/ops/landing-admin/masuk', label: 'Setting Landing Page', icon: Globe };
 
-/** Riwayat Pembayaran — owner, staff_admin, staff_sales. */
+/** Riwayat Pembayaran — owner, admin_finance, sales. */
 export const NAV_RIWAYAT_BAYAR = { href: '/ops/admin/riwayat-pembayaran', label: 'Riwayat Pembayaran', icon: History };
 
-/** Halaman Setting Deposit + Kelola Kamar/User — hanya untuk owner/staff_admin (Pengaturan). */
+/** Halaman Setting Deposit + Kelola Kamar/User — hanya untuk owner/admin_finance (Pengaturan). */
 export const NAV_PENGATURAN: { href: string; label: string; icon: LucideIcon; ownerOnly?: true }[] = [
   { href: '/ops/admin/wifi', label: 'Kredensial WiFi', icon: Wifi },
   { href: '/ops/admin/deposit', label: 'Setting Deposit', icon: HandCoins },
@@ -107,7 +107,7 @@ export const NAV_PENGATURAN: { href: string; label: string; icon: LucideIcon; ow
 /** Ubah Data Penghuni — dipindah dari Teman Rara ke area Administrasi. */
 export const NAV_PENGHUNI = { href: '/ops/admin/penghuni', label: 'Ubah Data Penghuni', icon: UserCog };
 
-/** Navigasi grup Check-in — owner, staff_admin, staff_inspeksi. */
+/** Navigasi grup Check-in — owner, admin_finance, operasional. */
 export const NAV_CHECKIN: { href: string; label: string; icon: LucideIcon; adminOnly?: true }[] = [
   { href: '/ops/admin/daftar-booking', label: 'Daftar Booking', icon: CalendarCheck, adminOnly: true },
   { href: '/ops/admin/pre-checkin', label: 'Pre-Check In Form', icon: ClipboardCheck },
@@ -115,10 +115,10 @@ export const NAV_CHECKIN: { href: string; label: string; icon: LucideIcon; admin
   { href: '/ops/m/penghuni-baru', label: 'Penghuni Baru & Review', icon: UserRoundPlus, adminOnly: true },
 ];
 
-/** Laporan Keuangan PSAK — owner, staff_admin, staff_sales. */
+/** Laporan Keuangan PSAK — owner, admin_finance, sales. */
 export const NAV_LAPORAN_KEUANGAN = { href: '/ops/admin/laporan-keuangan', label: 'Laporan', icon: BarChart3 };
 
-/** Navigasi grup Check-out — owner, staff_admin, staff_inspeksi. */
+/** Navigasi grup Check-out — owner, admin_finance, operasional. */
 export const NAV_CHECKOUT: { href: string; label: string; icon: LucideIcon; adminOnly?: true }[] = [
   { href: '/ops/m/checkout', label: 'Daftar Pengajuan Checkout', icon: DoorOpen, adminOnly: true },
   { href: '/ops/admin/pre-checkout', label: 'Pre-Check Out Form', icon: ClipboardList },

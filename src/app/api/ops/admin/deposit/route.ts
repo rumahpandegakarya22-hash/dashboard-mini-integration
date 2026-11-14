@@ -3,7 +3,7 @@ import { getSessionUser } from '@/lib/core/auth';
 import { getConfig, setConfig } from '@/lib/app-config';
 
 function canAccess(role: string) {
-  return role === 'owner' || role === 'staff_admin';
+  return role === 'owner' || role === 'admin_finance';
 }
 
 export async function GET() {

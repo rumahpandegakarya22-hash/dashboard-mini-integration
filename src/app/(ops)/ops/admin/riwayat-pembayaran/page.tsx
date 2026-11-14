@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function RiwayatPembayaranPage() {
   const user = await getSessionUser();
-  const ALLOWED = new Set(['owner', 'staff_admin', 'staff_sales']);
+  const ALLOWED = new Set(['owner', 'admin_finance', 'sales']);
   if (!user || !ALLOWED.has(user.role)) redirect('/ops');
 
   return (

@@ -3,7 +3,7 @@ import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
 import { ringkasanAset, postingPenyusutan, KATEGORI, type KategoriAset } from '@/lib/laporan/penyusutan';
 
-const ALLOWED = new Set(['owner', 'staff_admin']);
+const ALLOWED = new Set(['owner', 'admin_finance']);
 
 async function guard() {
   const user = await getSessionUser();

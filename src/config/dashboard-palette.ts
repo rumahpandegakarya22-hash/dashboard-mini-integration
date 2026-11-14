@@ -43,6 +43,7 @@ export const G = {
 /** Palet donut per divisi (sesuai colour guideline tiap halaman). */
 export const PAL: Record<string, string[]> = {
   admin: ['#6ad17f', '#4ed7c7', '#c7d86a'],
+  admin_finance: ['#6ad17f', '#4ed7c7', '#c7d86a'],
   marketing: ['#e26d6d', '#c0397a', '#ecd07a', '#a98fd0'],
   operasional: ['#c0473a', '#ec8a5f', '#2f8f9a'],
   // dusty rose, blush, warm gray, crimson (prioritas brand)

@@ -4,7 +4,7 @@ import { buildLabaRugi, buildArusKas, buildNeraca } from '@/lib/laporan/generato
 import { htmlLabaRugi, htmlArusKas, htmlNeraca } from '@/lib/laporan/template';
 import { htmlKePdf } from '@/lib/invoice/pdf';
 
-const ALLOWED = new Set(['owner', 'staff_admin', 'staff_sales']);
+const ALLOWED = new Set(['owner', 'admin_finance', 'sales']);
 
 /** Regenerate PDF laporan on-demand dari Turso (tidak tergantung arsip Drive).
  *  Dipakai tombol "Unduh PDF" di riwayat laporan. */

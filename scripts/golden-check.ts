@@ -26,7 +26,7 @@ for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
 }
 
 const DOCS = path.join(process.cwd(), 'docs');
-const ROLES = ['owner', 'admin', 'marketing', 'operasional', 'sales'];
+const ROLES = ['owner', 'admin_finance', 'marketing', 'operasional', 'sales'];
 
 /** Diff struktural. Mengembalikan daftar path yang berbeda (dibatasi). */
 function diff(a: any, b: any, at = '', out: string[] = [], limit = 40): string[] {

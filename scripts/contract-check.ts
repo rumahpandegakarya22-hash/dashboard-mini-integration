@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const DOCS = path.join(process.cwd(), 'docs');
-const ROLES = ['owner', 'admin', 'marketing', 'operasional', 'sales'];
+const ROLES = ['owner', 'admin_finance', 'marketing', 'operasional', 'sales'];
 
 function diff(a: any, b: any, at = '', out: string[] = [], limit = 25): string[] {
   if (out.length >= limit || a === b) return out;

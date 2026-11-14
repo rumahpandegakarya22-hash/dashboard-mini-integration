@@ -7,7 +7,7 @@ export default async function AdminPenghuniPage() {
   const user = await getSessionUser();
   if (!user) return null;
 
-  if (user.role !== 'owner' && user.role !== 'staff_admin') {
+  if (user.role !== 'owner' && user.role !== 'admin_finance') {
     return (
       <div className="card success-card">
         <span className="icon-tile lg danger" aria-hidden>

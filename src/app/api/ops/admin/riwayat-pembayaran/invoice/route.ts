@@ -5,7 +5,7 @@ import { getInvoiceDp, getInvoiceSewa } from '@/lib/invoice/data';
 import { htmlKePdf } from '@/lib/invoice/pdf';
 import { renderInvoiceDp, renderInvoiceSewa } from '@/lib/invoice/template';
 
-const ALLOWED = new Set(['owner', 'staff_admin', 'staff_sales']);
+const ALLOWED = new Set(['owner', 'admin_finance', 'sales']);
 
 /**
  * Preview invoice persis seperti yang dikirim ke penghuni.

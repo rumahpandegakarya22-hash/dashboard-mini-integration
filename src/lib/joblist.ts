@@ -30,12 +30,12 @@ export interface WorkOrderRow {
 }
 
 /** Divisi joblist utk role ini; null = lihat semua (owner/pengawas). */
-export function joblistDivisi(role: Role): string | null {
+export function joblistDivisi(role: Role): string[] | null {
   if (role === 'owner' || role === 'pengawas') return null;
   return ROLE_DIVISI[role] ?? null;
 }
 
-export async function getJoblist(divisi: string | null): Promise<WorkOrderRow[]> {
+export async function getJoblist(divisi: string[] | null): Promise<WorkOrderRow[]> {
   const base = `SELECT id, tanggal_input, petugas, divisi_asal, lokasi_item, kategori, deskripsi,
                        prioritas, tujuan_divisi, target_deadline, catatan, bukti_foto_url, pic, completed_by, status,
                        nominal, ref_tiket
@@ -46,7 +46,7 @@ export async function getJoblist(divisi: string | null): Promise<WorkOrderRow[]>
   // Staf: hanya pekerjaan aktif divisinya (Complete disembunyikan — "hilang" dari tabel).
   // Owner/pengawas (divisi null): semua baris semua status = logbook.
   const res = divisi
-    ? await turso().execute({ sql: `${base} WHERE tujuan_divisi = ? AND status != 'Complete' ${order}`, args: [divisi] })
+    ? await turso().execute({ sql: `${base} WHERE tujuan_divisi IN (${divisi.map(() => '?').join(',')}) AND status != 'Complete' ${order}`, args: divisi })
     : await turso().execute(`${base} ${order}`);
   return res.rows.map((r) => ({
     id: Number(r.id),
@@ -86,8 +86,8 @@ export async function updateWoStatus(id: number, status: string, role: Role, use
               pic = CASE WHEN ? = 'In Progress' THEN ? ELSE pic END,
               completed_by = CASE WHEN ? = 'Complete' THEN ? ELSE NULL END,
               updated_at = CURRENT_TIMESTAMP
-          WHERE id = ? AND tujuan_divisi = ?`,
-    args: [status, status, userName, status, userName, id, divisi]
+          WHERE id = ? AND tujuan_divisi IN (${divisi.map(() => '?').join(',')})`,
+    args: [status, status, userName, status, userName, id, ...divisi]
   });
   return res.rowsAffected > 0;
 }

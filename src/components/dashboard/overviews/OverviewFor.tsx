@@ -9,6 +9,7 @@ import type { DashboardPageData } from '@/lib/dashboard/views/load';
 
 const MAP = {
   admin: AdminOverview,
+  admin_finance: AdminOverview,
   marketing: MarketingOverview,
   operasional: OpsOverview,
   owner: OwnerOverview,

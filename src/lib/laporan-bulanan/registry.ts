@@ -38,7 +38,7 @@ export interface LaporanDef {
   namaFile(periode: Periode): string;
 }
 
-const ROLE_DIIZINKAN = new Set(['owner', 'staff_admin', 'staff_sales']);
+const ROLE_DIIZINKAN = new Set(['owner', 'admin_finance', 'sales']);
 
 export function boleh(role: string, def: Pick<LaporanDef, 'ownerOnly'>): boolean {
   if (!ROLE_DIIZINKAN.has(role)) return false;

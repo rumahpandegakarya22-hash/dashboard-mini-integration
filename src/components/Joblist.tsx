@@ -17,7 +17,7 @@ const STATUS_OPTIONS = ['Pending', 'In Progress', 'Complete'];
  *   Nomor/ID/Task/PIC/Status. "Complete" → hilang dari kedua tabel.
  * - Owner/pengawas: satu tabel logbook read-only (semua divisi & status), tanpa List Job.
  */
-export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi: string | null }) {
+export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi: string[] | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState('');
@@ -69,7 +69,7 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
     <>
       <section aria-label="Work Order">
         <h2 className="section-title">
-          {readOnly ? 'Logbook Work Order — Semua Divisi' : `Work Order — Divisi ${divisi}`}
+          {readOnly ? 'Logbook Work Order — Semua Divisi' : `Work Order — Divisi ${divisi!.join(' / ')}`}
         </h2>
 
         {pendingCount > 0 && (
@@ -109,7 +109,7 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                     {readOnly && <th>PIC</th>}
                     <th>Deadline</th>
                     <th>Foto</th>
-                    {(readOnly || divisi === 'Admin') && <th>Biaya</th>}
+                    {(readOnly || divisi?.includes('Admin')) && <th>Biaya</th>}
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -141,13 +141,13 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                       </td>
                       {/* Biaya maintenance (WO tujuan Admin): Admin klik "Catat Pengeluaran" → form pengeluaran
                           ter-prefill; setelah submit, WO otomatis Complete (handler pengeluaran). */}
-                      {(readOnly || divisi === 'Admin') && (
+                      {(readOnly || divisi?.includes('Admin')) && (
                         <td>
                           {r.nominal && r.nominal > 0 ? (
                             <>
                               Rp{r.nominal.toLocaleString('id-ID')}
                               {r.refTiket && <div className="muted" style={{ fontSize: '0.75rem' }}>{r.refTiket}</div>}
-                              {divisi === 'Admin' && (
+                              {divisi?.includes('Admin') && (
                                 <a
                                   href={`/ops/m/pengeluaran?woId=${r.id}&tanggal=${encodeURIComponent(r.tanggalInput)}&tipeAkun=Beban&nominal=${r.nominal}&kategori=Operasional&keterangan=${encodeURIComponent(`${r.deskripsi} — ${r.lokasiItem}${r.refTiket ? ` (${r.refTiket})` : ''}`)}`}
                                   style={{ display: 'inline-block', marginTop: 4, fontWeight: 600 }}

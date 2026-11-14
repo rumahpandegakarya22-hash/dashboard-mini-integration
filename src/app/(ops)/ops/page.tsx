@@ -32,10 +32,10 @@ export default async function HomePage() {
       <Joblist rows={joblistRows} divisi={divisi} />
       <HomeMenu
         isOwner={user.role === 'owner'}
-        canKelola={user.role === 'owner' || user.role === 'staff_admin'}
+        canKelola={user.role === 'owner' || user.role === 'admin_finance'}
         canLandingPage={bolehBukaLandingAdmin({ ops: user.role })}
-        canRiwayatBayar={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_sales'}
-        canInspeksi={user.role === 'owner' || user.role === 'staff_admin' || user.role === 'staff_inspeksi'}
+        canRiwayatBayar={user.role === 'owner' || user.role === 'admin_finance' || user.role === 'sales'}
+        canInspeksi={user.role === 'owner' || user.role === 'admin_finance' || user.role === 'operasional'}
         modules={visible}
       />
     </>

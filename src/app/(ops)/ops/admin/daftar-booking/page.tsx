@@ -9,7 +9,7 @@ export default async function DaftarBookingPage() {
   const gate = guardOps(s);
   if (gate !== true) redirect(gate);
 
-  if (!['owner', 'staff_admin'].includes(s.user!.role)) {
+  if (!['owner', 'admin_finance'].includes(s.user!.role)) {
     return <div className="card"><p className="muted">Tidak punya akses.</p></div>;
   }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser, reactivateUser } from '@/lib/core/auth';
+import { ROLE_LABEL, type Role } from '@/lib/core/roles';
 
 export async function POST(req: NextRequest) {
   const user = await getSessionUser();
@@ -7,11 +8,12 @@ export async function POST(req: NextRequest) {
   if (user.role !== 'owner') return NextResponse.json({ error: 'Hanya Owner yang bisa aktifkan kembali user.' }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
-  const { id } = body as { id?: string };
+  const { id, role } = body as { id?: string; role?: Role };
   if (!id) return NextResponse.json({ error: 'id wajib diisi.' }, { status: 400 });
+  if (role !== undefined && !(role in ROLE_LABEL)) return NextResponse.json({ error: 'Role tidak valid.' }, { status: 400 });
 
   try {
-    await reactivateUser(id);
+    await reactivateUser(id, role);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Gagal aktifkan user.' }, { status: 400 });

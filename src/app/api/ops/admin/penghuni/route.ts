@@ -7,7 +7,7 @@ import { galatNopol, namaKendaraanBersih, normalisasiNopol } from '@/lib/kendara
 async function requireAccess() {
   const user = await getSessionUser();
   if (!user) return { error: NextResponse.json({ error: 'Belum login.' }, { status: 401 }) };
-  if (user.role !== 'owner' && user.role !== 'staff_admin') {
+  if (user.role !== 'owner' && user.role !== 'admin_finance') {
     return { error: NextResponse.json({ error: 'Hanya Owner dan Admin yang bisa mengubah data penghuni.' }, { status: 403 }) };
   }
   return { user };

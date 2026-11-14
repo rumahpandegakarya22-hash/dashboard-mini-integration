@@ -28,7 +28,7 @@ async function fetchCounts(): Promise<Counts> {
 }
 
 export default async function PendingAnnouncement({ role }: { role: Role }) {
-  const isAdmin = role === 'owner' || role === 'pengawas' || role === 'staff_admin';
+  const isAdmin = role === 'owner' || role === 'pengawas' || role === 'admin_finance';
   if (!isAdmin) return null;
 
   const counts = await fetchCounts();

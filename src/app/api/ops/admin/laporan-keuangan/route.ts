@@ -8,7 +8,7 @@ import { htmlKePdf } from '@/lib/invoice/pdf';
 import { arsipkanLaporan } from '@/lib/invoice/arsip';
 import { kirimEmail } from '@/lib/core/email';
 
-const ALLOWED = new Set(['owner', 'staff_admin', 'staff_sales']);
+const ALLOWED = new Set(['owner', 'admin_finance', 'sales']);
 
 async function requireAccess() {
   const user = await getSessionUser();

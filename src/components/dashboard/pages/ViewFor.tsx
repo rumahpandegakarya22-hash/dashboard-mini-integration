@@ -163,8 +163,8 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
       const title =
         role === 'owner'
           ? 'LOGBOOK · SEMUA DIVISI'
-          : role === 'admin'
-            ? 'LOGBOOK ADMIN & KEUANGAN'
+          : role === 'admin_finance'
+            ? 'LOGBOOK ADMIN AND FINANCE'
             : 'LOGBOOK ' + role.toUpperCase();
       return (
         <Reveal tier={0}>

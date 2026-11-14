@@ -6,7 +6,7 @@ export const metadata = { title: 'Setting Deposit' };
 
 export default async function DepositPage() {
   const user = await getSessionUser();
-  if (!user || (user.role !== 'owner' && user.role !== 'staff_admin')) {
+  if (!user || (user.role !== 'owner' && user.role !== 'admin_finance')) {
     return (
       <div className="card">
         <p className="muted">Tidak punya akses ke halaman ini.</p>

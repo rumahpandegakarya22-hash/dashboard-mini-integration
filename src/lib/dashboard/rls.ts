@@ -23,7 +23,7 @@ export function filterSheetsForRole(sheets: SheetsOut, role: string): SheetsOut 
   const out: SheetsOut = {};
   for (const [title, rows] of Object.entries(sheets)) {
     if (!allow.some((re) => re.test(title))) continue; // tab tidak diizinkan untuk role ini
-    if (/penghuni/i.test(title) && role !== 'admin' && Array.isArray(rows) && rows.length) {
+    if (/penghuni/i.test(title) && role !== 'admin_finance' && Array.isArray(rows) && rows.length) {
       const header = (rows[0] || []).map((h) => String(h));
       const drop = header.map((h, i) => (PII_COLS.test(h) ? i : -1)).filter((i) => i >= 0);
       out[title] = drop.length ? rows.map((r) => r.filter((_, i) => !drop.includes(i))) : rows;
@@ -45,7 +45,7 @@ export function filterTablesForRole(tables: DbTables, role: string): DbTables {
     if (!allow.some((re) => re.test(title))) continue; // tabel tidak diizinkan untuk role ini
     // Redaksi kolom PII identik dengan filterSheetsForRole: tab penghuni, non-admin.
     // Baris /api/db berupa objek (kolom→nilai), jadi hapus key yang cocok PII_COLS.
-    if (/penghuni/i.test(title) && role !== 'admin' && Array.isArray(rows) && rows.length) {
+    if (/penghuni/i.test(title) && role !== 'admin_finance' && Array.isArray(rows) && rows.length) {
       out[table] = rows.map((r) => {
         if (!r || typeof r !== 'object') return r;
         const o: Record<string, any> = {};

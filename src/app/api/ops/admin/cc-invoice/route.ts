@@ -7,7 +7,7 @@ const EMAIL_RE = /^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/;
 
 async function gate() {
   const user = await getSessionUser();
-  if (!user || (user.role !== 'owner' && user.role !== 'staff_admin')) return null;
+  if (!user || (user.role !== 'owner' && user.role !== 'admin_finance')) return null;
   return user;
 }
 

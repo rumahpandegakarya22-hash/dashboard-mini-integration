@@ -27,8 +27,8 @@ const base: AuthState = {
   dashboardStatus: 'pending'
 };
 
-const dashUser = { id: 'u1', username: 'budi', name: 'Budi', role: 'admin' as const };
-const opsUser = { id: 'u1', username: 'budi', name: 'Budi', role: 'staff_admin' as const };
+const dashUser = { id: 'u1', username: 'budi', name: 'Budi', role: 'admin_finance' as const };
+const opsUser = { id: 'u1', username: 'budi', name: 'Budi', role: 'admin_finance' as const };
 
 interface Case {
   nama: string;
@@ -51,20 +51,20 @@ const cases: Case[] = [
   },
   {
     nama: 'dashboard-only',
-    s: { ...base, dashboardUser: dashUser, dashboardRole: 'admin', dashboardStatus: 'active' },
+    s: { ...base, dashboardUser: dashUser, dashboardRole: 'admin_finance', dashboardStatus: 'active' },
     akar: '/dashboard', dash: 'BOLEH', ops: '/pending'
   },
   {
     nama: 'ops-only',
-    s: { ...base, user: opsUser, opsRole: 'staff_admin', opsStatus: 'active', status: 'active' },
+    s: { ...base, user: opsUser, opsRole: 'admin_finance', opsStatus: 'active', status: 'active' },
     akar: '/ops', dash: '/pending', ops: 'BOLEH'
   },
   {
     nama: 'keduanya',
     s: {
       ...base,
-      dashboardUser: dashUser, dashboardRole: 'admin', dashboardStatus: 'active',
-      user: opsUser, opsRole: 'staff_admin', opsStatus: 'active', status: 'active'
+      dashboardUser: dashUser, dashboardRole: 'admin_finance', dashboardStatus: 'active',
+      user: opsUser, opsRole: 'admin_finance', opsStatus: 'active', status: 'active'
     },
     akar: '/dashboard', dash: 'BOLEH', ops: 'BOLEH'
   },
@@ -73,8 +73,8 @@ const cases: Case[] = [
     nama: '2FA belum step-up (punya keduanya)',
     s: {
       ...base, needsTotp: true, totpEnrolled: true,
-      dashboardUser: dashUser, dashboardRole: 'admin', dashboardStatus: 'active',
-      user: opsUser, opsRole: 'staff_admin', opsStatus: 'active', status: 'active'
+      dashboardUser: dashUser, dashboardRole: 'admin_finance', dashboardStatus: 'active',
+      user: opsUser, opsRole: 'admin_finance', opsStatus: 'active', status: 'active'
     },
     akar: '/2fa', dash: '/2fa', ops: '/2fa'
   },

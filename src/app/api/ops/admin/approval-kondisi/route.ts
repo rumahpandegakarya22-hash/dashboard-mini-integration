@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
 
-const ALLOWED_ROLES = ['owner', 'staff_admin'] as const;
+const ALLOWED_ROLES = ['owner', 'admin_finance'] as const;
 
 function canAccess(role: string): boolean {
   return (ALLOWED_ROLES as readonly string[]).includes(role);

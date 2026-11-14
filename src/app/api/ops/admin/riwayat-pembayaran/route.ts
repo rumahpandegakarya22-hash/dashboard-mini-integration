@@ -13,8 +13,8 @@ function urlBerkasDrive(link: string): string | null {
   return m ? `/api/ops/berkas/${m[1]}` : null;
 }
 
-const EDITOR = new Set(['owner', 'staff_admin']);
-const ALLOWED = new Set(['owner', 'staff_admin', 'staff_sales']);
+const EDITOR = new Set(['owner', 'admin_finance']);
+const ALLOWED = new Set(['owner', 'admin_finance', 'sales']);
 
 async function requireAccess() {
   const user = await getSessionUser();

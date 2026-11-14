@@ -151,7 +151,7 @@ export default function UnifiedUserAdmin() {
                       ) : (
                         <>
                           <StatusCell status={u.dash.status} />{' '}
-                          <span className="muted">{u.dash.role || 'tanpa role'}</span>
+                          <span className="muted">{u.dash.role ? ROLE_LABEL[u.dash.role] : 'tanpa role'}</span>
                           <div style={{ marginTop: 6 }}>
                             {u.dash.status === 'active' ? (
                               <button
@@ -170,7 +170,7 @@ export default function UnifiedUserAdmin() {
                                   onChange={(v) =>
                                     setPickDash((p) => ({ ...p, [u.username]: v as DashboardRole }))
                                   }
-                                  options={DASHBOARD_ROLES.map((r) => ({ value: r, label: r }))}
+                                  options={DASHBOARD_ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
                                 />
                                 <button
                                   className="cell-btn"
@@ -219,7 +219,7 @@ export default function UnifiedUserAdmin() {
                                 <OriginSelect
                                   className="cell-select"
                                   ariaLabel="Role ops"
-                                  value={pickOps[u.username] || u.ops.role || 'staff_admin'}
+                                  value={pickOps[u.username] || u.ops.role || 'admin_finance'}
                                   onChange={(v) =>
                                     setPickOps((p) => ({ ...p, [u.username]: v as OpsRole }))
                                   }
@@ -238,7 +238,7 @@ export default function UnifiedUserAdmin() {
                                         : '/api/ops/admin/users/reactivate',
                                       {
                                         id: u.ops!.id,
-                                        role: pickOps[u.username] || u.ops!.role || 'staff_admin'
+                                        role: pickOps[u.username] || u.ops!.role || 'admin_finance'
                                       },
                                       oKey
                                     )

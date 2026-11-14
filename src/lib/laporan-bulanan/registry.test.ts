@@ -33,10 +33,10 @@ test('hanya owner-review yang ownerOnly', () => {
 test('boleh(): peran ALLOWED, ownerOnly hanya owner', () => {
   const biasa = { ownerOnly: false } as never;
   const khusus = { ownerOnly: true } as never;
-  assert.equal(boleh('staff_admin', biasa), true);
-  assert.equal(boleh('staff_sales', biasa), true);
+  assert.equal(boleh('admin_finance', biasa), true);
+  assert.equal(boleh('sales', biasa), true);
   assert.equal(boleh('tenant', biasa), false);
-  assert.equal(boleh('staff_admin', khusus), false);
+  assert.equal(boleh('admin_finance', khusus), false);
   assert.equal(boleh('owner', khusus), true);
 });
 

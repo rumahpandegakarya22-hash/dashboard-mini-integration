@@ -6,16 +6,15 @@
    berarti kebocoran data antar-role atau hilangnya akses yang sah (risiko R2).
    ========================================================================= */
 
-/** 5 role Dashboard. Berbeda & terpisah dari 9 role Ops (lihat §5.1). */
-export const DASHBOARD_ROLES = ['owner', 'admin', 'marketing', 'operasional', 'sales'] as const;
-export type DashboardRole = (typeof DASHBOARD_ROLES)[number];
+/** 5 role Dashboard — daftar & kunci sama dengan Mini App Ops (sumber: lib/core/roles.ts). */
+export { DASHBOARD_ROLES, type DashboardRole } from '@/lib/core/roles';
 
 /**
  * Tab spreadsheet yang boleh dilihat tiap role, diuji dengan regex terhadap
  * JUDUL TAB. `owner` tidak ada di peta ini — owner melihat semua (lihat rls.ts).
  */
 export const SHEET_ACCESS: Record<string, RegExp[]> = {
-  admin: [
+  admin_finance: [
     /penghuni/i,
     /keuangan|transaksi|jurnal|kas\b/i,
     /vendor/i,

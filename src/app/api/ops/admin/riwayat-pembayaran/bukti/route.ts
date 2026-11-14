@@ -4,7 +4,7 @@ import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
 import { fmtTanggal } from '@/lib/format-tanggal';
 
-const EDITOR = new Set(['owner', 'staff_admin']);
+const EDITOR = new Set(['owner', 'admin_finance']);
 const LINK_DRIVE = /^https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)[A-Za-z0-9_-]{10,120}/;
 
 async function gate() {
