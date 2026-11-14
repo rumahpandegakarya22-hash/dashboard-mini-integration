@@ -94,6 +94,20 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
         </div>
       );
 
+    case 'konten':
+      return (
+        <Reveal tier={0}>
+          <DataTablePage title="PEMANTAUAN KONTEN" cols={COLS.konten} data={d.konten} period={period} />
+        </Reveal>
+      );
+
+    case 'promosi':
+      return (
+        <Reveal tier={0}>
+          <DataTablePage title="PEMANTAUAN PROMOSI" cols={COLS.promosi} data={d.promosi} period={period} />
+        </Reveal>
+      );
+
     case 'prospek':
       return (
         <Reveal tier={0}>

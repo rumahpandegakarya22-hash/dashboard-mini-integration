@@ -18,7 +18,7 @@
    Dicatat sebagai penyimpangan sadar di docs/MIGRASI.md.
    ========================================================================= */
 
-import { parseDate, parseDateTime, fmtDateID, startOfDay } from '../format';
+import { parseDate, parseDateTime, fmtDateID, fmtNum, startOfDay } from '../format';
 import type { SheetsOut, SheetGrid } from '../source';
 import type {
   DashboardData,
@@ -26,6 +26,8 @@ import type {
   LogbookRow,
   PaymentRaw,
   LeadRow,
+  KontenRow,
+  PromosiRow,
   SurveyRow,
   BookingRow,
   TiketRow,
@@ -209,6 +211,55 @@ export function hydrateLeads(sheets: SheetsOut): LeadRow[] {
     .map((x, i) => ({
       check: false, id: 'LD-' + pad3(i + 1), name: x.name, wa: x.wa,
       asal: x.asal || x.platform, tanggal: x.tanggal, status: pill(x.status)
+    }));
+}
+
+export function hydrateKonten(sheets: SheetsOut): KontenRow[] {
+  const rows = findTab(sheets, (h) => has(h, 'tanggal post') && has(h, 'tipe konten'));
+  if (!rows) return [];
+  const o = objs(rows, {
+    tanggal: ['tanggal post'], platform: ['platform'], tipe: ['tipe konten'], judul: ['judul', 'caption'],
+    jam: ['jam tayang'], status: ['status'], likes: ['likes'], komentar: ['komentar'],
+    share: ['share'], reach: ['reach'], er: ['er (%)', 'er']
+  });
+  const pill = (s: string): Pill => {
+    const t = s.toLowerCase();
+    if (t.includes('post') || t.includes('tayang') || t.includes('publish')) return { t: s, c: 's-complete' };
+    if (t.includes('draft') || t.includes('rencana') || t.includes('jadwal') || t.includes('schedule')) return { t: s, c: 's-pending' };
+    return { t: s || '—', c: 's-progress' };
+  };
+  return o
+    .filter((x) => x.judul || x.tanggal)
+    .map((x, i) => ({
+      check: false, id: 'CT-' + pad3(i + 1), name: x.judul || '—', tanggal: x.tanggal ? fmtDateID(x.tanggal) : '—',
+      platform: x.platform, tipe: x.tipe, jam: x.jam, status: pill(x.status),
+      likes: fmtNum(x.likes || 0), komentar: fmtNum(x.komentar || 0), share: fmtNum(x.share || 0),
+      reach: fmtNum(x.reach || 0), er: x.er ? x.er + '%' : '—'
+    }));
+}
+
+export function hydratePromosi(sheets: SheetsOut): PromosiRow[] {
+  const rows = findTab(sheets, (h) => has(h, 'nama promosi') && has(h, 'spend aktual'));
+  if (!rows) return [];
+  const o = objs(rows, {
+    nama: ['nama promosi'], platform: ['platform'], tipe: ['tipe'], mulai: ['tanggal mulai'], selesai: ['tanggal selesai'],
+    budget: ['budget'], spend: ['spend aktual'], targetLeads: ['target leads'], leadsAktual: ['leads aktual'],
+    booking: ['booking dari promo'], cpl: ['cpl'], roi: ['roi (%)'], status: ['status']
+  });
+  const pill = (s: string): Pill => {
+    const t = s.toLowerCase();
+    if (t.includes('selesai') || t.includes('done')) return { t: s, c: 's-complete' };
+    if (t.includes('jeda') || t.includes('pause') || t.includes('rencana')) return { t: s, c: 's-pending' };
+    return { t: s || '—', c: 's-progress' };
+  };
+  const rp = (v: string) => (v ? 'Rp' + fmtNum(v) : '—');
+  return o
+    .filter((x) => x.nama)
+    .map((x, i) => ({
+      check: false, id: 'PR-' + pad3(i + 1), name: x.nama, platform: x.platform, tipe: x.tipe,
+      mulai: x.mulai ? fmtDateID(x.mulai) : '—', selesai: x.selesai ? fmtDateID(x.selesai) : '—',
+      budget: rp(x.budget), spend: rp(x.spend), targetLeads: fmtNum(x.targetLeads || 0), leadsAktual: fmtNum(x.leadsAktual || 0),
+      booking: fmtNum(x.booking || 0), cpl: rp(x.cpl), roi: x.roi ? x.roi + '%' : '—', status: pill(x.status)
     }));
 }
 
@@ -603,6 +654,8 @@ export function hydrateDashboard(
   // Pakai Turso payments kalau ada (sumber primer), fallback ke Sheets untuk kompatibilitas.
   const payments = opts?.tursoPayments ?? hydratePayments(sheets);
   const leads = hydrateLeads(sheets);
+  const konten = hydrateKonten(sheets);
+  const promosi = hydratePromosi(sheets);
   const survey = hydrateSurvey(sheets);
   const booking = hydrateBooking(sheets);
   const tiket = hydrateTiket(sheets);
@@ -645,7 +698,7 @@ export function hydrateDashboard(
   }
 
   return {
-    penghuni, logbook, payments, leads, survey, booking, tiket, vendor, kamar,
+    penghuni, logbook, payments, leads, konten, promosi, survey, booking, tiket, vendor, kamar,
     dokumen, occupants, retention, rooms, stats, tempo, pembayaran,
     transaksi: opts?.transaksi ?? []
   };

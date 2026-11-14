@@ -223,12 +223,48 @@ export interface WaitingListRow {
   aksi: string;
 }
 
+export interface KontenRow {
+  check: boolean;
+  id: string;
+  name: string;
+  tanggal: string;
+  platform: string;
+  tipe: string;
+  jam: string;
+  status: Pill;
+  likes: string;
+  komentar: string;
+  share: string;
+  reach: string;
+  er: string;
+}
+
+export interface PromosiRow {
+  check: boolean;
+  id: string;
+  name: string;
+  platform: string;
+  tipe: string;
+  mulai: string;
+  selesai: string;
+  budget: string;
+  spend: string;
+  targetLeads: string;
+  leadsAktual: string;
+  booking: string;
+  cpl: string;
+  roi: string;
+  status: Pill;
+}
+
 /** Seluruh data dashboard hasil hidrasi satu kali dari /api/dashboard/sheets. */
 export interface DashboardData {
   penghuni: Penghuni[];
   logbook: LogbookRow[];
   payments: PaymentRaw[];
   leads: LeadRow[];
+  konten: KontenRow[];
+  promosi: PromosiRow[];
   survey: SurveyRow[];
   booking: BookingRow[];
   tiket: TiketRow[];

@@ -48,6 +48,8 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
     pages: [
       { id: 'overview', label: 'Overview', group: 'dash', crumb: 'Marketing' },
       { id: 'leads', label: 'Leads dan Survey', group: 'page', crumb: 'Leads dan Survey' },
+      { id: 'konten', label: 'Konten', group: 'page', crumb: 'Konten' },
+      { id: 'promosi', label: 'Promosi', group: 'page', crumb: 'Promosi' },
       { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
     ]
   },
