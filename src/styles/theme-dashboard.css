@@ -81,6 +81,7 @@
   line-height: 1.45;
   letter-spacing: -0.01em;
   min-height: 100vh;
+  box-sizing: border-box; /* padding ikut dihitung; tanpa ini tinggi = 100vh + 36px dan halaman pendek tetap bisa di-scroll */
   padding: 18px;
   /* colourful "liquid" base the glass refracts */
   background:
@@ -130,6 +131,10 @@
   padding: 16px 12px;
   gap: 18px;
   min-height: 100%;
+  /* Tinggi isi sidebar tidak boleh ikut menentukan tinggi baris grid; kalau tidak muat, scroll di dalam sidebar.
+     Tanpa ini halaman pendek tetap bisa di-scroll karena sidebar lebih tinggi dari layar. */
+  contain: size;
+  overflow-y: auto;
 }
 
 [data-app='dashboard'] .brand {
@@ -808,7 +813,8 @@
   transition: grid-template-columns 0.32s cubic-bezier(.22,.61,.36,1);
 }
 [data-app='dashboard'] .sidebar {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   transition: opacity 0.2s ease, padding 0.32s ease;
 }
 [data-app='dashboard'] .app.sidebar-collapsed { grid-template-columns: 0px 1fr; }
