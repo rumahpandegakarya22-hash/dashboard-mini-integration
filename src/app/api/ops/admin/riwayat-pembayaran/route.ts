@@ -33,12 +33,13 @@ export async function GET(req: NextRequest) {
   const idPenghuni = req.nextUrl.searchParams.get('id');
 
   if (!idPenghuni) {
-    // Daftar penghuni untuk dropdown
+    // Daftar penghuni untuk dropdown: aktif dulu, alumni (sudah checkout) sesudahnya; masing-masing urut nomor kamar.
+    // Alumni di kamar yang sama: yang paling baru di atas. Status 'Check-in' = aktif, sama dengan label "(Check-out)" di panel.
     const res = await turso().execute(
       `SELECT oh.id_penghuni, oh.nama, oh.no_kamar, oh.status,
               oh.tanggal_mulai, oh.tanggal_selesasi
        FROM occupancy_history oh
-       ORDER BY oh.id_penghuni DESC`
+       ORDER BY CASE WHEN oh.status = 'Check-in' THEN 0 ELSE 1 END, CAST(oh.no_kamar AS INTEGER), oh.id_penghuni DESC`
     );
     const data = res.rows.map((r) => ({
       id: String(r.id_penghuni ?? ''),

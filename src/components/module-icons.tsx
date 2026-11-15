@@ -12,8 +12,10 @@ import {
   ClipboardPlus,
   DoorOpen,
   FileCog,
+  Gavel,
   Globe,
   Hammer,
+  HardHat,
   HandCoins,
   History,
   Landmark,
@@ -59,6 +61,8 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   'daily-task': ListTodo,
   'aktivitas-finansial': ReceiptText,
   'kepuasan-penghuni': Smile,
+  'pelanggaran-peraturan': Gavel,
+  'kecelakaan-kerja': HardHat,
   'kamar-siap': BedDouble,
   'tambah-vendor': Store,
   'tambah-waiting-list': ClipboardPlus
@@ -75,6 +79,7 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
     label: 'Administrasi',
     ids: ['pembayaran-sewa', 'aktivitas-finansial', 'feedback', 'kepuasan-penghuni']
   },
+  { label: 'Tata Tertib & Keselamatan', ids: ['pelanggaran-peraturan', 'kecelakaan-kerja'] },
   { label: 'Sales', ids: ['survey', 'tambah-waiting-list'] },
   { label: 'Marketing', ids: ['leads', 'konten', 'promosi'] },
   { label: 'Maintenance', ids: ['perawatan-preventif', 'perbaikan-korektif', 'pemakaian-stok-maintenance', 'tambah-vendor'] },
@@ -102,6 +107,7 @@ export const NAV_PENGATURAN: { href: string; label: string; icon: LucideIcon; ow
   { href: '/ops/admin/wifi', label: 'Kredensial WiFi', icon: Wifi },
   { href: '/ops/admin/deposit', label: 'Setting Deposit', icon: HandCoins },
   { href: '/ops/admin/aset-tetap', label: 'Aset Tetap & Penyusutan', icon: Landmark },
+  { href: '/ops/admin/jenis-pelanggaran', label: 'Jenis Pelanggaran', icon: Gavel },
   { href: '/ops/admin/kamar', label: 'Kelola Harga Kamar', icon: Tag, ownerOnly: true },
   { href: '/ops/admin/users', label: 'Kelola User', icon: Users, ownerOnly: true }
 ];

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { DataKinerjaSales } from '../builders/sales';
-import { susunSales, klasifikasiBooking, hasilTertarik } from '../builders/sales';
+import { susunSales, klasifikasiBooking } from '../builders/sales';
 import { htmlKinerjaSales } from './kinerja-sales';
 import { parsePeriode } from '../periode';
 
@@ -17,7 +17,11 @@ function dasar(): DataKinerjaSales {
       { tanggal: '2026-06-10', nama: 'Sari', kamar: '7', status: 'Konfirmasi', harga: 2000000, sumber: 'Mami Kos' },
       { tanggal: '2026-06-12', nama: 'Dewi', kamar: '9', status: 'Dibatalkan', harga: 1500000, sumber: 'Referral' },
     ],
-    survey: { total: 4, tertarik: 3, konversiPersen: 75 },
+    kpi: [
+      { nama: 'Konversi Leads → Survey', nilai: '92,5 %', target: '≥ 90 %', status: 'tercapai' },
+      { nama: 'Cancellation Rate', nilai: '33,3 %', target: '≤ 20 %', status: 'belum' },
+      { nama: 'Waiting List (antrean saat ini)', nilai: '3 orang', target: '5 orang', status: 'info' },
+    ],
   };
 }
 
@@ -27,24 +31,24 @@ test('sales: header, periode, bagian dan label', () => {
   assert.match(h, /Kost Tiga Dara Putri UGM/);
   assert.ok(h.includes('Periode: Juni 2026   |   Dibuat: 05 Jul 2026 14:15'));
   for (const s of [
-    'A. Aktivitas Booking — Juni 2026', 'Booking Check-in', 'Booking Konfirmasi', 'Booking Dibatalkan',
+    'A. Indikator Kinerja Sales — Juni 2026', 'B. Aktivitas Booking — Juni 2026', 'Booking Check-in', 'Booking Konfirmasi', 'Booking Dibatalkan',
     'Nilai Booking (non-batal)', 'Sumber Leads Teratas',
-    'B. Aktivitas Survey / Leads — Juni 2026', 'Total Survey', 'Tertarik / Lanjut', 'Konversi Minat',
   ]) assert.ok(h.includes(s), s);
+  for (const hilang of ['Konversi Minat', 'Tertarik / Lanjut', 'Aktivitas Survey']) assert.ok(!h.includes(hilang), hilang);
   for (const k of ['Tgl', 'Nama', 'Kamar', 'Status', 'Harga', 'Sumber']) assert.ok(h.includes(`<th>${k}</th>`), k);
   assert.match(h, /<td>Sumber Leads Teratas<\/td><td>Mami Kos \(2\)<\/td>/);
   assert.match(h, /<td>Nilai Booking \(non-batal\)<\/td><td>Rp4\.000\.000<\/td>/);
-  assert.match(h, /<td>Konversi Minat<\/td><td>75%<\/td>/);
+  assert.match(h, /<td>Konversi Leads → Survey<\/td><td>92,5 %<\/td><td>≥ 90 %<\/td><td><span class="pil pil-baik">Tercapai<\/span><\/td>/);
+  assert.match(h, /<td>Cancellation Rate<\/td><td>33,3 %<\/td><td>≤ 20 %<\/td><td><span class="pil pil-buruk">Belum tercapai<\/span><\/td>/);
+  assert.match(h, /<td>Waiting List \(antrean saat ini\)<\/td><td>3 orang<\/td><td>5 orang<\/td><td><span class="pil pil-netral">–<\/span><\/td>/);
   assert.match(h, /<td>03 Jun 2026<\/td><td>Rina<\/td><td>5<\/td><td>Check-in<\/td><td>Rp2\.000\.000<\/td><td>Mami Kos<\/td>/);
   assert.match(h, /Dibuat oleh,[\s\S]*Staf Divisi[\s\S]*Mengetahui,[\s\S]*Pengelola Kost/);
 });
 
-test('sales: bulan kosong utuh, 0% bukan NaN', () => {
-  const d = susunSales(periode, dibuat, [], []);
+test('sales: bulan kosong utuh, tanpa NaN', () => {
+  const d = susunSales(periode, dibuat, []);
   const h = htmlKinerjaSales(d);
   assert.match(h, /Tidak ada booking pada periode ini\./);
-  assert.match(h, /Tidak ada survey pada periode ini\./);
-  assert.match(h, /<td>Konversi Minat<\/td><td>0%<\/td>/);
   assert.match(h, /<td>Sumber Leads Teratas<\/td><td>-<\/td>/);
   assert.match(h, /<td>Nilai Booking \(non-batal\)<\/td><td>Rp0<\/td>/);
   assert.ok(!h.includes('NaN'));
@@ -71,15 +75,6 @@ test('klasifikasiBooking: nilai status nyata', () => {
   assert.equal(klasifikasiBooking(null), 'lain');
 });
 
-test('hasilTertarik: nilai dropdown nyata', () => {
-  assert.equal(hasilTertarik('Tertarik- Lanjut'), true);
-  assert.equal(hasilTertarik('Booking di Tempat'), true);
-  assert.equal(hasilTertarik('Dalam pertimbangan'), false);
-  assert.equal(hasilTertarik('Tidak Jadi'), false);
-  assert.equal(hasilTertarik('Tidak hadir'), false);
-  assert.equal(hasilTertarik(null), false);
-});
-
 const b = (status: string, harga: number, sumber: string | null, tanggal = '2026-06-05') =>
   ({ tanggal, nama: 'Rina', kamar: 5, status, harga, sumber });
 
@@ -103,11 +98,4 @@ test('susunSales: sumber teratas, seri diurut abjad', () => {
   ], []);
   assert.equal(d.sumberTeratas, 'Mami Kos (2)');
   assert.equal(susunSales(periode, dibuat, [b('Check-in', 1, null)], []).sumberTeratas, '-');
-});
-
-test('susunSales: konversi minat dibulatkan, 0 bila tanpa survey', () => {
-  const s = (hasil: string) => ({ hasil });
-  const d = susunSales(periode, dibuat, [], [s('Tertarik- Lanjut'), s('Tidak Jadi'), s('Tidak hadir')]);
-  assert.deepEqual(d.survey, { total: 3, tertarik: 1, konversiPersen: 33 });
-  assert.equal(susunSales(periode, dibuat, [], []).survey.konversiPersen, 0);
 });

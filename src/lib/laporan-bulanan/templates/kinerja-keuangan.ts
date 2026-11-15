@@ -1,5 +1,6 @@
 import type { DataKinerjaKeuangan } from '../builders/keuangan';
 import { esc, rupiah, teksTgl, tgl, waktuWib } from '../format';
+import { scorecardHtml } from '../kpi-laporan';
 import { kerangkaDokumen } from '../shell';
 
 const kv = (baris: [string, string][]) =>
@@ -18,10 +19,10 @@ export function htmlKinerjaKeuangan(d: DataKinerjaKeuangan): string {
 <h2 style="text-align:center">Kost Tiga Dara Putri UGM</h2>
 <p>Periode: ${label}   |   Dibuat: ${waktuWib(d.dibuat, true)}</p>
 <p>Catatan: ini rekap kinerja kas &amp; laba bulanan. Laporan akuntansi formal (Laba Rugi, Neraca, Arus Kas) tetap dihasilkan melalui modul Laporan Keuangan.</p>
-<h3>A. Kinerja Arus Kas — ${label}</h3>
+<h3>A. Indikator Kinerja Keuangan — ${label}</h3>
+${scorecardHtml(d.kpi)}
+<h3>B. Kinerja Arus Kas</h3>
 ${kv([['Kas Masuk', rupiah(d.kasMasuk)], ['Kas Keluar', rupiah(d.kasKeluar)], ['Arus Kas Bersih', rupiah(d.arusBersih)], ['Jumlah Transaksi', String(d.jumlahTransaksi)]])}
-<h3>B. Kinerja Laba/Rugi (berbasis pengakuan)</h3>
-${kv([['Pendapatan', rupiah(d.pendapatan)], ['Beban', rupiah(d.beban)], ['Laba / (Rugi) Bulan Ini', rupiah(d.laba)]])}
 <h3>C. Pengeluaran per Kategori</h3>
 <table><tr><th>Kategori</th><th>Total Pengeluaran</th></tr>${kategori}</table>
 <h3>D. Rincian Transaksi</h3>

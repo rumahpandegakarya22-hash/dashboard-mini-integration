@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
 import { galatNopol, namaKendaraanBersih, normalisasiNopol } from '@/lib/kendaraan';
+import { rapikanBarang } from '@/lib/barang-tambahan';
 
 async function requireAccess() {
   const user = await getSessionUser();
@@ -22,7 +23,7 @@ export async function GET() {
             no_hp, pekerjaan, instansi, tanggal_lahir, asal_daerah, tanggal_masuk,
             nomor_darurat_1, hubungan_kontak_darurat_1, nama_kontak_darurat_1,
             nomor_darurat_2, hubungan_kontak_darurat_2, nama_kontak_darurat_2,
-            link_identitas, tambahan_listrik, nopol, nama_kendaraan
+            link_identitas, tambahan_listrik, barang_tambahan, nopol, nama_kendaraan
      FROM active_tenant
      ORDER BY CAST(no_kamar AS INTEGER)`
   );
@@ -48,6 +49,7 @@ export async function GET() {
     namaDarurat2: String(r.nama_kontak_darurat_2 ?? ''),
     linkIdentitas: String(r.link_identitas ?? ''),
     tambahanListrik: Number(r.tambahan_listrik ?? 0),
+    barangTambahan: String(r.barang_tambahan ?? ''),
     nopol: String(r.nopol ?? ''),
     namaKendaraan: String(r.nama_kendaraan ?? '')
   }));
@@ -73,6 +75,7 @@ const EDITABLE_COLS: Record<string, { col: string; numeric?: boolean }> = {
   namaDarurat2: { col: 'nama_kontak_darurat_2' },
   linkIdentitas: { col: 'link_identitas' },
   tambahanListrik: { col: 'tambahan_listrik', numeric: true },
+  barangTambahan: { col: 'barang_tambahan' },
   nopol: { col: 'nopol' },
   namaKendaraan: { col: 'nama_kendaraan' }
 };
@@ -120,6 +123,8 @@ export async function PUT(req: NextRequest) {
   }
   if ('namaKendaraan' in body) body.namaKendaraan = namaKendaraanBersih(body.namaKendaraan);
 
+  if ('barangTambahan' in body) body.barangTambahan = rapikanBarang(body.barangTambahan);
+
   const set: string[] = [];
   const args: (string | number | null)[] = [];
   for (const [field, { col, numeric }] of Object.entries(EDITABLE_COLS)) {
@@ -153,6 +158,15 @@ export async function PUT(req: NextRequest) {
         'namaKendaraan' in body ? String(body.namaKendaraan || '') : null,
         kamarId
       ]
+    });
+  }
+
+  // Salinan permanen di riwayat hunian, sama seperti kendaraan.
+  if ('barangTambahan' in body) {
+    await turso().execute({
+      sql: `UPDATE occupancy_history SET barang_tambahan = ?
+            WHERE id_penghuni = (SELECT id_penghuni FROM active_tenant WHERE kamar_id = ?)`,
+      args: [String(body.barangTambahan || ''), kamarId]
     });
   }
 

@@ -4,6 +4,7 @@ import { canAccess } from '@/lib/core/roles';
 import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
 import { urlBerkas } from '@/lib/teman-rara';
+import { rapikanBarang } from '@/lib/barang-tambahan';
 
 /**
  * Review pendaftaran penghuni baru yang mengisi sendiri lewat aplikasi Teman Rara.
@@ -147,11 +148,15 @@ export async function PATCH(req: NextRequest) {
   const listrikRaw = Number(body.tambahanListrik ?? 0);
   const tambahanListrik = Number.isFinite(listrikRaw) && listrikRaw > 0 ? Math.round(listrikRaw) : null;
 
+  // Nama barangnya ikut jalur yang sama: singgah di booking, disalin saat check-in.
+  const barangTambahan = rapikanBarang(body.barangTambahan) || null;
+
   const res = await db.execute({
     sql: `UPDATE booking SET status_booking = ?, alasan_cancel = ?,
-            tambahan_listrik = COALESCE(?, tambahan_listrik)
+            tambahan_listrik = COALESCE(?, tambahan_listrik),
+            barang_tambahan = COALESCE(?, barang_tambahan)
           WHERE no_booking = ?`,
-    args: [STATUS_REVIEW[aksi], aksi === 'tolak' ? alasan : null, tambahanListrik, noBooking]
+    args: [STATUS_REVIEW[aksi], aksi === 'tolak' ? alasan : null, tambahanListrik, barangTambahan, noBooking]
   });
   if (res.rowsAffected === 0) return NextResponse.json({ error: 'Booking tidak ditemukan.' }, { status: 404 });
 
@@ -162,7 +167,7 @@ export async function PATCH(req: NextRequest) {
     action: 'UPDATE',
     target: `Turso → booking (${noBooking})`,
     oldData: sebelum.rows[0],
-    newData: { status_booking: STATUS_REVIEW[aksi], alasan_cancel: aksi === 'tolak' ? alasan : null, tambahan_listrik: tambahanListrik },
+    newData: { status_booking: STATUS_REVIEW[aksi], alasan_cancel: aksi === 'tolak' ? alasan : null, tambahan_listrik: tambahanListrik, barang_tambahan: barangTambahan },
     durationSec: (Date.now() - t0) / 1000,
     status: 'sukses'
   });

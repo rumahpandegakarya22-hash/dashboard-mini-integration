@@ -29,6 +29,9 @@ export interface KpiData {
     responsLeadsMenit: number | null;
     waitingList: number;
     bookingBaru: number;
+    survey: number;
+    cancelRate: number | null;
+    lamaSewaBulan: number | null;
   };
   marketing?: {
     cpl: number | null;
@@ -51,6 +54,8 @@ export interface KpiData {
     kepatuhanPreventif: number | null;
     kepatuhanInspeksi: number | null;
     kamarSiapHari: number | null;
+    resolusiHari: number | null;
+    tiketAktif: number;
   };
 }
 
@@ -69,7 +74,11 @@ async function query(sql: string): Promise<DbRow[]> {
   }
 }
 
-export async function loadKpi(role: string, range: K.Range, kapasitas: number): Promise<KpiData> {
+/**
+ * Opsi (dipakai laporan bulanan): `acuan` = tanggal "hari ini" untuk jatuh tempo/tunggakan, supaya angka laporan bulan lalu
+ * per akhir periode; `segar` = lewati cache Next dan baca database langsung (juga agar jalan di luar runtime Next).
+ */
+export async function loadKpi(role: string, range: K.Range, kapasitas: number, opsi: { acuan?: Date; segar?: boolean } = {}): Promise<KpiData> {
   const full = isFullView(role);
   const want = {
     admin: full || role === 'admin_finance',
@@ -79,8 +88,8 @@ export async function loadKpi(role: string, range: K.Range, kapasitas: number): 
   };
   if (!want.admin && !want.sales && !want.marketing && !want.ops) return {};
 
-  const hariIni = K.tgl(new Date().toISOString().slice(0, 10)) as Date;
-  const t = await readComputedTables();
+  const hariIni = opsi.acuan ?? (K.tgl(new Date().toISOString().slice(0, 10)) as Date);
+  const t = await readComputedTables(opsi.segar);
   const out: KpiData = {};
   const inR = (v: unknown) => K.dalamRentang(v, range);
 
@@ -105,7 +114,8 @@ export async function loadKpi(role: string, range: K.Range, kapasitas: number): 
   }));
   const aktif = new Set(aktifRows.map((r) => str(r.id_penghuni)));
 
-  const booking = (t.booking || []).filter((b) => inR(b.tanggal_booking) && !/batal|cancel/i.test(str(b.status_booking)));
+  const bookingRange = (t.booking || []).filter((b) => inR(b.tanggal_booking));
+  const booking = bookingRange.filter((b) => !/batal|cancel/i.test(str(b.status_booking)));
   const survey = (t.survey || []).filter((s) => inR(s.tanggal_survey));
 
   if (want.admin) {
@@ -148,7 +158,13 @@ export async function loadKpi(role: string, range: K.Range, kapasitas: number): 
         (t.leads || []).filter((l) => inR(l.masuk_pada ?? l.tanggal)).map((l) => ({ masuk: l.masuk_pada ? str(l.masuk_pada) : null, chat: l.chat_pertama_pada ? str(l.chat_pertama_pada) : null }))
       ),
       waitingList: num(waiting[0]?.n),
-      bookingBaru: booking.length
+      bookingBaru: booking.length,
+      survey: survey.length,
+      cancelRate: K.rasioBatal(bookingRange.length - booking.length, bookingRange.length),
+      lamaSewaBulan: K.rataLamaSewaBulan(
+        (t.occupancy_history || []).map((o) => ({ mulai: str(o.tanggal_mulai), selesai: o.tanggal_selesasi ? str(o.tanggal_selesasi) : null })),
+        hariIni
+      )
     };
   }
 
@@ -189,7 +205,9 @@ export async function loadKpi(role: string, range: K.Range, kapasitas: number): 
       kepatuhanInspeksi: K.kepatuhanInspeksi([...insKeb, ...insFas].map((r) => str(r.tanggal)), range, hariIni),
       kamarSiapHari: K.rataKamarSiapHari(
         siap.filter((r) => inR(r.tanggal_checkout)).map((r) => ({ checkout: str(r.tanggal_checkout), siap: r.kamar_siap_pada ? str(r.kamar_siap_pada) : null }))
-      )
+      ),
+      resolusiHari: K.rataResolusiHari(cm.map((r) => ({ kerusakan: str(r.tanggal_kerusakan), selesai: r.tanggal_selesai ? str(r.tanggal_selesai) : null }))),
+      tiketAktif: [...cm, ...pm].filter((r) => !/selesai|complete/i.test(str(r.status))).length
     };
   }
 

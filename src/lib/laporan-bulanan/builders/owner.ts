@@ -1,8 +1,11 @@
 import { turso } from '@/lib/core/turso';
 import { buildArusKas, buildLabaRugi } from '@/lib/laporan/generator';
 import { ambilTransaksiJurnal, ekstrakKeuangan } from './keuangan';
+import { ambilKpiLaporan, kamarTerisi } from './kpi';
+import { ambilKecelakaan, ambilPelanggaran, teratas, type KecelakaanRow, type PelanggaranRow } from './admin';
 import type { Periode } from '../types';
 import { argTanggal, kondisiTanggal } from '../tanggal';
+import { barisOwner, ringkasPerDivisi, type BarisKpi, type RingkasDivisi } from '../kpi-laporan';
 import { labaRugiRingkas, metrikBulan, periodeLalu, rincianLabaRugi, type Ringkasan } from '../ringkasan';
 
 export { ekstrakKeuangan };
@@ -16,43 +19,46 @@ export interface DataOwner {
     pendapatan: number; beban: number; laba: number;
     kasMasuk: number; kasKeluar: number; arusBersih: number;
     transaksi: { tanggal: string; keterangan: string; debit: string; kredit: string; nominal: number }[];
+    /** Jumlah baris jurnal pengakuan sewa yang tidak ditampilkan di Owner Review (terlalu rinci). */
+    pengakuanSewa: number;
   };
   operasional: {
     korektifSelesai: number; preventifSelesai: number; inspeksi: number; darurat: number; biaya: number;
     rincian: { tanggal: string; jenis: string; item: string; biaya: number; status: string }[];
   };
   marketing: { leads: number; booking: number };
+  /** Logbook Admin: pelanggaran peraturan penghuni dan kecelakaan kerja pada periode. */
+  tataTertib: {
+    pelanggaran: { total: number; jenis: string; rows: PelanggaranRow[] };
+    kecelakaan: { total: number; lokasi: string; rows: KecelakaanRow[] };
+  };
   ringkasan: Ringkasan;
+  kpi: { owner: BarisKpi[]; divisi: RingkasDivisi[] };
   rekomendasi: string[];
 }
 
 export function susunRekomendasi(d: Omit<DataOwner, 'rekomendasi'>): string[] {
   const r: string[] = [];
   if (d.operasional.inspeksi === 0) r.push('Dokumentasikan inspeksi fasilitas rutin agar kondisi bangunan terpantau setiap bulan.');
-  if (d.keuangan.transaksi.length === 0) r.push('Input penerimaan sewa dan transaksi keuangan ke jurnal agar laporan keuangan terisi.');
+  if (d.keuangan.transaksi.length + d.keuangan.pengakuanSewa === 0) r.push('Input penerimaan sewa dan transaksi keuangan ke jurnal agar laporan keuangan terisi.');
   if (d.marketing.leads === 0) r.push('Isi rekap leads marketing agar kinerja pemasaran dapat dievaluasi.');
   return r.length ? r : ['Data periode ini sudah lengkap; tidak ada rekomendasi tambahan.'];
+}
+
+/** Jurnal "Pengakuan sewa ..." (satu baris per penghuni per bulan) membanjiri rincian; Owner Review tidak memuatnya. */
+export function pisahPengakuanSewa<T extends { keterangan: string }>(jurnal: T[]): { transaksi: T[]; pengakuanSewa: number } {
+  const transaksi = jurnal.filter(t => !/^\s*pengakuan sewa/i.test(t.keterangan));
+  return { transaksi, pengakuanSewa: jurnal.length - transaksi.length };
 }
 
 const teks = (v: unknown) => (v == null ? '' : String(v));
 const angka = (v: unknown) => { const n = Number(v ?? 0); return Number.isFinite(n) ? n : 0; };
 
-// Penghuni yang masih tinggal pada tanggal tsb (mulai <= tgl, belum selesai atau selesai sesudahnya).
-function kamarTerisi(tgl: string): Promise<number> {
-  return turso()
-    .execute({
-      sql: `SELECT COUNT(DISTINCT no_kamar) AS n FROM occupancy_history
-            WHERE tanggal_mulai <= ? AND (tanggal_selesasi IS NULL OR tanggal_selesasi > ?)`,
-      args: [tgl, tgl],
-    })
-    .then(r => angka(r.rows[0]?.n));
-}
-
 export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): Promise<DataOwner> {
   const db = turso();
   const a = argTanggal(periode);
   const lalu = periodeLalu(periode);
-  const [lr, ak, masuk, keluar, jurnal, cm, pm, insp, leads, booking, lrLalu, diskon, isiKini, isiLalu, kamar] = await Promise.all([
+  const [lr, ak, masuk, keluar, jurnal, cm, pm, insp, leads, booking, lrLalu, diskon, isiKini, isiLalu, kamar, dataKpi, pelanggaran, kecelakaan] = await Promise.all([
     buildLabaRugi(periode.dari, periode.sampai),
     buildArusKas(periode.dari, periode.sampai),
     db.execute({
@@ -95,6 +101,9 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
     kamarTerisi(periode.sampai),
     kamarTerisi(lalu.sampai),
     db.execute('SELECT COUNT(*) AS n FROM kamar'),
+    ambilKpiLaporan(periode, dibuat, 'owner'),
+    ambilPelanggaran(periode),
+    ambilKecelakaan(periode),
   ]);
 
   const kerja = (rows: typeof cm.rows, jenis: string) =>
@@ -125,7 +134,7 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
     }),
     keuangan: {
       ...ekstrakKeuangan(lr, ak),
-      transaksi: jurnal,
+      ...pisahPengakuanSewa(jurnal),
     },
     operasional: {
       korektifSelesai: korektif.filter(selesai).length,
@@ -136,7 +145,12 @@ export async function ambilOwner(periode: Periode, dibuat: Date = new Date()): P
       rincian: semua.map(x => ({ tanggal: x.tanggal, jenis: x.jenis, item: x.item, biaya: x.biaya, status: x.status })),
     },
     marketing: { leads: angka(leads.rows[0]?.n), booking: angka(booking.rows[0]?.n) },
+    tataTertib: {
+      pelanggaran: { total: pelanggaran.length, jenis: teratas(pelanggaran.map(p => p.jenis)), rows: pelanggaran },
+      kecelakaan: { total: kecelakaan.length, lokasi: teratas(kecelakaan.map(k => k.lokasi)), rows: kecelakaan },
+    },
     ringkasan: susunRingkasan(),
+    kpi: { owner: barisOwner(dataKpi), divisi: ringkasPerDivisi(dataKpi) },
   };
   return { ...d, rekomendasi: susunRekomendasi(d) };
 }

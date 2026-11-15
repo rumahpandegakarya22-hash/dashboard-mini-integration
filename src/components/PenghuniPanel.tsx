@@ -26,13 +26,14 @@ interface Penghuni {
   namaDarurat2: string;
   linkIdentitas: string;
   tambahanListrik: number;
+  barangTambahan: string;
   nopol: string;
   namaKendaraan: string;
 }
 
 type Draft = Omit<Penghuni, 'kamarId' | 'idPenghuni' | 'noKamar'>;
 
-const FIELDS: { key: keyof Draft; label: string; type?: string; required?: boolean }[] = [
+const FIELDS: { key: keyof Draft; label: string; type?: string; required?: boolean; placeholder?: string }[] = [
   { key: 'namaLengkap', label: 'Nama Lengkap', required: true },
   { key: 'namaPanggilan', label: 'Nama Panggilan' },
   { key: 'email', label: 'Email', type: 'email' },
@@ -50,6 +51,7 @@ const FIELDS: { key: keyof Draft; label: string; type?: string; required?: boole
   { key: 'namaDarurat2', label: 'Nama Kontak Darurat 2' },
   { key: 'linkIdentitas', label: 'Link Identitas (Drive)' },
   { key: 'tambahanListrik', label: 'Tambahan Listrik (Rp/bln)', type: 'number' },
+  { key: 'barangTambahan', label: 'Nama Barang Tambahan (pisahkan dengan koma)', placeholder: 'mis. kulkas, rice cooker' },
   { key: 'nopol', label: 'Nopol Kendaraan' },
   { key: 'namaKendaraan', label: 'Nama Kendaraan' }
 ];
@@ -73,6 +75,7 @@ function toDraft(p: Penghuni): Draft {
     namaDarurat2: p.namaDarurat2,
     linkIdentitas: p.linkIdentitas,
     tambahanListrik: p.tambahanListrik,
+    barangTambahan: p.barangTambahan,
     nopol: p.nopol,
     namaKendaraan: p.namaKendaraan
   };
@@ -229,6 +232,7 @@ export default function PenghuniPanel() {
                         <input
                           id={`${p.kamarId}-${f.key}`}
                           type={f.type ?? 'text'}
+                          placeholder={f.placeholder}
                           value={String(d[f.key] ?? '')}
                           onChange={(e) =>
                             ubah(p.kamarId, { [f.key]: f.type === 'number' ? Number(e.target.value) || 0 : e.target.value } as Partial<Draft>)

@@ -50,6 +50,20 @@ Setelah semua laporan periode itu ada, cron mengirim **satu email** berisi PDF 1
 - Total lampiran dibatasi sekitar 3,5 MB per email (batas Brevo 4 MB). Bila lebih, otomatis dipecah menjadi beberapa email berlabel "(bagian 1/2)". Contoh uji Juni 2026: 13 berkas, 0,97 MB, satu email (sebelum Owner Review ikut).
 - Laporan yang sudah ada sebelumnya dirender ulang dari data saat ini untuk dilampirkan, jadi isi lampiran bisa sedikit berbeda dari arsip Drive bila data berubah setelah arsip dibuat.
 
+## Scorecard KPI (revisi 15 Nov 2026)
+
+Lima laporan **Kinerja** (Admin, Keuangan, Sales, Marketing, Operasional) dan **Owner Review** diawali bagian "Indikator Kinerja" berisi KPI SOW divisi: capaian, target, dan status (Tercapai / Belum tercapai / tanpa target). Laporan **Kerja** (daftar tugas harian) dan tiga laporan keuangan tidak berubah.
+
+- Angka dihitung `loadKpi` (`src/lib/dashboard/kpi.ts`), fungsi yang sama dengan kartu Dashboard, bukan rumus kedua. Target ada di `T` pada `src/lib/laporan-bulanan/kpi-laporan.ts`; ubah di sana bila SOW direvisi.
+- Tanggal acuan jatuh tempo, tunggakan, okupansi, dan lama sewa = **akhir periode** (hari ini untuk bulan berjalan), supaya laporan bulan lalu tidak berubah karena kejadian sesudahnya. Data dibaca langsung dari database, tanpa cache Next.
+- Pendapatan, margin, dan persen diskon memakai pendapatan **kotor** (sebelum diskon), sama dengan Dashboard. Tutup buku = hari kerja dari akhir bulan sampai laporan resmi pertama periode itu dibuat.
+- Owner Review memuat indikator Owner (RevPAR, margin, OPEX per kamar, CSAT, dst.) dan rekap jumlah KPI tercapai/belum per divisi beserta daftar yang belum tercapai.
+- Metric lama yang diganti: Konversi Minat (Sales), Engagement Rate dan Capaian Target versi lama (Marketing), Rata-rata Durasi Perbaikan (Operasional, diganti Resolution Time), ringkasan Laba/Rugi (Keuangan), Total Biaya Penanganan yang selalu Rp0 (Admin). Laporan yang sudah diarsipkan tidak ikut berubah.
+
+## Pelanggaran Peraturan dan Kecelakaan Kerja
+
+Bagian C dan D laporan Kinerja Admin, serta bagian 5 "Tata Tertib & Keselamatan" di Owner Review (ringkasan angka dan tabel rincian), dibaca dari tabel `pelanggaran_peraturan` dan `kecelakaan_kerja` (migrasi 033), diinput lewat Mini App Ops: Pelanggaran Peraturan oleh Owner dan Admin, Kecelakaan Kerja oleh Owner, Admin, dan Operasional. "Pihak" pelanggaran dipilih dari penghuni aktif; nama dan kamarnya dibaca dari riwayat hunian. Daftar jenis pelanggaran diatur Owner/Admin di Pengaturan > Jenis Pelanggaran (tabel `settings`, grup `JENIS_PELANGGARAN`).
+
 ## Bulan berjalan
 
 Generate & Arsipkan (panel dan cron) menolak bulan berjalan karena datanya belum lengkap. Pratinjau dan Unduh PDF tetap bisa untuk bulan berjalan.

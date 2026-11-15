@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
 import { invalidateTenantsCache, updateRoomStatus } from '@/lib/master';
 import { salinDariTemanRara } from '@/lib/teman-rara-checkin';
+import { salinBarangKePenghuni } from '@/lib/barang-tambahan';
 
 const ALLOWED_ROLES = ['owner', 'admin_finance'] as const;
 
@@ -101,6 +102,10 @@ export async function POST(req: Request) {
     console.error('[daftar-booking] gagal salin data Teman Rara:', e instanceof Error ? e.message : e);
     warnings.push('Data pendaftaran Teman Rara gagal disalin ke penghuni — lengkapi manual di Ubah Data Penghuni.');
   }
+  await salinBarangKePenghuni(no_booking).catch((e) => {
+    console.error('[daftar-booking] gagal salin barang tambahan:', e instanceof Error ? e.message : e);
+    warnings.push('Nama barang tambahan gagal disalin ke penghuni — isi manual di Ubah Data Penghuni.');
+  });
   try {
     await db.batch(
       [

@@ -1,5 +1,6 @@
 import type { DataKinerjaAdmin } from '../builders/admin';
-import { esc, rupiah, waktuWib } from '../format';
+import { esc, waktuWib } from '../format';
+import { scorecardHtml } from '../kpi-laporan';
 import { kerangkaDokumen } from '../shell';
 
 const kv = (baris: [string, string][]) =>
@@ -21,16 +22,18 @@ export function htmlKinerjaAdmin(d: DataKinerjaAdmin): string {
 <h1 style="text-align:center">LAPORAN KINERJA ADMIN</h1>
 <h2 style="text-align:center">Kost Tiga Dara Putri UGM</h2>
 <p>Periode: ${label}   |   Dibuat: ${waktuWib(d.dibuat, true)}</p>
-<h3>A. Penanganan Feedback Penghuni — ${label}</h3>
+<h3>A. Indikator Kinerja Admin — ${label}</h3>
+${scorecardHtml(d.kpi)}
+<h3>B. Penanganan Feedback Penghuni — ${label}</h3>
 ${kv([
   ['Total Feedback Masuk', angka(f.total)], ['Selesai Ditangani', angka(f.selesai)], ['Masih Proses', angka(f.proses)],
-  ['Total Biaya Penanganan', rupiah(f.biaya)], ['Kategori', esc(f.kategori)],
+  ['Kategori', esc(f.kategori)],
 ])}
 ${f.total ? '' : '<p>Tidak ada feedback pada periode ini.</p>'}
-<h3>B. Pelanggaran Peraturan</h3>
+<h3>C. Pelanggaran Peraturan</h3>
 ${kv([['Total Pelanggaran', angka(p.total)], ['Jenis', esc(p.jenis)]])}
 ${p.total ? '' : '<p>Tidak ada pelanggaran pada periode ini.</p>'}
-<h3>C. Logbook Kecelakaan Kerja</h3>
+<h3>D. Logbook Kecelakaan Kerja</h3>
 ${kv([['Total Kecelakaan Kerja', angka(k.total)], ['Lokasi', esc(k.lokasi)]])}
 ${k.total ? '' : '<p>Tidak ada kecelakaan kerja pada periode ini.</p>'}
 <h2>LAMPIRAN — Detail Logbook (${label})</h2>

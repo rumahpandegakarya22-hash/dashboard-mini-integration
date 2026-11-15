@@ -5,6 +5,7 @@ import { getActiveTenants, getRoomFresh, invalidateTenantsCache } from '../../ma
 import { resolveOccupancyId, saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 import { galatNopol, namaKendaraanBersih, normalisasiNopol } from '../../kendaraan';
+import { rapikanBarang, salinBarangKePenghuni } from '../../barang-tambahan';
 
 /** Ejaan status_booking yang dipakai tabel `booking` & dicocokkan trigger.
  *  Kunci = ejaan apa adanya dari dropdown (warisan tab SETTING spreadsheet). */
@@ -172,6 +173,13 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
       );
     }
 
+    // Barang tambahan: sama seperti listrik — singgah di booking, disalin ke penghuni bila langsung check-in.
+    const barangTambahan = rapikanBarang(values.barangTambahan);
+    if (barangTambahan) {
+      await turso().execute({ sql: 'UPDATE booking SET barang_tambahan = ? WHERE no_booking = ?', args: [barangTambahan, noBooking] });
+      if (statusDb === 'Check-in' && idPenghuni !== noBooking) await salinBarangKePenghuni(noBooking);
+    }
+
     // Kendaraan: simpan di booking (juga untuk yang belum check-in); bila sudah check-in, salin ke penghuni.
     if (nopol || namaKendaraan) {
       await turso().execute({ sql: 'UPDATE booking SET nopol = ?, nama_kendaraan = ? WHERE no_booking = ?', args: [nopol, namaKendaraan, noBooking] });
@@ -196,7 +204,7 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
 
     return {
       target: `Turso → booking (${noBooking})`,
-      data: { noBooking, tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, hargaDisepakati, statusBooking: statusDb, sumberLeads, catatan, nopol, namaKendaraan },
+      data: { noBooking, tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, hargaDisepakati, statusBooking: statusDb, sumberLeads, catatan, barangTambahan, nopol, namaKendaraan },
       warning: [warningIdentitas, warningKontrak].filter(Boolean).join(' ') || undefined
     };
   });

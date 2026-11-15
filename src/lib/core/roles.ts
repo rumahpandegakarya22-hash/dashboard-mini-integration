@@ -73,6 +73,8 @@ export const MODULE_ACCESS: Record<string, Role[]> = {
   'pemakaian-stok-cleaning': ['operasional'],
   'pemakaian-stok-maintenance': ['operasional'],
   'kepuasan-penghuni': ['admin_finance'],
+  'pelanggaran-peraturan': ['admin_finance'],
+  'kecelakaan-kerja': ['admin_finance', 'operasional'],
   'kamar-siap': ['operasional'],
   'daily-task': ['admin_finance', 'sales', 'marketing', 'operasional']
 };

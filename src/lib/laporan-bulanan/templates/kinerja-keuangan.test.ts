@@ -7,6 +7,11 @@ import { parsePeriode } from '../periode';
 
 const periode = parsePeriode('2026-06', new Date('2026-11-02'));
 
+const kpi = [
+  { nama: 'Pendapatan', nilai: 'Rp3.000.000', target: '≥ Rp26.000.000', status: 'belum' as const },
+  { nama: 'Collection Rate', nilai: '100 %', target: '≥ 100 %', status: 'tercapai' as const },
+];
+
 function dasar(): DataKinerjaKeuangan {
   return {
     periode,
@@ -18,6 +23,7 @@ function dasar(): DataKinerjaKeuangan {
       { tanggal: '2026-06-02', debit: 'Kas', kredit: 'Pendapatan Sewa', nominal: 3000000, keterangan: 'Sewa Rina' },
       { tanggal: '2026-06-09', debit: 'Beban Listrik', kredit: 'Kas', nominal: 500000, keterangan: 'Token' },
     ],
+    kpi,
   };
 }
 
@@ -32,19 +38,22 @@ test('keuangan: header, subjudul, periode dan waktu WIB', () => {
 test('keuangan: bagian A-D dan label', () => {
   const h = htmlKinerjaKeuangan(dasar());
   for (const s of [
-    'A. Kinerja Arus Kas — Juni 2026', 'Kas Masuk', 'Kas Keluar', 'Arus Kas Bersih', 'Jumlah Transaksi',
-    'B. Kinerja Laba/Rugi (berbasis pengakuan)', 'Pendapatan', 'Beban', 'Laba / (Rugi) Bulan Ini',
+    'A. Indikator Kinerja Keuangan — Juni 2026', 'B. Kinerja Arus Kas', 'Kas Masuk', 'Kas Keluar', 'Arus Kas Bersih', 'Jumlah Transaksi',
     'C. Pengeluaran per Kategori', 'Total Pengeluaran', 'D. Rincian Transaksi',
   ]) assert.ok(h.includes(s), s);
   for (const k of ['Tgl', 'Debit', 'Kredit', 'Nominal', 'Keterangan']) assert.ok(h.includes(`<th>${k}</th>`), k);
   assert.match(h, /<td>Kas Masuk<\/td><td>Rp3\.000\.000<\/td>/);
+  assert.match(h, /<td>Pendapatan<\/td><td>Rp3\.000\.000<\/td><td>≥ Rp26\.000\.000<\/td><td><span class="pil pil-buruk">Belum tercapai<\/span><\/td>/);
+  assert.match(h, /<td>Collection Rate<\/td><td>100 %<\/td><td>≥ 100 %<\/td><td><span class="pil pil-baik">Tercapai<\/span><\/td>/);
+  assert.ok(!h.includes('Laba / (Rugi) Bulan Ini'));
   assert.match(h, /<td>Operasional<\/td><td>Rp3\.175\.000<\/td>/);
   assert.match(h, /<td>02 Jun 2026<\/td><td>Kas<\/td><td>Pendapatan Sewa<\/td><td>Rp3\.000\.000<\/td><td>Sewa Rina<\/td>/);
 });
 
-test('keuangan: laba negatif tampil -Rp', () => {
-  const h = htmlKinerjaKeuangan(dasar());
-  assert.match(h, /<td>Laba \/ \(Rugi\) Bulan Ini<\/td><td>-Rp175\.000<\/td>/);
+test('keuangan: nilai negatif pada scorecard tampil -Rp', () => {
+  const d = dasar();
+  d.kpi = [{ nama: 'Laba Bersih', nilai: '-Rp175.000', target: '≥ Rp15.000.000', status: 'belum' }];
+  assert.match(htmlKinerjaKeuangan(d), /<td>Laba Bersih<\/td><td>-Rp175\.000<\/td>/);
 });
 
 test('keuangan: tanda tangan', () => {

@@ -72,7 +72,7 @@ test('marketing: hanya baris dalam periode yang dikirim ke aplikasi', async () =
   }
 
   const spy = hitungBaris(db);
-  const d = await ambilKinerjaMarketing(parsePeriode('2026-06', SEKARANG), SEKARANG, spy.db);
+  const d = await ambilKinerjaMarketing(parsePeriode('2026-06', SEKARANG), SEKARANG, spy.db, []);
   assert.equal(d.leads.total, 2);
   assert.equal(d.konten.post, 1);
   assert.equal(d.kampanye.jumlah, 4);

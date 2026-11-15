@@ -1,6 +1,8 @@
 import { turso } from '@/lib/core/turso';
 import { buildArusKas, buildLabaRugi, type LaporanTable } from '@/lib/laporan/generator';
 import type { Periode } from '../types';
+import { barisKeuangan, type BarisKpi } from '../kpi-laporan';
+import { ambilKpiLaporan } from './kpi';
 
 export interface TransaksiJurnal {
   tanggal: string; keterangan: string; debit: string; kredit: string; nominal: number;
@@ -13,6 +15,7 @@ export interface DataKinerjaKeuangan {
   pendapatan: number; beban: number; laba: number;
   perKategori: { kategori: string; total: number }[];
   transaksi: { tanggal: string; debit: string; kredit: string; nominal: number; keterangan: string }[];
+  kpi: BarisKpi[];
 }
 
 // Angka diambil dari baris Laba Rugi / Arus Kas resmi, bukan dihitung ulang dari jurnal.
@@ -77,16 +80,18 @@ async function ambilKategori(periode: Periode) {
 }
 
 export async function ambilKinerjaKeuangan(periode: Periode, dibuat: Date = new Date()): Promise<DataKinerjaKeuangan> {
-  const [lr, ak, jurnal, perKategori] = await Promise.all([
+  const [lr, ak, jurnal, perKategori, dataKpi] = await Promise.all([
     buildLabaRugi(periode.dari, periode.sampai),
     buildArusKas(periode.dari, periode.sampai),
     ambilTransaksiJurnal(periode),
     ambilKategori(periode),
+    ambilKpiLaporan(periode, dibuat, 'admin_finance'),
   ]);
   const { pendapatan, beban, laba, kasMasuk, kasKeluar, arusBersih } = ekstrakKeuangan(lr, ak);
   return {
     periode, dibuat, kasMasuk, kasKeluar, arusBersih, jumlahTransaksi: jurnal.length,
     pendapatan, beban, laba, perKategori,
     transaksi: jurnal.map(t => ({ tanggal: t.tanggal, debit: t.debit, kredit: t.kredit, nominal: t.nominal, keterangan: t.keterangan })),
+    kpi: barisKeuangan(dataKpi),
   };
 }

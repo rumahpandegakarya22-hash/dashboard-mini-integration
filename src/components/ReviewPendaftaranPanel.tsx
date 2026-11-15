@@ -40,6 +40,9 @@ export default function ReviewPendaftaranPanel() {
   // Tambahan listrik dari barang elektronik penghuni — dicatat saat review,
   // disalin ke penghuni saat check-in.
   const [listrik, setListrik] = useState<Record<string, string>>({});
+  // Nama barang tambahan: terisi dari isian penghuni di Teman Rara ("-" = tidak ada), bisa dikoreksi admin.
+  const [barang, setBarang] = useState<Record<string, string>>({});
+  const barangNilai = (p: Pendaftar) => barang[p.noBooking] ?? (p.barang.elektronik === '-' ? '' : p.barang.elektronik);
   const [busy, setBusy] = useState<string | null>(null);
 
   async function load(filterSemua = semua) {
@@ -73,7 +76,8 @@ export default function ReviewPendaftaranPanel() {
           noBooking: p.noBooking,
           aksi,
           alasan: alasan[p.noBooking] ?? '',
-          tambahanListrik: Number(listrik[p.noBooking] ?? 0) || 0
+          tambahanListrik: Number(listrik[p.noBooking] ?? 0) || 0,
+          barangTambahan: barangNilai(p)
         })
       });
       const json = await res.json();
@@ -241,6 +245,15 @@ export default function ReviewPendaftaranPanel() {
                     value={listrik[p.noBooking] ?? ''}
                     placeholder="Kosongkan kalau tidak bawa barang elektronik"
                     onChange={(e) => setListrik((prev) => ({ ...prev, [p.noBooking]: e.target.value }))}
+                  />
+                </div>
+                <div className="field" style={{ marginTop: 12 }}>
+                  <label htmlFor={`barang-${p.noBooking}`}>Nama Barang Tambahan (pisahkan dengan koma)</label>
+                  <input
+                    id={`barang-${p.noBooking}`}
+                    value={barangNilai(p)}
+                    placeholder="mis. kulkas, rice cooker"
+                    onChange={(e) => setBarang((prev) => ({ ...prev, [p.noBooking]: e.target.value }))}
                   />
                 </div>
                 <div className="field" style={{ marginTop: 12 }}>

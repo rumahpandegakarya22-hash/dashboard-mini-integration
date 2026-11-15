@@ -145,6 +145,26 @@ export function rataVacancyHari(h: Hunian[], r: Range): number | null {
   return rata(jeda);
 }
 
+/** Rasio pembatalan = booking batal / seluruh booking pada rentang. */
+export function rasioBatal(batal: number, total: number): number | null {
+  return pct(batal, total);
+}
+
+const BULAN_HARI = 30.4375;
+
+/** Rata-rata lama tinggal (bulan) seluruh penghuni; yang belum keluar dihitung sampai `hariIni`. */
+export function rataLamaSewaBulan(h: { mulai: string; selesai: string | null }[], hariIni: Date): number | null {
+  const v = h
+    .map((x) => {
+      const a = tgl(x.mulai);
+      const b = tgl(x.selesai) ?? hariIni;
+      return a ? selisihHari(a, b) / BULAN_HARI : null;
+    })
+    .filter((n): n is number => n != null && n >= 0);
+  const r = rata(v);
+  return r == null ? null : Math.round(r * 10) / 10;
+}
+
 export function rataResponsLeadsMenit(leads: { masuk: string | null; chat: string | null }[]): number | null {
   const m = leads.map((l) => selisihMenit(l.masuk, l.chat)).filter((v): v is number => v != null);
   return rata(m);
@@ -238,6 +258,16 @@ export function kepatuhanInspeksi(tanggalInspeksi: string[], r: Range, hariIni: 
   if (hari <= 0) return null;
   const unik = new Set(tanggalInspeksi.filter((t) => dalamRentang(t, { from: r.from, to: akhir })).map((t) => t.slice(0, 10)));
   return pct(unik.size, hari);
+}
+
+/** Resolution time = rata-rata hari dari tanggal kerusakan sampai selesai; tiket yang belum selesai tidak dihitung. */
+export function rataResolusiHari(rows: { kerusakan: string; selesai: string | null }[]): number | null {
+  const v = rows
+    .filter((r) => tgl(r.kerusakan) && tgl(r.selesai))
+    .map((r) => selisihHari(tgl(r.kerusakan) as Date, tgl(r.selesai) as Date))
+    .filter((n) => n >= 0);
+  const r = rata(v);
+  return r == null ? null : Math.round(r * 10) / 10;
 }
 
 /** Rata-rata hari dari checkout sampai kamar siap sewa. */

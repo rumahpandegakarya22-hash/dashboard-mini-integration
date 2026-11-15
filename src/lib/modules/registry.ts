@@ -74,6 +74,14 @@ export const MODULES: ModuleMeta[] = [
         helpText: 'Untuk barang elektronik yang dibawa penghuni (kulkas, rice cooker, dsb). Kosongkan/0 kalau tidak ada.'
       },
       {
+        name: 'barangTambahan',
+        label: 'Nama Barang Tambahan',
+        type: 'text',
+        required: false,
+        placeholder: 'mis. kulkas, rice cooker',
+        helpText: 'Nama barang elektronik yang dibawa, pisahkan dengan koma. Kosongkan kalau tidak ada.'
+      },
+      {
         name: 'nopol',
         label: 'Nopol Kendaraan',
         type: 'text',
@@ -952,6 +960,45 @@ export const MODULES: ModuleMeta[] = [
         ]
       },
       { name: 'komentar', label: 'Komentar', type: 'textarea', required: false }
+    ]
+  },
+  {
+    id: 'pelanggaran-peraturan',
+    title: 'Pelanggaran Peraturan',
+    ready: true,
+    fields: [
+      { name: 'tanggal', label: 'Tanggal Kejadian', type: 'date', required: true, defaultToday: true },
+      {
+        name: 'penghuni',
+        label: 'Penghuni',
+        type: 'select-async',
+        required: true,
+        master: 'penghuni-aktif',
+        masterValue: 'id',
+        masterLabel: 'label'
+      },
+      {
+        name: 'jenis',
+        label: 'Jenis Pelanggaran',
+        type: 'select-async',
+        required: true,
+        master: 'setting:JENIS_PELANGGARAN:SETTING:Jenis',
+        helpText: 'Daftar jenis diatur Owner/Admin di Pengaturan > Jenis Pelanggaran.'
+      },
+      { name: 'deskripsi', label: 'Deskripsi', type: 'textarea', required: true, placeholder: 'Apa yang terjadi' },
+      { name: 'tindakan', label: 'Tindakan', type: 'textarea', required: false, placeholder: 'Teguran, peringatan, dsb.' }
+    ]
+  },
+  {
+    id: 'kecelakaan-kerja',
+    title: 'Kecelakaan Kerja',
+    ready: true,
+    fields: [
+      { name: 'tanggal', label: 'Tanggal Kejadian', type: 'date', required: true, defaultToday: true },
+      { name: 'lokasi', label: 'Lokasi', type: 'text', required: true, placeholder: 'Contoh: Dapur lantai 1' },
+      { name: 'petugas', label: 'Petugas', type: 'text', required: true, placeholder: 'Nama petugas yang terlibat' },
+      { name: 'kronologi', label: 'Kronologi', type: 'textarea', required: true },
+      { name: 'tindakan', label: 'Tindakan', type: 'textarea', required: false, placeholder: 'Penanganan yang dilakukan' }
     ]
   },
   {

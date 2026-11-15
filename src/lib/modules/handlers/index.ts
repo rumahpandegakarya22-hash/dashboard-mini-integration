@@ -22,6 +22,8 @@ import { submitTambahVendor } from './tambah-vendor';
 import { submitTambahWaitingList } from './tambah-waiting-list';
 import { submitKamarSiap } from './kamar-siap';
 import { submitKepuasanPenghuni } from './kepuasan-penghuni';
+import { submitPelanggaran } from './pelanggaran-peraturan';
+import { submitKecelakaan } from './kecelakaan-kerja';
 
 /**
  * Handler konkret per modul, ditambahkan modul-per-modul (Tahap 3: penghuni-baru,
@@ -56,7 +58,9 @@ export const HANDLERS: Record<string, SubmitHandler> = {
   'tambah-vendor': submitTambahVendor,
   'tambah-waiting-list': submitTambahWaitingList,
   'kamar-siap': submitKamarSiap,
-  'kepuasan-penghuni': submitKepuasanPenghuni
+  'kepuasan-penghuni': submitKepuasanPenghuni,
+  'pelanggaran-peraturan': submitPelanggaran,
+  'kecelakaan-kerja': submitKecelakaan
 };
 
 /** Handler preview (hitung tanpa efek samping) — cuma modul dgn ModuleMeta.hasPreview:true perlu entry di sini. */

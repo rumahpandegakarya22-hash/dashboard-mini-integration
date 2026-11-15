@@ -2,13 +2,16 @@ import type { Client } from '@libsql/client';
 import { turso } from '@/lib/core/turso';
 import type { Periode } from '../types';
 import { argTanggal, kondisiTanggal } from '../tanggal';
+import { barisMarketing, type BarisKpi } from '../kpi-laporan';
+import { ambilKpiLaporan } from './kpi';
 
 export interface DataKinerjaMarketing {
   periode: Periode;
   dibuat: Date;
   leads: { total: number; sumberTeratas: string; statusRingkas: string };
-  konten: { post: number; reach: number; likes: number; komentar: number; shareSaves: number; engagementPersen: number; platformTeraktif: string };
-  kampanye: { jumlah: number; budget: number; spend: number; targetLeads: number; leadsAktual: number; capaianPersen: number; bookingDariPromo: number };
+  konten: { post: number; reach: number; likes: number; komentar: number; shareSaves: number; platformTeraktif: string };
+  kampanye: { jumlah: number; budget: number; spend: number; targetLeads: number; leadsAktual: number; bookingDariPromo: number };
+  kpi: BarisKpi[];
 }
 
 export interface LeadMentah { tanggal: string; sumber: string | null; status: string | null }
@@ -47,7 +50,7 @@ const tambah = (m: Map<string, number>, k: string | null | undefined) => {
   if (v) m.set(v, (m.get(v) ?? 0) + 1);
 };
 
-export function susunMarketing(periode: Periode, dibuat: Date, leads: LeadMentah[], konten: KontenMentah[], promo: PromoMentah[]): DataKinerjaMarketing {
+export function susunMarketing(periode: Periode, dibuat: Date, leads: LeadMentah[], konten: KontenMentah[], promo: PromoMentah[], kpi: BarisKpi[] = []): DataKinerjaMarketing {
   const dalam = (t: string) => tanggalDalamPeriode(t, periode.dari, periode.sampai);
 
   const L = leads.filter(l => dalam(l.tanggal));
@@ -64,13 +67,9 @@ export function susunMarketing(periode: Periode, dibuat: Date, leads: LeadMentah
     likes += k.likes; komentar += k.komentar; shareSaves += k.shareSaves; reach += k.reach;
   }
   const aktif = urut(platform)[0];
-  // Sama dengan content.er_persen: (likes+komentar+share_saves) * 100 / reach, di sini dari total bulan.
-  const er = reach > 0 ? Math.round(((likes + komentar + shareSaves) * 1000) / reach) / 10 : 0;
 
   const P = promo.filter(p => kampanyeBeririsan(p.mulai, p.selesai, periode.dari, periode.sampai));
   const jml = (f: (p: PromoMentah) => number) => P.reduce((s, p) => s + f(p), 0);
-  const targetLeads = jml(p => p.targetLeads);
-  const leadsAktual = jml(p => p.leadsAktual);
 
   return {
     periode, dibuat,
@@ -79,19 +78,21 @@ export function susunMarketing(periode: Periode, dibuat: Date, leads: LeadMentah
       sumberTeratas: teratas ? `${teratas[0]} (${teratas[1]})` : '-',
       statusRingkas: status.size ? urut(status).map(([k, n]) => `${k} (${n})`).join(', ') : '-',
     },
-    konten: { post: K.length, reach, likes, komentar, shareSaves, engagementPersen: er, platformTeraktif: aktif ? `${aktif[0]} (${aktif[1]})` : '-' },
+    konten: { post: K.length, reach, likes, komentar, shareSaves, platformTeraktif: aktif ? `${aktif[0]} (${aktif[1]})` : '-' },
     kampanye: {
-      jumlah: P.length, budget: jml(p => p.budget), spend: jml(p => p.spend), targetLeads, leadsAktual,
-      capaianPersen: targetLeads > 0 ? Math.round((leadsAktual * 100) / targetLeads) : 0,
+      jumlah: P.length, budget: jml(p => p.budget), spend: jml(p => p.spend),
+      targetLeads: jml(p => p.targetLeads), leadsAktual: jml(p => p.leadsAktual),
       bookingDariPromo: jml(p => p.booking),
     },
+    kpi,
   };
 }
 
-export async function ambilKinerjaMarketing(periode: Periode, dibuat: Date = new Date(), db: Client = turso()): Promise<DataKinerjaMarketing> {
+/** `kpi` hanya diisi pengujian; biasanya dihitung dari database. */
+export async function ambilKinerjaMarketing(periode: Periode, dibuat: Date = new Date(), db: Client = turso(), kpi?: BarisKpi[]): Promise<DataKinerjaMarketing> {
   // Saring periode di SQL (hanya baris yang relevan yang dikirim); susunMarketing menyaring lagi sebagai pengaman.
   const a = argTanggal(periode);
-  const [leads, konten, promo] = await Promise.all([
+  const [leads, konten, promo, barisKpi] = await Promise.all([
     db.execute({ sql: `SELECT tanggal, sumber_leads, status_leads FROM leads WHERE ${kondisiTanggal('tanggal')}`, args: a }),
     db.execute({ sql: `SELECT tgl_post, platform, likes, komentar, share_saves, reach FROM content WHERE ${kondisiTanggal('tgl_post')}`, args: a }),
     // Kampanye beririsan dengan periode: mulai sebelum hari-setelah-sampai dan (belum selesai atau selesai >= dari).
@@ -100,6 +101,7 @@ export async function ambilKinerjaMarketing(periode: Periode, dibuat: Date = new
             WHERE tgl_mulai < ? AND (tgl_selesai IS NULL OR tgl_selesai = '' OR tgl_selesai >= ?)`,
       args: [a[1], periode.dari],
     }),
+    kpi ?? ambilKpiLaporan(periode, dibuat, 'marketing').then(barisMarketing),
   ]);
   const teks = (v: unknown) => (v == null ? null : String(v));
   const angka = (v: unknown) => Number(v ?? 0) || 0;
@@ -114,5 +116,6 @@ export async function ambilKinerjaMarketing(periode: Periode, dibuat: Date = new
       mulai: teks(r.tgl_mulai) ?? '', selesai: teks(r.tgl_selesai), budget: angka(r.budget), spend: angka(r.spend_aktual),
       targetLeads: angka(r.target_leads), leadsAktual: angka(r.leads_aktual), booking: angka(r.booking_dr_promo),
     })),
+    barisKpi,
   );
 }

@@ -1,5 +1,6 @@
 import type { DataKinerjaOperasional } from '../builders/operasional';
 import { esc, rupiah, tgl, waktuWib } from '../format';
+import { scorecardHtml } from '../kpi-laporan';
 import { kerangkaDokumen } from '../shell';
 
 const kv = (baris: [string, string][]) =>
@@ -19,23 +20,25 @@ export function htmlKinerjaOperasional(d: DataKinerjaOperasional): string {
 <h1 style="text-align:center">LAPORAN KINERJA OPERASIONAL (INSPEKSI &amp; MAINTENANCE)</h1>
 <h2 style="text-align:center">Kost Tiga Dara Putri UGM</h2>
 <p>Periode: ${label}   |   Dibuat: ${waktuWib(d.dibuat, true)}</p>
-<h3>A. Inspeksi Harian — ${label}</h3>
+<h3>A. Indikator Kinerja Operasional — ${label}</h3>
+${scorecardHtml(d.kpi)}
+<h3>B. Inspeksi Harian — ${label}</h3>
 ${kv([['Total Inspeksi Dilakukan', angka(i.total)], ['Temuan Perlu Tindak Lanjut', angka(i.perluTindakLanjut)]])}
 ${i.total ? '' : '<p>Tidak ada inspeksi pada periode ini.</p>'}
-<h3>B. Perawatan (Preventif)</h3>
+<h3>C. Perawatan (Preventif)</h3>
 ${kv([
   ['Total Kegiatan Perawatan', angka(p.total)], ['Selesai', angka(p.selesai)], ['Proses/Tertunda', angka(p.belum)],
   ['Total Biaya Perawatan', rupiah(p.biaya)],
 ])}
 ${p.total ? tabel(['Tgl', 'Fasilitas', 'Jenis', 'Prioritas', 'Biaya', 'Status'], barisP) : '<p>Tidak ada perawatan pada periode ini.</p>'}
-<h3>C. Perbaikan (Korektif)</h3>
+<h3>D. Perbaikan (Korektif)</h3>
 ${kv([
   ['Total Laporan Kerusakan', angka(k.total)], ['Perbaikan Selesai', angka(k.selesai)], ['Proses/Tertunda', angka(k.belum)],
-  ['Prioritas Darurat', angka(k.darurat)], ['Rata-rata Durasi Perbaikan (hari)', angka(k.rataDurasiHari)],
+  ['Prioritas Darurat', angka(k.darurat)],
   ['Total Biaya Perbaikan', rupiah(k.biaya)],
 ])}
 ${k.total ? tabel(['Tgl', 'Lokasi/Item', 'Kerusakan', 'Prioritas', 'Biaya', 'Status'], barisK) : '<p>Tidak ada perbaikan pada periode ini.</p>'}
-<h3>D. Total Pengeluaran Operasional</h3>
+<h3>E. Total Pengeluaran Operasional</h3>
 ${kv([['Biaya Perawatan + Perbaikan', rupiah(d.totalBiaya)]])}
 <table style="border:none;margin-top:24pt"><tr>
 <td style="border:none;width:50%">Dibuat oleh,<br><br><br><br>(________________)<br>Staf Divisi</td>

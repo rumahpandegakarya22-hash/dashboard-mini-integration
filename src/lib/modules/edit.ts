@@ -18,6 +18,7 @@
 
 import { turso, DIVISI_DB, TASK_STATUS } from '../core/turso';
 import { salinDariTemanRara } from '../teman-rara-checkin';
+import { salinBarangKePenghuni } from '../barang-tambahan';
 import { getActiveTenants, getTenantByLabel, getRoomFresh, invalidateTenantsCache } from '../master';
 import {
   toISODateFlexible,
@@ -38,6 +39,8 @@ import { KODE_KATEGORI, hitungWaktuTiket } from './handlers/maintenance';
 import { inspeksiFasilitasInsertCfg } from './handlers/inspeksi-fasilitas';
 import { fmtTanggal } from '../format-tanggal';
 import { csatInsertCfg } from './handlers/kepuasan-penghuni';
+import { pelanggaranInsertCfg } from './handlers/pelanggaran-peraturan';
+import { kecelakaanInsertCfg } from './handlers/kecelakaan-kerja';
 import { aktivitasFinansialEdit } from './edit-jurnal';
 import { vendorInsertCfg } from './handlers/tambah-vendor';
 import { waitingListInsertCfg } from './handlers/tambah-waiting-list';
@@ -396,6 +399,7 @@ const penghuniBaruEdit: CustomEditCfg = {
                 AND tambahan_listrik IS NULL`,
         args: [ref, ref]
       });
+      await salinBarangKePenghuni(ref).catch(() => undefined);
       // Kendaraan dari booking ikut ke penghuni (hanya bila belum terisi).
       for (const tabel of ['occupancy_history', 'active_tenant']) {
         await turso().execute({
@@ -702,6 +706,18 @@ export const EDIT_CONFIGS: Record<string, EditCfg> = {
     insert: csatInsertCfg,
     fieldByColumn: { periode: 'periode', id_penghuni: 'penghuni', skor: 'skor', komentar: 'komentar' },
     labelFields: ['periode', 'penghuni', 'skor']
+  },
+  'pelanggaran-peraturan': {
+    kind: 'turso-row',
+    insert: pelanggaranInsertCfg,
+    fieldByColumn: { tanggal: 'tanggal', id_penghuni: 'penghuni', jenis: 'jenis', deskripsi: 'deskripsi', tindakan: 'tindakan' },
+    labelFields: ['tanggal', 'jenis']
+  },
+  'kecelakaan-kerja': {
+    kind: 'turso-row',
+    insert: kecelakaanInsertCfg,
+    fieldByColumn: { tanggal: 'tanggal', lokasi: 'lokasi', petugas: 'petugas', kronologi: 'kronologi', tindakan: 'tindakan' },
+    labelFields: ['tanggal', 'lokasi', 'petugas']
   },
   'kamar-siap': kamarSiapEdit,
   'perawatan-preventif': perawatanPreventifEdit,

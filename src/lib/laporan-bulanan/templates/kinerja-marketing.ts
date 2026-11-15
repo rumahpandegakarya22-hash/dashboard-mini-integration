@@ -1,5 +1,6 @@
 import type { DataKinerjaMarketing } from '../builders/marketing';
 import { esc, rupiah, waktuWib } from '../format';
+import { scorecardHtml } from '../kpi-laporan';
 import { kerangkaDokumen } from '../shell';
 
 const kv = (baris: [string, string][]) =>
@@ -14,21 +15,23 @@ export function htmlKinerjaMarketing(d: DataKinerjaMarketing): string {
 <h1 style="text-align:center">LAPORAN KINERJA MARKETING</h1>
 <h2 style="text-align:center">Kost Tiga Dara Putri UGM</h2>
 <p>Periode: ${label}   |   Dibuat: ${waktuWib(d.dibuat, true)}</p>
-<h3>A. Akuisisi Leads — ${label}</h3>
+<h3>A. Indikator Kinerja Marketing — ${label}</h3>
+${scorecardHtml(d.kpi)}
+<h3>B. Akuisisi Leads — ${label}</h3>
 ${kv([['Total Leads Masuk', angka(leads.total)], ['Sumber Teratas', esc(leads.sumberTeratas)], ['Status Leads', esc(leads.statusRingkas)]])}
 ${leads.total ? '' : '<p>Tidak ada leads pada periode ini.</p>'}
-<h3>B. Kinerja Konten Sosial Media</h3>
+<h3>C. Kinerja Konten Sosial Media</h3>
 ${kv([
   ['Jumlah Post', angka(k.post)], ['Total Reach', angka(k.reach)], ['Total Likes', angka(k.likes)],
   ['Total Komentar', angka(k.komentar)], ['Total Share/Saves', angka(k.shareSaves)],
-  ['Engagement Rate', `${String(k.engagementPersen).replace('.', ',')}%`], ['Platform Teraktif', esc(k.platformTeraktif)],
+  ['Platform Teraktif', esc(k.platformTeraktif)],
 ])}
 ${k.post ? '' : '<p>Tidak ada konten pada periode ini.</p>'}
-<h3>C. Kinerja Kampanye / Promosi</h3>
+<h3>D. Kinerja Kampanye / Promosi</h3>
 ${kv([
   ['Jumlah Kampanye', angka(c.jumlah)], ['Total Budget', rupiah(c.budget)], ['Total Spend Aktual', rupiah(c.spend)],
   ['Target Leads', angka(c.targetLeads)], ['Leads Aktual', angka(c.leadsAktual)],
-  ['Capaian Target', `${c.capaianPersen}%`], ['Booking dari Promo', angka(c.bookingDariPromo)],
+  ['Booking dari Promo', angka(c.bookingDariPromo)],
 ])}
 ${c.jumlah ? '' : '<p>Tidak ada kampanye pada periode ini.</p>'}
 <table style="border:none;margin-top:24pt"><tr>

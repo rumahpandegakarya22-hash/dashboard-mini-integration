@@ -4,7 +4,7 @@ import {
   agingTunggakan, collectionRate, renewalRate, hariKerjaSetelahAkhirBulan, revpar, rataVacancyHari,
   rataResponsLeadsMenit, cac, cplRata, pencapaianTargetLeads, engagementRate, konsistensiPosting, slaPatuh,
   tiketBerulang, kepatuhanPreventif, kepatuhanInspeksi, rataKamarSiapHari, kelengkapanDokumen,
-  rataResponsPengaduanJam, rataSkorCsat, hariPeriode, tgl, type Invoice
+  rataResponsPengaduanJam, rataSkorCsat, hariPeriode, tgl, rataResolusiHari, rataLamaSewaBulan, rasioBatal, type Invoice
 } from './kpi-calc';
 
 const hariIni = new Date(2026, 10, 14); // 14 Nov 2026
@@ -164,4 +164,33 @@ test('tgl: tolak string non-tanggal', () => {
   assert.equal(tgl(''), null);
   assert.equal(tgl('abc'), null);
   assert.ok(tgl('2026-11-14 09:00'));
+});
+
+test('rataResolusiHari: rata-rata hari kerusakan -> selesai, tiket belum selesai dilewati', () => {
+  assert.equal(
+    rataResolusiHari([
+      { kerusakan: '2026-11-01', selesai: '2026-11-03' },
+      { kerusakan: '2026-11-05', selesai: '2026-11-06' },
+      { kerusakan: '2026-11-07', selesai: null }
+    ]),
+    1.5
+  );
+  assert.equal(rataResolusiHari([{ kerusakan: '2026-11-07', selesai: null }]), null);
+});
+
+test('rataLamaSewaBulan: yang masih tinggal dihitung sampai hari acuan', () => {
+  const v = rataLamaSewaBulan(
+    [
+      { mulai: '2026-01-01', selesai: '2026-04-01' }, // ~2,96 bln
+      { mulai: '2026-09-01', selesai: null } // sampai 14 Nov = 74 hari ~2,43 bln
+    ],
+    hariIni
+  );
+  assert.equal(v, 2.7);
+  assert.equal(rataLamaSewaBulan([], hariIni), null);
+});
+
+test('rasioBatal: persen booking batal, null tanpa booking', () => {
+  assert.equal(rasioBatal(1, 4), 25);
+  assert.equal(rasioBatal(0, 0), null);
 });

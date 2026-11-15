@@ -141,7 +141,7 @@ export async function getActiveTenants(): Promise<Tenant[]> {
       `SELECT COALESCE(id_penghuni, kamar_id) id, nama_lengkap, no_kamar, no_hp
        FROM active_tenant
        WHERE COALESCE(nama_lengkap, '') != ''
-       ORDER BY nama_lengkap`
+       ORDER BY CAST(no_kamar AS INTEGER), nama_lengkap`
     );
     return res.rows.map((r) => {
       const id = String(r.id ?? '');
@@ -259,6 +259,11 @@ export async function getSettingList(grup: string, _sheetName: string, column: s
     });
     return res.rows.map((r) => String(r.nilai ?? '').trim()).filter(Boolean);
   });
+}
+
+/** Hapus cache dropdown settings (5 menit) setelah daftar pilihan diubah lewat halaman Pengaturan. */
+export async function invalidateSettingCache(grup: string, column: string): Promise<void> {
+  await redis.del(nsKey(`master:setting:${grup}:${column}`));
 }
 
 /** Status Booking (dropdown) — settings grup LOG_SALES. */
@@ -465,7 +470,7 @@ async function getPenghuniCsat(): Promise<{ id: string; label: string }[]> {
   const { turso } = await import('./core/turso');
   const res = await turso().execute(
     `SELECT id_penghuni, nama_lengkap, no_kamar FROM active_tenant
-     WHERE COALESCE(id_penghuni, '') != '' ORDER BY nama_lengkap`
+     WHERE COALESCE(id_penghuni, '') != '' ORDER BY CAST(no_kamar AS INTEGER), nama_lengkap`
   );
   return res.rows.map((r) => ({ id: String(r.id_penghuni), label: `${r.nama_lengkap} - Kamar ${r.no_kamar}` }));
 }
@@ -514,6 +519,7 @@ export async function getMasterData(type: string): Promise<unknown> {
     case 'rooms-available':
       return getAvailableRooms();
     case 'penghuni-csat':
+    case 'penghuni-aktif':
       return getPenghuniCsat();
     case 'checkout-belum-siap':
       return getCheckoutBelumSiap();
