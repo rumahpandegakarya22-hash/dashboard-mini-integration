@@ -143,3 +143,16 @@ test('scorecardHtml: escape, label status, dan catatan sumber', () => {
   assert.match(h, /<span class="pil pil-netral">–<\/span>/);
   assert.match(h, /rumus yang sama dengan Dashboard/);
 });
+
+test('target scorecard mengikuti tabel kpi_target (bukan angka tetap)', async () => {
+  const { targetBawaan } = await import('@/lib/dashboard/targets');
+  const kpi: KpiData = { admin: { collectionRate: 60, aging: AGING, dokumenLengkap: null, tutupBukuHariKerja: null, responsPengaduanJam: null, csat: null } };
+  const bawaan = cari(barisKeuangan(dasar(kpi)), 'Collection Rate');
+  assert.equal(bawaan.target, '≥ 100 %');
+  assert.equal(bawaan.status, 'belum');
+  const diubah = cari(barisKeuangan({ ...dasar(kpi), target: { ...targetBawaan(), collection_rate: 50 } }), 'Collection Rate');
+  assert.equal(diubah.target, '≥ 50 %');
+  assert.equal(diubah.status, 'tercapai');
+  const waiting = cari(barisSales({ ...dasar({ sales: { konversiLeadsSurvey: null, konversiSurveyBooking: null, cancelRate: null, vacancyHari: null, renewalRate: null, lamaSewaBulan: null, responsLeadsMenit: null, waitingList: 3, bookingBaru: 0, survey: 0 } }), target: { ...targetBawaan(), waiting_list: 8 } }), 'Waiting List (antrean saat ini)');
+  assert.equal(waiting.target, '8 orang');
+});

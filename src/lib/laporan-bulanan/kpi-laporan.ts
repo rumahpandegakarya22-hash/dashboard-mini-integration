@@ -1,5 +1,6 @@
 import type { KpiData } from '@/lib/dashboard/kpi';
 import { revpar } from '@/lib/dashboard/kpi-calc';
+import { targetBawaan, type TargetMap } from '@/lib/dashboard/targets';
 import { esc, rupiah } from './format';
 
 /* Scorecard KPI untuk laporan bulanan. Angkanya datang dari loadKpi (rumus yang sama dengan Dashboard);
@@ -21,16 +22,23 @@ export interface DataKpi {
   kamarIsi: number;
   /** Jumlah hari pada periode (28-31). */
   hari: number;
+  /** Target KPI yang berlaku (tabel kpi_target); kosong = nilai bawaan. */
+  target?: TargetMap;
 }
 
-// Target per SOW Properti A. Satu tempat supaya mudah diubah bila SOW direvisi.
-const T = {
-  pendapatan: 26_000_000, laba: 15_000_000, diskonPct: 10, opexKamar: 300_000, tutupBuku: 1, tunggakan: 2,
-  collection: 100, dokumen: 100, responsPengaduanJam: 1,
-  booking: 1, konversi: 90, batal: 20, responsLeadsMenit: 15, renewal: 100, lamaSewa: 3, vacancy: 30, okupansi: 100,
-  leadsMinggu: 10, pencapaian: 80, cpl: 25_000, cac: 50_000, roi: 100, engagement: 70, konsistensi: 100,
-  sla: 100, resolusiHari: 1, preventif: 100, inspeksi: 100, kamarSiapHari: 1, tiketBerulang: 2, biayaKamar: 150_000,
-};
+// Target dibaca dari tabel kpi_target (diatur Owner/kepala divisi di Dashboard); nilai bawaan = SOW Properti A.
+function tg(d: DataKpi) {
+  const m = d.target ?? targetBawaan();
+  return {
+    pendapatan: m.pendapatan_bulan, laba: m.laba_bulan, diskonPct: m.diskon_pct, opexKamar: m.opex_per_kamar, tutupBuku: m.tutup_buku, tunggakan: m.tunggakan_max,
+    collection: m.collection_rate, dokumen: m.dokumen_lengkap, responsPengaduanJam: m.respons_pengaduan, kamarKosong: m.kamar_kosong,
+    booking: m.booking_bulan, konversiLS: m.konversi_leads_survey, konversiSB: m.konversi_survey_booking, batal: m.cancel_max,
+    responsLeadsMenit: m.respons_leads, renewal: m.renewal_rate, lamaSewa: m.lama_sewa, vacancy: m.vacancy_hari, waiting: m.waiting_list, okupansi: m.okupansi,
+    leadsMinggu: m.leads_minggu, pencapaian: m.pencapaian_leads, cpl: m.cpl, cac: m.cac, roi: m.roi, engagement: m.engagement, konsistensi: m.konsistensi,
+    sla: m.sla_patuh, resolusiHari: m.resolusi_hari, preventif: m.jadwal_preventif, inspeksi: m.inspeksi, kamarSiapHari: m.prepare_kamar,
+    tiketBerulang: m.tiket_berulang, biayaKamar: m.biaya_per_kamar,
+  };
+}
 
 const koma = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
 const persen = (n: number) => `${koma(n)} %`;
@@ -58,16 +66,18 @@ const okupansi = (d: DataKpi) => pctDari(d.kamarIsi, d.kapasitas);
 const kamarKosong = (d: DataKpi) => Math.max(0, d.kapasitas - d.kamarIsi);
 
 export function barisAdmin(d: DataKpi): BarisKpi[] {
+  const T = tg(d);
   const a = d.kpi.admin;
   return [
     baris('Dokumen Penghuni Lengkap', a?.dokumenLengkap, persen, T.dokumen, 'min'),
     baris('Respons Pengaduan', a?.responsPengaduanJam, satuan('jam'), T.responsPengaduanJam, 'max'),
     { ...baris('Kepuasan Penghuni (CSAT)', a?.csat, n => `${koma(n)} / 5`), target: 'Skala 1–5' },
-    baris('Kamar Kosong (akhir periode)', kamarKosong(d), satuan('kamar'), 0, 'max'),
+    baris('Kamar Kosong (akhir periode)', kamarKosong(d), satuan('kamar'), T.kamarKosong, 'max'),
   ];
 }
 
 export function barisKeuangan(d: DataKpi): BarisKpi[] {
+  const T = tg(d);
   const a = d.kpi.admin;
   const k = keuangan(d);
   const ag = a?.aging;
@@ -90,23 +100,25 @@ export function barisKeuangan(d: DataKpi): BarisKpi[] {
 }
 
 export function barisSales(d: DataKpi): BarisKpi[] {
+  const T = tg(d);
   const s = d.kpi.sales;
   return [
     baris('Booking Baru', s?.bookingBaru, angka, T.booking, 'min'),
     baris('Survey', s?.survey, angka),
-    baris('Konversi Leads → Survey', s?.konversiLeadsSurvey, persen, T.konversi, 'min'),
-    baris('Konversi Survey → Booking', s?.konversiSurveyBooking, persen, T.konversi, 'min'),
+    baris('Konversi Leads → Survey', s?.konversiLeadsSurvey, persen, T.konversiLS, 'min'),
+    baris('Konversi Survey → Booking', s?.konversiSurveyBooking, persen, T.konversiSB, 'min'),
     baris('Cancellation Rate', s?.cancelRate, persen, T.batal, 'max'),
     baris('Respons Leads Pertama', s?.responsLeadsMenit, satuan('menit'), T.responsLeadsMenit, 'max'),
     baris('Renewal Rate', s?.renewalRate, persen, T.renewal, 'min'),
     baris('Rata-Rata Lama Sewa', s?.lamaSewaBulan, satuan('bulan'), T.lamaSewa, 'min'),
     baris('Vacancy Days', s?.vacancyHari, satuan('hari'), T.vacancy, 'max'),
-    { ...baris('Waiting List (antrean saat ini)', s?.waitingList, satuan('orang')), target: '5 orang' },
+    { ...baris('Waiting List (antrean saat ini)', s?.waitingList, satuan('orang')), target: `${T.waiting} orang` },
     baris('Okupansi (akhir periode)', okupansi(d), persen, T.okupansi, 'min'),
   ];
 }
 
 export function barisMarketing(d: DataKpi): BarisKpi[] {
+  const T = tg(d);
   const m = d.kpi.marketing;
   const perMinggu = m ? Math.round((m.leads / (d.hari / 7)) * 10) / 10 : null;
   return [
@@ -125,6 +137,7 @@ export function barisMarketing(d: DataKpi): BarisKpi[] {
 }
 
 export function barisOps(d: DataKpi): BarisKpi[] {
+  const T = tg(d);
   const o = d.kpi.ops;
   return [
     baris('Kepatuhan SLA Tiket', o?.slaPatuh, persen, T.sla, 'min'),
@@ -138,6 +151,7 @@ export function barisOps(d: DataKpi): BarisKpi[] {
 }
 
 export function barisOwner(d: DataKpi): BarisKpi[] {
+  const T = tg(d);
   const k = keuangan(d);
   const rev = revpar(d.pendapatanSewa, d.kapasitas, d.hari);
   return [
@@ -145,7 +159,7 @@ export function barisOwner(d: DataKpi): BarisKpi[] {
     baris('Laba Bersih', d.laba, rupiah, T.laba, 'min'),
     baris('Margin Laba Bersih', k.margin, persen),
     baris('Okupansi (akhir periode)', okupansi(d), persen, T.okupansi, 'min'),
-    baris('Kamar Kosong (akhir periode)', kamarKosong(d), satuan('kamar'), 0, 'max'),
+    baris('Kamar Kosong (akhir periode)', kamarKosong(d), satuan('kamar'), T.kamarKosong, 'max'),
     baris('RevPAR (pendapatan sewa per kamar per hari)', rev, rupiah),
     baris('OPEX per Kamar / Bulan', k.opexKamar, rupiah, T.opexKamar, 'max'),
     { ...baris('Total Diskon (% dari pendapatan)', k.diskonPct, persen, T.diskonPct, 'max'), nilai: k.diskonPct == null ? '—' : `${rupiah(d.diskon)} (${persen(k.diskonPct)})` },

@@ -1,5 +1,6 @@
 import { turso } from '@/lib/core/turso';
 import { loadKpi } from '@/lib/dashboard/kpi';
+import { loadTargets } from '@/lib/dashboard/targets-db';
 import { hariKerjaSetelahAkhirBulan, tgl } from '@/lib/dashboard/kpi-calc';
 import { buildLabaRugi } from '@/lib/laporan/generator';
 import { isoWib } from '../format';
@@ -37,7 +38,7 @@ export async function ambilKpiLaporan(periode: Periode, dibuat: Date, role: Role
   const [kamar, kamarIsi] = await Promise.all([db.execute('SELECT COUNT(*) AS n FROM kamar'), kamarTerisi(periode.sampai)]);
   const kapasitas = angka(kamar.rows[0]?.n);
 
-  const [kpi, lr, diskon, tutup] = await Promise.all([
+  const [kpi, lr, diskon, tutup, target] = await Promise.all([
     loadKpi(role, range, kapasitas, { acuan, segar: true }),
     butuhKeuangan ? buildLabaRugi(periode.dari, periode.sampai) : null,
     butuhKeuangan
@@ -54,6 +55,7 @@ export async function ambilKpiLaporan(periode: Periode, dibuat: Date, role: Role
           args: [periode.kode, periode.sampai],
         })
       : null,
+    loadTargets(),
   ]);
 
   if (kpi.admin) {
@@ -71,6 +73,6 @@ export async function ambilKpiLaporan(periode: Periode, dibuat: Date, role: Role
 
   return {
     kpi, ...ringkas, pendapatan: kotor, pendapatanSewa, diskon: nilaiDiskon,
-    kapasitas, kamarIsi, hari: Number(periode.sampai.slice(8, 10)),
+    kapasitas, kamarIsi, hari: Number(periode.sampai.slice(8, 10)), target,
   };
 }

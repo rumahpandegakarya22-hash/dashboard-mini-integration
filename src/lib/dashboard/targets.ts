@@ -25,6 +25,8 @@ const d = (divisi: DivisiTarget, kunci: string, label: string, satuan: string, n
 
 export const DEFINISI_TARGET: TargetDef[] = [
   d('admin_finance', 'pendapatan_bulan', 'Pendapatan kotor per bulan', 'Rp', 26_000_000),
+  d('admin_finance', 'laba_bulan', 'Laba bersih per bulan', 'Rp', 15_000_000),
+  d('admin_finance', 'tunggakan_max', 'Penghuni menunggak', 'orang', 2, 'max'),
   d('admin_finance', 'diskon_pct', 'Total diskon (dari pendapatan)', '%', 10, 'max'),
   d('admin_finance', 'collection_rate', 'Collection rate', '%', 100),
   d('admin_finance', 'opex_per_kamar', 'OPEX per kamar per bulan', 'Rp', 300_000, 'max'),
