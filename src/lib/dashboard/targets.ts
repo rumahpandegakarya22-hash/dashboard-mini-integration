@@ -54,6 +54,7 @@ export const DEFINISI_TARGET: TargetDef[] = [
   d('marketing', 'engagement', 'Engagement rate konten', '%', 70),
   d('marketing', 'konsistensi', 'Konsistensi posting', '%', 100),
 
+  d('operasional', 'sla_hari', 'Batas SLA tiket: selesai dalam', 'hari', 3, 'max'),
   d('operasional', 'sla_patuh', 'Kepatuhan SLA tiket', '%', 100),
   d('operasional', 'resolusi_hari', 'Resolution time', 'hari', 1, 'max'),
   d('operasional', 'jadwal_preventif', 'Kepatuhan jadwal preventif', '%', 100),

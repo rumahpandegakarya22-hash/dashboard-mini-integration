@@ -43,6 +43,8 @@ export type DbTables = Record<string, DbRow[]>;
 
 interface ComputeCtx {
   coaByKode?: Record<string, DbRow>;
+  /** Batas SLA tiket korektif (hari); bawaan FORMULA_CONFIG.slaTargetHari, bisa diatur di tabel kpi_target. */
+  slaHari?: number;
 }
 
 /* -------------------------------------------------------------------------
@@ -229,7 +231,7 @@ export const SLA_TARGET_HARI = FORMULA_CONFIG.slaTargetHari;
 export const HARGA_ECO_BULAN = FORMULA_CONFIG.priceByTipe['Eco (Non AC)']!.bulan;
 
 /* maintenance (CM & PM): kode [LOOKUP], durasi [VERIFIED], sla [VERIFIED]. */
-function computeMaintenance(r: DbRow, isPM: boolean): DbRow {
+function computeMaintenance(r: DbRow, isPM: boolean, slaHari: number = FORMULA_CONFIG.slaTargetHari): DbRow {
   const o: DbRow = { ...r };
   const k = FORMULA_CONFIG.kodeByKategori[String(r.kategori || '').trim()];
   if (k) o.kode = k;
@@ -249,7 +251,7 @@ function computeMaintenance(r: DbRow, isPM: boolean): DbRow {
     /* Korektif: durasi <= target → "OK", selebihnya "BREACH" (label verbatim
        rumus asli; port lama memakai "Telat" yang tidak ada di spreadsheet). */
     if (o.durasi_perbaikan_hari != null && o.durasi_perbaikan_hari !== '') {
-      o.sla = num(o.durasi_perbaikan_hari) <= FORMULA_CONFIG.slaTargetHari ? 'OK' : 'BREACH';
+      o.sla = num(o.durasi_perbaikan_hari) <= slaHari ? 'OK' : 'BREACH';
     }
     /* PENYIMPANGAN DISENGAJA: rumus asli tidak menjaga durasi kosong — di Sheets
        ""<=3 bernilai FALSE (teks selalu diurut setelah angka), sehingga tiket
@@ -317,7 +319,7 @@ const COMPUTERS: Record<string, (r: DbRow, ctx: ComputeCtx) => DbRow> = {
   booking: computeBooking,
   content: computeContent,
   promotion: computePromotion,
-  maintenance_cm: (r) => computeMaintenance(r, false),
+  maintenance_cm: (r, ctx) => computeMaintenance(r, false, ctx.slaHari),
   maintenance_pm: (r) => computeMaintenance(r, true),
   coa: computeCoa,
   jurnal_transaksi: computeJurnal
@@ -340,8 +342,8 @@ function computeRow(table: string, row: DbRow, ctx?: ComputeCtx): DbRow {
   return fn ? fn(row, ctx || {}) : { ...row };
 }
 
-export function computeAll(tables: DbTables): DbTables {
-  const ctx: ComputeCtx = { coaByKode: {} };
+export function computeAll(tables: DbTables, opsi: { slaHari?: number } = {}): DbTables {
+  const ctx: ComputeCtx = { coaByKode: {}, slaHari: opsi.slaHari };
   for (const c of tables.coa || []) ctx.coaByKode![c.kode] = c;
   const out: DbTables = {};
   for (const [table, rows] of Object.entries(tables)) {

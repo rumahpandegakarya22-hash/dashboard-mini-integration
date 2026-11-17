@@ -26,6 +26,7 @@
 import { turso } from '@/lib/core/turso';
 import { cached, TTL } from '@/lib/core/cache';
 import { computeAll, type DbRow, type DbTables } from './compute';
+import { loadTargets } from './targets-db';
 import { SHEET_MAP } from './sheet-map';
 
 /** Daftar tabel yang dibaca dashboard — verbatim dari server/turso.js. */
@@ -259,7 +260,8 @@ async function loadAll(force?: boolean) {
   // L1 in-memory (0ms) untuk hit beruntun dalam satu instance.
   if (!force && cache.tables && Date.now() - cache.at < TTL_L1) return cache;
   const raw = force ? await readAllTables() : await readAllTablesCached();
-  const computed = computeAll(raw);
+  // Batas SLA tiket diatur di tabel kpi_target (Owner/kepala Operasional); gagal baca = bawaan 3 hari.
+  const computed = computeAll(raw, { slaHari: (await loadTargets()).sla_hari });
   cache = { at: Date.now(), tables: computed, sheets: toSheets(computed) };
   return cache;
 }
