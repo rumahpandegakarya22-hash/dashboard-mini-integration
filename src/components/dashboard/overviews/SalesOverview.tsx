@@ -17,7 +17,7 @@ import { monthlyCount } from '@/lib/dashboard/format';
 import type { OverviewProps } from './shared';
 import { kartuSales } from './kpi-cards';
 
-export default function SalesOverview({ data, period, range, kpi }: OverviewProps) {
+export default function SalesOverview({ data, period, range, kpi, target }: OverviewProps) {
   const { booking, leads, survey, stats, retention } = data;
   const prospek = buildProspek(leads, survey, booking);
 
@@ -40,7 +40,7 @@ export default function SalesOverview({ data, period, range, kpi }: OverviewProp
     okupansi: stats.okupansi ?? 0,
     sparkSurvey: survSpark,
     sparkBooking: bookSpark
-  });
+  }, target);
 
   const prospekDonut = [
     { t: 'Leads', value: nLeads, c: PAL.sales[0] },

@@ -1339,3 +1339,24 @@
 [data-app='dashboard'] .stat-card__badge.down { color: #ff9b9b; }
 [data-app='dashboard'] .stat-card__sub { padding-top: 6px; }
 [data-app='dashboard'] .mt-lg { margin-top: 28px; }
+
+/* Halaman Target KPI */
+[data-app='dashboard'] .target-intro { font-size: 13px; color: var(--text-2); margin: 0 0 14px; }
+[data-app='dashboard'] .target-card { margin-bottom: 14px; }
+[data-app='dashboard'] .target-ro { float: right; font-size: 11px; font-weight: 600; color: var(--text-3); }
+[data-app='dashboard'] .target-list { display: flex; flex-direction: column; margin-top: 6px; }
+[data-app='dashboard'] .target-row { display: grid; grid-template-columns: minmax(180px, 1.4fr) minmax(150px, 1fr) minmax(220px, 1.6fr); gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+[data-app='dashboard'] .target-row:first-child { border-top: 0; }
+[data-app='dashboard'] .target-row label { font-size: 13px; font-weight: 500; display: flex; flex-direction: column; gap: 2px; }
+[data-app='dashboard'] .target-row small { font-size: 11px; font-weight: 400; color: var(--text-3); }
+[data-app='dashboard'] .target-input { display: flex; align-items: center; gap: 8px; }
+[data-app='dashboard'] .target-input input { width: 120px; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: var(--text); font: inherit; }
+[data-app='dashboard'] .target-input input:disabled { opacity: .6; }
+[data-app='dashboard'] .target-unit { font-size: 12px; color: var(--text-2); }
+[data-app='dashboard'] .target-aksi { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+[data-app='dashboard'] .target-btn { padding: 6px 12px; border-radius: 8px; border: 0; background: var(--teal, #3fae84); color: #04201a; font-weight: 600; font-size: 12px; cursor: pointer; }
+[data-app='dashboard'] .target-btn.ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border); font-weight: 500; }
+[data-app='dashboard'] .target-btn:disabled { opacity: .45; cursor: default; }
+[data-app='dashboard'] .target-ok { font-size: 12px; color: #6ff0aa; }
+[data-app='dashboard'] .target-err { font-size: 12px; color: #ff9b9b; }
+@media (max-width: 760px) { [data-app='dashboard'] .target-row { grid-template-columns: 1fr; } }

@@ -6,6 +6,7 @@ import type { DashboardData } from '@/lib/dashboard/views/types';
 import type { FinanceResult } from '@/lib/dashboard/views/finance';
 import type { SheetGrid } from '@/lib/dashboard/source';
 import type { KpiData } from '@/lib/dashboard/kpi';
+import type { TargetMap } from '@/lib/dashboard/targets';
 
 export interface OverviewProps {
   data: DashboardData;
@@ -20,4 +21,6 @@ export interface OverviewProps {
   range: { from: Date | null; to: Date | null };
   /** KPI agregat sesuai role (kartu SOW). */
   kpi: KpiData;
+  /** Target KPI yang berlaku (bawaan + yang diatur Owner/kepala divisi). */
+  target: TargetMap;
 }

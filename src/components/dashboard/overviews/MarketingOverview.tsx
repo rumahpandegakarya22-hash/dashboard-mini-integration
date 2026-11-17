@@ -15,8 +15,9 @@ import { seriesByDate } from '@/lib/dashboard/views/finance';
 import { monthlyCount, filterByPeriod, fmtNum } from '@/lib/dashboard/format';
 import type { OverviewProps } from './shared';
 import { kartuMarketing } from './kpi-cards';
+import { hariPeriode } from '@/lib/dashboard/kpi-calc';
 
-export default function MarketingOverview({ data, period, from, to, range, kpi }: OverviewProps) {
+export default function MarketingOverview({ data, period, from, to, range, kpi, target }: OverviewProps) {
   const { leads, survey } = data;
 
   const leadsP = filterByPeriod(leads, 'tanggal', period, from, to);
@@ -30,7 +31,7 @@ export default function MarketingOverview({ data, period, from, to, range, kpi }
   const leadsFunnel = kpi.marketing?.leads ?? nLeads;
   const bentuk = (v: number) => Math.log10(v + 1) + 0.15;
   const rasio = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
-  const kartu = kartuMarketing(kpi, leadSpark);
+  const kartu = kartuMarketing(kpi, leadSpark, target, Math.max(1, hariPeriode(range, new Date()) / 7));
 
   // Komposisi channel dari kolom Asal/Sumber leads (periode)
   const chMap: Record<string, number> = {};

@@ -186,6 +186,8 @@ const hapusSql = [
   `DELETE FROM maintenance_cm WHERE id_tiket LIKE 'DUMMY-%'`,
   `DELETE FROM maintenance_pm WHERE id_tiket LIKE 'DUMMY-%'`,
   `DELETE FROM inspeksi_kebersihan WHERE temuan LIKE 'DUMMY%'`,
+  `DELETE FROM tr_complain_sync WHERE id_complain LIKE 'DUMMY-%'`,
+  `DELETE FROM tr_complain_photo WHERE id_complain LIKE 'DUMMY-%'`,
   `DELETE FROM tenant_complain WHERE id_complain LIKE 'DUMMY-%'`,
   `DELETE FROM csat_response WHERE dicatat_oleh = 'DUMMY'`,
   `DELETE FROM checkout_log WHERE penghuni_label LIKE 'DUMMY%'`

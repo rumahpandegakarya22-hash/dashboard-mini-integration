@@ -14,7 +14,7 @@ import { monthlyCount, filterByPeriod, moneyScale, scaleVals } from '@/lib/dashb
 import type { OverviewProps } from './shared';
 import { kartuOps } from './kpi-cards';
 
-export default function OpsOverview({ data, finance: F, period, from, to, range, kpi }: OverviewProps) {
+export default function OpsOverview({ data, finance: F, period, from, to, range, kpi, target }: OverviewProps) {
   const { tiket, logbook } = data;
 
   const tP = filterByPeriod(tiket || [], 'tanggal', period, from, to);
@@ -39,7 +39,7 @@ export default function OpsOverview({ data, finance: F, period, from, to, range,
   const resolArr = tP.map((x) => x._resolHari).filter((v): v is number => v != null);
   const avg = (a: number[]) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : null);
   const avgResol = avg(resolArr);
-  const kartu = kartuOps(kpi, { resolusiHari: avgResol, sparkResolusi: resolArr });
+  const kartu = kartuOps(kpi, { resolusiHari: avgResol, sparkResolusi: resolArr }, target);
 
   const nInspeksi = filterByPeriod(logbook, 'tanggal', period, from, to).filter((r) => r.divisi === 'Inspeksi').length;
   const tiketDonut = [

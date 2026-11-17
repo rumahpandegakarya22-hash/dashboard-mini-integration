@@ -13,8 +13,9 @@ import { fmtRpShort, topEntries, shortAcct } from '@/lib/dashboard/views/finance
 import { monthlyCount, filterByPeriod, moneyScale, scaleVals, parseDate, startOfDay } from '@/lib/dashboard/format';
 import type { OverviewProps } from './shared';
 import { kartuAdmin, turunanKeuangan } from './kpi-cards';
+import { hariPeriode } from '@/lib/dashboard/kpi-calc';
 
-export default function AdminOverview({ data, finance: F, period, from, to, kpi, range }: OverviewProps) {
+export default function AdminOverview({ data, finance: F, period, from, to, kpi, range, target }: OverviewProps) {
   const { penghuni, stats, tempo } = data;
   const hasFin = !!F && F.nBuckets >= 1;
 
@@ -53,8 +54,9 @@ export default function AdminOverview({ data, finance: F, period, from, to, kpi,
     sparkMasuk: moveIn,
     sparkTempo: tempoSpark,
     sparkPendapatan: F ? F.incSeries : [],
-    sparkDiskon: F ? F.diskonSeries : []
-  });
+    sparkDiskon: F ? F.diskonSeries : [],
+    hariPeriode: hariPeriode(range, new Date())
+  }, target);
 
   const kontrakDonut = [
     { t: 'Aktif', value: stats.aktif || 0, c: PAL.admin[0] },

@@ -41,6 +41,7 @@ export default function OverviewFor({
       txGrid={loaded.txGrid}
       range={loaded.range}
       kpi={loaded.kpi}
+      target={loaded.targets}
       period={period}
       from={from}
       to={to}

@@ -42,7 +42,8 @@ const OWNER_PAGES: NavPage[] = [
   { id: 'tiket', label: 'Daftar Tiket', group: 'page', crumb: 'Daftar Tiket' },
   { id: 'waiting-list', label: 'Waiting List', group: 'page', crumb: 'Waiting List' },
   { id: 'stok', label: 'Stok Inventory', group: 'dash', crumb: 'Stok Inventory' },
-  { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
+  { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' },
+  { id: 'target', label: 'Target KPI', group: 'page', crumb: 'Target KPI' }
 ];
 const pagesFor = (crumb: string): NavPage[] => OWNER_PAGES.map((p) => (p.id === 'overview' ? { ...p, crumb } : p));
 
@@ -56,7 +57,8 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
       { id: 'pembayaran', label: 'Data Pembayaran', group: 'page', crumb: 'Data Pembayaran' },
       { id: 'vendor', label: 'Daftar Vendor', group: 'page', crumb: 'Daftar Vendor' },
       { id: 'stok', label: 'Stok Inventory', group: 'dash', crumb: 'Stok Inventory' },
-      { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
+      { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' },
+      { id: 'target', label: 'Target KPI', group: 'page', crumb: 'Target KPI' }
     ]
   },
   marketing: {
@@ -67,7 +69,8 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
       { id: 'leads', label: 'Daftar Leads', group: 'page', crumb: 'Daftar Leads' },
       { id: 'konten', label: 'Konten', group: 'page', crumb: 'Konten' },
       { id: 'promosi', label: 'Promosi', group: 'page', crumb: 'Promosi' },
-      { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
+      { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' },
+      { id: 'target', label: 'Target KPI', group: 'page', crumb: 'Target KPI' }
     ]
   },
   operasional: {
@@ -79,7 +82,8 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
       { id: 'vendor', label: 'Daftar Vendor', group: 'page', crumb: 'Daftar Vendor' },
       { id: 'stok', label: 'Stok Inventory', group: 'dash', crumb: 'Stok Inventory' },
       { id: 'kamar', label: 'Data Kamar', group: 'page', crumb: 'Data Kamar' },
-      { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
+      { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' },
+      { id: 'target', label: 'Target KPI', group: 'page', crumb: 'Target KPI' }
     ]
   },
   sales: {
@@ -91,7 +95,8 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
       { id: 'penghuni', label: 'Daftar Penghuni', group: 'page', crumb: 'Daftar Penghuni' },
       { id: 'kamar', label: 'Data Kamar', group: 'page', crumb: 'Data Kamar' },
       { id: 'waiting-list', label: 'Waiting List', group: 'page', crumb: 'Waiting List' },
-      { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' }
+      { id: 'dokumen', label: 'Dokumen', group: 'page', crumb: 'Dokumen' },
+      { id: 'target', label: 'Target KPI', group: 'page', crumb: 'Target KPI' }
     ]
   },
   owner: { label: 'Owner', sidebarName: 'Owner', pages: pagesFor('Owner') },

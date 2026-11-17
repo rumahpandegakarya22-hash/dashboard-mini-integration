@@ -12,6 +12,7 @@ import {
 } from '@/lib/dashboard/views/pages';
 import InventoryOverview from '../overviews/InventoryOverview';
 import type { DashboardPageData } from '@/lib/dashboard/views/load';
+import TargetKpiPanel from '@/components/dashboard/TargetKpiPanel';
 import { buildProspek } from '@/lib/dashboard/views/prospek';
 import type { DashboardRole } from '@/config/dashboard-access';
 import { isFullView } from '@/lib/core/roles';
@@ -83,6 +84,13 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
       return (
         <Reveal tier={0}>
           <DataTablePage title="DAFTAR LEADS" cols={COLS.leads} data={d.leads} period={period} />
+        </Reveal>
+      );
+
+    case 'target':
+      return (
+        <Reveal tier={0}>
+          <TargetKpiPanel role={role} nilai={loaded.targets} />
         </Reveal>
       );
 

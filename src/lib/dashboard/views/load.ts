@@ -20,6 +20,8 @@ import type { DashboardData, PaymentRaw, TransaksiRow, Tempo, TempoEntry, Waitin
 import { turso } from '../../core/turso';
 import { startOfDay, parseDate } from '../format';
 import { loadKpi, type KpiData } from '../kpi';
+import { loadTargets } from '../targets-db';
+import { targetBawaan, type TargetMap } from '../targets';
 
 export interface DashboardPageData {
   data: DashboardData;
@@ -32,6 +34,8 @@ export interface DashboardPageData {
   waitingList: WaitingListRow[];
   /** Angka KPI agregat sesuai role (lihat kpi.ts). */
   kpi: KpiData;
+  /** Target KPI yang berlaku. */
+  targets: TargetMap;
 }
 
 export async function loadDashboardData(
@@ -71,7 +75,8 @@ export async function loadDashboardData(
       configured: false,
       inventory,
       waitingList,
-      kpi: {}
+      kpi: {},
+      targets: targetBawaan()
     };
   }
 
@@ -86,7 +91,9 @@ export async function loadDashboardData(
     return {} as KpiData;
   });
 
-  return { data, finance, txGrid, range, configured: true, inventory, waitingList, kpi };
+  const targets = await loadTargets();
+
+  return { data, finance, txGrid, range, configured: true, inventory, waitingList, kpi, targets };
 }
 
 /** Baca semua invoice dari Turso (invoice_sewa), termasuk yang belum dibayar. */

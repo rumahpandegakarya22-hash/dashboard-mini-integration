@@ -12,7 +12,7 @@ import { monthlyCount, filterByPeriod, moneyScale, scaleVals } from '@/lib/dashb
 import type { OverviewProps } from './shared';
 import { kartuOwner, turunanKeuangan, diskonSub } from './kpi-cards';
 
-export default function OwnerOverview({ data, finance: F, period, from, to, kpi, range }: OverviewProps) {
+export default function OwnerOverview({ data, finance: F, period, from, to, kpi, range, target }: OverviewProps) {
   const { penghuni, stats, rooms } = data;
   const hasFin = !!F && F.nBuckets >= 1;
   const moveIn = monthlyCount(filterByPeriod(penghuni, 'masuk', period, from, to), 'masuk');
@@ -28,7 +28,7 @@ export default function OwnerOverview({ data, finance: F, period, from, to, kpi,
     { label: 'Kamar Kosong', value: String(stats.kosong ?? 0), spark: moveIn, bg: G.ownGray, onDark: true },
     { label: 'Kamar Isi', value: String(stats.occupied ?? 0), spark: moveIn, bg: G.ownRose, onDark: true },
     { label: 'Tiket Aktif', value: String(tiketAktif), spark: [], bg: G.ownGray, onDark: true },
-    { label: 'Total Diskon', value: fmtRpShort(F ? F.diskonTotal : 0), sub: diskonSub(turunan), spark: F ? F.diskonSeries : [], bg: G.ownGray, onDark: true }
+    { label: 'Total Diskon', value: fmtRpShort(F ? F.diskonTotal : 0), sub: diskonSub(turunan, target), spark: F ? F.diskonSeries : [], bg: G.ownGray, onDark: true }
   ];
 
   const opex = F ? topEntries(F.opexBy, 6).map((e, i) => ({ t: shortAcct(e[0]), value: e[1], c: PAL.owner[i % 4] })) : [];
@@ -57,7 +57,7 @@ export default function OwnerOverview({ data, finance: F, period, from, to, kpi,
     <div className="view">
       <StatGrid cards={cards.slice(0, 6)} cols={6} />
       <div className="mt">
-        <StatGrid cards={[...cards.slice(6), ...kartuOwner(kpi, turunan, F ? F.labaBersih : 0)]} cols={6} />
+        <StatGrid cards={[...cards.slice(6), ...kartuOwner(kpi, turunan, F ? F.labaBersih : 0, target)]} cols={6} />
       </div>
 
       <Reveal tier={1} className="grid row-3 mt">
