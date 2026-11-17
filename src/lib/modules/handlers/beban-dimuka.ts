@@ -41,6 +41,9 @@ export async function catatPengeluaran(p: PengeluaranParams, opsi: OpsiJurnal = 
     const missing = [!debit ? p.akunDebit : null, !kredit ? p.akunKredit : null].filter(Boolean);
     throw new Error(`Akun "${missing.join('", "')}" tidak ditemukan di COA — pengeluaran TIDAK dicatat.`);
   }
+  if (debit.tipe === 'Beban Non-Operasional') {
+    throw new Error('Penyusutan tidak dicatat lewat Aktivitas Finansial. Gunakan menu Aset Tetap (Posting Penyusutan).');
+  }
   const grup = opsi.grupId ?? null;
   const koreksi = opsi.koreksiDari ?? null;
 
@@ -52,7 +55,7 @@ export async function catatPengeluaran(p: PengeluaranParams, opsi: OpsiJurnal = 
     return { row: Number(res.lastInsertRowid ?? -1), baris: 1 };
   }
 
-  if (debit.tipe !== 'Beban' && debit.tipe !== 'Beban Non-Operasional') {
+  if (debit.tipe !== 'Beban') {
     throw new Error('Beban dimuka: pilih akun tujuan bertipe Beban (akun yang akan menerima amortisasi bulanan).');
   }
   if (!Number.isInteger(p.jumlahBulan) || p.jumlahBulan < 2 || p.jumlahBulan > 240) {

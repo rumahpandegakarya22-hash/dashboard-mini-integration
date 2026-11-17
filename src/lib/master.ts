@@ -195,8 +195,7 @@ const TIPE_AKUN_OPTIONS = [
   'Ekuitas',
   'Kontra Ekuitas',
   'Pendapatan',
-  'Beban',
-  'Beban Non-Operasional'
+  'Beban'
 ];
 
 export interface SumberDana {
@@ -209,9 +208,7 @@ export interface SumberDana {
  * Opsi "Dibayar Dari" (= Akun Kredit) per Tipe Akun — revisi user 10 Jul 2026:
  * - Beban: kas/bank (tunai) ATAU akun "Stok ..." — pemakaian bahan penunjang operasional dari stok
  *   dijurnal Dr Beban X / Cr Stok X, bukan kredit kas.
- * - Beban Non-Operasional (isinya 4 akun Beban Penyusutan): HANYA Akumulasi Penyusutan (Kontra Aset).
- *   Jurnal penyusutan standar PSAK: Dr Beban Penyusutan / Cr Akumulasi Penyusutan — kas sengaja
- *   TIDAK ditawarkan supaya tidak bisa salah jurnal.
+ * - Penyusutan tidak lewat form ini: menu Aset Tetap memposting Dr Beban Penyusutan / Cr Akumulasi Penyusutan.
  * - Tipe lain: kas/bank (perilaku lama).
  */
 export async function getSumberDana(): Promise<SumberDana[]> {
@@ -219,11 +216,7 @@ export async function getSumberDana(): Promise<SumberDana[]> {
   const rows: SumberDana[] = [];
   const pushKas = (tipe: string) => kas.forEach((k) => rows.push({ tipe, id: k, label: k }));
   for (const tipe of TIPE_AKUN_OPTIONS) {
-    if (tipe === 'Beban Non-Operasional') {
-      accounts
-        .filter((a) => a.tipe === 'Kontra Aset')
-        .forEach((a) => rows.push({ tipe, id: a.nama, label: a.nama }));
-    } else if (tipe === 'Beban') {
+    if (tipe === 'Beban') {
       pushKas(tipe);
       accounts
         .filter((a) => a.tipe === 'Aset' && /^stok\b/i.test(a.nama))

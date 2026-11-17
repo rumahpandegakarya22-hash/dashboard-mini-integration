@@ -28,7 +28,8 @@ export default async function DashboardViewPage({
   const period = sp.period || DEFAULT_PERIOD;
 
   const loaded = await loadDashboardData(user.role, period, sp.from, sp.to, {
-    withInventory: view === 'stok'
+    withInventory: view === 'stok',
+    withBebanDimuka: view === 'beban-dimuka'
   });
   const isDash = page.group === 'dash';
 

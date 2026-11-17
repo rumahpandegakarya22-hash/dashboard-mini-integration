@@ -18,6 +18,7 @@ interface AsetRow {
   per_bulan: number;
   akumulasi: number;
   nilai_buku: number;
+  kali: number;
   lunas: boolean;
 }
 
@@ -200,7 +201,7 @@ export default function AsetTetapPanel() {
                 <tr><td colSpan={8} className="muted">Belum ada aset. Tambahkan di atas.</td></tr>
               ) : rows.map((a) => (
                 <tr key={a.id}>
-                  <td>{a.nama}{a.lunas && <span className="muted" style={{ fontSize: '0.72rem' }}> · lunas</span>}</td>
+                  <td>{a.nama}{a.lunas && <span className="muted" style={{ fontSize: '0.72rem' }}> · lunas</span>}<div className="muted" style={{ fontSize: '0.72rem' }}>disusutkan {a.kali} dari {a.umur_bulan} bulan</div></td>
                   <td>{a.kategori}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{fmtTanggal(a.tanggal_perolehan)}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{rp(a.harga_perolehan)}</td>

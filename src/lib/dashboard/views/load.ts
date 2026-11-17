@@ -21,6 +21,9 @@ import { turso } from '../../core/turso';
 import { startOfDay, parseDate } from '../format';
 import { loadKpi, type KpiData } from '../kpi';
 import { loadTargets } from '../targets-db';
+import { pastikanPenyusutanTerkini } from '@/lib/laporan/penyusutan';
+import { loadBebanDimuka } from '../beban-dimuka-db';
+import type { ItemBebanDimuka } from '../beban-dimuka';
 import { targetBawaan, type TargetMap } from '../targets';
 
 export interface DashboardPageData {
@@ -36,6 +39,8 @@ export interface DashboardPageData {
   kpi: KpiData;
   /** Target KPI yang berlaku. */
   targets: TargetMap;
+  /** Hanya terisi untuk halaman Beban Dimuka. */
+  bebanDimuka: ItemBebanDimuka[];
 }
 
 export async function loadDashboardData(
@@ -43,7 +48,7 @@ export async function loadDashboardData(
   period: string,
   from?: string,
   to?: string,
-  opts?: { withInventory?: boolean }
+  opts?: { withInventory?: boolean; withBebanDimuka?: boolean }
 ): Promise<DashboardPageData> {
   const range = periodRange(period || DEFAULT_PERIOD_FALLBACK, from, to);
 
@@ -76,10 +81,13 @@ export async function loadDashboardData(
       inventory,
       waitingList,
       kpi: {},
-      targets: targetBawaan()
+      targets: targetBawaan(),
+      bebanDimuka: []
     };
   }
 
+  // Penyusutan aset dicatat otomatis ke jurnal; hanya dipicu oleh Owner dan Admin and Finance (Pengawas baca saja).
+  if (role === 'owner' || role === 'admin_finance') await pastikanPenyusutanTerkini();
   const all = await readComputedSheets();
   const sheets = filterSheetsForRole(all, role); // RLS — lihat catatan di header
   const data = hydrateDashboard(sheets, { tursoPayments, transaksi, tursoTempo });
@@ -93,7 +101,9 @@ export async function loadDashboardData(
 
   const targets = await loadTargets();
 
-  return { data, finance, txGrid, range, configured: true, inventory, waitingList, kpi, targets };
+  const bebanDimuka = opts?.withBebanDimuka ? await loadBebanDimuka() : [];
+
+  return { data, finance, txGrid, range, configured: true, inventory, waitingList, kpi, targets, bebanDimuka };
 }
 
 /** Baca semua invoice dari Turso (invoice_sewa), termasuk yang belum dibayar. */
@@ -201,7 +211,10 @@ async function loadTransaksi(): Promise<TransaksiRow[]> {
 
     const [incRows, expRows] = await Promise.all([
       db.execute(`SELECT tanggal, nama_transaksi, jumlah, keterangan FROM income_non_rent ORDER BY tanggal DESC`),
-      db.execute(`SELECT tanggal, keterangan, nominal FROM jurnal_transaksi WHERE keterangan NOT LIKE 'Pengakuan%' ORDER BY tanggal DESC LIMIT 500`)
+      db.execute({
+        sql: `SELECT tanggal, keterangan, nominal FROM jurnal_transaksi WHERE keterangan NOT LIKE 'Pengakuan%' AND keterangan NOT LIKE 'Amortisasi bln-%' ORDER BY tanggal DESC LIMIT 500`,
+        args: []
+      })
     ]);
 
     const income: TransaksiRow[] = incRows.rows.map((r: any) => ({

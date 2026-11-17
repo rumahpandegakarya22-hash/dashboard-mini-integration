@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
-import { ringkasanAset, postingPenyusutan, KATEGORI, type KategoriAset } from '@/lib/laporan/penyusutan';
+import { ringkasanAset, postingPenyusutan, pastikanPenyusutanTerkini, KATEGORI, type KategoriAset } from '@/lib/laporan/penyusutan';
 
 const ALLOWED = new Set(['owner', 'admin_finance']);
 
@@ -15,6 +15,7 @@ async function guard() {
 export async function GET() {
   const g = await guard();
   if (g.error) return g.error;
+  await pastikanPenyusutanTerkini();
   const aset = await ringkasanAset();
   return NextResponse.json({ aset, kategori: KATEGORI });
 }
@@ -51,10 +52,12 @@ export async function POST(req: NextRequest) {
   if (!(umur > 0)) return NextResponse.json({ error: 'Umur manfaat tidak valid.' }, { status: 400 });
 
   await turso().execute({
-    sql: `INSERT INTO aset_tetap (nama, kategori, harga_perolehan, nilai_residu, tanggal_perolehan, umur_bulan, catatan)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    args: [nama, kategori, harga, residu, tanggal, umur, String(body.catatan ?? '') || null],
+    sql: `INSERT INTO aset_tetap (nama, kategori, harga_perolehan, nilai_residu, tanggal_perolehan, umur_bulan, catatan, nilai_buku)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [nama, kategori, harga, residu, tanggal, umur, String(body.catatan ?? '') || null, harga],
   });
+  // Aset lama (backfill dari bulan perolehan) langsung dihitung, tanpa menunggu laporan dibuka.
+  await pastikanPenyusutanTerkini({ paksa: true });
   return NextResponse.json({ ok: true });
 }
 

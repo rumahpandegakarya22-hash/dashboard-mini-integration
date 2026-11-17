@@ -1,4 +1,5 @@
 import { turso } from '@/lib/core/turso';
+import { nowWib } from '@/lib/core/validate';
 
 /* =========================================================================
    Penyusutan aset tetap — metode garis lurus.
@@ -6,6 +7,8 @@ import { turso } from '@/lib/core/turso';
    Jurnal per bulan: debit Beban Penyusutan (61xx) / kredit Akum (19xx).
    Idempoten: satu (aset, periode) hanya diposting sekali (tabel
    penyusutan_posting UNIQUE). Posting bisa backfill dari bulan perolehan.
+   Posting berjalan sendiri (tanpa cron): lihat pastikanPenyusutanTerkini(), dipanggil saat laporan dan
+   Dashboard dibaca. Penyusutan berhenti saat nilai buku mencapai nilai residu.
    ========================================================================= */
 
 export type KategoriAset = 'Bangunan' | 'Elektronik' | 'Furniture' | 'Peralatan Operasional';
@@ -74,15 +77,22 @@ async function akumulasiMap(): Promise<Map<number, number>> {
   return m;
 }
 
+async function kaliMap(): Promise<Map<number, number>> {
+  const r = await turso().execute('SELECT aset_id, COUNT(*) n FROM penyusutan_posting GROUP BY aset_id');
+  return new Map(r.rows.map((x) => [Number(x[0]), Number(x[1])]));
+}
+
 export interface AsetRingkas extends Aset {
   per_bulan: number;
   akumulasi: number;
   nilai_buku: number;
+  /** Sudah berapa bulan disusutkan (jumlah baris posting). */
+  kali: number;
   lunas: boolean;
 }
 
 export async function ringkasanAset(): Promise<AsetRingkas[]> {
-  const [aset, akum] = await Promise.all([listAset(), akumulasiMap()]);
+  const [aset, akum, kali] = await Promise.all([listAset(), akumulasiMap(), kaliMap()]);
   return aset.map((a) => {
     const akumulasi = akum.get(a.id) ?? 0;
     return {
@@ -90,6 +100,7 @@ export async function ringkasanAset(): Promise<AsetRingkas[]> {
       per_bulan: perBulan(a),
       akumulasi,
       nilai_buku: a.harga_perolehan - akumulasi,
+      kali: kali.get(a.id) ?? 0,
       lunas: akumulasi >= baseSusut(a),
     };
   });
@@ -128,15 +139,25 @@ export async function postingPenyusutan(sampaiPeriode: string): Promise<{ posted
       const nominal = Math.min(bulanan, base - terkumpul);
       if (nominal <= 0) break;
 
-      await db.execute({
-        sql: `INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori)
-              VALUES (?, ?, ?, ?, ?, 'Non-Operasional')`,
-        args: [akhirBulan(periode), info.bebanKode, info.akumKode, nominal, `Penyusutan ${a.nama} ${periode}`],
-      });
-      await db.execute({
-        sql: 'INSERT INTO penyusutan_posting (aset_id, periode, nominal) VALUES (?, ?, ?)',
-        args: [a.id, periode, nominal],
-      });
+      // Satu transaksi: posting (UNIQUE), jurnal laba rugi, dan nilai buku di aset. Dua proses yang
+      // berjalan bersamaan tidak bisa menggandakan jurnal karena yang kedua gagal di UNIQUE dan dibatalkan.
+      try {
+        await db.batch(
+          [
+            { sql: 'INSERT INTO penyusutan_posting (aset_id, periode, nominal) VALUES (?, ?, ?)', args: [a.id, periode, nominal] },
+            {
+              sql: `INSERT INTO jurnal_transaksi (tanggal, akun_debit_kode, akun_kredit_kode, nominal, keterangan, kategori)
+                    VALUES (?, ?, ?, ?, ?, 'Non-Operasional')`,
+              args: [akhirBulan(periode), info.bebanKode, info.akumKode, nominal, `Penyusutan ${a.nama} ${periode}`],
+            },
+            { sql: 'UPDATE aset_tetap SET nilai_buku = ? WHERE id = ?', args: [a.harga_perolehan - (terkumpul + nominal), a.id] },
+          ],
+          'write'
+        );
+      } catch (e) {
+        if (/UNIQUE/i.test(String((e as Error)?.message))) { sudah.add(periode); continue; }
+        throw e;
+      }
       terkumpul += nominal;
       posted++;
       total += nominal;
@@ -144,4 +165,23 @@ export async function postingPenyusutan(sampaiPeriode: string): Promise<{ posted
   }
 
   return { posted, total, skipped };
+}
+
+let memo = { periode: '', at: 0 };
+
+/**
+ * Pastikan penyusutan sampai bulan berjalan sudah tercatat di jurnal. Menghitung sendiri berapa bulan
+ * yang belum diposting per aset, berhenti otomatis saat nilai buku mencapai nilai residu. Murah dan idempoten,
+ * jadi dipanggil tiap laporan/Dashboard dibaca; hasilnya diingat 10 menit. `paksa` dipakai setelah aset ditambah.
+ */
+export async function pastikanPenyusutanTerkini(opsi: { paksa?: boolean } = {}): Promise<void> {
+  const periode = nowWib().slice(0, 7);
+  if (!opsi.paksa && memo.periode === periode && Date.now() - memo.at < 10 * 60_000) return;
+  memo = { periode, at: Date.now() };
+  try {
+    await postingPenyusutan(periode);
+  } catch (e) {
+    memo.at = 0;
+    console.error('[penyusutan] gagal posting otomatis:', (e as Error)?.message);
+  }
 }

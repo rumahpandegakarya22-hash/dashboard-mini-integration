@@ -23,6 +23,11 @@ export const COLS: Record<string, TableCol[]> = {
       {key:"nopol",label:"Nopol"},{key:"kendaraan",label:"Kendaraan"},
     ],
     penghuniSales: [{key:"kamar",label:"No Kamar"},{key:"panggil",label:"Nama Panggilan"},{key:"jenis",label:"Jenis Kamar"},{key:"tempo",label:"Tanggal Jatuh Tempo"},{key:"hp",label:"No HP Penghuni"},{key:"aksi",label:"WhatsApp"}],
+    bebanDimuka: [
+      {key:"tanggalBayar",label:"Tanggal Bayar"},{key:"keterangan",label:"Keterangan"},{key:"akunBeban",label:"Jenis Biaya (Akun Beban)"},
+      {key:"total",label:"Total Dibayar"},{key:"bulan",label:"Bulan"},{key:"diakui",label:"Sudah Jadi Beban"},
+      {key:"sisa",label:"Sisa (Aset)"},{key:"selesaiPada",label:"Habis Pada"},{key:"status",label:"Status"},
+    ],
     pembayaran: [
       {key:"tanggal",label:"Tanggal"},{key:"idPenghuni",label:"ID Penghuni"},
       {key:"name",label:"Nama"},{key:"jenisTx",label:"Status"},

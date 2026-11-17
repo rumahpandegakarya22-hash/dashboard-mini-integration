@@ -1,4 +1,5 @@
 import { turso } from '@/lib/core/turso';
+import { pastikanPenyusutanTerkini } from '@/lib/laporan/penyusutan';
 
 /* =========================================================================
    Mesin laporan PSAK — meniru arsitektur spreadsheet referensi:
@@ -36,6 +37,7 @@ interface AkunSaldo {
 }
 
 async function neracaSaldo(dari: string, sampai: string): Promise<AkunSaldo[]> {
+  await pastikanPenyusutanTerkini();
   const res = await turso().execute({
     sql: `
       SELECT c.kode, c.nama_akun, c.tipe_akun, c.saldo_normal, c.kategori_arus_kas, c.grup_laporan,

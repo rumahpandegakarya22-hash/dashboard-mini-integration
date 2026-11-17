@@ -361,10 +361,9 @@ export const MODULES: ModuleMeta[] = [
           { value: 'Ekuitas', label: 'Ekuitas' },
           { value: 'Kontra Ekuitas', label: 'Kontra Ekuitas' },
           { value: 'Pendapatan', label: 'Pendapatan' },
-          { value: 'Beban', label: 'Beban' },
-          { value: 'Beban Non-Operasional', label: 'Beban Non-Operasional' }
+          { value: 'Beban', label: 'Beban' }
         ],
-        helpText: 'Beban = operasional; Beban Non-Operasional = penyusutan, kerugian.'
+        helpText: 'Penyusutan aset tidak dicatat di sini: dihitung dan diposting otomatis dari menu Aset Tetap.'
       },
       {
         name: 'akunTujuan',
@@ -436,9 +435,10 @@ export const MODULES: ModuleMeta[] = [
           { value: 'Inspeksi', label: 'Inspeksi' },
           { value: 'Maintenance', label: 'Maintenance' },
           { value: 'Marketing', label: 'Marketing' },
-          { value: 'Sales', label: 'Sales' }
+          { value: 'Sales', label: 'Sales' },
+          { value: 'Operasional', label: 'Operasional (biaya umum)' }
         ],
-        helpText: 'Dipakai untuk penomoran nota: YYMM-Divisi-urutan.'
+        helpText: 'Dipakai untuk penomoran nota: YYMM-Divisi-urutan. Pilih "Operasional" untuk biaya umum yang dibayar tim Operasional (internet, listrik, langganan).'
       },
       {
         name: 'lampiranPengeluaran',

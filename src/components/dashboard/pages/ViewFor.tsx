@@ -96,6 +96,24 @@ export default function ViewFor({ view, role, kepala = false, loaded, period }: 
         </Reveal>
       );
 
+    case 'beban-dimuka': {
+      const rp = (n: number) => `Rp${Math.round(n).toLocaleString('id-ID')}`;
+      const sisaTotal = loaded.bebanDimuka.reduce((s, x) => s + x.sisa, 0);
+      const rows = loaded.bebanDimuka.map((x) => ({
+        ...x,
+        total: rp(x.total),
+        diakui: rp(x.diakui),
+        sisa: rp(x.sisa),
+        bulan: `${x.bulanBerjalan} / ${x.bulan}`,
+        status: { t: x.status, c: x.status === 'Berjalan' ? 's-progress' : 's-complete' }
+      }));
+      return (
+        <Reveal tier={0}>
+          <DataTablePage title={`BEBAN DIMUKA · sisa saldo ${rp(sisaTotal)}`} cols={COLS.bebanDimuka} data={rows} period="" />
+        </Reveal>
+      );
+    }
+
     case 'konten':
       return (
         <Reveal tier={0}>
