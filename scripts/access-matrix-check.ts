@@ -27,7 +27,7 @@ const base: AuthState = {
   dashboardStatus: 'pending'
 };
 
-const dashUser = { id: 'u1', username: 'budi', name: 'Budi', role: 'admin_finance' as const };
+const dashUser = { id: 'u1', username: 'budi', name: 'Budi', role: 'admin_finance' as const, kepala: false };
 const opsUser = { id: 'u1', username: 'budi', name: 'Budi', role: 'admin_finance' as const };
 
 interface Case {

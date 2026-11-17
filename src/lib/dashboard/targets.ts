@@ -98,8 +98,9 @@ export function persenBatas(nilai: number | null | undefined, target: number): n
   return Math.max(0, Math.min(100, (target / nilai) * 100));
 }
 
-/** Owner mengatur semua target; kepala divisi hanya target divisinya sendiri; Pengawas hanya melihat. */
-export const bolehUbahTarget = (role: string, divisi: DivisiTarget): boolean => role === 'owner' || role === divisi;
+/** Owner mengatur semua target; kepala divisi (akun bertanda) hanya divisinya sendiri; staf dan Pengawas hanya melihat. */
+export const bolehUbahTarget = (role: string, divisi: DivisiTarget, kepala: boolean): boolean =>
+  role === 'owner' || (kepala && role === divisi);
 
 export const divisiTerlihat = (role: string): DivisiTarget[] => {
   const semua = Object.keys(DIVISI_LABEL) as DivisiTarget[];

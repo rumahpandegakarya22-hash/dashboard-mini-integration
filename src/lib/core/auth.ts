@@ -33,6 +33,8 @@ export interface DashboardSessionUser {
   username: string;
   name: string;
   role: DashboardRole;
+  /** Kepala divisi (ditandai Owner): boleh mengatur target KPI divisinya. Bukan role baru. */
+  kepala: boolean;
 }
 
 export type UserStatus = 'pending' | 'active' | 'disabled';
@@ -88,6 +90,10 @@ function dashRole(u: User): DashboardRole | null {
   const m = u.publicMetadata as Record<string, unknown>;
   const r = normalizeRole(m?.role) ?? normalizeRole(m?.miniappRole);
   return isDashboardRole(r) ? r : null;
+}
+
+function isKepala(u: User): boolean {
+  return (u.publicMetadata as Record<string, unknown>)?.kepalaDivisi === true;
 }
 
 function dashStatus(u: User): UserStatus {
@@ -198,7 +204,7 @@ function bypassDev(): AuthState | null {
     user: palsu,
     opsRole: 'owner',
     opsStatus: 'active',
-    dashboardUser: { ...palsu, role: 'owner' },
+    dashboardUser: { ...palsu, role: 'owner', kepala: true },
     dashboardRole: 'owner',
     dashboardStatus: 'active'
   };
@@ -244,7 +250,8 @@ export const getAuthState = cache(async (): Promise<AuthState> => {
           id: cu.id,
           username: cu.username || primaryEmail(cu) || cu.id,
           name: displayName(cu),
-          role: dashboardRole!
+          role: dashboardRole!,
+          kepala: isKepala(cu)
         }
       : null,
     dashboardRole,
@@ -318,7 +325,12 @@ export async function listAllUsers(): Promise<AdminUserRow[]> {
 async function patchMiniappMetadata(userId: string, patch: { miniappRole?: Role; miniappStatus?: UserStatus }): Promise<void> {
   const client = await clerkClient();
   // Role disalin ke kunci Dashboard juga (satu role per akun); status Dashboard tidak disentuh.
-  const sync = patch.miniappRole && isDashboardRole(patch.miniappRole) ? { role: patch.miniappRole } : {};
+  let sync: Record<string, unknown> = {};
+  if (patch.miniappRole && isDashboardRole(patch.miniappRole)) {
+    // Pindah divisi = bukan kepala lagi; Owner menandai ulang bila perlu.
+    const berubah = dashRole(await client.users.getUser(userId)) !== patch.miniappRole;
+    sync = { role: patch.miniappRole, ...(berubah ? { kepalaDivisi: false } : {}) };
+  }
   await client.users.updateUserMetadata(userId, { publicMetadata: { ...patch, ...sync } });
 }
 
@@ -358,6 +370,7 @@ export interface DashboardAdminUserRow {
   status: UserStatus;
   tfaEnabled: boolean;
   email: string | null;
+  kepala: boolean;
 }
 
 /** Padanan `GET /api/users` — bentuk & urutan field identik server.js. */
@@ -374,7 +387,8 @@ export async function listDashboardUsers(): Promise<DashboardAdminUserRow[]> {
     role: dashRole(u),
     status: dashStatus(u),
     tfaEnabled: !!(u.privateMetadata as Record<string, unknown>)?.totpEnabled,
-    email: u.emailAddresses?.[0]?.emailAddress || null
+    email: u.emailAddresses?.[0]?.emailAddress || null,
+    kepala: isKepala(u)
   }));
 }
 
@@ -399,7 +413,9 @@ export async function approveDashboardUser(username: string, role: DashboardRole
   if (!u) return 'notfound';
   const client = await clerkClient();
   // Pengawas hanya Dashboard: jangan beri miniappRole.
-  const meta = role === 'pengawas' ? { role, status: 'active' } : { role, miniappRole: role, status: 'active' };
+  const meta: Record<string, unknown> =
+    role === 'pengawas' ? { role, status: 'active' } : { role, miniappRole: role, status: 'active' };
+  if (dashRole(u) !== role) meta.kepalaDivisi = false;
   await client.users.updateUserMetadata(u.id, { publicMetadata: meta });
   // Best-effort: bersihkan ban lama (dari versi sebelumnya sebelum banUser diketahui
   // Pro-only). Akses tidak lagi bergantung pada ini, jadi kegagalan sengaja diabaikan.
@@ -417,5 +433,20 @@ export async function disableDashboardUser(username: string): Promise<'ok' | 'no
   if (!u) return 'notfound';
   const client = await clerkClient();
   await client.users.updateUserMetadata(u.id, { publicMetadata: { status: 'disabled' } });
+  return 'ok';
+}
+
+/** Owner menandai/mencabut kepala divisi. Hanya akun Dashboard aktif dengan role divisi (bukan Owner/Pengawas). */
+export async function setKepalaDivisi(
+  username: string,
+  kepala: boolean
+): Promise<'ok' | 'notfound' | 'bukan_divisi' | 'nonaktif'> {
+  const u = await findByUsername(username);
+  if (!u) return 'notfound';
+  const role = dashRole(u);
+  if (dashStatus(u) !== 'active') return 'nonaktif';
+  if (!role || role === 'owner' || role === 'pengawas') return 'bukan_divisi';
+  const client = await clerkClient();
+  await client.users.updateUserMetadata(u.id, { publicMetadata: { kepalaDivisi: kepala } });
   return 'ok';
 }

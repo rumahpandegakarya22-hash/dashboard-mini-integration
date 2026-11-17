@@ -24,11 +24,12 @@ test('bar pencapaian: tinggi-lebih-baik dan batas-atas', () => {
   assert.equal(persenBatas(40, 20), 50);
 });
 
-test('izin: owner semua, kepala divisi hanya divisinya, pengawas tidak boleh mengubah', () => {
-  assert.ok(bolehUbahTarget('owner', 'sales'));
-  assert.ok(bolehUbahTarget('sales', 'sales'));
-  assert.ok(!bolehUbahTarget('sales', 'marketing'));
-  assert.ok(!bolehUbahTarget('pengawas', 'sales'));
+test('izin: owner semua, kepala bertanda hanya divisinya, staf dan pengawas tidak boleh', () => {
+  assert.ok(bolehUbahTarget('owner', 'sales', false));
+  assert.ok(bolehUbahTarget('sales', 'sales', true));
+  assert.ok(!bolehUbahTarget('sales', 'sales', false), 'staf bukan kepala tidak boleh');
+  assert.ok(!bolehUbahTarget('sales', 'marketing', true), 'kepala hanya divisinya');
+  assert.ok(!bolehUbahTarget('pengawas', 'sales', true));
   assert.deepEqual(divisiTerlihat('marketing'), ['marketing']);
   assert.equal(divisiTerlihat('pengawas').length, 4);
 });

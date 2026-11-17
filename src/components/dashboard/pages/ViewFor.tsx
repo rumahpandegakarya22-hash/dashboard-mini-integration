@@ -21,6 +21,8 @@ import { isFullView } from '@/lib/core/roles';
 export interface ViewForProps {
   view: string;
   role: DashboardRole;
+  /** Akun ditandai kepala divisi oleh Owner. */
+  kepala?: boolean;
   loaded: DashboardPageData;
   period: string;
 }
@@ -29,7 +31,7 @@ export interface ViewForProps {
 const withName = <T extends Record<string, any>>(rows: T[], key: string) =>
   rows.map((r) => ({ ...r, name: r[key] ?? r.name }));
 
-export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
+export default function ViewFor({ view, role, kepala = false, loaded, period }: ViewForProps) {
   const d = loaded.data;
 
   switch (view) {
@@ -90,7 +92,7 @@ export default function ViewFor({ view, role, loaded, period }: ViewForProps) {
     case 'target':
       return (
         <Reveal tier={0}>
-          <TargetKpiPanel role={role} nilai={loaded.targets} />
+          <TargetKpiPanel role={role} kepala={kepala} nilai={loaded.targets} />
         </Reveal>
       );
 

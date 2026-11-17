@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { DEFINISI_TARGET, DIVISI_LABEL, bolehUbahTarget, divisiTerlihat, type TargetMap } from '@/lib/dashboard/targets';
 
 /** Halaman pengaturan target KPI. Owner mengatur semua divisi, kepala divisi hanya divisinya, Pengawas hanya melihat. */
-export default function TargetKpiPanel({ role, nilai }: { role: string; nilai: TargetMap }) {
+export default function TargetKpiPanel({ role, kepala, nilai }: { role: string; kepala: boolean; nilai: TargetMap }) {
   const router = useRouter();
   const [isi, setIsi] = useState<Record<string, string>>(() =>
     Object.fromEntries(DEFINISI_TARGET.map((t) => [t.kunci, String(nilai[t.kunci] ?? t.nilaiBawaan)]))
@@ -33,7 +33,7 @@ export default function TargetKpiPanel({ role, nilai }: { role: string; nilai: T
     }
   }
 
-  const bisaUbahApa = divisiTerlihat(role).some((d) => bolehUbahTarget(role, d));
+  const bisaUbahApa = divisiTerlihat(role).some((d) => bolehUbahTarget(role, d, kepala));
 
   return (
     <div className="view">
@@ -41,10 +41,10 @@ export default function TargetKpiPanel({ role, nilai }: { role: string; nilai: T
         Target dipakai sebagai keterangan dan bar pencapaian di kartu dashboard.{' '}
         {bisaUbahApa
           ? 'Ubah angkanya lalu tekan Simpan; tombol Bawaan mengembalikan ke nilai SOW.'
-          : 'Anda hanya dapat melihat target; perubahan dilakukan Owner atau kepala divisi.'}
+          : 'Anda hanya dapat melihat target; perubahan dilakukan Owner atau kepala divisi (akun yang ditandai Owner).'}
       </p>
       {divisiTerlihat(role).map((div) => {
-        const boleh = bolehUbahTarget(role, div);
+        const boleh = bolehUbahTarget(role, div, kepala);
         return (
           <section className="card target-card" key={div}>
             <div className="card__title">

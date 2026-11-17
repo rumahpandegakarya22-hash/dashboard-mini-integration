@@ -6,7 +6,7 @@ import { DEFINISI_TARGET, bolehUbahTarget } from '@/lib/dashboard/targets';
 
 /**
  * Atur target KPI. Body: { kunci, nilai } untuk menyimpan, { kunci, nilai: null } untuk
- * kembali ke nilai bawaan. Owner boleh semua; kepala divisi hanya divisinya; Pengawas tidak boleh.
+ * kembali ke nilai bawaan. Owner boleh semua; kepala divisi (akun bertanda) hanya divisinya; staf dan Pengawas tidak boleh.
  */
 export async function PUT(req: NextRequest) {
   const g = await requireDashboardAuth();
@@ -15,8 +15,8 @@ export async function PUT(req: NextRequest) {
   const b = (await req.json().catch(() => ({}))) as { kunci?: unknown; nilai?: unknown };
   const def = DEFINISI_TARGET.find((t) => t.kunci === b.kunci);
   if (!def) return NextResponse.json({ error: 'Target tidak dikenal.' }, { status: 400 });
-  if (!bolehUbahTarget(g.user.role, def.divisi)) {
-    return NextResponse.json({ error: 'Anda tidak boleh mengubah target divisi ini.' }, { status: 403 });
+  if (!bolehUbahTarget(g.user.role, def.divisi, g.user.kepala)) {
+    return NextResponse.json({ error: 'Hanya Owner dan kepala divisi yang boleh mengubah target divisi ini.' }, { status: 403 });
   }
 
   try {

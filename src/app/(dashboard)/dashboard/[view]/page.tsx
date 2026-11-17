@@ -50,7 +50,7 @@ export default async function DashboardViewPage({
       {isDash && view !== 'stok' ? (
         <OverviewFor which={view as OverviewKey} loaded={loaded} period={period} from={sp.from} to={sp.to} />
       ) : (
-        <ViewFor view={view} role={user.role} loaded={loaded} period={period} />
+        <ViewFor view={view} role={user.role} kepala={user.kepala} loaded={loaded} period={period} />
       )}
     </DashboardShell>
   );

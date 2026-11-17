@@ -13,6 +13,7 @@ interface DashRow {
   status: 'pending' | 'active' | 'disabled';
   tfaEnabled: boolean;
   email: string | null;
+  kepala?: boolean;
 }
 
 interface OpsRow {
@@ -152,15 +153,30 @@ export default function UnifiedUserAdmin() {
                         <>
                           <StatusCell status={u.dash.status} />{' '}
                           <span className="muted">{u.dash.role ? ROLE_LABEL[u.dash.role] : 'tanpa role'}</span>
+                          {u.dash.kepala && <span className="status s-complete" style={{ marginLeft: 6 }}>Kepala divisi</span>}
                           <div style={{ marginTop: 6 }}>
                             {u.dash.status === 'active' ? (
-                              <button
-                                className="cell-btn"
-                                disabled={busy === dKey}
-                                onClick={() => call('/api/dashboard/users/disable', { username: u.username }, dKey)}
-                              >
-                                Nonaktifkan
-                              </button>
+                              <>
+                                <button
+                                  className="cell-btn"
+                                  disabled={busy === dKey}
+                                  onClick={() => call('/api/dashboard/users/disable', { username: u.username }, dKey)}
+                                >
+                                  Nonaktifkan
+                                </button>{' '}
+                                {u.dash.role && u.dash.role !== 'owner' && u.dash.role !== 'pengawas' && (
+                                  <button
+                                    className="cell-btn"
+                                    disabled={busy === dKey}
+                                    title="Kepala divisi boleh mengatur target KPI divisinya"
+                                    onClick={() =>
+                                      call('/api/dashboard/users/kepala', { username: u.username, kepala: !u.dash!.kepala }, dKey)
+                                    }
+                                  >
+                                    {u.dash.kepala ? 'Cabut kepala divisi' : 'Jadikan kepala divisi'}
+                                  </button>
+                                )}
+                              </>
                             ) : (
                               <>
                                 <OriginSelect
