@@ -9,16 +9,24 @@ const periode = parsePeriode('2026-06', new Date('2026-11-02'));
 const dibuat = new Date('2026-07-05T07:15:00Z');
 
 function dasar(): DataKinerjaMarketing {
-  return {
+  // Dibangun dari baris mentah supaya data chart dan lampiran konsisten dengan angka ringkasan.
+  return susunMarketing(
     periode, dibuat,
-    leads: { total: 3, sumberTeratas: 'Instagram (2)', statusRingkas: 'Baru (2), Follow-up (1)' },
-    konten: { post: 2, reach: 3400, likes: 520, komentar: 28, shareSaves: 67, platformTeraktif: 'Instagram (2)' },
-    kampanye: { jumlah: 1, budget: 300000, spend: 250000, targetLeads: 15, leadsAktual: 12, bookingDariPromo: 2 },
-    kpi: [
+    [
+      { tanggal: '2026-06-02', sumber: 'Instagram', status: 'Baru', platform: 'Story IG' },
+      { tanggal: '2026-06-05', sumber: 'Instagram', status: 'Baru', platform: 'Reels' },
+      { tanggal: '2026-06-09', sumber: 'Referral', status: 'Follow-up', platform: 'Teman penghuni' },
+    ],
+    [
+      { tanggal: '2026-06-03', platform: 'Instagram', tipe: 'Foto Kamar', judul: 'Kamar AC', reach: 1200, likes: 245, komentar: 12, shareSaves: 34 },
+      { tanggal: '2026-06-12', platform: 'Instagram', tipe: 'Video Tour', judul: 'Tour 1 menit', reach: 2200, likes: 275, komentar: 16, shareSaves: 33 },
+    ],
+    [{ mulai: '2026-06-01', selesai: '2026-06-30', budget: 300000, spend: 250000, targetLeads: 15, leadsAktual: 12, booking: 2, nama: 'Promo Juni', platform: 'Instagram Ads' }],
+    [
       { nama: 'CPL', nilai: 'Rp20.833', target: '≤ Rp25.000', status: 'tercapai' },
       { nama: 'Engagement Rate', nilai: '18,1 %', target: '≥ 70 %', status: 'belum' },
     ],
-  };
+  );
 }
 
 test('marketing: header, periode, bagian dan label', () => {
@@ -51,7 +59,8 @@ test('marketing: bulan kosong utuh, angka 0 bukan NaN', () => {
   assert.match(h, /<td>Status Leads<\/td><td>-<\/td>/);
   assert.match(h, /<td>Platform Teraktif<\/td><td>-<\/td>/);
   assert.match(h, /<td>Total Spend Aktual<\/td><td>Rp0<\/td>/);
-  assert.ok(!h.includes('NaN') && !h.includes('Infinity'));
+  const isi = h.replace(/<style>[\s\S]*?<\/style>/, '');
+  assert.ok(!isi.includes('NaN') && !isi.includes('Infinity'), 'tanpa NaN/Infinity (font base64 di <style> dikecualikan)');
 });
 
 test('marketing: teks database di-escape', () => {

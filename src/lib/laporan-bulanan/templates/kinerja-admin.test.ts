@@ -52,7 +52,7 @@ test('kinerja admin: bulan kosong utuh', () => {
   assert.equal(h.split('Tidak ada entri pada periode ini.').length - 1, 3);
   assert.match(h, /<td>Total Feedback Masuk<\/td><td>0<\/td>/);
   assert.match(h, /<td>Kategori<\/td><td>-<\/td>/);
-  assert.ok(!h.includes('NaN'));
+  assert.ok(!h.replace(/<style>[\s\S]*?<\/style>/, '').includes('NaN'), 'tanpa NaN di isi laporan (font base64 di <style> dikecualikan)');
 });
 
 test('kinerja admin: lampiran pelanggaran dan kecelakaan dirender bila ada baris', () => {
@@ -73,7 +73,7 @@ test('kinerja admin: lampiran pelanggaran dan kecelakaan dirender bila ada baris
 test('kinerja admin: teks database di-escape', () => {
   const d = susunKinerjaAdmin(periode, dibuat, [fb({ deskripsi: '<script>1</script> & "x"', kategori: '<b>K</b>' })], [], []);
   const h = htmlKinerjaAdmin(d);
-  assert.ok(!h.includes('<script>') && !h.includes('<b>'));
+  assert.ok(!h.includes('<script>') && !h.includes('<b>K</b>'));
   assert.match(h, /&lt;script&gt;1&lt;\/script&gt; &amp; &quot;x&quot;/);
 });
 

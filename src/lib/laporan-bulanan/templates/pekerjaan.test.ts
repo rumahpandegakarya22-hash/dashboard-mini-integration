@@ -43,7 +43,7 @@ test('bulan kosong tetap utuh tanpa NaN', () => {
   const h = htmlPekerjaan(data({ rows: [] }));
   assert.ok(h.includes('(tidak ada data pada periode ini)'));
   assert.ok(h.includes('0%'));
-  assert.ok(!h.includes('NaN'));
+  assert.ok(!h.replace(/<style>[\s\S]*?<\/style>/, '').includes('NaN'), 'tanpa NaN (font base64 di <style> dikecualikan)');
 });
 
 test('teks database di-escape', () => {

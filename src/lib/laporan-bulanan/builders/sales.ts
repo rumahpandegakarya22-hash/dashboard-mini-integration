@@ -3,12 +3,18 @@ import type { Periode } from '../types';
 import { argTanggal, kondisiTanggal } from '../tanggal';
 import { barisSales, type BarisKpi } from '../kpi-laporan';
 import { ambilKpiLaporan } from './kpi';
+import { hitungKemunculan, jumlahPerKunci, perMinggu, type Titik } from '../grafik';
 
 export interface DataKinerjaSales {
   periode: Periode;
   dibuat: Date;
   checkIn: number; konfirmasi: number; batal: number; nilaiBooking: number; sumberTeratas: string;
   booking: { tanggal: string; nama: string; kamar: string; status: string; harga: number; sumber: string }[];
+  grafik: {
+    statusBooking: Titik[]; sumber: Titik[]; nilaiPerSumber: Titik[]; nilaiPerKamar: Titik[]; funnel: Titik[]; mingguan: Titik[];
+    /** Rekap per sumber leads (booking non-batal). */
+    rekapSumber: { sumber: string; jumlah: number; nilai: number }[];
+  };
   kpi: BarisKpi[];
 }
 
@@ -26,7 +32,7 @@ export function klasifikasiBooking(status: string | null | undefined): 'checkIn'
   return 'lain';
 }
 
-export function susunSales(periode: Periode, dibuat: Date, booking: BookingMentah[], kpi: BarisKpi[] = []): DataKinerjaSales {
+export function susunSales(periode: Periode, dibuat: Date, booking: BookingMentah[], kpi: BarisKpi[] = [], funnel: { leads: number; survey: number } = { leads: 0, survey: 0 }): DataKinerjaSales {
   const hitung = { checkIn: 0, konfirmasi: 0, batal: 0, lain: 0 };
   const sumber = new Map<string, number>();
   let nilaiBooking = 0;
@@ -46,20 +52,52 @@ export function susunSales(periode: Periode, dibuat: Date, booking: BookingMenta
     nilaiBooking,
     sumberTeratas: teratas ? `${teratas[0]} (${teratas[1]})` : '-',
     booking: baris,
+    grafik: susunGrafikSales(periode, baris, hitung, funnel),
     kpi,
+  };
+}
+
+function susunGrafikSales(
+  periode: Periode,
+  baris: DataKinerjaSales['booking'],
+  hitung: { checkIn: number; konfirmasi: number; batal: number; lain: number },
+  funnel: { leads: number; survey: number },
+): DataKinerjaSales['grafik'] {
+  const aktif = baris.filter(b => klasifikasiBooking(b.status) !== 'batal');
+  const rekap = new Map<string, { jumlah: number; nilai: number }>();
+  for (const b of aktif) {
+    const k = b.sumber === '-' ? 'Tanpa sumber' : b.sumber;
+    const cur = rekap.get(k) ?? { jumlah: 0, nilai: 0 };
+    rekap.set(k, { jumlah: cur.jumlah + 1, nilai: cur.nilai + b.harga });
+  }
+  return {
+    statusBooking: [
+      { label: 'Check-in', nilai: hitung.checkIn }, { label: 'Konfirmasi', nilai: hitung.konfirmasi },
+      { label: 'Dibatalkan', nilai: hitung.batal }, { label: 'Pending/lain', nilai: hitung.lain },
+    ].filter(t => t.nilai > 0),
+    sumber: hitungKemunculan(baris.map(b => (b.sumber === '-' ? null : b.sumber))),
+    nilaiPerSumber: jumlahPerKunci(aktif.map(b => ({ kunci: b.sumber === '-' ? 'Tanpa sumber' : b.sumber, nilai: b.harga }))),
+    nilaiPerKamar: jumlahPerKunci(aktif.filter(b => b.kamar !== '-').map(b => ({ kunci: `Kamar ${b.kamar}`, nilai: b.harga }))),
+    funnel: [
+      { label: 'Leads', nilai: funnel.leads }, { label: 'Survey', nilai: funnel.survey }, { label: 'Booking', nilai: aktif.length },
+    ],
+    mingguan: perMinggu(baris.map(b => ({ tanggal: b.tanggal })), periode),
+    rekapSumber: [...rekap].map(([sumber, v]) => ({ sumber, ...v })).sort((a, b) => b.jumlah - a.jumlah || a.sumber.localeCompare(b.sumber)),
   };
 }
 
 export async function ambilKinerjaSales(periode: Periode, dibuat: Date = new Date()): Promise<DataKinerjaSales> {
   const db = turso();
   const a = argTanggal(periode);
-  const [booking, dataKpi] = await Promise.all([
+  const [booking, dataKpi, leads, survey] = await Promise.all([
     db.execute({
       sql: `SELECT tanggal_booking, nama_penyewa, kamar_no, status_booking, harga_disepakati, sumber_leads
             FROM booking WHERE ${kondisiTanggal('tanggal_booking')} ORDER BY tanggal_booking, no_booking`,
       args: a,
     }),
     ambilKpiLaporan(periode, dibuat, 'sales'),
+    db.execute({ sql: `SELECT COUNT(*) AS n FROM leads WHERE ${kondisiTanggal('tanggal')}`, args: a }),
+    db.execute({ sql: `SELECT COUNT(*) AS n FROM survey WHERE ${kondisiTanggal('tanggal_survey')}`, args: a }),
   ]);
   const teks = (v: unknown) => (v == null ? null : String(v));
   return susunSales(
@@ -69,5 +107,6 @@ export async function ambilKinerjaSales(periode: Periode, dibuat: Date = new Dat
       status: teks(r.status_booking), harga: Number(r.harga_disepakati ?? 0) || 0, sumber: teks(r.sumber_leads),
     })),
     barisSales(dataKpi),
+    { leads: Number(leads.rows[0]?.n ?? 0) || 0, survey: Number(survey.rows[0]?.n ?? 0) || 0 },
   );
 }

@@ -104,7 +104,8 @@ export function pilHtml(d: number | null, satuan: SatuanDelta, naikBaik: boolean
   return `<span class="pil ${kelas}">${naik ? SEGITIGA_NAIK : SEGITIGA_TURUN}${teksDelta(d, satuan)}</span>`;
 }
 
-const WARNA = ['#c92d31', '#e8777a', '#9e2227', '#7a7170', '#d9a5a2', '#f1d9d7'];
+// Warna donut dibaca dari variabel CSS --d0..--d5 (palet per divisi: lihat palet.ts).
+const JUMLAH_WARNA = 6;
 
 export function donutSvg(segmen: Segmen[], tengah: string): string {
   const total = segmen.reduce((t, s) => t + s.nilai, 0);
@@ -112,12 +113,12 @@ export function donutSvg(segmen: Segmen[], tengah: string): string {
   const K = 2 * Math.PI * R;
   let isi = '';
   if (total <= 0) {
-    isi = `<circle cx="70" cy="70" r="${R}" fill="none" stroke="#e3d9d7" stroke-width="24"/>`;
+    isi = `<circle cx="70" cy="70" r="${R}" fill="none" style="stroke:var(--garis)" stroke-width="24"/>`;
   } else {
     let awal = 0;
     segmen.forEach((s, i) => {
       const panjang = (s.nilai / total) * K;
-      isi += `<circle cx="70" cy="70" r="${R}" fill="none" stroke="${WARNA[i % WARNA.length]}" stroke-width="24" stroke-dasharray="${panjang.toFixed(2)} ${(K - panjang).toFixed(2)}" stroke-dashoffset="${(-awal).toFixed(2)}" transform="rotate(-90 70 70)"/>`;
+      isi += `<circle cx="70" cy="70" r="${R}" fill="none" style="stroke:var(--d${i % JUMLAH_WARNA})" stroke-width="24" stroke-dasharray="${panjang.toFixed(2)} ${(K - panjang).toFixed(2)}" stroke-dashoffset="${(-awal).toFixed(2)}" transform="rotate(-90 70 70)"/>`;
       awal += panjang;
     });
   }
@@ -130,11 +131,11 @@ function legendaHtml(segmen: Segmen[], uang: boolean): string {
   return segmen.map((s, i) => {
     const persen = desimal((s.nilai / total) * 100);
     const nilai = uang ? `${rupiah(s.nilai)} · ${persen}%` : `${s.nilai} · ${persen}%`;
-    return `<div class="lg"><span class="lg-warna" style="background:${WARNA[i % WARNA.length]}"></span><span class="lg-teks">${esc(s.label)}<br><b>${nilai}</b></span></div>`;
+    return `<div class="lg"><span class="lg-warna" style="background:var(--d${i % JUMLAH_WARNA})"></span><span class="lg-teks">${esc(s.label)}<br><b>${nilai}</b></span></div>`;
   }).join('');
 }
 
-function donutKartu(judul: string, segmen: Segmen[], tengah: string, uang: boolean): string {
+export function donutKartu(judul: string, segmen: Segmen[], tengah: string, uang: boolean): string {
   return `<div class="donut"><div class="d-judul">${esc(judul)}</div>${donutSvg(segmen, tengah)}${legendaHtml(segmen, uang)}</div>`;
 }
 

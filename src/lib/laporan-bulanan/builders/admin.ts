@@ -5,6 +5,7 @@ import type { Periode } from '../types';
 import { tglMentah } from '../format';
 import { argTanggal, kondisiTanggal } from '../tanggal';
 import { barisAdmin, type BarisKpi } from '../kpi-laporan';
+import { hitungKemunculan, perMinggu, type Titik } from '../grafik';
 import { ambilKpiLaporan } from './kpi';
 
 export interface FeedbackMentah { tanggal: string; kamar: string | null; kategori: string | null; deskripsi: string; status: string }
@@ -18,6 +19,11 @@ export interface DataKinerjaAdmin {
   pelanggaran: { total: number; jenis: string };
   kecelakaan: { total: number; lokasi: string };
   lampiran: { feedback: string[][]; pelanggaran: string[][]; kecelakaan: string[][] };
+  /** Data chart laporan: komposisi dan tren mingguan. */
+  grafik: {
+    statusFeedback: Titik[]; kategoriFeedback: Titik[]; jenisPelanggaran: Titik[]; lokasiKecelakaan: Titik[];
+    mingguan: { feedback: Titik[]; pelanggaran: Titik[]; kecelakaan: Titik[] };
+  };
   kpi: BarisKpi[];
 }
 
@@ -86,6 +92,17 @@ export function susunKinerjaAdmin(
       feedback: feedback.map((f, i) => [tglMentah(f.tanggal), f.kamar?.trim() || '-', f.kategori?.trim() || '-', f.deskripsi, status[i]]),
       pelanggaran: pelanggaran.map(p => [tglMentah(p.tanggal), p.jenis, p.deskripsi, p.pihak, p.tindakan]),
       kecelakaan: kecelakaan.map(k => [tglMentah(k.tanggal), k.lokasi, k.petugas, k.kronologi, k.tindakan]),
+    },
+    grafik: {
+      statusFeedback: hitungKemunculan(status),
+      kategoriFeedback: hitungKemunculan(feedback.map(f => f.kategori)),
+      jenisPelanggaran: hitungKemunculan(pelanggaran.map(p => p.jenis)),
+      lokasiKecelakaan: hitungKemunculan(kecelakaan.map(k => k.lokasi)),
+      mingguan: {
+        feedback: perMinggu(feedback.map(f => ({ tanggal: f.tanggal })), periode),
+        pelanggaran: perMinggu(pelanggaran.map(p => ({ tanggal: p.tanggal })), periode),
+        kecelakaan: perMinggu(kecelakaan.map(k => ({ tanggal: k.tanggal })), periode),
+      },
     },
     kpi,
   };

@@ -74,7 +74,7 @@ test('keuangan: bulan kosong tetap utuh dengan Rp0', () => {
   assert.match(h, /Tidak ada transaksi pada periode ini\./);
   assert.ok(h.includes('<th>Keterangan</th>'));
   assert.match(h, /<td>Kas Masuk<\/td><td>Rp0<\/td>/);
-  assert.ok(!h.includes('NaN'));
+  assert.ok(!h.replace(/<style>[\s\S]*?<\/style>/, '').includes('NaN'), 'tanpa NaN (font base64 di <style> dikecualikan)');
   assert.ok(!h.includes('undefined'));
 });
 

@@ -67,7 +67,7 @@ test('kinerja operasional: bulan kosong utuh', () => {
   for (const s of ['Tidak ada inspeksi pada periode ini.', 'Tidak ada perawatan pada periode ini.', 'Tidak ada perbaikan pada periode ini.'])
     assert.ok(h.includes(s), s);
   assert.match(h, /<td>Biaya Perawatan \+ Perbaikan<\/td><td>Rp0<\/td>/);
-  assert.ok(!h.includes('NaN'));
+  assert.ok(!h.replace(/<style>[\s\S]*?<\/style>/, '').includes('NaN'), 'tanpa NaN (font base64 di <style> dikecualikan)');
 });
 
 test('kinerja operasional: teks database di-escape', () => {

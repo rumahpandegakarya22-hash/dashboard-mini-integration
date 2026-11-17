@@ -1,6 +1,7 @@
 import type { DataKerjaOperasional } from '../builders/operasional';
 import { esc, isoWib, tgl, waktuWib } from '../format';
 import { kerangkaDokumen } from '../shell';
+import { barKartu, barVertikalKartu, barisDonut, barisGrafik, donutKartu, garisKartu, hitungKemunculan, kartuAngka, perMinggu, segmenDari, WARNA_SERI } from '../grafik';
 import { lewatDeadline } from '../tugas';
 
 const kv = (baris: [string, string | number][]) =>
@@ -20,6 +21,7 @@ export function htmlKerjaOperasional(d: DataKerjaOperasional): string {
     lewat: s.tugas.filter(t => lewatDeadline(t, hariIni)).length,
   }));
   const jml = (f: (h: (typeof hitung)[number]) => number) => hitung.reduce((a, h) => a + f(h), 0);
+  const semuaTugas = d.sub.flatMap(s => s.tugas);
   const total = jml(h => h.total);
   const complete = jml(h => h.complete);
   const persen = total === 0 ? 0 : Math.round((complete / total) * 100);
@@ -48,10 +50,29 @@ ${h.total
 <h3>Ringkasan Eksekutif</h3>
 <table><tr><th>Divisi</th><th>Total Task</th><th>Complete</th><th>In Progress</th><th>Pending</th><th>Lewat Deadline</th></tr>${ringkasan}</table>
 <p>Tingkat penyelesaian gabungan: ${persen}% (${complete} dari ${total} task).</p>
+<h3>Ringkasan Visual — ${esc(d.periode.label)}</h3>
+${kartuAngka([
+  { label: 'Total Task', nilai: String(total) }, { label: 'Complete', nilai: String(complete) }, { label: 'In Progress', nilai: String(jml(h => h.proses)) },
+  { label: 'Pending', nilai: String(jml(h => h.pending)) }, { label: 'Lewat Deadline', nilai: String(jml(h => h.lewat)) }, { label: 'Penyelesaian', nilai: `${persen}%` },
+])}
+${barisDonut([
+  donutKartu('Status Task', segmenDari([
+    { label: 'Complete', nilai: complete }, { label: 'In Progress', nilai: jml(h => h.proses) }, { label: 'Pending', nilai: jml(h => h.pending) },
+  ].filter(s => s.nilai > 0)), `${total} task`, false),
+  donutKartu('Task per Divisi', segmenDari(hitung.map(h => ({ label: h.nama, nilai: h.total })).filter(s => s.nilai > 0)), `${total} task`, false),
+])}
+${barisGrafik([
+  barVertikalKartu('Tingkat Penyelesaian per Divisi (%)', hitung.map(h => ({ label: h.nama, nilai: h.total ? Math.round((h.complete / h.total) * 100) : 0 }))),
+  barKartu('Task per PIC', hitungKemunculan(semuaTugas.map(t => (t.pic === '-' ? null : t.pic)))),
+  garisKartu('Task per Minggu (tanggal)', [
+    { nama: 'Dibuat', warna: WARNA_SERI.utama, titik: perMinggu(semuaTugas.map(t => ({ tanggal: t.tanggal })), d.periode) },
+    { nama: 'Complete', warna: WARNA_SERI.kedua, titik: perMinggu(semuaTugas.filter(t => t.status === 'Complete').map(t => ({ tanggal: t.tanggal })), d.periode) },
+  ]),
+])}
 ${bagian}
 <table style="border:none;margin-top:24pt"><tr>
 <td style="border:none;width:50%">Dibuat oleh,<br><br><br><br>(________________)<br>Staf Divisi Operasional</td>
 <td style="border:none;width:50%">Mengetahui,<br><br><br><br>(________________)<br>Pengelola Kost</td>
 </tr></table>`;
-  return kerangkaDokumen(isi, 'kinerja');
+  return kerangkaDokumen(isi, 'operasional');
 }

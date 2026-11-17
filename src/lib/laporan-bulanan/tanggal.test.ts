@@ -50,16 +50,16 @@ function hitungBaris(db: Client): { db: Client; baris: () => number } {
 
 test('marketing: hanya baris dalam periode yang dikirim ke aplikasi', async () => {
   const db = createClient({ url: ':memory:' });
-  await db.execute('CREATE TABLE leads (tanggal TEXT, sumber_leads TEXT, status_leads TEXT)');
-  await db.execute('CREATE TABLE content (tgl_post TEXT, platform TEXT, likes INT, komentar INT, share_saves INT, reach INT)');
-  await db.execute('CREATE TABLE promotion (tgl_mulai TEXT, tgl_selesai TEXT, budget INT, spend_aktual INT, target_leads INT, leads_aktual INT, booking_dr_promo INT)');
+  await db.execute('CREATE TABLE leads (tanggal TEXT, sumber_leads TEXT, status_leads TEXT, platform TEXT)');
+  await db.execute('CREATE TABLE content (tgl_post TEXT, platform TEXT, tipe_konten TEXT, judul_caption TEXT, likes INT, komentar INT, share_saves INT, reach INT)');
+  await db.execute('CREATE TABLE promotion (nama_promosi TEXT, platform TEXT, tgl_mulai TEXT, tgl_selesai TEXT, budget INT, spend_aktual INT, target_leads INT, leads_aktual INT, booking_dr_promo INT)');
   // leads: 2 dalam Juni (termasuk 30 Juni 23:59), 3 di luar
   for (const t of ['2026-06-01', '2026-06-30 23:59', '2026-05-31', '2026-07-01', '2025-01-10']) {
-    await db.execute({ sql: "INSERT INTO leads VALUES (?, 'IG', 'Baru')", args: [t] });
+    await db.execute({ sql: "INSERT INTO leads VALUES (?, 'IG', 'Baru', 'Story')", args: [t] });
   }
   // content: 1 dalam, 2 di luar
   for (const t of ['2026-06-15', '2026-07-02', '2026-05-30']) {
-    await db.execute({ sql: "INSERT INTO content VALUES (?, 'Instagram', 10, 2, 1, 100)", args: [t] });
+    await db.execute({ sql: "INSERT INTO content VALUES (?, 'Instagram', 'Foto', 'Judul', 10, 2, 1, 100)", args: [t] });
   }
   // promotion: beririsan = mulai sebelum Juni & selesai di Juni, di dalam Juni, mulai Juni & belum selesai (NULL), mulai Juni & selesai '';
   // tidak beririsan = selesai sebelum Juni, mulai Juli.
@@ -68,7 +68,7 @@ test('marketing: hanya baris dalam periode yang dikirim ke aplikasi', async () =
     ['2026-04-01', '2026-05-31'], ['2026-07-01', '2026-07-31'],
   ];
   for (const [m, s] of promo) {
-    await db.execute({ sql: 'INSERT INTO promotion VALUES (?, ?, 100, 50, 10, 4, 1)', args: [m, s] });
+    await db.execute({ sql: "INSERT INTO promotion VALUES ('Promo', 'IG Ads', ?, ?, 100, 50, 10, 4, 1)", args: [m, s] });
   }
 
   const spy = hitungBaris(db);

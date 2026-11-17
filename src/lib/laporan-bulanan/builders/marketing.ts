@@ -4,6 +4,7 @@ import type { Periode } from '../types';
 import { argTanggal, kondisiTanggal } from '../tanggal';
 import { barisMarketing, type BarisKpi } from '../kpi-laporan';
 import { ambilKpiLaporan } from './kpi';
+import { hitungKemunculan, jumlahPerKunci, perMinggu, type Titik } from '../grafik';
 
 export interface DataKinerjaMarketing {
   periode: Periode;
@@ -11,13 +12,24 @@ export interface DataKinerjaMarketing {
   leads: { total: number; sumberTeratas: string; statusRingkas: string };
   konten: { post: number; reach: number; likes: number; komentar: number; shareSaves: number; platformTeraktif: string };
   kampanye: { jumlah: number; budget: number; spend: number; targetLeads: number; leadsAktual: number; bookingDariPromo: number };
+  grafik: {
+    sumberLeads: Titik[]; statusLeads: Titik[]; platformKonten: Titik[]; engagementPlatform: Titik[]; spendKampanye: Titik[];
+    mingguan: { leads: Titik[]; konten: Titik[] };
+  };
+  /** Detail data untuk tabel lampiran (tanpa nama atau nomor telepon calon penyewa). */
+  rincian: {
+    leads: { tanggal: string; sumber: string; platform: string; status: string }[];
+    konten: { tanggal: string; platform: string; tipe: string; judul: string; reach: number; likes: number; komentar: number; shareSaves: number }[];
+    kampanye: { nama: string; platform: string; mulai: string; selesai: string; budget: number; spend: number; targetLeads: number; leadsAktual: number; booking: number }[];
+  };
   kpi: BarisKpi[];
 }
 
-export interface LeadMentah { tanggal: string; sumber: string | null; status: string | null }
-export interface KontenMentah { tanggal: string; platform: string | null; likes: number; komentar: number; shareSaves: number; reach: number }
+export interface LeadMentah { tanggal: string; sumber: string | null; status: string | null; platform?: string | null }
+export interface KontenMentah { tanggal: string; platform: string | null; likes: number; komentar: number; shareSaves: number; reach: number; tipe?: string | null; judul?: string | null }
 export interface PromoMentah {
   mulai: string; selesai: string | null; budget: number; spend: number; targetLeads: number; leadsAktual: number; booking: number;
+  nama?: string | null; platform?: string | null;
 }
 
 const dua = (n: string) => n.padStart(2, '0');
@@ -84,6 +96,28 @@ export function susunMarketing(periode: Periode, dibuat: Date, leads: LeadMentah
       targetLeads: jml(p => p.targetLeads), leadsAktual: jml(p => p.leadsAktual),
       bookingDariPromo: jml(p => p.booking),
     },
+    grafik: {
+      sumberLeads: hitungKemunculan(L.map(l => l.sumber)),
+      statusLeads: hitungKemunculan(L.map(l => l.status)),
+      platformKonten: hitungKemunculan(K.map(k => k.platform)),
+      engagementPlatform: jumlahPerKunci(K.map(k => ({ kunci: k.platform, nilai: k.likes + k.komentar + k.shareSaves }))),
+      spendKampanye: jumlahPerKunci(P.map(p => ({ kunci: p.nama || p.platform || 'Kampanye', nilai: p.spend }))),
+      mingguan: {
+        leads: perMinggu(L.map(l => ({ tanggal: tanggalIso(l.tanggal) })), periode),
+        konten: perMinggu(K.map(k => ({ tanggal: tanggalIso(k.tanggal) })), periode),
+      },
+    },
+    rincian: {
+      leads: L.map(l => ({ tanggal: tanggalIso(l.tanggal), sumber: l.sumber?.trim() || '-', platform: l.platform?.trim() || '-', status: l.status?.trim() || '-' })),
+      konten: K.map(k => ({
+        tanggal: tanggalIso(k.tanggal), platform: k.platform?.trim() || '-', tipe: k.tipe?.trim() || '-', judul: k.judul?.trim() || '-',
+        reach: k.reach, likes: k.likes, komentar: k.komentar, shareSaves: k.shareSaves,
+      })),
+      kampanye: P.map(p => ({
+        nama: p.nama?.trim() || '-', platform: p.platform?.trim() || '-', mulai: tanggalIso(p.mulai), selesai: tanggalIso(p.selesai),
+        budget: p.budget, spend: p.spend, targetLeads: p.targetLeads, leadsAktual: p.leadsAktual, booking: p.booking,
+      })),
+    },
     kpi,
   };
 }
@@ -93,11 +127,11 @@ export async function ambilKinerjaMarketing(periode: Periode, dibuat: Date = new
   // Saring periode di SQL (hanya baris yang relevan yang dikirim); susunMarketing menyaring lagi sebagai pengaman.
   const a = argTanggal(periode);
   const [leads, konten, promo, barisKpi] = await Promise.all([
-    db.execute({ sql: `SELECT tanggal, sumber_leads, status_leads FROM leads WHERE ${kondisiTanggal('tanggal')}`, args: a }),
-    db.execute({ sql: `SELECT tgl_post, platform, likes, komentar, share_saves, reach FROM content WHERE ${kondisiTanggal('tgl_post')}`, args: a }),
+    db.execute({ sql: `SELECT tanggal, sumber_leads, status_leads, platform FROM leads WHERE ${kondisiTanggal('tanggal')}`, args: a }),
+    db.execute({ sql: `SELECT tgl_post, platform, tipe_konten, judul_caption, likes, komentar, share_saves, reach FROM content WHERE ${kondisiTanggal('tgl_post')}`, args: a }),
     // Kampanye beririsan dengan periode: mulai sebelum hari-setelah-sampai dan (belum selesai atau selesai >= dari).
     db.execute({
-      sql: `SELECT tgl_mulai, tgl_selesai, budget, spend_aktual, target_leads, leads_aktual, booking_dr_promo FROM promotion
+      sql: `SELECT nama_promosi, platform, tgl_mulai, tgl_selesai, budget, spend_aktual, target_leads, leads_aktual, booking_dr_promo FROM promotion
             WHERE tgl_mulai < ? AND (tgl_selesai IS NULL OR tgl_selesai = '' OR tgl_selesai >= ?)`,
       args: [a[1], periode.dari],
     }),
@@ -107,13 +141,13 @@ export async function ambilKinerjaMarketing(periode: Periode, dibuat: Date = new
   const angka = (v: unknown) => Number(v ?? 0) || 0;
   return susunMarketing(
     periode, dibuat,
-    leads.rows.map(r => ({ tanggal: teks(r.tanggal) ?? '', sumber: teks(r.sumber_leads), status: teks(r.status_leads) })),
+    leads.rows.map(r => ({ tanggal: teks(r.tanggal) ?? '', sumber: teks(r.sumber_leads), status: teks(r.status_leads), platform: teks(r.platform) })),
     konten.rows.map(r => ({
-      tanggal: teks(r.tgl_post) ?? '', platform: teks(r.platform),
+      tanggal: teks(r.tgl_post) ?? '', platform: teks(r.platform), tipe: teks(r.tipe_konten), judul: teks(r.judul_caption),
       likes: angka(r.likes), komentar: angka(r.komentar), shareSaves: angka(r.share_saves), reach: angka(r.reach),
     })),
     promo.rows.map(r => ({
-      mulai: teks(r.tgl_mulai) ?? '', selesai: teks(r.tgl_selesai), budget: angka(r.budget), spend: angka(r.spend_aktual),
+      mulai: teks(r.tgl_mulai) ?? '', selesai: teks(r.tgl_selesai), budget: angka(r.budget), spend: angka(r.spend_aktual), nama: teks(r.nama_promosi), platform: teks(r.platform),
       targetLeads: angka(r.target_leads), leadsAktual: angka(r.leads_aktual), booking: angka(r.booking_dr_promo),
     })),
     barisKpi,

@@ -3,6 +3,7 @@ import type { DailyTaskRow, Periode } from '../types';
 import { argTanggal, kondisiTanggal } from '../tanggal';
 import { barisOps, type BarisKpi } from '../kpi-laporan';
 import { ambilKpiLaporan } from './kpi';
+import { hitungKemunculan, jumlahPerKunci, perMinggu, type Titik } from '../grafik';
 
 export type SubOperasional = 'Maintenance' | 'Inspeksi' | 'Kebersihan';
 type StatusDb = DailyTaskRow['status'];
@@ -22,14 +23,19 @@ export interface BarisKorektif { tgl: string; lokasi: string; kerusakan: string;
 export interface DataKinerjaOperasional {
   periode: Periode;
   dibuat: Date;
-  inspeksi: { total: number; perluTindakLanjut: number };
+  inspeksi: { total: number; perluTindakLanjut: number; rows: BarisInspeksi[] };
   preventif: { total: number; selesai: number; belum: number; biaya: number; rows: BarisPreventif[] };
   korektif: { total: number; selesai: number; belum: number; darurat: number; biaya: number; rows: BarisKorektif[] };
   totalBiaya: number;
+  grafik: {
+    statusPekerjaan: Titik[]; prioritasKorektif: Titik[]; komposisiBiaya: Titik[]; biayaPerLokasi: Titik[]; inspeksiKategori: Titik[];
+    mingguan: { inspeksi: Titik[]; preventif: Titik[]; korektif: Titik[] };
+  };
   kpi: BarisKpi[];
 }
 
-export interface InspeksiMentah { tindakLanjut: string | null }
+export interface BarisInspeksi { tanggal: string; area: string; kondisi: string; kategori: string; tindakLanjut: string; petugas: string }
+export interface InspeksiMentah { tindakLanjut: string | null; tanggal?: string; area?: string | null; kondisi?: string | null; kategori?: string | null; petugas?: string | null }
 export interface PreventifMentah { tanggal: string; fasilitas: string; jenis: string; prioritas: string; biaya: number; status: string }
 export interface KorektifMentah { tanggal: string; lokasi: string; kerusakan: string; prioritas: string; biaya: number; status: string }
 
@@ -92,7 +98,13 @@ export function susunKinerjaOperasional(
   return {
     periode,
     dibuat,
-    inspeksi: { total: inspeksi.length, perluTindakLanjut: perlu },
+    inspeksi: {
+      total: inspeksi.length, perluTindakLanjut: perlu,
+      rows: inspeksi.map(i => ({
+        tanggal: i.tanggal ?? '', area: i.area?.trim() || '-', kondisi: i.kondisi?.trim() || '-',
+        kategori: i.kategori?.trim() || '-', tindakLanjut: i.tindakLanjut?.trim() || '-', petugas: i.petugas?.trim() || '-',
+      })),
+    },
     preventif: {
       total: preventif.length, selesai: pSelesai, belum: preventif.length - pSelesai, biaya: bP,
       rows: preventif.map(p => ({ tgl: p.tanggal, fasilitas: p.fasilitas, jenis: p.jenis, prioritas: p.prioritas, biaya: p.biaya, status: p.status })),
@@ -104,6 +116,24 @@ export function susunKinerjaOperasional(
       rows: korektif.map(k => ({ tgl: k.tanggal, lokasi: k.lokasi, kerusakan: k.kerusakan, prioritas: k.prioritas, biaya: k.biaya, status: k.status })),
     },
     totalBiaya: bP + bK,
+    grafik: {
+      statusPekerjaan: [
+        { label: 'Selesai', nilai: pSelesai + kSelesaiRows.length },
+        { label: 'Proses/Tertunda', nilai: (preventif.length - pSelesai) + (korektif.length - kSelesaiRows.length) },
+      ].filter(t => t.nilai > 0),
+      prioritasKorektif: hitungKemunculan(korektif.map(k => k.prioritas === '-' ? null : k.prioritas)),
+      komposisiBiaya: [{ label: 'Perawatan (preventif)', nilai: bP }, { label: 'Perbaikan (korektif)', nilai: bK }].filter(t => t.nilai > 0),
+      biayaPerLokasi: jumlahPerKunci([
+        ...korektif.map(k => ({ kunci: k.lokasi, nilai: k.biaya })),
+        ...preventif.map(p => ({ kunci: p.fasilitas, nilai: p.biaya })),
+      ]),
+      inspeksiKategori: hitungKemunculan(inspeksi.map(i => i.kategori)),
+      mingguan: {
+        inspeksi: perMinggu(inspeksi.map(i => ({ tanggal: i.tanggal ?? '' })), periode),
+        preventif: perMinggu(preventif.map(p => ({ tanggal: p.tanggal })), periode),
+        korektif: perMinggu(korektif.map(k => ({ tanggal: k.tanggal })), periode),
+      },
+    },
     kpi,
   };
 }
@@ -115,7 +145,7 @@ export async function ambilKinerjaOperasional(periode: Periode, dibuat: Date = n
   const db = turso();
   const a = argTanggal(periode);
   const [insp, pm, cm, dataKpi] = await Promise.all([
-    db.execute({ sql: `SELECT tindak_lanjut_perlu FROM inspeksi_fasilitas WHERE ${kondisiTanggal('tanggal')} ORDER BY tanggal, id`, args: a }),
+    db.execute({ sql: `SELECT tanggal, area_fasilitas, kondisi_ditemukan, kategori, tindak_lanjut_perlu, petugas FROM inspeksi_fasilitas WHERE ${kondisiTanggal('tanggal')} ORDER BY tanggal, id`, args: a }),
     // maintenance_pm: tanggal_lapor = tanggal jadwal, sumber_laporan = fasilitas, lokasi_item = jenis perawatan.
     db.execute({
       sql: `SELECT tanggal_lapor, sumber_laporan, lokasi_item, prioritas, biaya, status FROM maintenance_pm
@@ -131,7 +161,10 @@ export async function ambilKinerjaOperasional(periode: Periode, dibuat: Date = n
   ]);
   return susunKinerjaOperasional(
     periode, dibuat,
-    insp.rows.map(r => ({ tindakLanjut: r.tindak_lanjut_perlu == null ? null : String(r.tindak_lanjut_perlu) })),
+    insp.rows.map(r => ({
+      tindakLanjut: r.tindak_lanjut_perlu == null ? null : String(r.tindak_lanjut_perlu),
+      tanggal: teks(r.tanggal).slice(0, 10), area: teks(r.area_fasilitas), kondisi: teks(r.kondisi_ditemukan), kategori: teks(r.kategori), petugas: teks(r.petugas),
+    })),
     pm.rows.map(r => ({
       tanggal: teks(r.tanggal_lapor).slice(0, 10), fasilitas: teks(r.sumber_laporan) || '-', jenis: teks(r.lokasi_item) || '-',
       prioritas: teks(r.prioritas) || '-', biaya: angka(r.biaya), status: teks(r.status) || '-',

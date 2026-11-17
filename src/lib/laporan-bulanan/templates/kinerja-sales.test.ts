@@ -17,6 +17,7 @@ function dasar(): DataKinerjaSales {
       { tanggal: '2026-06-10', nama: 'Sari', kamar: '7', status: 'Konfirmasi', harga: 2000000, sumber: 'Mami Kos' },
       { tanggal: '2026-06-12', nama: 'Dewi', kamar: '9', status: 'Dibatalkan', harga: 1500000, sumber: 'Referral' },
     ],
+    grafik: susunSales(periode, dibuat, []).grafik,
     kpi: [
       { nama: 'Konversi Leads → Survey', nilai: '92,5 %', target: '≥ 90 %', status: 'tercapai' },
       { nama: 'Cancellation Rate', nilai: '33,3 %', target: '≤ 20 %', status: 'belum' },
@@ -51,7 +52,7 @@ test('sales: bulan kosong utuh, tanpa NaN', () => {
   assert.match(h, /Tidak ada booking pada periode ini\./);
   assert.match(h, /<td>Sumber Leads Teratas<\/td><td>-<\/td>/);
   assert.match(h, /<td>Nilai Booking \(non-batal\)<\/td><td>Rp0<\/td>/);
-  assert.ok(!h.includes('NaN'));
+  assert.ok(!h.replace(/<style>[\s\S]*?<\/style>/, '').includes('NaN'), 'tanpa NaN (font base64 di <style> dikecualikan)');
 });
 
 test('sales: teks database di-escape', () => {

@@ -3,6 +3,8 @@ import { buildArusKas, buildLabaRugi, type LaporanTable } from '@/lib/laporan/ge
 import type { Periode } from '../types';
 import { barisKeuangan, type BarisKpi } from '../kpi-laporan';
 import { ambilKpiLaporan } from './kpi';
+import { perHari, type Titik } from '../grafik';
+import { rincianLabaRugi, type Segmen } from '../ringkasan';
 
 export interface TransaksiJurnal {
   tanggal: string; keterangan: string; debit: string; kredit: string; nominal: number;
@@ -15,6 +17,10 @@ export interface DataKinerjaKeuangan {
   pendapatan: number; beban: number; laba: number;
   perKategori: { kategori: string; total: number }[];
   transaksi: { tanggal: string; debit: string; kredit: string; nominal: number; keterangan: string }[];
+  /** Rincian akun Laba Rugi untuk donut dan tabel detail. */
+  komposisi?: { income: Segmen[]; opex: Segmen[] };
+  /** Kas masuk/keluar per hari (tanggal 1-31) untuk line chart. */
+  harianKas?: { masuk: Titik[]; keluar: Titik[] };
   kpi: BarisKpi[];
 }
 
@@ -79,19 +85,44 @@ async function ambilKategori(periode: Periode) {
   return susunKategori(res.rows.map(r => ({ kategori: r.kategori == null ? null : String(r.kategori), total: angka(r.total) })));
 }
 
+export interface KasHarianMentah { tanggal: string; masuk: number; keluar: number }
+
+/** Kas masuk = debit ke Kas & Bank dengan lawan bukan kas; kas keluar = kredit dari Kas & Bank. Transfer antar kas saling meniadakan. */
+export function susunKasHarian(rows: KasHarianMentah[], periode: Periode): { masuk: Titik[]; keluar: Titik[] } {
+  return {
+    masuk: perHari(rows.map(r => ({ tanggal: r.tanggal, nilai: r.masuk })), periode),
+    keluar: perHari(rows.map(r => ({ tanggal: r.tanggal, nilai: r.keluar })), periode),
+  };
+}
+
+async function ambilKasHarian(periode: Periode): Promise<KasHarianMentah[]> {
+  const res = await turso().execute({
+    sql: `SELECT j.tanggal AS tgl,
+                 SUM(CASE WHEN d.grup_laporan = 'Kas & Bank' AND COALESCE(k.grup_laporan, '') != 'Kas & Bank' THEN j.nominal ELSE 0 END) AS masuk,
+                 SUM(CASE WHEN k.grup_laporan = 'Kas & Bank' AND COALESCE(d.grup_laporan, '') != 'Kas & Bank' THEN j.nominal ELSE 0 END) AS keluar
+          FROM jurnal_transaksi j LEFT JOIN coa d ON d.kode = j.akun_debit_kode LEFT JOIN coa k ON k.kode = j.akun_kredit_kode
+          WHERE j.tanggal BETWEEN ? AND ? GROUP BY j.tanggal`,
+    args: [periode.dari, periode.sampai],
+  });
+  return res.rows.map(r => ({ tanggal: teks(r.tgl), masuk: angka(r.masuk), keluar: angka(r.keluar) }));
+}
+
 export async function ambilKinerjaKeuangan(periode: Periode, dibuat: Date = new Date()): Promise<DataKinerjaKeuangan> {
-  const [lr, ak, jurnal, perKategori, dataKpi] = await Promise.all([
+  const [lr, ak, jurnal, perKategori, dataKpi, kasHarian] = await Promise.all([
     buildLabaRugi(periode.dari, periode.sampai),
     buildArusKas(periode.dari, periode.sampai),
     ambilTransaksiJurnal(periode),
     ambilKategori(periode),
     ambilKpiLaporan(periode, dibuat, 'admin_finance'),
+    ambilKasHarian(periode),
   ]);
   const { pendapatan, beban, laba, kasMasuk, kasKeluar, arusBersih } = ekstrakKeuangan(lr, ak);
   return {
     periode, dibuat, kasMasuk, kasKeluar, arusBersih, jumlahTransaksi: jurnal.length,
     pendapatan, beban, laba, perKategori,
     transaksi: jurnal.map(t => ({ tanggal: t.tanggal, debit: t.debit, kredit: t.kredit, nominal: t.nominal, keterangan: t.keterangan })),
+    komposisi: rincianLabaRugi(lr),
+    harianKas: susunKasHarian(kasHarian, periode),
     kpi: barisKeuangan(dataKpi),
   };
 }
