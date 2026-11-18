@@ -17,10 +17,12 @@ import { petaTanggalBayar } from './tanggal-bayar';
 
 export interface FinanceResult {
   pendapatanKotor: number;
-  /** OPEX: beban yang terkait langsung dengan proses bisnis. TIDAK termasuk penyusutan. */
+  /** OPEX: beban yang terkait langsung dengan proses bisnis. TIDAK termasuk penyusutan dan bunga. */
   beban: number;
   /** Penyusutan aset tetap — bukan OPEX, hanya pengurang laba bersih. */
   penyusutan: number;
+  /** Bunga pinjaman — bukan OPEX, hanya pengurang laba bersih. */
+  bunga: number;
   labaBersih: number;
   incomeBy: Record<string, number>;
   opexBy: Record<string, number>;
@@ -28,8 +30,8 @@ export interface FinanceResult {
   cashSeries: number[];
   incSeries: number[];
   expSeries: number[];
-  /** Penyusutan per bucket, sejajar dengan `labels`. */
-  penyusutanSeries: number[];
+  /** Penyusutan + bunga per bucket, sejajar dengan `labels`. */
+  nonOperasionalSeries: number[];
   labaSeries: number[];
   /** Total diskon yang diberikan pada periode aktif (akun Beban Diskon). */
   diskonTotal: number;
@@ -42,8 +44,9 @@ export interface FinanceResult {
 /** Akun tempat diskon dibukukan (COA 5129) — dicocokkan lewat nama, bukan kode,
  *  karena grid jurnal dashboard menyimpan NAMA akun pada kolom debit/kredit. */
 const NAMA_AKUN_DISKON = 'beban diskon';
-/** Akun Beban Penyusutan (COA 6101–6104), juga dicocokkan lewat nama. */
+/** Akun Beban Penyusutan (COA 6101–6104) dan Beban Bunga (5107), juga dicocokkan lewat nama. */
 const NAMA_AKUN_PENYUSUTAN = 'penyusutan';
+const NAMA_AKUN_BUNGA = 'bunga';
 
 /** Rp ringkas: 1.2 Jt / 850 rb / Rp500 — verbatim `fmtRpShort()`. */
 export const fmtRpShort = (n: number): string => {
@@ -156,13 +159,15 @@ export function computeFinance(
   let pendapatanKotor = 0;
   let beban = 0;
   let penyusutan = 0;
+  let bunga = 0;
   const incomeBy: Record<string, number> = {};
   const opexBy: Record<string, number> = {};
   let diskonTotal = 0;
   // Diskon mengurangi pendapatan (PSAK 72): dipisah dari beban, dikurangkan di laba.
   const isDiskon = (x: { debit: string }) => x.debit.toLowerCase().includes(NAMA_AKUN_DISKON);
-  // Penyusutan bukan OPEX: dipisah, tetap dikurangkan di laba bersih.
+  // Penyusutan dan bunga bukan OPEX: dipisah, tetap dikurangkan di laba bersih.
   const isPenyusutan = (x: { debit: string }) => x.debit.toLowerCase().includes(NAMA_AKUN_PENYUSUTAN);
+  const isBunga = (x: { debit: string }) => x.debit.toLowerCase().includes(NAMA_AKUN_BUNGA);
   recs.forEach((x) => {
     if (x.dl > 0) {
       pendapatanKotor += x.dl;
@@ -175,6 +180,10 @@ export function computeFinance(
       }
       if (isPenyusutan(x)) {
         penyusutan += v;
+        return;
+      }
+      if (isBunga(x)) {
+        bunga += v;
         return;
       }
       beban += v;
@@ -221,7 +230,7 @@ export function computeFinance(
     if (x.dl > 0) b.inc += x.dl;
     else if (x.dl < 0) {
       if (isDiskon(x)) b.diskon += -x.dl;
-      else if (isPenyusutan(x)) b.susut += -x.dl;
+      else if (isPenyusutan(x) || isBunga(x)) b.susut += -x.dl;
       else b.exp += -x.dl;
     }
   });
@@ -230,14 +239,15 @@ export function computeFinance(
     pendapatanKotor,
     beban,
     penyusutan,
-    labaBersih: pendapatanKotor - diskonTotal - beban - penyusutan,
+    bunga,
+    labaBersih: pendapatanKotor - diskonTotal - beban - penyusutan - bunga,
     incomeBy,
     opexBy,
     labels: order.map((k) => buckets.get(k)!.label),
     cashSeries: order.map((k) => buckets.get(k)!.cash),
     incSeries: order.map((k) => buckets.get(k)!.inc),
     expSeries: order.map((k) => buckets.get(k)!.exp),
-    penyusutanSeries: order.map((k) => buckets.get(k)!.susut),
+    nonOperasionalSeries: order.map((k) => buckets.get(k)!.susut),
     labaSeries: order.map((k) => {
       const b = buckets.get(k)!;
       return b.inc - b.diskon - b.exp - b.susut;

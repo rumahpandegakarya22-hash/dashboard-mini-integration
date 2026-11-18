@@ -37,7 +37,8 @@ ${tabel(['Nama', 'Kamar', 'Tanggal Keluar'],
 <h2>3. Keuangan — ${label}</h2>
 <table><tr><th>Indikator</th><th>Nilai</th></tr>
 <tr><td>Pendapatan diakui</td><td>${rupiah(k.pendapatan)}</td></tr>
-<tr><td>Beban tercatat</td><td>${rupiah(k.beban)}</td></tr>
+<tr><td>OPEX</td><td>${rupiah(k.beban)}</td></tr>
+${k.nonOperasional ? `<tr><td>Beban non-operasional (penyusutan, bunga)</td><td>${rupiah(k.nonOperasional)}</td></tr>\n` : ''}
 <tr><td>Laba bersih</td><td>${rupiah(k.laba)}</td></tr>
 <tr><td>Kas masuk</td><td>${rupiah(k.kasMasuk)}</td></tr>
 <tr><td>Kas keluar</td><td>${rupiah(k.kasKeluar)}</td></tr>

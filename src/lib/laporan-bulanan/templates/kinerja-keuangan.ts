@@ -9,12 +9,17 @@ import { gabungSegmen, rupiahRingkas } from '../ringkasan';
 const kv = (baris: [string, string][]) =>
   `<table>${baris.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>`;
 
-function rincianAkun(income: { label: string; nilai: number }[], opex: { label: string; nilai: number }[]): string {
+function rincianAkun(
+  income: { label: string; nilai: number }[],
+  opex: { label: string; nilai: number }[],
+  nonOp: { label: string; nilai: number }[] = []
+): string {
   const baris = (judul: string, xs: { label: string; nilai: number }[]) =>
     xs.length
       ? `<tr><th colspan="2">${judul}</th></tr>${xs.map(x => `<tr><td>${esc(x.label)}</td><td>${rupiah(x.nilai)}</td></tr>`).join('')}`
       : `<tr><th colspan="2">${judul}</th></tr><tr><td colspan="2">Tidak ada data pada periode ini.</td></tr>`;
-  return `<table>${baris('Pendapatan', income)}${baris('Beban', opex)}</table>`;
+  const nonOpHtml = nonOp.some(x => x.nilai !== 0) ? baris('Beban Non-Operasional (bukan OPEX)', nonOp) : '';
+  return `<table>${baris('Pendapatan', income)}${baris('OPEX', opex)}${nonOpHtml}</table>`;
 }
 
 export function htmlKinerjaKeuangan(d: DataKinerjaKeuangan): string {
@@ -34,16 +39,16 @@ ${kepalaLaporan('LAPORAN KINERJA KEUANGAN', 'Kost Tiga Dara Putri UGM', `Periode
 ${scorecardHtml(d.kpi)}
 <h3>Ringkasan Visual — ${label}</h3>
 ${kartuAngka([
-  { label: 'Pendapatan', nilai: rupiah(d.pendapatan) }, { label: 'Beban', nilai: rupiah(d.beban) }, { label: 'Laba Bersih', nilai: rupiah(d.laba) },
+  { label: 'Pendapatan', nilai: rupiah(d.pendapatan) }, { label: 'OPEX', nilai: rupiah(d.beban) }, { label: 'Laba Bersih', nilai: rupiah(d.laba) },
   { label: 'Kas Masuk', nilai: rupiah(d.kasMasuk) }, { label: 'Kas Keluar', nilai: rupiah(d.kasKeluar) }, { label: 'Arus Kas Bersih', nilai: rupiah(d.arusBersih) },
 ])}
 ${barisDonut([
-  donutKartu('Komposisi Beban', gabungSegmen(opex), rupiahRingkas(d.beban), true),
+  donutKartu('Komposisi OPEX', gabungSegmen(opex), rupiahRingkas(d.beban), true),
   donutKartu('Komposisi Pendapatan', gabungSegmen(income), rupiahRingkas(d.pendapatan), true),
   donutKartu('Pengeluaran per Kategori', gabungSegmen(d.perKategori.map(k => ({ label: k.kategori, nilai: k.total }))), rupiahRingkas(d.perKategori.reduce((s, k) => s + Math.max(0, k.total), 0)), true),
 ])}
 ${barisGrafik([
-  barVertikalKartu('Pendapatan, Beban, dan Laba', [{ label: 'Pendapatan', nilai: d.pendapatan }, { label: 'Beban', nilai: d.beban }, { label: 'Laba Bersih', nilai: d.laba }], { uang: true }),
+  barVertikalKartu('Pendapatan, OPEX, dan Laba', [{ label: 'Pendapatan', nilai: d.pendapatan }, { label: 'OPEX', nilai: d.beban }, { label: 'Laba Bersih', nilai: d.laba }], { uang: true }),
   barVertikalKartu('Arus Kas', [{ label: 'Kas Masuk', nilai: d.kasMasuk }, { label: 'Kas Keluar', nilai: d.kasKeluar }, { label: 'Bersih', nilai: d.arusBersih }], { uang: true }),
   garisKartu('Kas Masuk dan Kas Keluar Harian', [
     { nama: 'Kas masuk', warna: WARNA_SERI.utama, titik: d.harianKas?.masuk ?? [] },
@@ -55,7 +60,7 @@ ${kv([['Kas Masuk', rupiah(d.kasMasuk)], ['Kas Keluar', rupiah(d.kasKeluar)], ['
 <h3>C. Pengeluaran per Kategori</h3>
 <table><tr><th>Kategori</th><th>Total Pengeluaran</th></tr>${kategori}</table>
 <h3>Rincian Pendapatan dan Beban per Akun</h3>
-${rincianAkun(income, opex)}
+${rincianAkun(income, opex, d.komposisi?.nonOp)}
 <h3>D. Rincian Transaksi</h3>
 <table><tr><th>Tgl</th><th>Debit</th><th>Kredit</th><th>Nominal</th><th>Keterangan</th></tr>${transaksi}</table>
 ${d.transaksi.length ? '' : '<p>Tidak ada transaksi pada periode ini.</p>'}

@@ -8,22 +8,25 @@ const HEAD = ['Tanggal', 'Akun Debit', 'Akun Kredit', 'Keterangan', 'Dampak Laba
 const tgl = (s: string) => parseDate(s)!;
 const range = (a: string, b: string) => ({ from: startOfDay(tgl(a)), to: endOfDay(tgl(b)) });
 
-test('penyusutan bukan OPEX, tetap mengurangi laba bersih', () => {
+test('penyusutan dan bunga bukan OPEX, tetap mengurangi laba bersih', () => {
   const F = computeFinance(
     [
       HEAD,
       ['2025-03-05', 'Kas', 'Pendapatan Sewa', 'Pemasukan lain', '1000000', '1000000'],
       ['2025-03-10', 'Listrik', 'Kas', 'Bayar listrik', '-200000', '-200000'],
-      ['2025-03-31', 'Beban Penyusutan Bangunan', 'Akum. Penyusutan Bangunan', 'Penyusutan Mar', '-300000', '-']
+      ['2025-03-31', 'Beban Penyusutan Bangunan', 'Akum. Penyusutan Bangunan', 'Penyusutan Mar', '-300000', '-'],
+      ['2025-03-15', 'Beban Bunga Pinjaman', 'Kas', 'Bunga bank', '-100000', '-100000']
     ],
     range('2025-03-01', '2025-03-31')
   )!;
   assert.equal(F.beban, 200_000);
   assert.equal(F.penyusutan, 300_000);
-  assert.equal(F.labaBersih, 500_000);
+  assert.equal(F.bunga, 100_000);
+  assert.equal(F.labaBersih, 400_000);
   assert.deepEqual(Object.keys(F.opexBy), ['Listrik']);
   assert.equal(F.expSeries.reduce((a, b) => a + b, 0), 200_000);
-  assert.equal(F.labaSeries.reduce((a, b) => a + b, 0), 500_000);
+  assert.equal(F.nonOperasionalSeries.reduce((a, b) => a + b, 0), 400_000);
+  assert.equal(F.labaSeries.reduce((a, b) => a + b, 0), 400_000);
 });
 
 /** Jurnal persis seperti barisJurnalSewa: terima di tanggal bayar + irisan pengakuan per bulan. */
