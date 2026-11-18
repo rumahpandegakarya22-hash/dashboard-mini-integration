@@ -135,3 +135,6 @@ export const NAV_CHECKOUT: { href: string; label: string; icon: LucideIcon; admi
 
 /** Status Kamar (tombol Maintenance manual) — owner, admin_finance, operasional. */
 export const NAV_STATUS_KAMAR = { href: '/ops/admin/status-kamar', label: 'Status Kamar', icon: BedDouble };
+
+/** Draft Info Admin (pengumuman siap kirim ke WhatsApp) — owner, admin_finance. */
+export const NAV_DRAFT_INFO = { href: '/ops/admin/draft-info', label: 'Draft Info Admin', icon: Megaphone };

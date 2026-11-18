@@ -1,0 +1,153 @@
+[
+  {
+    "no": "1",
+    "bab": "BAB I — PENGUMUMAN OPERASIONAL & FASILITAS",
+    "judul": "Jadwal Perawatan Rutin AC",
+    "isi": "📢 *JADWAL PERAWATAN RUTIN AC* 📢\n\nHalo Kakak-kakak, demi menjaga kebersihan, kesehatan, dan kondisi AC kamar kost, kami akan melakukan Servis AC pada:\n\n🗓️ Hari/Tanggal: {{Hari}}/{{Tanggal}}\n⏰ Waktu: {{Jam}}\n📍 Area: Seluruh tipe kamar dengan fasilitas AC\n\nMohon amankan barang pribadi atau tutup makanan jika diperlukan. Jika kakak berhalangan, bisa konfirmasi admin ya. Terima kasih atas pengertiannya! ✨"
+  },
+  {
+    "no": "2",
+    "bab": "BAB I — PENGUMUMAN OPERASIONAL & FASILITAS",
+    "judul": "Pengumuman Perbaikan Fasilitas",
+    "isi": "📢 *PENGUMUMAN PERBAIKAN* 📢\n\nHalo Kakak-kakak, kami informasikan bahwa akan dilakukan perbaikan pada {{Sebutkan Fasilitas, misal: Pompa Air/WiFi}} pada:\n\n🗓️ Hari/Tanggal: {{Tanggal}}\n⏰ Waktu: {{Jam Mulai}} s/d {{Estimasi Selesai}}\n\nSelama proses pengerjaan, kemungkinan akan ada gangguan pada fasilitas tersebut. Mohon maaf atas ketidaknyamanannya. Terima kasih! 🛠️"
+  },
+  {
+    "no": "3",
+    "bab": "BAB I — PENGUMUMAN OPERASIONAL & FASILITAS",
+    "judul": "Jadwal Pembersihan Rutin",
+    "isi": "📢 *JADWAL PEMBERSIHAN RUTIN* 📢\n\nHalo Kakak-kakak, demi menjaga kebersihan dan kesehatan lingkungan kost, kami akan melakukan {{Sebutkan Kegiatan}} pada:\n\n🗓️ Hari/Tanggal: {{Tanggal}}\n⏰ Waktu: {{Jam}}\n📍 Area: {{Sebutkan Area}}\n\nMohon amankan barang pribadi atau tutup makanan jika diperlukan. Terima kasih atas pengertiannya! ✨"
+  },
+  {
+    "no": "4",
+    "bab": "BAB I — PENGUMUMAN OPERASIONAL & FASILITAS",
+    "judul": "Pemberitahuan Renovasi",
+    "isi": "🛠️ *PEMBERITAHUAN RENOVASI* 🛠️\n\nHalo Kakak-kakak, kami informasikan bahwa akan ada pengerjaan renovasi di area {{Area}} mulai tanggal {{Tanggal}} s/d {{Estimasi Selesai}}.\n\nSelama pengerjaan, mungkin akan timbul suara bising dan sedikit debu di sekitar lokasi. Kami mohon maaf atas ketidaknyamanannya. Kami akan berusaha agar proyek selesai tepat waktu. 🙏"
+  },
+  {
+    "no": "5",
+    "bab": "BAB I — PENGUMUMAN OPERASIONAL & FASILITAS",
+    "judul": "Info Gangguan (Listrik / WiFi / Lainnya)",
+    "isi": "⚠️ *INFO GANGGUAN {{Listrik/WiFi}}* ⚠️\n\nMohon maaf Kakak-kakak, saat ini sedang terjadi gangguan {{Sebutkan Gangguan}} dari pihak provider/pusat di area kost kita.\n\nKami sudah menghubungi pihak terkait dan saat ini sedang dalam penanganan. Estimasi normal kembali sekitar {{Sebutkan Jam}}. Mohon maaf atas ketidaknyamanannya. 🙏"
+  },
+  {
+    "no": "5b",
+    "bab": "BAB I — PENGUMUMAN OPERASIONAL & FASILITAS",
+    "judul": "Info Gangguan WiFi (Versi Santai)",
+    "isi": "⚠️ *WiFi Lagi Mental Health* ⚠️\n\nSorry guys, koneksi internet lagi ada gangguan dari pusatnya. Admin udah hubungi teknisi biar cepet dibenerin.\n\nSementara bisa touch grass dulu atau baca buku ya. Estimasi balik normal jam {{Jam}}. Stay patient, fam! 📶",
+    "catatan": "💡 Gunakan versi ini untuk komunikasi yang lebih santai/akrab dengan penghuni, sesuai konteks group."
+  },
+  {
+    "no": "6",
+    "bab": "BAB II — KEAMANAN & TATA TERTIB",
+    "judul": "Pengumuman Keamanan Libur Panjang",
+    "isi": "🚩 *PENGUMUMAN KEAMANAN LIBUR PANJANG* 🚩\n\nHalo teman-teman, bagi yang akan pulang kampung/liburan, mohon perhatikan hal berikut sebelum meninggalkan kost:\n\n1. Cabut seluruh kabel elektronik.\n2. Pastikan kran air tertutup rapat.\n3. Kunci pintu dan jendela kamar.\n4. Titipkan info durasi libur ke admin via WA.\n\nSelamat berlibur dan hati-hati di jalan! ✨"
+  },
+  {
+    "no": "7",
+    "bab": "BAB II — KEAMANAN & TATA TERTIB",
+    "judul": "Info Kunjungan Petugas Eksternal",
+    "isi": "📢 *INFO KUNJUNGAN PETUGAS* 📢\n\nHalo Kak, kami informasikan bahwa hari ini pukul {{Jam}} akan ada petugas dari {{Sebutkan Instansi}} yang akan melakukan pengecekan di area kost.\n\nMohon tidak perlu khawatir, petugas akan didampingi oleh Admin/Penjaga Kost. Terima kasih! 🤝"
+  },
+  {
+    "no": "8",
+    "bab": "BAB II — KEAMANAN & TATA TERTIB",
+    "judul": "Info Lingkungan Sekitar",
+    "isi": "📢 *INFO LINGKUNGAN SEKITAR* 📢\n\nHalo teman-teman, kami informasikan bahwa tetangga depan kost akan mengadakan acara pada hari {{Hari}}.\n\nKemungkinan akses jalan akan sedikit padat dan ada suara musik hingga sore hari. Kami mohon maaf atas ketidaknyamanannya dan menyarankan Kakak untuk memarkir kendaraan lebih awal. Terima kasih! 🤝"
+  },
+  {
+    "no": "9",
+    "bab": "BAB II — KEAMANAN & TATA TERTIB",
+    "judul": "Pengumuman Perubahan Aturan",
+    "isi": "📢 *PENGUMUMAN PERUBAHAN ATURAN* 📢\n\nHalo seluruh penghuni Kost Tiga Dara, kami informasikan bahwa per tanggal {{Tanggal}}, terdapat penyesuaian pada poin aturan mengenai {{Sebutkan Aturan}}.\n\nDetail aturan terbaru sudah kami lampirkan di {{Link}}. Mohon untuk diperhatikan dan ditaati bersama. Terima kasih atas dukungannya! 🙏"
+  },
+  {
+    "no": "10",
+    "bab": "BAB III — TEGURAN & PENGINGAT KETERTIBAN",
+    "judul": "Teguran Umum (Kebersihan & Ketenangan)",
+    "isi": "Halo teman-teman semua, selamat malam. 🙏\n\nSekadar pengingat bersama demi kenyamanan kita semua:\n\n- Mohon untuk menjaga kebersihan di area bersama (dapur/ruang tamu) setelah digunakan.\n- Mohon kecilkan suara setelah jam 22.00 agar tidak mengganggu penghuni lain yang sedang beristirahat.\n\nTerima kasih banyak atas pengertian dan toleransinya! Stay safe everyone. 😊"
+  },
+  {
+    "no": "11",
+    "bab": "BAB III — TEGURAN & PENGINGAT KETERTIBAN",
+    "judul": "Teguran Khusus (Kebersihan Dapur & Sink)",
+    "isi": "Halo kakak-kakak semua, selamat malam. 🙏\n\nSekadar pengingat bersama demi kenyamanan kita semua: Mohon untuk menjaga kebersihan di dapur setelah digunakan dan tidak membuang sisa makanan ke dalam lubang sink.\n\nTerima kasih banyak atas pengertiannya! 😊"
+  },
+  {
+    "no": "12",
+    "bab": "BAB IV — INFORMASI BARANG & PAKET",
+    "judul": "Info Paket Masuk",
+    "isi": "📦 *INFO PAKET* 📦\n\nHalo Kak, ada paket masuk atas nama:\n\n{{Nama Penghuni 1}}\n{{Nama Penghuni 2}}\n\nPaket sudah diletakkan di {{Sebutkan Lokasi, misal: Meja Depan/Lobi}}. Silakan diambil ya, Kak. Terima kasih! 📦✨"
+  },
+  {
+    "no": "13",
+    "bab": "BAB IV — INFORMASI BARANG & PAKET",
+    "judul": "Info Barang Hilang",
+    "isi": "🔍 *INFO KEHILANGAN* 🔍\n\nHalo teman-teman, apakah ada yang melihat atau tidak sengaja terbawa {{Nama Barang}} di area {{Lokasi}}?\n\nBagi yang menemukan, mohon bantuannya untuk menginfokan ke admin atau langsung menghubungi Kak {{Nama Penghuni}}. Terima kasih atas kejujuran dan bantuannya! 🙏"
+  },
+  {
+    "no": "14",
+    "bab": "BAB IV — INFORMASI BARANG & PAKET",
+    "judul": "Info Barang Tak Bertuan (Penemuan Barang)",
+    "isi": "📢 *INFO BARANG TAK BERTUAN* 📢\n\nHalo Kakak-kakak, ditemukan {{Sebutkan Barang}} di area {{Lokasi}} sejak {{Waktu}}.\n\nBagi yang merasa memiliki, mohon segera diambil maksimal dalam 2x24 jam. Lewat dari waktu tersebut, barang akan kami amankan/singkirkan demi kerapihan area bersama. Terima kasih! 📦"
+  },
+  {
+    "no": "15",
+    "bab": "BAB V — SAMBUTAN & PERAYAAN",
+    "judul": "Sambutan Penghuni Baru",
+    "isi": "Selamat bergabung di Kost Tiga Dara, Kak {{Nama Penghuni}}! 👋\n\nSenang sekali Kakak bisa jadi bagian dari keluarga kami. Mohon bantuannya untuk membaca kembali aturan kost yang sudah disematkan (pinned message) ya, Kak.\n\nJika ada kendala terkait fasilitas atau kamar, silakan hubungi admin langsung. Selamat beristirahat! 🏠✨"
+  },
+  {
+    "no": "16",
+    "bab": "BAB V — SAMBUTAN & PERAYAAN",
+    "judul": "Ucapan Hari Raya",
+    "isi": "✨ *HAPPY {{NAMA HARI RAYA}}* ✨\n\nSegenap manajemen Kost Tiga Dara mengucapkan Selamat Hari Raya {{Nama Hari Raya}} bagi Kakak-kakak yang merayakan.\n\nSemoga damai dan kebahagiaan selalu menyertai kita semua di hunian ini. Selamat berkumpul bersama keluarga/rekan terdekat! 🌙🎄"
+  },
+  {
+    "no": "17",
+    "bab": "BAB V — SAMBUTAN & PERAYAAN",
+    "judul": "Ucapan Ulang Tahun Penghuni",
+    "isi": "🎂 *HBD TO OUR RESIDENT!* 🎂\n\nSelamat ulang tahun untuk Kak {{Nama}} di Kamar {{No}}!\n\nSemoga sukses selalu dan betah tinggal bareng kita di sini. Kalau ada traktiran di ruang tengah, jangan lupa kabari Admin ya! Hehe. Cheers! 🎉"
+  },
+  {
+    "no": "18",
+    "bab": "BAB VI — KOMUNIKASI SALES & CALON PENGHUNI",
+    "judul": "Respon Leads (Calon Penyewa Baru)",
+    "isi": "Halo Kak {{Nama Calon Penyewa}} 👋\n\nTerima kasih sudah menghubungi Kos Tiga Dara UGM!\n\nKami senang bisa membantu 😊\n\nKami memiliki beberapa pilihan kamar yang mungkin sesuai:\n\n📌 Kamar Eco — Rp850.000/bulan\n📌 Kamar Classic — Rp1.200.000/bulan\n📌 Kamar Comfy — Rp1.600.000/bulan\n\nFasilitas termasuk: WiFi, Dapur Umum, Akses 24 Jam dan Parkir Motor\n\nApakah Kak {{Nama}} berencana pindah sekitar tanggal berapa?\n\nKami bisa jadwalkan survei kapan pun Kak {{Nama Calon Penyewa}} nyaman 🗓️\n\nSalam,\nAdmin Kost Tiga Dara"
+  },
+  {
+    "no": "19",
+    "bab": "BAB VI — KOMUNIKASI SALES & CALON PENGHUNI",
+    "judul": "Konfirmasi Jadwal Survei",
+    "isi": "Halo Kak {{Nama}} 😊\n\nKami konfirmasi jadwal survei Anda:\n\n📅 Tanggal: {{Hari, DD Bulan YYYY}}\n🕐 Jam: {{HH:MM}} WIB\n📍 Lokasi: Kost Tiga Dara Putri UGM\n🗺️ Maps: https://maps.app.goo.gl/N1UrfJqMdmhiBAbL6\n\nMohon hadir tepat waktu ya 🙏\n\nJika ada perubahan, mohon kabari kami secepatnya.\n\nSampai jumpa!\nAdmin Kost Tiga Dara"
+  },
+  {
+    "no": "20",
+    "bab": "BAB VI — KOMUNIKASI SALES & CALON PENGHUNI",
+    "judul": "Follow-up Setelah Survei",
+    "isi": "Halo Kak {{Nama}} 😊\n\nTerima kasih sudah sempat berkunjung ke Kost Tiga Dara Putri UGM  hari ini!\n\nSemoga kamarnya sesuai dengan yang Kak {{Nama}} cari 🏠\n\nKami siap membantu jika ada pertanyaan tambahan.\n\nJika tertarik, kami bisa langsung proses booking sekarang.\nCukup transfer DP Rp {{Jumlah DP}} untuk mengamankan kamar.\n\nAda yang bisa kami bantu?\n\nSalam,\nAdmin Kost Tiga Dara"
+  },
+  {
+    "no": "21",
+    "bab": "BAB VI — KOMUNIKASI SALES & CALON PENGHUNI",
+    "judul": "Konfirmasi Booking & Pembayaran",
+    "isi": "Halo Kak {{Nama}},\n\nBooking Anda telah DIKONFIRMASI ✅\n\nDetail Booking:\nNo. Booking : BK-XXXX-XXX\nKamar : {{No. Kamar}} ({{Tipe}})\nCheck-in : {{DD Bulan YYYY}}\nDurasi : {{X bulan}}\nHarga : Rp {{Total}}\nDP diterima : Rp {{Jumlah DP}}\nSisa : Rp {{Sisa}} (dibayar saat check-in)\n\nRekening pembayaran:\n🏦 BRI —  0892-0102-1802-537 a.n. Dwi Antari K A Roem\n\nSampai ketemu! 😊\nAdmin Kost Tiga Dara"
+  },
+  {
+    "no": "22",
+    "bab": "BAB VII — PEMBAYARAN & TAGIHAN",
+    "judul": "Pengingat Pembayaran Bulanan",
+    "isi": "Halo Kak {{Nama}} 😊\n\nSekedar mengingatkan, tagihan sewa kamar {{No. Kamar}} untuk bulan {{Nama Bulan YYYY}} sudah jatuh tempo:\n\n💰 Jumlah : Rp {{Harga}}\n📅 Jatuh tempo : {{Tanggal}}\n\nPembayaran dapat melalui:\n🏦 BRI —  0892-0102-1802-537 a.n. Dwi Antari K A Roem\n\n\nMohon konfirmasi setelah transfer ya 🙏\n\nTerima kasih!\nSalam,\nAdmin Kost Tiga Dara"
+  },
+  {
+    "no": "23",
+    "bab": "BAB VIII — PROMOSI & PEMASARAN",
+    "judul": "Broadcast Promo (WhatsApp / Story)",
+    "isi": "🏠 KAMAR KOS TERSEDIA — Kost Tiga Dara Putri UGM  \n\n✨ {{Tipe Kamar}} — Mulai Rp {{Harga}}/bulan\n\nFasilitas:\n✅ AC / Non-AC\n✅ WiFi Super Cepat\n✅ Kamar Mandi {{Dalam/Luar}}\n✅ {{Fasilitas lain}}\n\n📍 Lokasi strategis: {{Sebutkan dekat apa}}\n🚗 {{X}} menit dari {{Kampus/Tempat Kerja/Stasiun}}\n\n🎉 PROMO {{Nama Promo}}:\n{{Deskripsi promo — contoh: Gratis 1 bulan listrik}}\nBerlaku s/d {{Tanggal}}\n\n📲 Info & Booking:\nWA: wa.me/6282233343839\nIG: @kosttigadara\nMaps: https://maps.app.goo.gl/oMEpPrYv2L6sibak7\n\nCepat sebelum kamar penuh! 🔥"
+  },
+  {
+    "no": "24",
+    "bab": "BAB IX — RESPON KOMPLAIN / MASALAH",
+    "judul": "Respon Komplain / Masalah",
+    "isi": "Halo Kak {{Nama}},\n\nKami mohon maaf atas ketidaknyamanan yang Anda alami 🙏\n\nTerkait {{masalah yang disampaikan}}, kami akan segera:\n- {{Langkah tindakan 1}}\n- {{Langkah tindakan 2}}\n\nPerkiraan selesai: {{Tanggal / Jam}}\n\nKami akan follow-up setelah penanganan selesai.\n\nTerima kasih atas kesabaran Anda 😊\n\nSalam,\nAdmin Kost Tiga Dara"
+  }
+]

@@ -2,7 +2,7 @@ import type { Transaction } from '@libsql/client';
 import { parseDateISO, parseRupiah, required } from '../../core/validate';
 import { turso } from '../../core/turso';
 import { grupBaru } from '../../koreksi';
-import { saveLampiran } from './helpers';
+import { saveLampiran, selesaikanWoBiaya } from './helpers';
 import { catatPengeluaran, type OpsiJurnal, type PengeluaranParams } from './beban-dimuka';
 import type { SubmitHandler } from '../types';
 import { fmtTanggal } from '../../format-tanggal';
@@ -104,11 +104,14 @@ export const submitAktivitasFinansial: SubmitHandler = async (values, ctx) => {
       { idDokumen: nomorNota, penamaan: { jenis: 'Nota', idDocs: nomorNota.replace(/^NOTA-/, '') } }
     );
 
+    // Dibuka dari tombol "Catat Pengeluaran" di Joblist Admin (biaya maintenance): work order asalnya ikut Complete.
+    const woWarning = await selesaikanWoBiaya(db, Number(values.woId ?? 0), ctx.user.username);
+
     return {
       target: 'Turso → jurnal_transaksi',
       row,
       data: { ...p, jenisAktivitas: parsed.jenis, divisi, grupId },
-      warning: lampiranWarning || undefined
+      warning: [woWarning, lampiranWarning].filter(Boolean).join(' ') || undefined
     };
   }
 

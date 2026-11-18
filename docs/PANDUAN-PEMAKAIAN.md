@@ -84,6 +84,7 @@ Kolom data pribadi penghuni (email, kontak darurat, tanggal lahir, usia) disamar
 | Menu | Siapa |
 |---|---|
 | Ubah Data Penghuni | Owner, Admin and Finance |
+| Draft Info Admin (pengumuman siap kirim ke WhatsApp) | Owner, Admin and Finance |
 | Teman Rara: menu Pengumuman dan Akun Penghuni | Owner, Admin and Finance |
 | Teman Rara: panel di dalam form (pendaftaran mandiri, pengaduan, bukti bayar, pengajuan checkout) | Owner, Admin and Finance |
 | Riwayat Pembayaran | Owner, Admin and Finance, Sales |
@@ -330,6 +331,18 @@ Admin and Finance adalah penanggung jawab utama Teman Rara dari sisi pengelola. 
 Di Beranda Mini App, Owner dan Admin and Finance melihat peringatan kuning kalau ada pengajuan checkout yang menunggu dan pengaduan yang belum selesai. Klik peringatan itu untuk langsung ke panelnya.
 
 Target Respons Pengaduan adalah 1 jam. Waktu yang dihitung adalah dari pengaduan masuk sampai kamu menyimpan tanggapan.
+
+### Draft Info Admin
+
+Menu Komunikasi, Draft Info Admin, berisi 25 template pesan dari dokumen Kumpulan Template Pesan Admin (pengumuman fasilitas, keamanan, teguran, paket, sambutan, sales, pembayaran, promo, komplain).
+
+1. Pilih kategori atau cari template, lalu klik judulnya.
+2. Isi detailnya: tanggal, jam, area, nama, dan lainnya. Nama hari terisi otomatis dari tanggal.
+3. Periksa pratinjau. Bagian bergaris biru adalah isian yang belum diisi.
+4. Klik **Kirim ke WhatsApp**. WhatsApp terbuka dengan pesan yang sudah terformat. Pilih grup tujuan lalu tekan kirim.
+5. Kalau WhatsApp tidak terbuka, klik Salin teks lalu tempel di WhatsApp.
+
+Tautan WhatsApp tidak bisa memilih grup otomatis, jadi grup tujuan dipilih di WhatsApp. Isi template diubah dengan memperbarui dokumen sumbernya lalu meminta pengelola sistem menyegarkan datanya (`scripts/buat-draft-info.ts`).
 
 ### Pengaturan
 
@@ -834,7 +847,7 @@ Kalau sebuah form tidak punya tombol Edit, hubungi Owner atau Admin and Finance.
 
 ## C6. Hal yang belum ada atau perlu diketahui {#c6}
 
-1. Menu Pencatatan Pendapatan dan Pencatatan Pengeluaran belum aktif. Gunakan Aktivitas Finansial untuk keduanya.
+1. Menu Pencatatan Pendapatan dan Pencatatan Pengeluaran belum aktif. Gunakan Aktivitas Finansial untuk keduanya. Biaya perbaikan dari Operasional muncul di Joblist Admin: klik Catat Pengeluaran untuk membuka Aktivitas Finansial dengan nominal terisi, lalu work order otomatis Complete setelah disimpan. Mengubah status work order saja tidak mencatat pengeluaran.
 2. Form Pindah Kamar sudah dihapus dari aplikasi ini.
 3. Data lama tidak dilengkapi dengan tebakan. Tiket dan leads lama yang tidak punya waktu masuk dan waktu ditindak akan tampil strip.
 4. Nominal tunggakan adalah perkiraan, dihitung dari satu tagihan bulanan terakhir per penghuni yang menunggak.

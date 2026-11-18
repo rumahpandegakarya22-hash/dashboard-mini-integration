@@ -1,6 +1,6 @@
 import { parseDateISO, parseRupiah, required } from '../../core/validate';
 import { turso } from '../../core/turso';
-import { saveLampiran } from './helpers';
+import { saveLampiran, selesaikanWoBiaya } from './helpers';
 import { catatPengeluaran } from './beban-dimuka';
 import type { SubmitHandler } from '../types';
 import { fmtTanggal } from '../../format-tanggal';
@@ -34,21 +34,7 @@ export const submitPengeluaran: SubmitHandler = async (values, ctx) => {
   });
 
   // Konversi dari joblist Admin: tandai WO selesai. Best-effort — jurnal sudah tercatat.
-  let woWarning: string | undefined;
-  const woId = Number(values.woId ?? 0);
-  if (woId > 0) {
-    try {
-      const upd = await db.execute({
-        sql: `UPDATE work_orders SET status = 'Complete', completed_by = ?, updated_at = CURRENT_TIMESTAMP
-              WHERE id = ? AND tujuan_divisi = 'Admin' AND status != 'Complete'`,
-        args: [ctx.user.username, woId]
-      });
-      if (upd.rowsAffected === 0) woWarning = `Pengeluaran tercatat, tapi joblist #${woId} tidak ditemukan / sudah Complete.`;
-    } catch (e: unknown) {
-      console.error('[pengeluaran] gagal update work_orders:', (e as Error)?.message);
-      woWarning = `Pengeluaran tercatat, tapi status joblist #${woId} gagal diupdate — tandai manual.`;
-    }
-  }
+  const woWarning = await selesaikanWoBiaya(db, Number(values.woId ?? 0), ctx.user.username);
 
   /* Nomor nota YYMM-Divisi-NNN. Urutan diambil dari id_dokumen terakhir dengan
      prefix yang sama, jadi penomorannya hidup di data — bukan cuma di nama berkas.
