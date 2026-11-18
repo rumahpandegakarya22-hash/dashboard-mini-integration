@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { SignOutButton } from '@clerk/nextjs';
-import { ROLE_NAV } from '@/config/dashboard-nav';
+import { ROLE_NAV, DEFAULT_PERIOD } from '@/config/dashboard-nav';
 import type { DashboardRole } from '@/config/dashboard-access';
 import { initials } from '@/lib/dashboard/format';
 import { canUseInventory } from '@/lib/core/roles';
@@ -57,7 +57,18 @@ export default function DashboardShell({
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const r = ROLE_NAV[role];
 
-  const href = (id: string) => (id === 'overview' ? '/dashboard' : `/dashboard/${id}`);
+  // Filter periode hidup di URL; tiap link navigasi harus membawanya agar tidak reset ke default.
+  const qs = (() => {
+    const q = new URLSearchParams();
+    if (period && period !== DEFAULT_PERIOD) q.set('period', period);
+    if (period === 'Custom') {
+      if (from) q.set('from', from);
+      if (to) q.set('to', to);
+    }
+    const s = q.toString();
+    return s ? `?${s}` : '';
+  })();
+  const href = (id: string) => (id === 'overview' ? '/dashboard' : `/dashboard/${id}`) + qs;
 
   const navItem = (p: { id: string; label: string; group: string }) => (
     <Link
@@ -139,7 +150,7 @@ export default function DashboardShell({
               {tfaEnabled ? ' · 2FA' : ''}
             </small>
           </div>
-          <Link href="/dashboard/akun" className="side-logout" id="securityBtn" aria-label="Akun & Keamanan" title="Akun & Keamanan">
+          <Link href={`/dashboard/akun${qs}`} className="side-logout" id="securityBtn" aria-label="Akun & Keamanan" title="Akun & Keamanan">
             <IconGear />
           </Link>
           <SignOutButton redirectUrl="/login">

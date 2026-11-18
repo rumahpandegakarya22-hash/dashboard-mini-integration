@@ -256,7 +256,7 @@ const AK_UJI = tabelUji('Arus Kas', [
 
 test('ekstrakKeuangan: laba negatif, beban = pendapatan - laba', () => {
   assert.deepEqual(ekstrakKeuangan(LR_BULAN_RUGI, AK_UJI), {
-    pendapatan: 1000000, beban: 1175000, laba: -175000,
+    pendapatan: 1000000, beban: 1175000, nonOperasional: 0, laba: -175000,
     kasMasuk: 1000000, kasKeluar: 1175000, arusBersih: -175000,
   });
 });
@@ -271,7 +271,7 @@ test('ekstrakKeuangan: bulan kosong (semua nol) tidak melempar', () => {
     { label: 'Penerimaan Sewa Kamar', nilai: 0 },
     { label: 'Kenaikan (Penurunan) Kas Bersih', nilai: 0, bold: true },
   ]);
-  assert.deepEqual(ekstrakKeuangan(lr, ak), { pendapatan: 0, beban: 0, laba: 0, kasMasuk: 0, kasKeluar: 0, arusBersih: 0 });
+  assert.deepEqual(ekstrakKeuangan(lr, ak), { pendapatan: 0, beban: 0, nonOperasional: 0, laba: 0, kasMasuk: 0, kasKeluar: 0, arusBersih: 0 });
 });
 
 test('ekstrakKeuangan: label wajib hilang -> melempar pesan jelas', () => {

@@ -13,10 +13,16 @@
 import { parseDate, startOfDay, MONTH_ID3 } from '../format';
 import { susun } from '../../format-tanggal';
 import type { SheetGrid } from '../source';
+import { petaTanggalBayar } from './tanggal-bayar';
 
 export interface FinanceResult {
   pendapatanKotor: number;
+  /** OPEX: beban yang terkait langsung dengan proses bisnis. TIDAK termasuk penyusutan dan bunga. */
   beban: number;
+  /** Penyusutan aset tetap — bukan OPEX, hanya pengurang laba bersih. */
+  penyusutan: number;
+  /** Bunga pinjaman — bukan OPEX, hanya pengurang laba bersih. */
+  bunga: number;
   labaBersih: number;
   incomeBy: Record<string, number>;
   opexBy: Record<string, number>;
@@ -24,6 +30,8 @@ export interface FinanceResult {
   cashSeries: number[];
   incSeries: number[];
   expSeries: number[];
+  /** Penyusutan + bunga per bucket, sejajar dengan `labels`. */
+  nonOperasionalSeries: number[];
   labaSeries: number[];
   /** Total diskon yang diberikan pada periode aktif (akun Beban Diskon). */
   diskonTotal: number;
@@ -36,6 +44,9 @@ export interface FinanceResult {
 /** Akun tempat diskon dibukukan (COA 5129) — dicocokkan lewat nama, bukan kode,
  *  karena grid jurnal dashboard menyimpan NAMA akun pada kolom debit/kredit. */
 const NAMA_AKUN_DISKON = 'beban diskon';
+/** Akun Beban Penyusutan (COA 6101–6104) dan Beban Bunga (5107), juga dicocokkan lewat nama. */
+const NAMA_AKUN_PENYUSUTAN = 'penyusutan';
+const NAMA_AKUN_BUNGA = 'bunga';
 
 /** Rp ringkas: 1.2 Jt / 850 rb / Rp500 — verbatim `fmtRpShort()`. */
 export const fmtRpShort = (n: number): string => {
@@ -103,40 +114,60 @@ export function computeFinance(
   const akhirHariIni = new Date();
   akhirHariIni.setHours(23, 59, 59, 999);
   const to = range && range.to && range.to < akhirHariIni ? range.to : akhirHariIni;
-  const recs: { d: Date; arus: number; dl: number; kredit: string; debit: string }[] = [];
+  const hari = (a: Date, b: Date) => Math.round((startOfDay(b).getTime() - startOfDay(a).getTime()) / 86400000) + 1;
+
+  interface Rec {
+    d: Date;
+    ket: string;
+    arus: number;
+    dl: number;
+    kredit: string;
+    debit: string;
+  }
+  const semua: Rec[] = [];
 
   rows.slice(1).forEach((r) => {
     const d = parseDate(String(r[ci.tgl] || '').trim());
-    if (!d) return;
-    if (from && d < from) return;
-    if (to && d > to) return;
+    if (!d || d > to) return;
+    const ket = ci.ket >= 0 ? String(r[ci.ket] || '') : '';
     // Pengakuan sewa bertanda "[s/d tgl]" diakui per hari (date-to-date): hanya bagian sampai `to`.
     let dl = toSigned(r[ci.dampak]);
-    const tanda = ci.ket >= 0 ? /\[s\/d (\d{4}-\d{2}-\d{2})\]\s*$/.exec(String(r[ci.ket] || '')) : null;
+    const tanda = /\[s\/d (\d{4}-\d{2}-\d{2})\]\s*$/.exec(ket);
     if (dl > 0 && tanda) {
       const akhir = parseDate(tanda[1]);
-      if (akhir) {
-        const hari = (a: Date, b: Date) => Math.round((startOfDay(b).getTime() - startOfDay(a).getTime()) / 86400000) + 1;
-        if (startOfDay(to) < startOfDay(akhir)) dl = Math.round((dl * hari(d, to)) / hari(d, akhir));
-      }
+      if (akhir && startOfDay(to) < startOfDay(akhir)) dl = Math.round((dl * hari(d, to)) / hari(d, akhir));
     }
-    recs.push({
+    semua.push({
       d,
+      ket,
       arus: ci.arus >= 0 ? toSigned(r[ci.arus]) : 0,
       dl,
       kredit: String(r[ci.kredit] || 'Pendapatan').trim(),
       debit: String(r[ci.debit] || 'Beban').trim()
     });
   });
-  if (!recs.length) return null;
+
+  // Total periode (kartu, donut): menurut tanggal jurnal.
+  const recs = from ? semua.filter((x) => x.d >= from) : semua;
+  // Deret grafik: pengakuan sewa digambar di tanggal uang diterima; nilainya tetap pengakuan Laba Rugi.
+  const bayar = petaTanggalBayar(semua);
+  const plot = semua
+    .map((x, i) => ({ ...x, tgl: bayar.get(i) ?? x.d }))
+    .filter((x) => (!from || x.tgl >= from) && x.tgl <= to);
+  if (!recs.length && !plot.length) return null;
 
   let pendapatanKotor = 0;
   let beban = 0;
+  let penyusutan = 0;
+  let bunga = 0;
   const incomeBy: Record<string, number> = {};
   const opexBy: Record<string, number> = {};
   let diskonTotal = 0;
   // Diskon mengurangi pendapatan (PSAK 72): dipisah dari beban, dikurangkan di laba.
   const isDiskon = (x: { debit: string }) => x.debit.toLowerCase().includes(NAMA_AKUN_DISKON);
+  // Penyusutan dan bunga bukan OPEX: dipisah, tetap dikurangkan di laba bersih.
+  const isPenyusutan = (x: { debit: string }) => x.debit.toLowerCase().includes(NAMA_AKUN_PENYUSUTAN);
+  const isBunga = (x: { debit: string }) => x.debit.toLowerCase().includes(NAMA_AKUN_BUNGA);
   recs.forEach((x) => {
     if (x.dl > 0) {
       pendapatanKotor += x.dl;
@@ -147,15 +178,25 @@ export function computeFinance(
         diskonTotal += v;
         return;
       }
+      if (isPenyusutan(x)) {
+        penyusutan += v;
+        return;
+      }
+      if (isBunga(x)) {
+        bunga += v;
+        return;
+      }
       beban += v;
       opexBy[x.debit] = (opexBy[x.debit] || 0) + v;
     }
   });
 
-  const minT = Math.min(...recs.map((x) => x.d.getTime()));
-  const maxT = Math.max(...recs.map((x) => x.d.getTime()));
-  const spanDays = Math.round((maxT - minT) / 86400000) + 1;
-  const daily = spanDays <= 62;
+  // Sumbu waktu penuh: setiap hari/bulan dari awal sampai hari ini ikut digambar (termasuk yang nol),
+  // supaya jarak antar titik mencerminkan waktu sebenarnya.
+  const akhir = startOfDay(to);
+  const minPlot = plot.length ? startOfDay(new Date(Math.min(...plot.map((x) => x.tgl.getTime())))) : akhir;
+  const awal = from && hari(from, akhir) <= 62 ? startOfDay(from) : minPlot;
+  const daily = hari(awal, akhir) <= 62;
 
   const keyOf = daily
     ? (d: Date) => d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate()
@@ -164,40 +205,52 @@ export function computeFinance(
     ? (d: Date) => susun(d.getDate(), d.getMonth(), d.getFullYear())
     : (d: Date) => MONTH_ID3[d.getMonth()] + ' ' + d.getFullYear();
 
-  const buckets = new Map<string, { label: string; cash: number; inc: number; exp: number; diskon: number }>();
+  const buckets = new Map<string, { label: string; cash: number; inc: number; exp: number; diskon: number; susut: number }>();
   const order: string[] = [];
-  const repT: Record<string, number> = {};
-
-  recs.forEach((x) => {
-    const k = keyOf(x.d);
+  const bucketOf = (d: Date) => {
+    const k = keyOf(d);
     if (!buckets.has(k)) {
-      buckets.set(k, { label: labOf(x.d), cash: 0, inc: 0, exp: 0, diskon: 0 });
+      buckets.set(k, { label: labOf(d), cash: 0, inc: 0, exp: 0, diskon: 0, susut: 0 });
       order.push(k);
-      repT[k] = x.d.getTime();
     }
-    const b = buckets.get(k)!;
+    return buckets.get(k)!;
+  };
+
+  for (
+    const c = daily ? new Date(awal) : new Date(awal.getFullYear(), awal.getMonth(), 1);
+    c <= akhir;
+    daily ? c.setDate(c.getDate() + 1) : c.setMonth(c.getMonth() + 1)
+  ) {
+    bucketOf(c);
+  }
+
+  plot.forEach((x) => {
+    const b = bucketOf(x.tgl);
     if (x.arus > 0) b.cash += x.arus;
     if (x.dl > 0) b.inc += x.dl;
     else if (x.dl < 0) {
       if (isDiskon(x)) b.diskon += -x.dl;
+      else if (isPenyusutan(x) || isBunga(x)) b.susut += -x.dl;
       else b.exp += -x.dl;
     }
   });
-  order.sort((a, b) => repT[a] - repT[b]);
 
   return {
     pendapatanKotor,
     beban,
-    labaBersih: pendapatanKotor - diskonTotal - beban,
+    penyusutan,
+    bunga,
+    labaBersih: pendapatanKotor - diskonTotal - beban - penyusutan - bunga,
     incomeBy,
     opexBy,
     labels: order.map((k) => buckets.get(k)!.label),
     cashSeries: order.map((k) => buckets.get(k)!.cash),
     incSeries: order.map((k) => buckets.get(k)!.inc),
     expSeries: order.map((k) => buckets.get(k)!.exp),
+    nonOperasionalSeries: order.map((k) => buckets.get(k)!.susut),
     labaSeries: order.map((k) => {
       const b = buckets.get(k)!;
-      return b.inc - b.diskon - b.exp;
+      return b.inc - b.diskon - b.exp - b.susut;
     }),
     diskonTotal,
     diskonSeries: order.map((k) => buckets.get(k)!.diskon),

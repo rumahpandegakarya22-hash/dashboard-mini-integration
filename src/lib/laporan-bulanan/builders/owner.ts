@@ -16,7 +16,7 @@ export interface DataOwner {
   masuk: { nama: string; kamar: string; institusi: string; tglMasuk: string }[];
   keluar: { nama: string; kamar: string; tglKeluar: string }[];
   keuangan: {
-    pendapatan: number; beban: number; laba: number;
+    pendapatan: number; beban: number; nonOperasional?: number; laba: number;
     kasMasuk: number; kasKeluar: number; arusBersih: number;
     transaksi: { tanggal: string; keterangan: string; debit: string; kredit: string; nominal: number }[];
     /** Jumlah baris jurnal pengakuan sewa yang tidak ditampilkan di Owner Review (terlalu rinci). */

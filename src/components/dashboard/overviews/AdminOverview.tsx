@@ -131,7 +131,7 @@ export default function AdminOverview({ data, finance: F, period, from, to, kpi,
             title="Pendapatan Kotor vs Beban vs Laba Bersih"
             legend={[
               { t: 'Pendapatan Kotor' + U, c: 'var(--teal)' },
-              { t: 'Total Beban' + U, c: 'var(--text-2)' },
+              { t: 'OPEX' + U, c: 'var(--text-2)' },
               { t: 'Laba Bersih' + U, c: '#e0a13a' }
             ]}
           >
@@ -142,7 +142,7 @@ export default function AdminOverview({ data, finance: F, period, from, to, kpi,
                 scaleVals(F!.labaSeries, lsc)
               ]}
               xLabels={F!.labels}
-              names={['Pendapatan Kotor', 'Total Beban', 'Laba Bersih']}
+              names={['Pendapatan Kotor', 'OPEX', 'Laba Bersih']}
               unit={lsc.unit}
             />
           </ChartCard>

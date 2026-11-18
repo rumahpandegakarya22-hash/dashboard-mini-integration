@@ -50,8 +50,8 @@ test('rincianLabaRugi memisahkan income dan beban tanpa subtotal', () => {
   assert.equal(r.opex.reduce((t, x) => t + x.nilai, 0), 3175000);
 });
 
-test('labaRugiRingkas: beban = pendapatan - laba; label hilang melempar', () => {
-  assert.deepEqual(labaRugiRingkas(lr), { pendapatan: 3000000, beban: 3175000, laba: -175000 });
+test('labaRugiRingkas: tanpa seksi non-operasional, beban = pendapatan - laba; label hilang melempar', () => {
+  assert.deepEqual(labaRugiRingkas(lr), { pendapatan: 3000000, beban: 3175000, nonOperasional: 0, laba: -175000 });
   assert.throws(() => labaRugiRingkas({ judul: 'x', baris: [] }), /Total Pendapatan/);
 });
 
@@ -81,4 +81,27 @@ test('rupiahRingkas', () => {
   assert.equal(rupiahRingkas(12345678), 'Rp12,3 jt');
   assert.equal(rupiahRingkas(2500000000), 'Rp2,5 M');
   assert.equal(rupiahRingkas(-175000), '-Rp175.000');
+});
+
+const lrNonOp: LaporanTable = {
+  judul: 'Laba Rugi',
+  baris: [
+    { label: 'Total Pendapatan', nilai: 3000000, bold: true },
+    { label: 'BEBAN OPERASIONAL', nilai: null, seksi: true },
+    { label: 'Listrik', nilai: 1000000 },
+    { label: 'Total Beban Operasional', nilai: 1000000, bold: true },
+    { label: 'Laba Operasional', nilai: 2000000, bold: true },
+    { label: 'BEBAN NON-OPERASIONAL', nilai: null, seksi: true },
+    { label: 'Penyusutan Bangunan', nilai: 300000 },
+    { label: 'Bunga Pinjaman', nilai: 200000 },
+    { label: 'Total Beban Non-Operasional', nilai: 500000, bold: true },
+    { label: 'LABA BERSIH', nilai: 1500000, bold: true },
+  ],
+};
+
+test('penyusutan dan bunga bukan OPEX: beban hanya operasional, laba bersih tetap', () => {
+  assert.deepEqual(labaRugiRingkas(lrNonOp), { pendapatan: 3000000, beban: 1000000, nonOperasional: 500000, laba: 1500000 });
+  const r = rincianLabaRugi(lrNonOp);
+  assert.deepEqual(r.opex.map(x => x.label), ['Listrik']);
+  assert.deepEqual(r.nonOp.map(x => x.label), ['Penyusutan Bangunan', 'Bunga Pinjaman']);
 });

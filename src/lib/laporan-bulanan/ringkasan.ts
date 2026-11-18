@@ -34,7 +34,13 @@ export function metrikBulan(
   };
 }
 
-export function labaRugiRingkas(lr: LaporanTable): { pendapatan: number; beban: number; laba: number } {
+/** Beban di luar OPEX: penyusutan dan bunga (seksi "Beban Non-Operasional" di Laba Rugi). 0 bila barisnya tidak ada. */
+export function bebanNonOperasional(lr: LaporanTable): number {
+  return lr.baris.find(b => b.label === 'Total Beban Non-Operasional')?.nilai ?? 0;
+}
+
+/** beban = OPEX (tanpa penyusutan dan bunga); nonOperasional dikurangkan terpisah di laba bersih. */
+export function labaRugiRingkas(lr: LaporanTable): { pendapatan: number; beban: number; nonOperasional: number; laba: number } {
   const nilai = (label: string) => {
     const b = lr.baris.find(x => x.label === label);
     if (!b) throw new Error(`Baris "${label}" tidak ditemukan di Laba Rugi.`);
@@ -42,20 +48,25 @@ export function labaRugiRingkas(lr: LaporanTable): { pendapatan: number; beban: 
   };
   const pendapatan = nilai('Total Pendapatan');
   const laba = nilai('LABA BERSIH');
-  return { pendapatan, beban: pendapatan - laba, laba };
+  const nonOperasional = bebanNonOperasional(lr);
+  return { pendapatan, beban: pendapatan - laba - nonOperasional, nonOperasional, laba };
 }
 
-// Baris rincian Laba Rugi: sebelum "Total Pendapatan" = income, sesudahnya (selain subtotal/seksi) = beban.
-export function rincianLabaRugi(lr: LaporanTable): { income: Segmen[]; opex: Segmen[] } {
+// Baris rincian Laba Rugi: sebelum "Total Pendapatan" = income; sesudahnya = OPEX, kecuali seksi
+// "BEBAN NON-OPERASIONAL" (penyusutan, bunga) yang dipisah. Subtotal dan seksi dilewati.
+export function rincianLabaRugi(lr: LaporanTable): { income: Segmen[]; opex: Segmen[]; nonOp: Segmen[] } {
   const income: Segmen[] = [];
   const opex: Segmen[] = [];
+  const nonOp: Segmen[] = [];
   let sudahTotal = false;
+  let nonOpSeksi = false;
   for (const b of lr.baris) {
     if (b.label === 'Total Pendapatan') { sudahTotal = true; continue; }
+    if (b.label === 'BEBAN NON-OPERASIONAL') { nonOpSeksi = true; continue; }
     if (b.seksi || b.bold || b.nilai == null) continue;
-    (sudahTotal ? opex : income).push({ label: b.label, nilai: b.nilai });
+    (nonOpSeksi ? nonOp : sudahTotal ? opex : income).push({ label: b.label, nilai: b.nilai });
   }
-  return { income, opex };
+  return { income, opex, nonOp };
 }
 
 /** Buang nilai <= 0, urut terbesar, gabungkan sisa di luar `maks` menjadi "Lainnya". */

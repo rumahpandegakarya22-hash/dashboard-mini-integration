@@ -85,7 +85,7 @@ export function barisKeuangan(d: DataKpi): BarisKpi[] {
     baris('Pendapatan', d.pendapatan, rupiah, T.pendapatan, 'min'),
     baris('Laba Bersih', d.laba, rupiah, T.laba, 'min'),
     baris('Margin Laba Bersih', k.margin, persen),
-    baris('Total Beban', d.beban, rupiah),
+    baris('Total OPEX', d.beban, rupiah),
     { ...baris('Total Diskon (% dari pendapatan)', k.diskonPct, persen, T.diskonPct, 'max'), nilai: k.diskonPct == null ? '—' : `${rupiah(d.diskon)} (${persen(k.diskonPct)})` },
     baris('Collection Rate', a?.collectionRate, persen, T.collection, 'min'),
     baris('OPEX per Kamar / Bulan', k.opexKamar, rupiah, T.opexKamar, 'max'),

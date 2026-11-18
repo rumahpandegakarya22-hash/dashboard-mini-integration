@@ -4,7 +4,7 @@ import type { Periode } from '../types';
 import { barisKeuangan, type BarisKpi } from '../kpi-laporan';
 import { ambilKpiLaporan } from './kpi';
 import { perHari, type Titik } from '../grafik';
-import { rincianLabaRugi, type Segmen } from '../ringkasan';
+import { bebanNonOperasional, rincianLabaRugi, type Segmen } from '../ringkasan';
 
 export interface TransaksiJurnal {
   tanggal: string; keterangan: string; debit: string; kredit: string; nominal: number;
@@ -15,10 +15,12 @@ export interface DataKinerjaKeuangan {
   dibuat: Date;
   kasMasuk: number; kasKeluar: number; arusBersih: number; jumlahTransaksi: number;
   pendapatan: number; beban: number; laba: number;
+  /** Penyusutan + bunga: dikurangkan di laba bersih, bukan bagian OPEX (`beban`). */
+  nonOperasional?: number;
   perKategori: { kategori: string; total: number }[];
   transaksi: { tanggal: string; debit: string; kredit: string; nominal: number; keterangan: string }[];
   /** Rincian akun Laba Rugi untuk donut dan tabel detail. */
-  komposisi?: { income: Segmen[]; opex: Segmen[] };
+  komposisi?: { income: Segmen[]; opex: Segmen[]; nonOp?: Segmen[] };
   /** Kas masuk/keluar per hari (tanggal 1-31) untuk line chart. */
   harianKas?: { masuk: Titik[]; keluar: Titik[] };
   kpi: BarisKpi[];
@@ -41,7 +43,8 @@ export function ekstrakKeuangan(lr: LaporanTable, ak: LaporanTable) {
     if (b.nilai > 0) kasMasuk += b.nilai;
     else kasKeluar += -b.nilai;
   }
-  return { pendapatan, beban: pendapatan - laba, laba, kasMasuk, kasKeluar, arusBersih: nilai(ak, 'Kenaikan (Penurunan) Kas Bersih', 'Arus Kas') };
+  const nonOperasional = bebanNonOperasional(lr);
+  return { pendapatan, beban: pendapatan - laba - nonOperasional, nonOperasional, laba, kasMasuk, kasKeluar, arusBersih: nilai(ak, 'Kenaikan (Penurunan) Kas Bersih', 'Arus Kas') };
 }
 
 const teks = (v: unknown) => (v == null ? '' : String(v));
@@ -116,10 +119,10 @@ export async function ambilKinerjaKeuangan(periode: Periode, dibuat: Date = new 
     ambilKpiLaporan(periode, dibuat, 'admin_finance'),
     ambilKasHarian(periode),
   ]);
-  const { pendapatan, beban, laba, kasMasuk, kasKeluar, arusBersih } = ekstrakKeuangan(lr, ak);
+  const { pendapatan, beban, nonOperasional, laba, kasMasuk, kasKeluar, arusBersih } = ekstrakKeuangan(lr, ak);
   return {
     periode, dibuat, kasMasuk, kasKeluar, arusBersih, jumlahTransaksi: jurnal.length,
-    pendapatan, beban, laba, perKategori,
+    pendapatan, beban, nonOperasional, laba, perKategori,
     transaksi: jurnal.map(t => ({ tanggal: t.tanggal, debit: t.debit, kredit: t.kredit, nominal: t.nominal, keterangan: t.keterangan })),
     komposisi: rincianLabaRugi(lr),
     harianKas: susunKasHarian(kasHarian, periode),

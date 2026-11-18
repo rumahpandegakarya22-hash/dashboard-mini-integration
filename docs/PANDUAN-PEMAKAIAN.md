@@ -996,10 +996,11 @@ Istilah dikelompokkan menurut topik. Kalau mencari satu istilah, pakai Ctrl+F di
 |---|---|
 | Pendapatan kotor | Total pendapatan sebelum dikurangi diskon. Dashboard dan laporan memakai angka kotor ini. |
 | Pendapatan neto | Pendapatan setelah diskon. Dipakai di kartu ringkasan Owner Review. |
-| Beban atau OPEX | Biaya operasional. |
-| Laba bersih | Pendapatan dikurangi beban. |
+| OPEX | Biaya yang terkait langsung dengan proses bisnis (listrik, gaji, perawatan, dan sejenisnya). Penyusutan dan bunga pinjaman TIDAK termasuk OPEX. |
+| Penyusutan dan bunga | Beban non-operasional. Tidak masuk OPEX, hanya mengurangi laba bersih. |
+| Laba bersih | Pendapatan (setelah diskon) dikurangi OPEX, penyusutan, dan bunga. |
 | Margin laba bersih | Laba bersih dibagi pendapatan, dalam persen. |
-| OPEX per kamar | Total beban dibagi jumlah kamar (30), dirata-rata per bulan. |
+| OPEX per kamar | Total OPEX dibagi jumlah kamar (30), dirata-rata per bulan. |
 | Total diskon | Jumlah semua potongan harga. Ditampilkan dalam rupiah dan persen dari pendapatan. |
 | Arus kas | Laporan uang yang masuk dan keluar. |
 | Laba rugi | Laporan pendapatan dan beban dalam satu periode. |
