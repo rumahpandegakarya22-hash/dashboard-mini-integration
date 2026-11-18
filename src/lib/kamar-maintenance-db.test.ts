@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createClient, type Client } from '@libsql/client';
-import { bukaMaintenance, tutupMaintenance, tutupMaintenanceKamar, selaraskanStatus } from './kamar-maintenance-db';
+import { bukaMaintenance, tutupMaintenance, tutupMaintenanceKamar, selaraskanStatus, selaraskanSemua } from './kamar-maintenance-db';
+import { DDL_KAMAR_MAINTENANCE, pastikanSkemaKamar } from './kamar-maintenance-skema';
 import { readFileSync } from 'node:fs';
 
 async function dbUji(): Promise<Client> {
@@ -10,8 +11,6 @@ async function dbUji(): Promise<Client> {
   await db.execute('CREATE TABLE active_tenant (kamar_id TEXT PRIMARY KEY, no_kamar TEXT)');
   await db.execute('CREATE TABLE work_orders (id INTEGER PRIMARY KEY)');
   await db.execute('CREATE TABLE booking (no_booking TEXT PRIMARY KEY, kamar_no INTEGER, status_booking TEXT)');
-  const ddl = readFileSync(new URL('../../db/schema/036_kamar_maintenance.sql', import.meta.url), 'utf8');
-  for (const stmt of ddl.replace(/^\s*--.*$/gm, '').split(';').map((s) => s.trim()).filter(Boolean)) await db.execute(stmt);
   await db.execute("INSERT INTO kamar VALUES (5, 'Terisi'), (6, 'Kosong')");
   await db.execute("INSERT INTO active_tenant VALUES ('KTD-5', '5')");
   return db;
@@ -80,4 +79,31 @@ test('penghuni aktif menang atas booking berikutnya', async () => {
   const db = await dbUji();
   await db.execute("INSERT INTO booking VALUES ('BK-2', 5, 'Pending')");
   assert.equal(await selaraskanStatus(db, '5'), 'Terisi');
+});
+
+test('skema dibuat otomatis (idempoten) dan sama dengan file migrasi 036', async () => {
+  const db = createClient({ url: ':memory:' });
+  await db.execute('CREATE TABLE work_orders (id INTEGER PRIMARY KEY)');
+  await pastikanSkemaKamar(db);
+  await pastikanSkemaKamar(db);
+  await db.execute("INSERT INTO kamar_maintenance (no_kamar, sumber) VALUES ('5', 'manual')");
+  const kolom = (await db.execute('PRAGMA table_info(work_orders)')).rows.map((r) => String(r.name));
+  assert.ok(kolom.includes('no_kamar'));
+
+  const norm = (t: string) => t.replace(/\s+/g, ' ').trim();
+  const file = norm(readFileSync(new URL('../../db/schema/036_kamar_maintenance.sql', import.meta.url), 'utf8').replace(/^\s*--.*$/gm, ''));
+  for (const ddl of DDL_KAMAR_MAINTENANCE) assert.ok(file.includes(norm(ddl)), `DDL tidak sama dengan file 036: ${ddl.slice(0, 60)}`);
+});
+
+test('selaraskanSemua: pratinjau tidak menulis; Maintenance tanpa pemicu dilewati', async () => {
+  const db = await dbUji();
+  await db.execute("INSERT INTO kamar VALUES (7, 'Kosong'), (8, 'Maintenance')");
+  await db.execute("INSERT INTO booking VALUES ('BK-9', 7, 'Konfirmasi')");
+  const pratinjau = await selaraskanSemua(db, false);
+  assert.deepEqual(pratinjau.perubahan, [{ no: '7', dari: 'Kosong', ke: 'Booking' }]);
+  assert.deepEqual(pratinjau.dilewati, ['8']);
+  assert.equal(await status(db, 7), 'Kosong');
+  await selaraskanSemua(db, true);
+  assert.equal(await status(db, 7), 'Booking');
+  assert.equal(await status(db, 8), 'Maintenance');
 });

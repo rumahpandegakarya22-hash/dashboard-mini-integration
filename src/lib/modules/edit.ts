@@ -44,7 +44,7 @@ import { kecelakaanInsertCfg } from './handlers/kecelakaan-kerja';
 import { aktivitasFinansialEdit } from './edit-jurnal';
 import { vendorInsertCfg } from './handlers/tambah-vendor';
 import { waitingListInsertCfg } from './handlers/tambah-waiting-list';
-import { selaraskanStatusKamar, sinkronMaintenanceWo } from '../kamar-maintenance';
+import { pastikanSkema, selaraskanStatusKamar, sinkronMaintenanceWo } from '../kamar-maintenance';
 import { inspeksiKebersihanInsertCfg } from './handlers/inspeksi-kebersihan';
 import { parseDateTimeLocal } from '../core/validate';
 
@@ -131,6 +131,7 @@ function workOrderEdit(divisiAsal: 'Inspeksi' | 'Cleaning'): CustomEditCfg {
   return {
     kind: 'custom',
     list: async () => {
+      await pastikanSkema();
       const res = await turso().execute({
         sql: `SELECT id, tanggal_input, petugas, lokasi_item, kategori, deskripsi, prioritas, tujuan_divisi,
                      target_deadline, catatan, bukti_foto_url, no_kamar
@@ -168,6 +169,7 @@ function workOrderEdit(divisiAsal: 'Inspeksi' | 'Cleaning'): CustomEditCfg {
       const buktiFotoUrl = String(values.buktiFoto ?? '').trim();
       const kamarRaw = String(values.kamar ?? '').trim();
       const noKamar = kamarRaw ? normalizeRoomId(kamarRaw) : null;
+      await pastikanSkema();
       // Status TIDAK diubah dari sini — alur status lewat tabel Work Order/List Job di home.
       const res = await turso().execute({
         sql: `UPDATE work_orders SET tanggal_input = ?, petugas = ?, lokasi_item = ?, kategori = ?, deskripsi = ?,

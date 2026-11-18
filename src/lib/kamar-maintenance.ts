@@ -1,7 +1,9 @@
 import { turso } from './core/turso';
+import { pastikanSkemaKamar } from './kamar-maintenance-skema';
 import { invalidateRoomsCache } from './master';
 import {
   bukaMaintenance,
+  selaraskanSemua,
   selaraskanStatus,
   tutupMaintenance,
   tutupMaintenanceKamar,
@@ -52,3 +54,8 @@ export async function sinkronMaintenanceWo(p: {
     await bukaMaintenanceKamar({ noKamar: p.noKamar!, sumber: 'work_order', ref, alasan: `Work order WO-${ref}`, oleh: p.oleh });
   }
 }
+
+/** Pastikan tabel/kolom Maintenance ada. Wajib dipanggil sebelum SQL mentah yang menyentuh kamar_maintenance atau work_orders.no_kamar. */
+export const pastikanSkema = () => pastikanSkemaKamar(turso());
+
+export const selaraskanSemuaKamar = (tulis: boolean) => denganCache(() => selaraskanSemua(turso(), tulis));

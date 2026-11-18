@@ -1,4 +1,5 @@
 import type { Client } from '@libsql/client';
+import { pastikanSkemaKamar } from './kamar-maintenance-skema';
 
 /* =========================================================================
    Status Maintenance kamar. Murni DB (klien disuntik) supaya bisa diuji tanpa Turso asli.
@@ -26,6 +27,7 @@ async function hitung(db: Client, sql: string, args: (string | number)[]): Promi
 }
 
 export async function statusSeharusnya(db: Client, noKamar: string): Promise<StatusKamar> {
+  await pastikanSkemaKamar(db);
   const terbuka = await hitung(db, 'SELECT COUNT(*) FROM kamar_maintenance WHERE no_kamar = ? AND ditutup_pada IS NULL', [noKamar]);
   if (terbuka > 0) return 'Maintenance';
   const huni = await hitung(db, 'SELECT COUNT(*) FROM active_tenant WHERE CAST(no_kamar AS INTEGER) = CAST(? AS INTEGER)', [noKamar]);
@@ -52,6 +54,7 @@ export async function bukaMaintenance(
 ): Promise<StatusKamar> {
   const kamar = nomorKamar(p.noKamar);
   if (!kamar) throw new Error('Nomor kamar tidak valid.');
+  await pastikanSkemaKamar(db);
   await db.execute({
     sql: `INSERT OR IGNORE INTO kamar_maintenance (no_kamar, sumber, ref, alasan, dibuka_oleh) VALUES (?, ?, ?, ?, ?)`,
     args: [kamar, p.sumber, p.ref ?? '', p.alasan ?? null, p.oleh ?? null]
@@ -64,6 +67,7 @@ export async function tutupMaintenance(
   db: Client,
   p: { sumber: SumberMaintenance; ref: string; oleh?: string }
 ): Promise<string[]> {
+  await pastikanSkemaKamar(db);
   const kena = await db.execute({
     sql: 'SELECT DISTINCT no_kamar FROM kamar_maintenance WHERE sumber = ? AND ref = ? AND ditutup_pada IS NULL',
     args: [p.sumber, p.ref]
@@ -85,10 +89,39 @@ export async function tutupMaintenanceKamar(
   p: { noKamar: string; sumber?: SumberMaintenance; oleh?: string }
 ): Promise<StatusKamar> {
   const kamar = nomorKamar(p.noKamar);
+  await pastikanSkemaKamar(db);
   await db.execute({
     sql: `UPDATE kamar_maintenance SET ditutup_pada = CURRENT_TIMESTAMP, ditutup_oleh = ?
           WHERE no_kamar = ? AND ditutup_pada IS NULL ${p.sumber ? 'AND sumber = ?' : ''}`,
     args: p.sumber ? [p.oleh ?? null, kamar, p.sumber] : [p.oleh ?? null, kamar]
   });
   return selaraskanStatus(db, kamar);
+}
+
+export interface HasilSelarasSemua {
+  perubahan: { no: string; dari: string; ke: StatusKamar }[];
+  /** Kamar bertulis Maintenance tanpa pemicu terbuka (mis. diisi manual): tidak diubah, perlu dicek. */
+  dilewati: string[];
+}
+
+/**
+ * Selaraskan status SEMUA kamar dengan keadaan sebenarnya (penghuni aktif, booking, pemicu Maintenance).
+ * `tulis: false` hanya menghitung (pratinjau). Dipakai tombol di halaman Status Kamar dan skrip CLI.
+ */
+export async function selaraskanSemua(db: Client, tulis: boolean): Promise<HasilSelarasSemua> {
+  const kamar = await db.execute('SELECT no_kamar, status FROM kamar ORDER BY no_kamar');
+  const hasil: HasilSelarasSemua = { perubahan: [], dilewati: [] };
+  for (const r of kamar.rows) {
+    const no = String(r.no_kamar);
+    const lama = String(r.status ?? '').trim();
+    const baru = await statusSeharusnya(db, no);
+    if (lama.toLowerCase() === 'maintenance' && baru !== 'Maintenance') {
+      hasil.dilewati.push(no);
+      continue;
+    }
+    if (lama === baru) continue;
+    hasil.perubahan.push({ no, dari: lama || '(kosong)', ke: baru });
+    if (tulis) await selaraskanStatus(db, no);
+  }
+  return hasil;
 }

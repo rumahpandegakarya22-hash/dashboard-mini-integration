@@ -1,6 +1,6 @@
 import { turso } from '../../core/turso';
 import { normalizeRoomId, parseDateISO, required } from '../../core/validate';
-import { sinkronMaintenanceWo } from '../../kamar-maintenance';
+import { pastikanSkema, sinkronMaintenanceWo } from '../../kamar-maintenance';
 import type { SubmitHandler } from '../types';
 
 const KATEGORI = [
@@ -37,6 +37,7 @@ function makeWorkOrderHandler(divisiAsal: 'Inspeksi' | 'Cleaning', tujuanValid: 
     if (!PRIORITAS.includes(prioritas)) throw new Error(`Prioritas tidak valid: "${prioritas}".`);
     if (!tujuanValid.includes(tujuanDivisi)) throw new Error(`Tujuan divisi tidak valid: "${tujuanDivisi}".`);
 
+    await pastikanSkema(); // kolom work_orders.no_kamar
     const res = await turso().execute({
       sql: `INSERT INTO work_orders
               (tanggal_input, petugas, divisi_asal, lokasi_item, kategori, deskripsi, prioritas,

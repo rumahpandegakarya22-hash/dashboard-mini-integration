@@ -59,6 +59,39 @@ export default function StatusKamarPanel() {
     }
   }
 
+  async function selaraskanSemua() {
+    setBusy('semua');
+    setError('');
+    setOk('');
+    try {
+      const panggil = async (aksi: string) => {
+        const res = await fetch('/api/ops/admin/status-kamar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ aksi })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Gagal menyelaraskan status kamar.');
+        return json as { perubahan: { no: string; dari: string; ke: string }[]; dilewati: string[] };
+      };
+      const pratinjau = await panggil('pratinjau-semua');
+      const dilewati = pratinjau.dilewati.length ? ` Dilewati (Maintenance tanpa pemicu, cek manual): kamar ${pratinjau.dilewati.join(', ')}.` : '';
+      if (!pratinjau.perubahan.length) {
+        setOk(`Semua status kamar sudah sesuai.${dilewati}`);
+        return;
+      }
+      const daftar = pratinjau.perubahan.map((p) => `Kamar ${p.no}: ${p.dari} → ${p.ke}`).join('\n');
+      if (!window.confirm(`${pratinjau.perubahan.length} kamar akan diubah:\n\n${daftar}\n\nLanjutkan?`)) return;
+      const hasil = await panggil('selaraskan-semua');
+      setOk(`${hasil.perubahan.length} kamar diselaraskan.${dilewati}`);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menyelaraskan status kamar.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (loading) return <p className="muted"><LoaderCircle size={16} className="spin" aria-hidden /> Memuat…</p>;
 
   return (
@@ -72,9 +105,19 @@ export default function StatusKamarPanel() {
           atau work order Maintenance untuk kamar itu. Kamar kembali sendiri setelah semua pemicunya selesai
           (Terisi bila ada penghuni, Booking bila ada booking yang belum check-in, selain itu Kosong).
         </p>
+        <p className="muted" style={{ marginBottom: 4 }}>
+          Tombol <b>Selaraskan semua kamar</b> mencocokkan status semua kamar dengan penghuni aktif dan booking yang ada
+          (berguna sekali untuk data lama). Anda melihat daftar perubahannya dulu sebelum dikonfirmasi.
+        </p>
         <p className="muted">
           Tombol <b>Selesai Maintenance</b> menutup semua pemicu kamar itu sekaligus. Pakai hanya bila pemicu otomatisnya sudah beres.
         </p>
+      </div>
+
+      <div className="btn-row" style={{ marginTop: 14 }}>
+        <button className="btn" disabled={busy === 'semua'} onClick={selaraskanSemua}>
+          {busy === 'semua' ? 'Memeriksa…' : 'Selaraskan semua kamar'}
+        </button>
       </div>
 
       <div className="card" style={{ marginTop: 14, overflowX: 'auto' }}>

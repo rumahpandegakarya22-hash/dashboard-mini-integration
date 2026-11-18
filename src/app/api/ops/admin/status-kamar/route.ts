@@ -3,7 +3,7 @@ import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
 import { normalizeRoomId } from '@/lib/core/validate';
-import { bukaMaintenanceKamar, tutupMaintenanceDiKamar } from '@/lib/kamar-maintenance';
+import { bukaMaintenanceKamar, pastikanSkema, selaraskanSemuaKamar, tutupMaintenanceDiKamar } from '@/lib/kamar-maintenance';
 
 /**
  * Status Kamar: daftar kamar + tombol manual Maintenance.
@@ -28,6 +28,7 @@ export async function GET() {
   const g = await gate();
   if (g.error) return g.error;
 
+  await pastikanSkema();
   const [kamar, pemicu] = await Promise.all([
     turso().execute(
       `SELECT k.no_kamar, k.tipe_kamar, k.status,
@@ -78,6 +79,33 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Body bukan JSON yang valid.' }, { status: 400 });
+  }
+
+  // Selaraskan semua kamar dengan keadaan sebenarnya (data lama). 'pratinjau-semua' hanya menghitung.
+  if (body.aksi === 'pratinjau-semua' || body.aksi === 'selaraskan-semua') {
+    if (user.role === 'operasional') {
+      return NextResponse.json({ error: 'Hanya Owner dan Admin and Finance yang bisa menyelaraskan semua kamar.' }, { status: 403 });
+    }
+    try {
+      const tulis = body.aksi === 'selaraskan-semua';
+      const hasil = await selaraskanSemuaKamar(tulis);
+      if (tulis) {
+        await writeAudit({
+          requestId: `status-kamar-semua-${Date.now()}`,
+          user,
+          moduleId: 'status-kamar',
+          action: 'UPDATE',
+          target: 'Turso → kamar (semua)',
+          newData: hasil,
+          durationSec: (Date.now() - t0) / 1000,
+          status: 'sukses'
+        });
+      }
+      return NextResponse.json({ ok: true, ...hasil });
+    } catch (e) {
+      console.error('[status-kamar] gagal selaraskan semua:', e instanceof Error ? e.message : e);
+      return NextResponse.json({ error: 'Gagal menyelaraskan status kamar.' }, { status: 500 });
+    }
   }
 
   let noKamar: string;

@@ -11,32 +11,14 @@
    ========================================================================= */
 import './_env';
 import { turso } from '../src/lib/core/turso';
-import { selaraskanStatus, statusSeharusnya } from '../src/lib/kamar-maintenance-db';
+import { selaraskanSemua } from '../src/lib/kamar-maintenance-db';
 
 async function main() {
   const commit = process.argv.includes('--commit');
-  const db = turso();
-  const kamar = await db.execute('SELECT no_kamar, status FROM kamar ORDER BY no_kamar');
-  let berubah = 0;
-  const dilewati: string[] = [];
-
-  for (const r of kamar.rows) {
-    const no = String(r.no_kamar);
-    const lama = String(r.status ?? '').trim();
-    const baru = await statusSeharusnya(db, no);
-    if (lama.toLowerCase() === 'maintenance' && baru !== 'Maintenance') {
-      dilewati.push(no);
-      continue;
-    }
-    if (lama === baru) continue;
-    berubah++;
-    console.log(`Kamar ${no}: ${lama || '(kosong)'} → ${baru}`);
-    if (commit) await selaraskanStatus(db, no);
-  }
-
-  if (dilewati.length) console.log(`Dilewati (Maintenance tanpa pemicu, cek manual): kamar ${dilewati.join(', ')}`);
-  console.log(`${berubah} kamar ${commit ? 'diubah' : 'akan berubah (dry-run, tambahkan --commit untuk menulis)'}.`);
-  if (commit && berubah) console.log('Cache master kamar kedaluwarsa sendiri maksimal 5 menit.');
+  const hasil = await selaraskanSemua(turso(), commit);
+  for (const p of hasil.perubahan) console.log(`Kamar ${p.no}: ${p.dari} → ${p.ke}`);
+  if (hasil.dilewati.length) console.log(`Dilewati (Maintenance tanpa pemicu, cek manual): kamar ${hasil.dilewati.join(', ')}`);
+  console.log(`${hasil.perubahan.length} kamar ${commit ? 'diubah' : 'akan berubah (dry-run, tambahkan --commit untuk menulis)'}.`);
 }
 
 main().catch((e) => {

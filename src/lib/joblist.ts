@@ -8,7 +8,7 @@
 
 import { turso, TASK_STATUS } from './core/turso';
 import { ROLE_DIVISI, type Role } from './core/roles';
-import { sinkronMaintenanceWo } from './kamar-maintenance';
+import { pastikanSkema, sinkronMaintenanceWo } from './kamar-maintenance';
 
 export interface WorkOrderRow {
   id: number;
@@ -95,6 +95,7 @@ export async function updateWoStatus(id: number, status: string, role: Role, use
   // WO Maintenance yang menyangkut kamar: Complete melepas status Maintenance, dibuka ulang memasangnya lagi.
   // Status WO sudah tersimpan, jadi kegagalan di sini hanya dicatat (halaman Status Kamar bisa memperbaiki manual).
   try {
+    await pastikanSkema();
     const wo = (await turso().execute({ sql: 'SELECT no_kamar, tujuan_divisi FROM work_orders WHERE id = ?', args: [id] })).rows[0];
     if (wo?.no_kamar) {
       await sinkronMaintenanceWo({ id, noKamar: String(wo.no_kamar), tujuanDivisi: String(wo.tujuan_divisi), status, oleh: userName });
