@@ -5,6 +5,7 @@ import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
 import { urlBerkas } from '@/lib/teman-rara';
 import { rapikanBarang } from '@/lib/barang-tambahan';
+import { selaraskanStatusKamar } from '@/lib/kamar-maintenance';
 
 /**
  * Review pendaftaran penghuni baru yang mengisi sendiri lewat aplikasi Teman Rara.
@@ -126,7 +127,7 @@ export async function PATCH(req: NextRequest) {
 
   const db = turso();
   const sebelum = await db.execute({
-    sql: 'SELECT status_booking, alasan_cancel FROM booking WHERE no_booking = ?',
+    sql: 'SELECT status_booking, alasan_cancel, kamar_no FROM booking WHERE no_booking = ?',
     args: [noBooking]
   });
   if (sebelum.rows.length === 0) return NextResponse.json({ error: 'Booking tidak ditemukan.' }, { status: 404 });
@@ -160,6 +161,16 @@ export async function PATCH(req: NextRequest) {
   });
   if (res.rowsAffected === 0) return NextResponse.json({ error: 'Booking tidak ditemukan.' }, { status: 404 });
 
+  // Konfirmasi menahan kamar (Booking), tolak melepasnya; Maintenance yang sedang berlaku tidak tertimpa.
+  let warning: string | undefined;
+  try {
+    const kamar = sebelum.rows[0].kamar_no;
+    if (kamar != null) await selaraskanStatusKamar(String(kamar));
+  } catch (e) {
+    console.error('[pendaftaran] gagal selaraskan status kamar:', e instanceof Error ? e.message : e);
+    warning = 'Review tersimpan, tapi status kamar gagal diselaraskan — cek halaman Status Kamar.';
+  }
+
   await writeAudit({
     requestId: `pendaftaran-${noBooking}-${Date.now()}`,
     user,
@@ -172,5 +183,5 @@ export async function PATCH(req: NextRequest) {
     status: 'sukses'
   });
 
-  return NextResponse.json({ ok: true, noBooking, status: STATUS_REVIEW[aksi] });
+  return NextResponse.json({ ok: true, noBooking, status: STATUS_REVIEW[aksi], warning });
 }

@@ -67,10 +67,10 @@ export async function getRooms(): Promise<Room[]> {
   return cached('rooms', fetchRoomsUncached);
 }
 
-/** Kamar dengan status ≠ "Terisi" (dipakai Modul 1: hanya kamar kosong yang bisa dipilih). */
+/** Kamar yang boleh dipilih untuk booking baru: bukan Terisi, Booking, atau Maintenance. */
 export async function getAvailableRooms(): Promise<Room[]> {
   const rooms = await getRooms();
-  return rooms.filter((r) => r.status.toLowerCase() !== 'terisi');
+  return rooms.filter((r) => !['terisi', 'booking', 'maintenance'].includes(r.status.toLowerCase()));
 }
 
 /** Status kamar terkini TANPA cache — dipakai untuk re-check double-occupancy tepat sebelum tulis (PRD §10.2). */
@@ -81,13 +81,18 @@ export async function getRoomFresh(roomId: string): Promise<Room | undefined> {
 
 /** Update status kamar di Turso `kamar` (dipakai Modul 3 & 4).
  *  Dulu menulis sel Status di sheet Daftar Kamar & Harga lewat updateRange. */
+/** Cache master kamar (5 menit) harus dibuang setiap kali status kamar berubah. */
+export async function invalidateRoomsCache(): Promise<void> {
+  await redis.del(nsKey('master:rooms'));
+}
+
 export async function updateRoomStatus(roomId: string, newStatus: string): Promise<void> {
   const res = await turso().execute({
     sql: 'UPDATE kamar SET status = ? WHERE CAST(no_kamar AS TEXT) = ?',
     args: [newStatus, roomId]
   });
   if (res.rowsAffected === 0) throw new Error(`Kamar ${roomId} tidak ditemukan untuk update status.`);
-  await redis.del(nsKey('master:rooms')); // cache 5 menit jadi stale kalau tidak dibersihkan setelah update status
+  await invalidateRoomsCache();
 }
 
 export interface Account {

@@ -1179,6 +1179,16 @@ function makeWorkOrderModules(): ModuleMeta[] {
     { name: 'tanggalInput', label: 'Tanggal Input', type: 'date', required: true, defaultToday: true },
     { name: 'petugas', label: 'Petugas', type: 'text', required: true, placeholder: 'Nama petugas pelapor' },
     { name: 'lokasiItem', label: 'Lokasi/Item', type: 'text', required: true, placeholder: 'Contoh: Kamar 3 — AC' },
+    {
+      name: 'kamar',
+      label: 'Kamar (opsional)',
+      type: 'select-async',
+      required: false,
+      master: 'rooms',
+      masterValue: 'id',
+      masterLabel: 'label',
+      helpText: 'Isi bila pekerjaan menyangkut satu kamar. Untuk tujuan Maintenance, kamar berstatus Maintenance sampai work order Complete. Kosongkan untuk area umum.'
+    },
     { name: 'kategori', label: 'Kategori', type: 'select', required: true, options: KATEGORI },
     { name: 'deskripsi', label: 'Deskripsi', type: 'textarea', required: true },
     { name: 'prioritas', label: 'Prioritas', type: 'select', required: true, options: PRIORITAS },

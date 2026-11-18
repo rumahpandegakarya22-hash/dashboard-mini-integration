@@ -19,7 +19,9 @@ const NO_FILTER_COLS = new Set(['check', 'aksi', 'open', 'tagihan', 'chatLead'])
 const ISO_TGL = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?$/;
 
 /** Kolom yang dirender sebagai tanggal (verbatim DATE_KEYS app.js). */
-const DATE_KEYS = new Set(['tanggal', 'masuk', 'tempo', 'deadline', 'kategori']);
+const DATE_KEYS = new Set(['tanggal', 'masuk', 'tempo', 'deadline', 'kategori', 'rencanaTanggal']);
+/** Tanggal ke depan: klik pertama = terdekat dulu (asc). Kolom tanggal lain = terbaru dulu. */
+const DATE_KEYS_ASC = new Set(['rencanaTanggal']);
 
 const LOG_STATUS_CLASS: Record<string, string> = {
   Complete: 's-complete',
@@ -65,6 +67,7 @@ function Cell({ col, row }: { col: TableCol; row: TableRow }) {
   const v = row[k];
 
   if (DATE_KEYS.has(k)) {
+    if (!v) return <td>—</td>;
     return (
       <td>
         <span className="cell-date">
@@ -191,6 +194,7 @@ export default function Table({
     return [...filtered].sort((a, b) => {
       const ta = isDate ? String(a[key] ?? '') : cellText(a, key);
       const tb = isDate ? String(b[key] ?? '') : cellText(b, key);
+      if (isDate && (!ta || !tb)) return ta === tb ? 0 : !ta ? 1 : -1; // tanggal kosong selalu di bawah
       return sort.dir === 'asc'
         ? ta.localeCompare(tb, 'id', { numeric: true })
         : tb.localeCompare(ta, 'id', { numeric: true });
@@ -205,7 +209,7 @@ export default function Table({
     setSort((s) => {
       if (s && s.i === i) return { i, dir: s.dir === 'asc' ? 'desc' : 'asc' };
       // Kolom tanggal: klik pertama = terbaru → terlama (desc).
-      return { i, dir: DATE_KEYS.has(cols[i].key) ? 'desc' : 'asc' };
+      return { i, dir: DATE_KEYS.has(cols[i].key) && !DATE_KEYS_ASC.has(cols[i].key) ? 'desc' : 'asc' };
     });
 
   const distinct = (i: number) =>

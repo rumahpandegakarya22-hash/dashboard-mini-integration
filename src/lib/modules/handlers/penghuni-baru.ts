@@ -6,6 +6,7 @@ import { resolveOccupancyId, saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 import { galatNopol, namaKendaraanBersih, normalisasiNopol } from '../../kendaraan';
 import { rapikanBarang, salinBarangKePenghuni } from '../../barang-tambahan';
+import { selaraskanStatusKamar } from '../../kamar-maintenance';
 
 /** Ejaan status_booking yang dipakai tabel `booking` & dicocokkan trigger.
  *  Kunci = ejaan apa adanya dari dropdown (warisan tab SETTING spreadsheet). */
@@ -55,6 +56,10 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
      TIDAK jalan — id_penghuni, occupancy_history, dan active_tenant tidak
      pernah terbentuk, jadi penghuni baru tak pernah muncul sebagai aktif. */
   const statusDb = normalizeStatusBooking(statusBooking);
+  // Check-in hanya lewat Daftar Booking, setelah SOP Check-in (Pre-Check In Form + Approval Check-in).
+  if (statusDb === 'Check-in') {
+    throw new Error('Check-in tidak bisa dicatat dari form ini. Simpan sebagai booking dulu, lalu check-in lewat Daftar Booking setelah SOP Check-in selesai.');
+  }
   const sumberLeads = required(values.sumberLeads, 'Sumber Leads');
   const catatan = String(values.catatan ?? '').trim();
 
@@ -78,6 +83,12 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
     if (!room) throw new Error(`Kamar ${kamarId} tidak ditemukan di master.`);
     if (room.status.toLowerCase() === 'terisi') {
       throw new Error(`Kamar ${kamarId} sudah terisi. Pilih kamar lain.`);
+    }
+    if (room.status.toLowerCase() === 'maintenance') {
+      throw new Error(`Kamar ${kamarId} sedang Maintenance. Pilih kamar lain atau selesaikan Maintenance-nya dulu.`);
+    }
+    if (room.status.toLowerCase() === 'booking') {
+      throw new Error(`Kamar ${kamarId} sudah dibooking. Pilih kamar lain atau batalkan booking sebelumnya.`);
     }
 
     // Pita kewajaran harga: negosiasi normal boleh, tapi cegah salah ketik (harga nyaris 0 atau 10x lipat).
@@ -143,6 +154,15 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
     });
     const noBooking = res.rows.length > 0 ? String(res.rows[0].no_booking) : '(tidak diketahui)';
 
+    // Booking menahan kamar: status kamar jadi Booking (Maintenance tetap bila sedang berlaku).
+    let warningKamar: string | undefined;
+    try {
+      await selaraskanStatusKamar(kamarId);
+    } catch (e) {
+      console.error('[penghuni-baru] gagal selaraskan status kamar:', e instanceof Error ? e.message : e);
+      warningKamar = `Booking tersimpan, tapi status kamar ${kamarId} gagal diubah ke Booking — cek halaman Status Kamar.`;
+    }
+
     // statusDb bisa 'Check-in' → trigger DB langsung isi active_tenant; cache dropdown penghuni
     // harus ikut dibersihkan supaya penghuni baru langsung muncul, bukan nunggu TTL 5 menit.
     if (statusDb === 'Check-in') await invalidateTenantsCache();
@@ -205,7 +225,7 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
     return {
       target: `Turso → booking (${noBooking})`,
       data: { noBooking, tanggalBooking, namaPenyewa, noHp, kamarId, tglMasuk, durasi, hargaDisepakati, statusBooking: statusDb, sumberLeads, catatan, barangTambahan, nopol, namaKendaraan },
-      warning: [warningIdentitas, warningKontrak].filter(Boolean).join(' ') || undefined
+      warning: [warningKamar, warningIdentitas, warningKontrak].filter(Boolean).join(' ') || undefined
     };
   });
 };
