@@ -243,6 +243,14 @@ async function loadTransaksi(): Promise<TransaksiRow[]> {
   }
 }
 
+/** Tanggal apa pun formatnya → YYYY-MM-DD (baku, bisa diurutkan). Teks yang bukan tanggal dibiarkan; kosong → ''. */
+function isoTanggal(raw: unknown): string {
+  const s = String(raw ?? '').trim();
+  const d = parseDate(s);
+  if (!d) return s;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /** Muat semua data waiting_list dari Turso. */
 async function loadWaitingList(): Promise<WaitingListRow[]> {
   try {
@@ -256,7 +264,7 @@ async function loadWaitingList(): Promise<WaitingListRow[]> {
       name: String(r.nama ?? ''),
       wa: String(r.nomor_whatsapp ?? ''),
       tipe: String(r.tipe ?? '—'),
-      rencanaTanggal: String(r.rencana_tanggal ?? '—'),
+      rencanaTanggal: isoTanggal(r.rencana_tanggal),
       budgetMax: r.budget_max != null ? `Rp${Math.round(Number(r.budget_max)).toLocaleString('id-ID')}` : '—',
       status: String(r.status ?? ''),
       keterangan: String(r.keterangan ?? ''),
