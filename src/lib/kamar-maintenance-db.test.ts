@@ -9,6 +9,7 @@ async function dbUji(): Promise<Client> {
   await db.execute('CREATE TABLE kamar (no_kamar INTEGER PRIMARY KEY, status TEXT)');
   await db.execute('CREATE TABLE active_tenant (kamar_id TEXT PRIMARY KEY, no_kamar TEXT)');
   await db.execute('CREATE TABLE work_orders (id INTEGER PRIMARY KEY)');
+  await db.execute('CREATE TABLE booking (no_booking TEXT PRIMARY KEY, kamar_no INTEGER, status_booking TEXT)');
   const ddl = readFileSync(new URL('../../db/schema/036_kamar_maintenance.sql', import.meta.url), 'utf8');
   for (const stmt of ddl.replace(/^\s*--.*$/gm, '').split(';').map((s) => s.trim()).filter(Boolean)) await db.execute(stmt);
   await db.execute("INSERT INTO kamar VALUES (5, 'Terisi'), (6, 'Kosong')");
@@ -59,4 +60,24 @@ test('tutup satu sumber tidak menutup sumber lain; kamar tak dikenal melempar', 
   await bukaMaintenance(db, { noKamar: '5', sumber: 'work_order', ref: '9' });
   assert.equal(await tutupMaintenanceKamar(db, { noKamar: '5', sumber: 'inspeksi' }), 'Maintenance');
   await assert.rejects(() => bukaMaintenance(db, { noKamar: '99', sumber: 'manual' }), /tidak ditemukan/);
+});
+
+test('Booking → Maintenance → kembali Booking; booking batal/check-in tidak menahan kamar', async () => {
+  const db = await dbUji();
+  await db.execute("INSERT INTO booking VALUES ('BK-1', 6, 'Konfirmasi')");
+  assert.equal(await selaraskanStatus(db, '6'), 'Booking');
+  assert.equal(await bukaMaintenance(db, { noKamar: '6', sumber: 'manual', alasan: 'Cat ulang' }), 'Maintenance');
+  assert.equal(await tutupMaintenanceKamar(db, { noKamar: '6' }), 'Booking');
+  await db.execute("UPDATE booking SET status_booking = 'Dibatalkan'");
+  assert.equal(await selaraskanStatus(db, '6'), 'Kosong');
+  await db.execute("UPDATE booking SET status_booking = 'Pending'");
+  assert.equal(await selaraskanStatus(db, '6'), 'Booking');
+  await db.execute("UPDATE booking SET status_booking = 'Check-in'");
+  assert.equal(await selaraskanStatus(db, '6'), 'Kosong');
+});
+
+test('penghuni aktif menang atas booking berikutnya', async () => {
+  const db = await dbUji();
+  await db.execute("INSERT INTO booking VALUES ('BK-2', 5, 'Pending')");
+  assert.equal(await selaraskanStatus(db, '5'), 'Terisi');
 });

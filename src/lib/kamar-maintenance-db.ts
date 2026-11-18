@@ -5,11 +5,15 @@ import type { Client } from '@libsql/client';
    Pembungkus aplikasi + pembersih cache ada di kamar-maintenance.ts.
 
    Aturan: kamar Maintenance selama ada pemicu terbuka di kamar_maintenance.
-   Semua pemicu tertutup → Terisi bila ada penghuni aktif, selain itu Kosong.
+   Semua pemicu tertutup → Terisi bila ada penghuni aktif, Booking bila ada booking
+   yang belum check-in (Pending/Konfirmasi), selain itu Kosong.
    ========================================================================= */
 
 export type SumberMaintenance = 'manual' | 'pengaduan' | 'inspeksi' | 'work_order';
-export type StatusKamar = 'Maintenance' | 'Terisi' | 'Kosong';
+export type StatusKamar = 'Maintenance' | 'Terisi' | 'Booking' | 'Kosong';
+
+/** Status booking yang masih menahan kamar (belum check-in dan belum batal). */
+export const STATUS_BOOKING_AKTIF = ['Pending', 'Konfirmasi'];
 
 /** Kategori pengaduan Teman Rara yang berarti kerusakan fisik kamar/fasilitas. */
 export const KATEGORI_PENGADUAN_KERUSAKAN = ['Listrik', 'Air', 'AC', 'Fasilitas'];
@@ -25,7 +29,13 @@ export async function statusSeharusnya(db: Client, noKamar: string): Promise<Sta
   const terbuka = await hitung(db, 'SELECT COUNT(*) FROM kamar_maintenance WHERE no_kamar = ? AND ditutup_pada IS NULL', [noKamar]);
   if (terbuka > 0) return 'Maintenance';
   const huni = await hitung(db, 'SELECT COUNT(*) FROM active_tenant WHERE CAST(no_kamar AS INTEGER) = CAST(? AS INTEGER)', [noKamar]);
-  return huni > 0 ? 'Terisi' : 'Kosong';
+  if (huni > 0) return 'Terisi';
+  const dibooking = await hitung(
+    db,
+    `SELECT COUNT(*) FROM booking WHERE kamar_no = CAST(? AS INTEGER) AND status_booking IN (${STATUS_BOOKING_AKTIF.map(() => '?').join(',')})`,
+    [noKamar, ...STATUS_BOOKING_AKTIF]
+  );
+  return dibooking > 0 ? 'Booking' : 'Kosong';
 }
 
 /** Tulis status kamar sesuai keadaan terkini. Mengembalikan status yang ditulis. */

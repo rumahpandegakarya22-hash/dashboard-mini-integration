@@ -160,11 +160,12 @@ export async function PATCH(req: NextRequest) {
       String(p.tipe ?? 'Komplain').toLowerCase() === 'komplain' &&
       KATEGORI_PENGADUAN_KERUSAKAN.some((k) => k.toLowerCase() === String(p.category ?? '').toLowerCase());
     if (kerusakan && status === 'Diproses') {
+      // Hanya pengaduan penghuni AKTIF yang memasang Maintenance; penghuni yang sudah checkout tidak.
       const kamar = (
-        await db.execute({ sql: 'SELECT no_kamar FROM occupancy_history WHERE id_penghuni = ?', args: [String(p.id_penghuni)] })
+        await db.execute({ sql: 'SELECT no_kamar FROM active_tenant WHERE id_penghuni = ?', args: [String(p.id_penghuni)] })
       ).rows[0]?.no_kamar;
       if (kamar == null) {
-        warning = 'Kamar penghuni tidak ditemukan, status kamar tidak diubah.';
+        warning = 'Pengaduan ini bukan dari penghuni aktif, jadi status kamar tidak diubah.';
       } else {
         await bukaMaintenanceKamar({
           noKamar: String(kamar),

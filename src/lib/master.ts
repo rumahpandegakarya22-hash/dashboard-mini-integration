@@ -67,10 +67,10 @@ export async function getRooms(): Promise<Room[]> {
   return cached('rooms', fetchRoomsUncached);
 }
 
-/** Kamar yang boleh dipilih untuk booking baru: bukan Terisi dan bukan Maintenance. */
+/** Kamar yang boleh dipilih untuk booking baru: bukan Terisi, Booking, atau Maintenance. */
 export async function getAvailableRooms(): Promise<Room[]> {
   const rooms = await getRooms();
-  return rooms.filter((r) => !['terisi', 'maintenance'].includes(r.status.toLowerCase()));
+  return rooms.filter((r) => !['terisi', 'booking', 'maintenance'].includes(r.status.toLowerCase()));
 }
 
 /** Status kamar terkini TANPA cache — dipakai untuk re-check double-occupancy tepat sebelum tulis (PRD §10.2). */

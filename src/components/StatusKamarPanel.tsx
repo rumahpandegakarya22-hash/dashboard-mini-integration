@@ -70,7 +70,7 @@ export default function StatusKamarPanel() {
         <p className="muted" style={{ marginBottom: 4 }}>
           Kamar otomatis <b>Maintenance</b> saat ada pengaduan kerusakan yang diproses, temuan inspeksi checkout,
           atau work order Maintenance untuk kamar itu. Kamar kembali sendiri setelah semua pemicunya selesai
-          (Terisi bila ada penghuni, selain itu Kosong).
+          (Terisi bila ada penghuni, Booking bila ada booking yang belum check-in, selain itu Kosong).
         </p>
         <p className="muted">
           Tombol <b>Selesai Maintenance</b> menutup semua pemicu kamar itu sekaligus. Pakai hanya bila pemicu otomatisnya sudah beres.

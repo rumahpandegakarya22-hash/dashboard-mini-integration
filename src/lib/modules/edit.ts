@@ -44,7 +44,7 @@ import { kecelakaanInsertCfg } from './handlers/kecelakaan-kerja';
 import { aktivitasFinansialEdit } from './edit-jurnal';
 import { vendorInsertCfg } from './handlers/tambah-vendor';
 import { waitingListInsertCfg } from './handlers/tambah-waiting-list';
-import { sinkronMaintenanceWo } from '../kamar-maintenance';
+import { selaraskanStatusKamar, sinkronMaintenanceWo } from '../kamar-maintenance';
 import { inspeksiKebersihanInsertCfg } from './handlers/inspeksi-kebersihan';
 import { parseDateTimeLocal } from '../core/validate';
 
@@ -369,6 +369,12 @@ const penghuniBaruEdit: CustomEditCfg = {
     const statusBooking = required(values.statusBooking, 'Status Booking');
     const sumberLeads = required(values.sumberLeads, 'Sumber Leads');
     const catatan = String(values.catatan ?? '').trim();
+    const lama = (await turso().execute({ sql: 'SELECT kamar_no, status_booking FROM booking WHERE no_booking = ?', args: [ref] })).rows[0];
+    if (!lama) throw new Error(`Booking ${ref} tidak ditemukan.`);
+    // Check-in hanya lewat Daftar Booking setelah SOP Check-in; booking yang sudah Check-in tetap boleh diedit datanya.
+    if (statusBooking === 'Check-in' && String(lama.status_booking ?? '') !== 'Check-in') {
+      throw new Error('Status Check-in tidak bisa diatur dari Edit Data. Check-in lewat Daftar Booking setelah SOP Check-in (Pre-Check In Form dan Approval Check-in) selesai.');
+    }
     // tgl_keluar_est TIDAK ditulis: kolom formula (FORMULA_COLUMNS.booking),
     // dihitung compute.ts — sama seperti dulu kolom H sheet dilewati.
     // alasan_cancel juga tidak disentuh agar isian manual tidak tertimpa.
@@ -416,7 +422,15 @@ const penghuniBaruEdit: CustomEditCfg = {
         });
       }
     }
-    return `Catatan: status kamar TIDAK diubah otomatis dari edit — kalau kamarnya diganti, sesuaikan status kamar manual.${wTr ? ' ' + wTr : ''}`;
+    // Kamar lama dan baru diselaraskan (booking dibatalkan/dipindah kamar mengubah status keduanya).
+    let wKamar = '';
+    try {
+      for (const k of new Set([String(lama.kamar_no ?? ''), kamarId].filter(Boolean))) await selaraskanStatusKamar(k);
+    } catch (e) {
+      console.error('[edit penghuni-baru] gagal selaraskan status kamar:', e instanceof Error ? e.message : e);
+      wKamar = 'Status kamar gagal diselaraskan — cek halaman Status Kamar.';
+    }
+    return [wKamar, wTr].filter(Boolean).join(' ') || undefined;
   }
 };
 
