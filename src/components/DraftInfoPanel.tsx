@@ -5,8 +5,6 @@ import { Copy, RotateCcw, Send } from 'lucide-react';
 import type { TemplateInfo } from '@/lib/draft-info/parse-html';
 import { HARI, daftarIsian, formatRupiah, namaHari, segmenPesan, susunPesan, tautanWhatsApp, type Isian } from '@/lib/draft-info/render';
 
-const SEMUA = 'semua';
-
 /** "BAB I — PENGUMUMAN OPERASIONAL & FASILITAS" → "Pengumuman Operasional & Fasilitas" */
 const namaBab = (bab: string) =>
   bab
@@ -15,17 +13,14 @@ const namaBab = (bab: string) =>
     .replace(/(^|\s)\S/g, (c) => c.toUpperCase());
 
 export default function DraftInfoPanel({ templates }: { templates: TemplateInfo[] }) {
-  const [bab, setBab] = useState(SEMUA);
-  const [cari, setCari] = useState('');
   const [no, setNo] = useState<string | null>(null);
   const [semuaNilai, setSemuaNilai] = useState<Record<string, Record<string, string>>>({});
   const [info, setInfo] = useState('');
 
-  const daftarBab = useMemo(() => [...new Set(templates.map((t) => t.bab))], [templates]);
-  const tampil = useMemo(() => {
-    const q = cari.trim().toLowerCase();
-    return templates.filter((t) => (bab === SEMUA || t.bab === bab) && (!q || `${t.no} ${t.judul}`.toLowerCase().includes(q)));
-  }, [templates, bab, cari]);
+  const perBab = useMemo(
+    () => [...new Set(templates.map((t) => t.bab))].map((b) => ({ bab: b, daftar: templates.filter((t) => t.bab === b) })),
+    [templates]
+  );
 
   const terpilih = templates.find((t) => t.no === no) ?? null;
   const nilai = (no && semuaNilai[no]) || {};
@@ -96,35 +91,18 @@ export default function DraftInfoPanel({ templates }: { templates: TemplateInfo[
       </div>
 
       <div className="card" style={{ marginTop: 14 }}>
-        <div className="module-grid">
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="di-bab">Kategori</label>
-            <select id="di-bab" value={bab} onChange={(e) => setBab(e.target.value)}>
-              <option value={SEMUA}>Semua kategori</option>
-              {daftarBab.map((b) => (
-                <option key={b} value={b}>{namaBab(b)}</option>
-              ))}
-            </select>
-          </div>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="di-cari">Cari template</label>
-            <input id="di-cari" type="text" value={cari} placeholder="Contoh: paket, AC, promo" onChange={(e) => setCari(e.target.value)} />
-          </div>
-        </div>
-
-        <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {tampil.length === 0 && <p className="muted">Tidak ada template yang cocok.</p>}
-          {tampil.map((t) => (
-            <button
-              key={t.no}
-              type="button"
-              className={t.no === no ? 'btn' : 'btn-plain'}
-              onClick={() => { setNo(t.no); setInfo(''); }}
-              aria-pressed={t.no === no}
-            >
-              {t.no}. {t.judul}
-            </button>
-          ))}
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label htmlFor="di-template">Template pesan</label>
+          <select id="di-template" value={no ?? ''} onChange={(e) => { setNo(e.target.value || null); setInfo(''); }}>
+            <option value="">Pilih template…</option>
+            {perBab.map((g) => (
+              <optgroup key={g.bab} label={namaBab(g.bab)}>
+                {g.daftar.map((t) => (
+                  <option key={t.no} value={t.no}>{t.no}. {t.judul}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -166,8 +144,8 @@ export default function DraftInfoPanel({ templates }: { templates: TemplateInfo[
           </div>
           <p className="help">Tanda *teks* di WhatsApp tampil sebagai huruf tebal. Bagian bergaris biru adalah isian yang belum diisi.</p>
 
-          <div className="btn-row" style={{ marginTop: 12 }}>
-            <button type="button" className="btn" onClick={kirim} disabled={pesan.kosong.length > 0}>
+          <div className="btn-row" style={{ marginTop: 12, flexWrap: 'wrap' }}>
+            <button type="button" className="btn" style={{ flex: '1 1 100%' }} onClick={kirim} disabled={pesan.kosong.length > 0}>
               <Send size={16} aria-hidden /> Kirim ke WhatsApp
             </button>
             <button type="button" className="btn-plain" onClick={salin}>
