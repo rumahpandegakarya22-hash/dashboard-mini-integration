@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
-import { invalidateTenantsCache, updateRoomStatus } from '@/lib/master';
+import { invalidateTenantsCache } from '@/lib/master';
+import { selaraskanStatusKamar } from '@/lib/kamar-maintenance';
 import { salinDariTemanRara } from '@/lib/teman-rara-checkin';
 import { salinBarangKePenghuni } from '@/lib/barang-tambahan';
 
@@ -140,10 +141,10 @@ export async function POST(req: Request) {
     warnings.push('Tambahan listrik gagal disalin ke penghuni — isi manual di Ubah Data Penghuni.');
   }
   try {
-    if (kamarNo) await updateRoomStatus(kamarNo, 'Terisi');
+    if (kamarNo) await selaraskanStatusKamar(kamarNo); // Terisi, kecuali kamar masih Maintenance
   } catch (e) {
     console.error('[daftar-booking] gagal set status kamar:', e instanceof Error ? e.message : e);
-    warnings.push(`Status kamar ${kamarNo} gagal diubah ke Terisi — ubah manual.`);
+    warnings.push(`Status kamar ${kamarNo} gagal diselaraskan — cek di halaman Status Kamar.`);
   }
   await invalidateTenantsCache().catch(() => undefined);
 

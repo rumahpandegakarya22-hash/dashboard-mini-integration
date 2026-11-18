@@ -132,3 +132,6 @@ export const NAV_CHECKOUT: { href: string; label: string; icon: LucideIcon; admi
   { href: '/ops/admin/pre-checkout', label: 'Pre-Check Out Form', icon: ClipboardList, preForm: true },
   { href: '/ops/admin/approval-checkout', label: 'Approval Check-out', icon: CheckSquare, adminOnly: true },
 ];
+
+/** Status Kamar (tombol Maintenance manual) — owner, admin_finance, operasional. */
+export const NAV_STATUS_KAMAR = { href: '/ops/admin/status-kamar', label: 'Status Kamar', icon: BedDouble };

@@ -545,6 +545,17 @@ Marketing tidak punya menu Laporan. Laporan Pekerjaan Marketing dan Kinerja Mark
 
 Operasional menjaga kamar dan fasilitas layak huni: perawatan, perbaikan, inspeksi, kebersihan, vendor, dan kesiapan kamar. Satu role mencakup Maintenance, Inspeksi, dan Cleaning.
 
+**Status kamar.** Kosong dan Terisi berubah otomatis (check-in dan checkout). Status **Maintenance** dipasang oleh salah satu dari empat pemicu, dan kamar baru kembali setelah semua pemicunya selesai (Terisi bila ada penghuni aktif, selain itu Kosong):
+
+| Pemicu | Memasang Maintenance | Melepas |
+|---|---|---|
+| Tombol di menu **Status Kamar** | Tandai Maintenance (alasan wajib) | Selesai Maintenance (menutup semua pemicu kamar itu) |
+| Pengaduan Teman Rara | Komplain kategori Listrik, Air, AC, atau Fasilitas diubah ke Diproses | Selesai, Dibatalkan, atau kembali ke Menunggu |
+| Inspeksi checkout (Pre-Check Out Form) | Ada item Rusak atau Perlu Perbaikan | Kamar Siap Sewa diisi, atau inspeksi dikirim ulang semua Baik |
+| Work order tujuan Maintenance | Kolom Kamar diisi di form work order | Work order Complete |
+
+Kamar Maintenance tidak muncul di pilihan booking baru, dan checkout tidak mengubahnya menjadi Kosong selama masih ada pemicu terbuka.
+
 ### Menu yang kamu pakai
 
 | Aplikasi | Menu |

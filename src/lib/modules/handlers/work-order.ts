@@ -1,5 +1,6 @@
 import { turso } from '../../core/turso';
-import { parseDateISO, required } from '../../core/validate';
+import { normalizeRoomId, parseDateISO, required } from '../../core/validate';
+import { sinkronMaintenanceWo } from '../../kamar-maintenance';
 import type { SubmitHandler } from '../types';
 
 const KATEGORI = [
@@ -29,6 +30,8 @@ function makeWorkOrderHandler(divisiAsal: 'Inspeksi' | 'Cleaning', tujuanValid: 
     const targetDeadline = parseDateISO(String(values.targetDeadline ?? ''));
     const catatan = String(values.catatan ?? '').trim();
     const buktiFotoUrl = String(values.buktiFoto ?? '').trim();
+    const kamarRaw = String(values.kamar ?? '').trim();
+    const noKamar = kamarRaw ? normalizeRoomId(kamarRaw) : null;
 
     if (!KATEGORI.includes(kategori)) throw new Error(`Kategori tidak valid: "${kategori}".`);
     if (!PRIORITAS.includes(prioritas)) throw new Error(`Prioritas tidak valid: "${prioritas}".`);
@@ -37,8 +40,8 @@ function makeWorkOrderHandler(divisiAsal: 'Inspeksi' | 'Cleaning', tujuanValid: 
     const res = await turso().execute({
       sql: `INSERT INTO work_orders
               (tanggal_input, petugas, divisi_asal, lokasi_item, kategori, deskripsi, prioritas,
-               tujuan_divisi, target_deadline, catatan, bukti_foto_url, status, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)`,
+               tujuan_divisi, target_deadline, catatan, bukti_foto_url, status, created_by, no_kamar)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?)`,
       args: [
         tanggalInput,
         petugas,
@@ -51,14 +54,26 @@ function makeWorkOrderHandler(divisiAsal: 'Inspeksi' | 'Cleaning', tujuanValid: 
         targetDeadline,
         catatan,
         buktiFotoUrl,
-        ctx.user.username
+        ctx.user.username,
+        noKamar
       ]
     });
 
+    // WO ke Maintenance yang menyangkut satu kamar → kamar jadi Maintenance sampai WO Complete.
+    const id = Number(res.lastInsertRowid ?? -1);
+    let warning: string | undefined;
+    try {
+      await sinkronMaintenanceWo({ id, noKamar, tujuanDivisi, status: 'Pending', oleh: ctx.user.username });
+    } catch (e) {
+      console.error('[work-order] gagal set Maintenance kamar:', e instanceof Error ? e.message : e);
+      warning = `Work order tersimpan, tapi status Maintenance kamar ${noKamar} gagal diubah — set lewat halaman Status Kamar.`;
+    }
+
     return {
       target: `Turso → work_orders (${divisiAsal} → ${tujuanDivisi})`,
-      row: Number(res.lastInsertRowid ?? -1),
-      data: values
+      row: id,
+      data: values,
+      ...(warning ? { warning } : {})
     };
   };
 }

@@ -1,7 +1,8 @@
 import { turso } from '../../core/turso';
 import { withLock } from '../../core/redis';
 import { parseDateISO, parseRupiahOptional, required } from '../../core/validate';
-import { getTenantByLabel, invalidateTenantsCache, updateRoomStatus } from '../../master';
+import { getTenantByLabel, invalidateTenantsCache } from '../../master';
+import { selaraskanStatusKamar } from '../../kamar-maintenance';
 import { saveLampiran } from './helpers';
 import type { SubmitHandler } from '../types';
 import { fmtTanggal } from '../../format-tanggal';
@@ -23,7 +24,7 @@ import { fmtTanggal } from '../../format-tanggal';
  *     FALLBACK: penghuni lama yang check-in sebelum sistem booking TIDAK punya
  *     baris booking (lihat derivePenghuni di lib/dashboard/source.ts) — untuk
  *     mereka efek yang sama dikerjakan manual, meniru isi trigger persis.
- *  3. Status kamar → 'Kosong' (updateRoomStatus, sudah Turso sejak Wave 1).
+ *  3. Status kamar → 'Kosong' (selaraskanStatusKamar; tetap Maintenance bila ada pemicu terbuka).
  *
  * Catatan lama "Database Penghuni READ-ONLY jadi status penghuni tidak ditulis
  * app, asumsinya dihitung dari baris checkout" TIDAK BERLAKU lagi: dengan Turso,
@@ -123,7 +124,8 @@ export const submitCheckout: SubmitHandler = async (values, ctx) => {
     }
 
     await db.batch(stmts, 'write');
-    await updateRoomStatus(kamar, 'Kosong');
+    // Kosong, kecuali masih ada pemicu Maintenance terbuka (mis. inspeksi checkout menemukan kerusakan).
+    await selaraskanStatusKamar(kamar);
     await invalidateTenantsCache();
 
     // Kalau checkout ini menuntaskan pengajuan dari Teman Rara (panel Acc

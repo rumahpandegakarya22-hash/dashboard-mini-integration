@@ -44,6 +44,7 @@ import { kecelakaanInsertCfg } from './handlers/kecelakaan-kerja';
 import { aktivitasFinansialEdit } from './edit-jurnal';
 import { vendorInsertCfg } from './handlers/tambah-vendor';
 import { waitingListInsertCfg } from './handlers/tambah-waiting-list';
+import { sinkronMaintenanceWo } from '../kamar-maintenance';
 import { inspeksiKebersihanInsertCfg } from './handlers/inspeksi-kebersihan';
 import { parseDateTimeLocal } from '../core/validate';
 
@@ -132,7 +133,7 @@ function workOrderEdit(divisiAsal: 'Inspeksi' | 'Cleaning'): CustomEditCfg {
     list: async () => {
       const res = await turso().execute({
         sql: `SELECT id, tanggal_input, petugas, lokasi_item, kategori, deskripsi, prioritas, tujuan_divisi,
-                     target_deadline, catatan, bukti_foto_url
+                     target_deadline, catatan, bukti_foto_url, no_kamar
               FROM work_orders WHERE divisi_asal = ? ORDER BY id DESC LIMIT ${LIST_LIMIT}`,
         args: [divisiAsal]
       });
@@ -143,6 +144,7 @@ function workOrderEdit(divisiAsal: 'Inspeksi' | 'Cleaning'): CustomEditCfg {
           tanggalInput: String(r.tanggal_input ?? ''),
           petugas: String(r.petugas ?? ''),
           lokasiItem: String(r.lokasi_item ?? ''),
+          kamar: String(r.no_kamar ?? ''),
           kategori: String(r.kategori ?? ''),
           deskripsi: String(r.deskripsi ?? ''),
           prioritas: String(r.prioritas ?? ''),
@@ -164,15 +166,19 @@ function workOrderEdit(divisiAsal: 'Inspeksi' | 'Cleaning'): CustomEditCfg {
       const targetDeadline = parseDateISO(String(values.targetDeadline ?? ''));
       const catatan = String(values.catatan ?? '').trim();
       const buktiFotoUrl = String(values.buktiFoto ?? '').trim();
+      const kamarRaw = String(values.kamar ?? '').trim();
+      const noKamar = kamarRaw ? normalizeRoomId(kamarRaw) : null;
       // Status TIDAK diubah dari sini — alur status lewat tabel Work Order/List Job di home.
       const res = await turso().execute({
         sql: `UPDATE work_orders SET tanggal_input = ?, petugas = ?, lokasi_item = ?, kategori = ?, deskripsi = ?,
-                     prioritas = ?, tujuan_divisi = ?, target_deadline = ?, catatan = ?, bukti_foto_url = ?,
+                     prioritas = ?, tujuan_divisi = ?, target_deadline = ?, catatan = ?, bukti_foto_url = ?, no_kamar = ?,
                      updated_at = CURRENT_TIMESTAMP
               WHERE id = ? AND divisi_asal = ?`,
-        args: [tanggalInput, petugas, lokasiItem, kategori, deskripsi, prioritas, tujuanDivisi, targetDeadline, catatan, buktiFotoUrl, Number(ref), divisiAsal]
+        args: [tanggalInput, petugas, lokasiItem, kategori, deskripsi, prioritas, tujuanDivisi, targetDeadline, catatan, buktiFotoUrl, noKamar, Number(ref), divisiAsal]
       });
       if (res.rowsAffected === 0) throw new Error('Work order tidak ditemukan / bukan milik divisi ini.');
+      const st = await turso().execute({ sql: 'SELECT status FROM work_orders WHERE id = ?', args: [Number(ref)] });
+      await sinkronMaintenanceWo({ id: Number(ref), noKamar, tujuanDivisi, status: String(st.rows[0]?.status ?? 'Pending') });
     }
   };
 }

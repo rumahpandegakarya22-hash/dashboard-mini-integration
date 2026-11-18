@@ -79,6 +79,9 @@ export const submitPenghuniBaru: SubmitHandler = async (values, ctx) => {
     if (room.status.toLowerCase() === 'terisi') {
       throw new Error(`Kamar ${kamarId} sudah terisi. Pilih kamar lain.`);
     }
+    if (room.status.toLowerCase() === 'maintenance') {
+      throw new Error(`Kamar ${kamarId} sedang Maintenance. Pilih kamar lain atau selesaikan Maintenance-nya dulu.`);
+    }
 
     // Pita kewajaran harga: negosiasi normal boleh, tapi cegah salah ketik (harga nyaris 0 atau 10x lipat).
     const listed = parseRupiah(String(room.hargaBulan));

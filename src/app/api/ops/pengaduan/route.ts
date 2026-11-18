@@ -5,6 +5,7 @@ import { turso } from '@/lib/core/turso';
 import { writeAudit } from '@/lib/core/audit';
 import { isStatusPengaduan, normalisasiStatus, STATUS_TERBUKA } from '@/lib/core/complain';
 import { getPenghuniByIds, labelPenghuni, urlBerkas } from '@/lib/teman-rara';
+import { KATEGORI_PENGADUAN_KERUSAKAN, bukaMaintenanceKamar, tutupMaintenanceRef } from '@/lib/kamar-maintenance';
 
 /**
  * Merespons pengaduan penghuni (dilaporkan dari aplikasi Teman Rara).
@@ -122,7 +123,7 @@ export async function PATCH(req: NextRequest) {
 
   const db = turso();
   const sebelum = await db.execute({
-    sql: 'SELECT status, response_note, resolved_at FROM tenant_complain WHERE id_complain = ?',
+    sql: 'SELECT status, response_note, resolved_at, tipe, category, title, id_penghuni FROM tenant_complain WHERE id_complain = ?',
     args: [id]
   });
   if (sebelum.rows.length === 0) {
@@ -151,6 +152,36 @@ export async function PATCH(req: NextRequest) {
   });
   if (res.rowsAffected === 0) return NextResponse.json({ error: 'Pengaduan tidak ditemukan.' }, { status: 404 });
 
+  // Komplain kerusakan yang sedang 'Diproses' membuat kamar penghuni Maintenance; status lain melepasnya.
+  let warning: string | undefined;
+  try {
+    const p = sebelum.rows[0];
+    const kerusakan =
+      String(p.tipe ?? 'Komplain').toLowerCase() === 'komplain' &&
+      KATEGORI_PENGADUAN_KERUSAKAN.some((k) => k.toLowerCase() === String(p.category ?? '').toLowerCase());
+    if (kerusakan && status === 'Diproses') {
+      const kamar = (
+        await db.execute({ sql: 'SELECT no_kamar FROM occupancy_history WHERE id_penghuni = ?', args: [String(p.id_penghuni)] })
+      ).rows[0]?.no_kamar;
+      if (kamar == null) {
+        warning = 'Kamar penghuni tidak ditemukan, status kamar tidak diubah.';
+      } else {
+        await bukaMaintenanceKamar({
+          noKamar: String(kamar),
+          sumber: 'pengaduan',
+          ref: id,
+          alasan: `Pengaduan ${String(p.category)}: ${String(p.title ?? '')}`.slice(0, 200),
+          oleh: user.username
+        });
+      }
+    } else {
+      await tutupMaintenanceRef({ sumber: 'pengaduan', ref: id, oleh: user.username });
+    }
+  } catch (e) {
+    console.error('[pengaduan] gagal selaraskan status Maintenance kamar:', e instanceof Error ? e.message : e);
+    warning = 'Pengaduan tersimpan, tapi status Maintenance kamar gagal diselaraskan — cek halaman Status Kamar.';
+  }
+
   await writeAudit({
     requestId: `pengaduan-${id}-${Date.now()}`,
     user,
@@ -163,5 +194,5 @@ export async function PATCH(req: NextRequest) {
     status: 'sukses'
   });
 
-  return NextResponse.json({ ok: true, id, status });
+  return NextResponse.json({ ok: true, id, status, warning });
 }

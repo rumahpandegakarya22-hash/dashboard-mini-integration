@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/core/auth';
 import { turso } from '@/lib/core/turso';
+import { bukaMaintenanceKamar, tutupMaintenanceRef } from '@/lib/kamar-maintenance';
 
 const ALLOWED_ROLES = ['owner', 'operasional'] as const;
 
@@ -114,5 +115,29 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, id: kondisiKamarId });
+  // Temuan Rusak / Perlu Perbaikan pada inspeksi checkout → kamar Maintenance; semua Baik → pemicunya dilepas.
+  // Data inspeksi sudah tersimpan, jadi kegagalan di sini hanya jadi peringatan.
+  let warning: string | undefined;
+  try {
+    const temuan = Object.values(items).filter((v) => v === 'Rusak' || v === 'Perlu Perbaikan').length;
+    const ref = String(kondisiKamarId);
+    if (temuan > 0) {
+      const kk = await turso().execute({ sql: 'SELECT no_kamar FROM kondisi_kamar WHERE id = ?', args: [kondisiKamarId] });
+      const noKamar = String(kk.rows[0]?.no_kamar ?? no_kamar ?? '');
+      await bukaMaintenanceKamar({
+        noKamar,
+        sumber: 'inspeksi',
+        ref,
+        alasan: `Inspeksi checkout: ${temuan} item rusak/perlu perbaikan`,
+        oleh: user.username
+      });
+    } else {
+      await tutupMaintenanceRef({ sumber: 'inspeksi', ref, oleh: user.username });
+    }
+  } catch (e) {
+    console.error('[pre-checkout] gagal selaraskan status Maintenance kamar:', e instanceof Error ? e.message : e);
+    warning = 'Inspeksi tersimpan, tapi status Maintenance kamar gagal diselaraskan — cek halaman Status Kamar.';
+  }
+
+  return NextResponse.json({ ok: true, id: kondisiKamarId, warning });
 }
