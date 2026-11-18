@@ -139,8 +139,8 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                           '-'
                         )}
                       </td>
-                      {/* Biaya maintenance (WO tujuan Admin): Admin klik "Catat Pengeluaran" → form pengeluaran
-                          ter-prefill; setelah submit, WO otomatis Complete (handler pengeluaran). */}
+                      {/* Biaya maintenance (WO tujuan Admin): Admin klik "Catat Pengeluaran" → form Aktivitas Finansial
+                          ter-prefill; setelah submit, WO otomatis Complete (handler aktivitas-finansial). */}
                       {(readOnly || divisi?.includes('Admin')) && (
                         <td>
                           {r.nominal && r.nominal > 0 ? (
@@ -149,7 +149,7 @@ export default function Joblist({ rows, divisi }: { rows: WorkOrderRow[]; divisi
                               {r.refTiket && <div className="muted" style={{ fontSize: '0.75rem' }}>{r.refTiket}</div>}
                               {divisi?.includes('Admin') && (
                                 <a
-                                  href={`/ops/m/pengeluaran?woId=${r.id}&tanggal=${encodeURIComponent(r.tanggalInput)}&tipeAkun=Beban&nominal=${r.nominal}&kategori=Operasional&keterangan=${encodeURIComponent(`${r.deskripsi} — ${r.lokasiItem}${r.refTiket ? ` (${r.refTiket})` : ''}`)}`}
+                                  href={`/ops/m/aktivitas-finansial?woId=${r.id}&jenisAktivitas=Pengeluaran&tanggal=${encodeURIComponent(r.tanggalInput)}&tipeAkun=Beban&nominal=${r.nominal}&kategori=Operasional&divisi=Maintenance&keterangan=${encodeURIComponent(`${r.deskripsi} — ${r.lokasiItem}${r.refTiket ? ` (${r.refTiket})` : ''}`)}`}
                                   style={{ display: 'inline-block', marginTop: 4, fontWeight: 600 }}
                                 >
                                   Catat Pengeluaran →

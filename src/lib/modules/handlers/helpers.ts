@@ -1,3 +1,4 @@
+import type { Client } from '@libsql/client';
 import { turso } from '../../core/turso';
 import { namaFileDokumen, renameDokumenDrive } from '../../drive-dokumen';
 import type { SubmitContext, SubmitHandler } from '../types';
@@ -129,3 +130,22 @@ export function createInsertHandler(cfg: InsertConfig): SubmitHandler {
   };
 }
 
+
+/**
+ * Konversi joblist Admin (biaya maintenance): setelah pengeluaran tercatat, work order asalnya ditandai Complete.
+ * Best-effort — jurnal sudah tersimpan, jadi kegagalan hanya menjadi peringatan. Mengembalikan teks peringatan, atau undefined.
+ */
+export async function selesaikanWoBiaya(db: Client, woId: number, username: string): Promise<string | undefined> {
+  if (!(woId > 0)) return undefined;
+  try {
+    const upd = await db.execute({
+      sql: `UPDATE work_orders SET status = 'Complete', completed_by = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND tujuan_divisi = 'Admin' AND status != 'Complete'`,
+      args: [username, woId]
+    });
+    return upd.rowsAffected === 0 ? `Pengeluaran tercatat, tapi joblist #${woId} tidak ditemukan / sudah Complete.` : undefined;
+  } catch (e: unknown) {
+    console.error('[joblist-admin] gagal update work_orders:', (e as Error)?.message);
+    return `Pengeluaran tercatat, tapi status joblist #${woId} gagal diupdate — tandai manual.`;
+  }
+}

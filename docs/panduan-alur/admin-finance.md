@@ -24,6 +24,7 @@ Cara membaca diagram: kotak = langkah, belah ketupat = keputusan. Nama di awal k
 | K14 | Pengumuman, akun ganda, dan WiFi | Teman Rara, Mini App |
 | K15 | Pencatatan: pelanggaran, kecelakaan kerja, kepuasan | Mini App |
 | K16 | Status kamar tidak cocok dengan kenyataan | Mini App |
+| K17 | Mengirim pengumuman atau pesan ke grup WhatsApp | Mini App |
 
 ---
 
@@ -251,21 +252,26 @@ flowchart TD
 
 ## K10. Biaya perbaikan dari Operasional
 
-**Kapan terjadi:** tiket perawatan atau perbaikan diisi dengan biaya lebih dari nol. Biaya tidak langsung masuk pembukuan.
+**Kapan terjadi:** tiket perawatan atau perbaikan diisi dengan biaya lebih dari nol. Biaya tidak langsung masuk pembukuan: Admin yang mencatatnya.
 
 ```mermaid
 flowchart TD
     A["Operasional: isi tiket dengan biaya"] --> B["Sistem membuat work order<br/>tujuan Admin, status Pending"]
-    B --> C["Admin: lihat di Joblist Beranda"]
+    B --> C["Admin: lihat di Joblist Beranda, kolom Biaya"]
     C --> D["Cocokkan dengan nota dan pelaksana"]
     D --> E{"Biaya sah?"}
-    E -->|"ya"| F["Catat di Aktivitas Finansial<br/>(pengeluaran, divisi Maintenance)"]
-    E -->|"tidak"| G["Konfirmasi ke Operasional"]
-    F --> H["Ubah status work order ke Complete"]
-    G --> D
+    E -->|"tidak"| F["Konfirmasi ke Operasional"]
+    F --> D
+    E -->|"ya"| G["Klik Catat Pengeluaran:<br/>Aktivitas Finansial terbuka, nominal, keterangan,<br/>kategori, dan divisi Maintenance sudah terisi"]
+    G --> H["Admin: pilih akun tujuan dan sumber dana,<br/>unggah nota, lalu simpan"]
+    H --> I["Pengeluaran masuk pembukuan<br/>dan work order otomatis Complete"]
 ```
 
-**Perhatikan:** work order ini membawa referensi tiket asal. Bila tertulis gagal masuk Joblist Admin, catat pengeluaran manual dengan referensi tiket.
+**Checklist**
+- [ ] Akun tujuan (beban) dan sumber dana dipilih sendiri; yang terisi otomatis hanya nominal, keterangan, kategori, dan divisi.
+- [ ] Nota diunggah bila ada.
+
+**Perhatikan:** mengubah status work order ke Complete secara manual TIDAK mencatat pengeluaran. Biaya baru masuk Laba Rugi setelah disimpan lewat tombol Catat Pengeluaran. Bila muncul peringatan work order tidak ditemukan atau sudah Complete, pengeluaran tetap tercatat.
 
 ---
 
@@ -383,6 +389,32 @@ flowchart TD
     E --> G["Status kamar cocok dengan penghuni aktif<br/>dan booking yang ada"]
     G --> H["Kamar tertulis Maintenance tanpa pemicu<br/>tidak diubah, hanya dilaporkan: cek manual"]
 ```
+
+---
+
+## K17. Mengirim pengumuman atau pesan ke grup WhatsApp
+
+**Kapan terjadi:** jadwal servis AC, perbaikan fasilitas, gangguan WiFi, paket masuk, ucapan hari raya, pengingat pembayaran, dan pesan rutin lainnya. Template diambil dari dokumen Kumpulan Template Pesan Admin.
+
+```mermaid
+flowchart TD
+    A["Admin: Mini App, menu Draft Info Admin"] --> B["Pilih kategori atau cari template<br/>mis. Jadwal Perawatan Rutin AC"]
+    B --> C["Isi detail: tanggal, jam, area, dan isian lain<br/>hari terisi otomatis dari tanggal"]
+    C --> D["Periksa pratinjau pesan"]
+    D --> E{"Masih ada isian biru yang kosong?"}
+    E -->|"ya"| C
+    E -->|"tidak"| F["Klik Kirim ke WhatsApp"]
+    F --> G["WhatsApp terbuka dengan draf pesan terformat"]
+    G --> H["Admin: pilih grup resmi kost"]
+    H --> I["Periksa sekali lagi, lalu tekan Kirim di WhatsApp"]
+```
+
+**Checklist**
+- [ ] Tanggal, jam, dan area benar sebelum membuka WhatsApp.
+- [ ] Grup tujuan dipilih di WhatsApp (tautan tidak bisa memilih grup otomatis).
+- [ ] Pesan ke penghuni perorangan (Bab Sales dan Pembayaran) dikirim ke chat pribadi, bukan grup.
+
+**Perhatikan:** tombol Kirim baru aktif setelah semua isian wajib terisi. Isian yang berdiri sendiri di satu baris (mis. nama penghuni kedua) boleh dikosongkan, barisnya dibuang. Tombol Salin teks tersedia bila WhatsApp tidak terbuka.
 
 ---
 

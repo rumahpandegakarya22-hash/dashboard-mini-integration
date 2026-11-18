@@ -8,7 +8,7 @@ Sumber fakta: kode aplikasi dan `docs/PANDUAN-PEMAKAIAN.md`. Diagram tampil lang
 |---|---|---|
 | Owner | [owner.md](owner.md) | 11 |
 | Pengawas | [pengawas.md](pengawas.md) | 6 |
-| Admin and Finance | [admin-finance.md](admin-finance.md) | 16 |
+| Admin and Finance | [admin-finance.md](admin-finance.md) | 17 |
 | Sales | [sales.md](sales.md) | 9 |
 | Marketing | [marketing.md](marketing.md) | 7 |
 | Operasional | [operasional.md](operasional.md) | 12 |
