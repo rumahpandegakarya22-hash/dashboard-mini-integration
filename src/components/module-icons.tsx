@@ -12,6 +12,7 @@ import {
   ClipboardPlus,
   DoorOpen,
   FileCog,
+  FileSignature,
   Gavel,
   Globe,
   Hammer,
@@ -106,6 +107,7 @@ export const NAV_RIWAYAT_BAYAR = { href: '/ops/admin/riwayat-pembayaran', label:
 export const NAV_PENGATURAN: { href: string; label: string; icon: LucideIcon; ownerOnly?: true }[] = [
   { href: '/ops/admin/wifi', label: 'Kredensial WiFi', icon: Wifi },
   { href: '/ops/admin/deposit', label: 'Setting Deposit', icon: HandCoins },
+  { href: '/ops/admin/kontrak', label: 'Setting Kontrak Sewa', icon: FileSignature },
   { href: '/ops/admin/aset-tetap', label: 'Aset Tetap & Penyusutan', icon: Landmark },
   { href: '/ops/admin/jenis-pelanggaran', label: 'Jenis Pelanggaran', icon: Gavel },
   { href: '/ops/admin/kamar', label: 'Kelola Harga Kamar', icon: Tag, ownerOnly: true },
