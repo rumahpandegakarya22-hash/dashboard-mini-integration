@@ -3,7 +3,10 @@
 import { useMemo, useState } from 'react';
 import { Copy, RotateCcw, Send } from 'lucide-react';
 import type { TemplateInfo } from '@/lib/draft-info/parse-html';
-import { HARI, daftarIsian, formatRupiah, namaHari, segmenPesan, susunPesan, tautanWhatsApp, type Isian } from '@/lib/draft-info/render';
+import {
+  HARI, daftarIsian, formatRupiah, gabungTanggalJam, namaHari, perangkatSeluler, pisahTanggalJam, segmenPesan, susunPesan, tautanWhatsApp,
+  type Isian
+} from '@/lib/draft-info/render';
 
 /** "BAB I — PENGUMUMAN OPERASIONAL & FASILITAS" → "Pengumuman Operasional & Fasilitas" */
 const namaBab = (bab: string) =>
@@ -35,7 +38,7 @@ export default function DraftInfoPanel({ templates }: { templates: TemplateInfo[
 
   function kirim() {
     if (!pesan || pesan.kosong.length) return;
-    const url = tautanWhatsApp(pesan.teks);
+    const url = tautanWhatsApp(pesan.teks, perangkatSeluler(navigator.userAgent, navigator.maxTouchPoints));
     const w = window.open(url, '_blank', 'noopener,noreferrer');
     if (!w) window.location.assign(url);
   }
@@ -71,6 +74,15 @@ export default function DraftInfoPanel({ templates }: { templates: TemplateInfo[
         return <input id={id} type="month" value={v} onChange={(e) => ubah(i.kunci, e.target.value)} />;
       case 'jam':
         return <input id={id} type="time" value={v} onChange={(e) => ubah(i.kunci, e.target.value)} />;
+      case 'tanggalJam': {
+        const { tanggal, jam } = pisahTanggalJam(v);
+        return (
+          <div className="module-grid">
+            <input id={id} type="date" aria-label={`${i.label}: tanggal`} value={tanggal} onChange={(e) => ubah(i.kunci, gabungTanggalJam(e.target.value, jam))} />
+            <input type="time" aria-label={`${i.label}: jam`} value={jam} onChange={(e) => ubah(i.kunci, gabungTanggalJam(tanggal, e.target.value))} />
+          </div>
+        );
+      }
       case 'rupiah':
         return <input id={id} type="text" inputMode="numeric" value={v} placeholder="Contoh: 1.200.000" onChange={(e) => ubah(i.kunci, formatRupiah(e.target.value))} />;
       case 'teksPanjang':
@@ -121,6 +133,7 @@ export default function DraftInfoPanel({ templates }: { templates: TemplateInfo[
                     {i.opsional && <span className="muted" style={{ fontWeight: 400 }}> (opsional)</span>}
                   </label>
                   {kolom(i)}
+                  {i.jenis === 'tanggalJam' && <p className="help">Isi tanggal, jam, atau keduanya.</p>}
                 </div>
               ))}
             </div>
@@ -142,6 +155,7 @@ export default function DraftInfoPanel({ templates }: { templates: TemplateInfo[
               )
             )}
           </div>
+          <p className="help">Di komputer, WhatsApp Web terbuka di tab baru (harus sudah login). Di HP, aplikasi WhatsApp yang terbuka.</p>
           <p className="help">Tanda *teks* di WhatsApp tampil sebagai huruf tebal. Bagian bergaris biru adalah isian yang belum diisi.</p>
 
           <div className="btn-row" style={{ marginTop: 12, flexWrap: 'wrap' }}>

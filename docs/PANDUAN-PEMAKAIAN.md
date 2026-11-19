@@ -342,6 +342,10 @@ Menu Komunikasi, Draft Info Admin, berisi 25 template pesan dari dokumen Kumpula
 4. Klik **Kirim ke WhatsApp**. WhatsApp terbuka dengan pesan yang sudah terformat. Pilih grup tujuan lalu tekan kirim.
 5. Kalau WhatsApp tidak terbuka, klik Salin teks lalu tempel di WhatsApp.
 
+Isian estimasi selesai (dan waktu kejadian) dipilih lewat pemilih tanggal dan jam, bukan diketik. Isi tanggal, jam, atau keduanya sesuai kebutuhan pesan.
+
+Di HP, tombol membuka aplikasi WhatsApp. Di komputer, tombol membuka WhatsApp Web di tab baru (harus sudah login), karena aplikasi WhatsApp Desktop di Windows bisa mengubah emoji menjadi tanda tanya.
+
 Tautan WhatsApp tidak bisa memilih grup otomatis, jadi grup tujuan dipilih di WhatsApp. Isi template diubah dengan memperbarui dokumen sumbernya lalu meminta pengelola sistem menyegarkan datanya (`scripts/buat-draft-info.ts`).
 
 ### Pengaturan
