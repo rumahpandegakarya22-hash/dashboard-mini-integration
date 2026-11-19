@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { daftarIsian, formatRupiah, jenisDari, susunPesan, tautanWhatsApp } from './render';
+import { daftarIsian, formatRupiah, gabungTanggalJam, jenisDari, perangkatSeluler, susunPesan, tautanWhatsApp } from './render';
 import { parseTemplateHtml, dekodeEntitas } from './parse-html';
 import templates from './templates.json';
 
@@ -14,7 +14,7 @@ test('jenis isian dikenali dari label di dokumen', () => {
   assert.equal(jenisDari('HH:MM'), 'jam');
   assert.equal(jenisDari('Nama Bulan YYYY'), 'bulan');
   assert.equal(jenisDari('Jumlah DP'), 'rupiah');
-  assert.equal(jenisDari('Tanggal / Jam'), 'teks');
+  assert.equal(jenisDari('Tanggal / Jam'), 'tanggalJam');
   assert.equal(jenisDari('Area'), 'teks');
 });
 
@@ -83,4 +83,45 @@ test('parser: hanya tebal+biru tua dalam kurung siku yang jadi placeholder; enti
   const [t] = parseTemplateHtml(html);
   assert.equal(t.isi, 'Halo {{Nama}} pukul [bukan placeholder]');
   assert.equal(t.judul, 'Uji');
+});
+
+test('estimasi selesai: pilih tanggal, jam, atau keduanya; tidak diketik manual', () => {
+  assert.equal(jenisDari('Estimasi Selesai'), 'tanggalJam');
+  assert.equal(jenisDari('Tanggal / Jam'), 'tanggalJam');
+  assert.equal(jenisDari('Waktu'), 'tanggalJam');
+
+  // Perbaikan fasilitas: estimasi berupa jam
+  const dasar = { 'sebutkan fasilitas, misal: pompa air/wifi': 'Pompa Air', tanggal: '2026-11-21', 'jam mulai': '08:00' };
+  const jam = susunPesan(cari('2').isi, { ...dasar, 'estimasi selesai': gabungTanggalJam('', '12:00') });
+  assert.deepEqual(jam.kosong, []);
+  assert.match(jam.teks, /08:00 s\/d 12:00 WIB/);
+
+  // Renovasi: estimasi berupa tanggal
+  const tgl = susunPesan(cari('4').isi, { area: 'Lantai 2', tanggal: '2026-11-21', 'estimasi selesai': gabungTanggalJam('2026-12-05', '') });
+  assert.deepEqual(tgl.kosong, []);
+  assert.match(tgl.teks, /mulai tanggal 21 November 2026 s\/d 5 Desember 2026\./);
+
+  // Keduanya
+  const dua = susunPesan(cari('4').isi, { area: 'Lantai 2', tanggal: '2026-11-21', 'estimasi selesai': gabungTanggalJam('2026-12-05', '17:00') });
+  assert.match(dua.teks, /s\/d 5 Desember 2026 pukul 17:00 WIB\./);
+
+  // Belum diisi sama sekali → wajib
+  assert.deepEqual(susunPesan(cari('4').isi, { area: 'Lantai 2', tanggal: '2026-11-21' }).kosong, ['Estimasi Selesai']);
+  assert.equal(gabungTanggalJam('', ''), '');
+});
+
+test('tautan WhatsApp: HP memakai wa.me, komputer memakai WhatsApp Web (emoji tidak rusak jadi ?)', () => {
+  const emoji = '📢 *Info* 🗓️';
+  const hp = tautanWhatsApp(emoji, true);
+  const pc = tautanWhatsApp(emoji, false);
+  assert.ok(hp.startsWith('https://wa.me/?text='));
+  assert.ok(pc.startsWith('https://web.whatsapp.com/send?text='));
+  assert.equal(decodeURIComponent(pc.split('?text=')[1]), emoji); // Unicode utuh, UTF-8
+  assert.match(pc, /%F0%9F%93%A2/); // 📢 sebagai UTF-8 4 byte
+
+  assert.equal(perangkatSeluler('Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/126 Mobile Safari/537.36'), true);
+  assert.equal(perangkatSeluler('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)'), true);
+  assert.equal(perangkatSeluler('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 5), true); // iPad mode desktop
+  assert.equal(perangkatSeluler('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126 Safari/537.36'), false);
+  assert.equal(perangkatSeluler('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 0), false);
 });

@@ -4,7 +4,8 @@
    Placeholder di data berbentuk {{Label}} (lihat parse-html.ts).
    ========================================================================= */
 
-export type JenisIsian = 'hari' | 'tanggal' | 'bulan' | 'jam' | 'rupiah' | 'teks' | 'teksPanjang';
+/** tanggalJam: boleh tanggal saja, jam saja, atau keduanya (disimpan sebagai "YYYY-MM-DD|HH:mm"). */
+export type JenisIsian = 'hari' | 'tanggal' | 'bulan' | 'jam' | 'tanggalJam' | 'rupiah' | 'teks' | 'teksPanjang';
 
 export interface Isian {
   /** Kunci unik (label huruf kecil): label yang sama di beberapa tempat jadi satu isian. */
@@ -39,6 +40,7 @@ export function jenisDari(label: string): JenisIsian {
   if (k.startsWith('nama bulan')) return 'bulan';
   if (['tanggal', 'dd bulan yyyy', 'hari, dd bulan yyyy'].includes(k)) return 'tanggal';
   if (['jam', 'jam mulai', 'sebutkan jam', 'hh:mm'].includes(k)) return 'jam';
+  if (['estimasi selesai', 'tanggal / jam', 'waktu'].includes(k)) return 'tanggalJam';
   if (['harga', 'jumlah dp', 'total', 'sisa'].includes(k)) return 'rupiah';
   if (k.includes('deskripsi') || k.startsWith('masalah')) return 'teksPanjang';
   return 'teks';
@@ -87,6 +89,12 @@ export function formatBulan(ym: string): string {
   return m ? `${BULAN[Number(m[2]) - 1]} ${m[1]}` : ym;
 }
 
+export const gabungTanggalJam = (tanggal: string, jam: string): string => (tanggal || jam ? `${tanggal}|${jam}` : '');
+export const pisahTanggalJam = (v: string): { tanggal: string; jam: string } => {
+  const [tanggal = '', jam = ''] = (v ?? '').split('|');
+  return { tanggal, jam };
+};
+
 export function formatRupiah(v: string): string {
   const angka = v.replace(/\D/g, '');
   return angka ? Number(angka).toLocaleString('id-ID') : '';
@@ -113,6 +121,12 @@ function nilaiTampil(i: Isian, mentah: string, sebelum: string, sesudah: string,
       return formatBulan(v);
     case 'jam':
       return /^\s*(WIB|s\/d)\b/.test(sesudah) ? v : `${v} WIB`;
+    case 'tanggalJam': {
+      const { tanggal, jam } = pisahTanggalJam(v);
+      const t = tanggal ? formatTanggal(tanggal, false) : '';
+      const j = jam ? `${jam} WIB` : '';
+      return t && j ? `${t} pukul ${j}` : t || j;
+    }
     case 'rupiah':
       return formatRupiah(v);
     default:
@@ -173,5 +187,14 @@ export function susunPesan(isi: string, nilai: Record<string, string>): HasilPes
   return { teks, kosong };
 }
 
-/** Membuka WhatsApp dengan teks siap kirim; admin memilih grup lalu menekan kirim. */
-export const tautanWhatsApp = (teks: string): string => `https://wa.me/?text=${encodeURIComponent(teks)}`;
+/** HP atau tablet (termasuk iPad yang menyamar sebagai Mac). */
+export const perangkatSeluler = (ua: string, titikSentuh = 0): boolean =>
+  /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && titikSentuh > 1);
+
+/**
+ * Membuka WhatsApp dengan teks siap kirim; admin memilih grup lalu menekan kirim.
+ * HP: wa.me membuka aplikasi WhatsApp. Komputer: WhatsApp Web, karena wa.me di komputer membuka aplikasi
+ * WhatsApp Desktop (Windows) yang mengubah emoji menjadi "?"; WhatsApp Web menerima Unicode utuh.
+ */
+export const tautanWhatsApp = (teks: string, seluler = true): string =>
+  `${seluler ? 'https://wa.me/' : 'https://web.whatsapp.com/send'}?text=${encodeURIComponent(teks)}`;
