@@ -25,8 +25,14 @@ export const bulan = (b: number | null, kosong = 'Tidak balik modal'): string =>
 
 export const angkaId = (n: number, desimal = 2): string => n.toLocaleString('id-ID', { maximumFractionDigits: desimal });
 
-/** "1.250.000" / "12,5" → angka. Kosong atau tidak valid → 0. */
+/**
+ * "1.250.000" / "12,5" / "0.5" → angka. Kosong atau tidak valid → 0.
+ * Ada koma → koma desimal, titik = ribuan. Tanpa koma, satu titik yang tidak diikuti tepat 3 digit
+ * dianggap desimal (keyboard HP sering memberi titik), selain itu titik = ribuan.
+ */
 export const bacaAngka = (s: string): number => {
-  const n = Number(s.replace(/\s|Rp/gi, '').replace(/\./g, '').replace(',', '.'));
+  const t = s.replace(/\s|Rp/gi, '');
+  const desimalTitik = !t.includes(',') && /^-?\d*\.\d{1,2}$|^-?\d*\.\d{4,}$/.test(t);
+  const n = Number(desimalTitik ? t : t.replace(/\./g, '').replace(',', '.'));
   return Number.isFinite(n) ? n : 0;
 };
