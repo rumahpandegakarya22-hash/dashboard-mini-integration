@@ -38,7 +38,8 @@ export default function GrafikSensitivitas({
   const y = (v: number) => padT + ((max - v) / (max - min)) * ch;
   const garis = titik.map((t) => `${x(t.okupansi).toFixed(1)},${y(t.laba).toFixed(1)}`).join(' ');
   const area = `${x(0)},${y(0)} ${garis} ${x(100)},${y(0)}`;
-  const tickY = [max - ruang, (max + min) / 2, min + ruang];
+  // Garis nol selalu diberi label: di situlah titik impas terbaca.
+  const tickY = [...new Set([max - ruang, 0, min + ruang])];
 
   const deskripsi =
     `Laba bersih per bulan dari okupansi 0% sampai 100%. ` +

@@ -1414,12 +1414,17 @@
 [data-app='dashboard'] .kalk-cell--cek input { width: 18px; height: 18px; accent-color: var(--kalk-accent); cursor: pointer; }
 
 [data-app='dashboard'] .kalk-ringkas {
-  position: sticky; top: calc(var(--pad) * -1); z-index: 5; display: none; flex-wrap: wrap; gap: 6px 18px;
-  margin: 14px 0 0; padding: 10px 14px; border-radius: var(--r-sm); font-size: 12.5px; color: #fff;
+  position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60;
+  width: max-content; max-width: calc(100vw - 24px); display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px;
+  padding: 10px 16px; border-radius: var(--r-pill); font-size: 12.5px; color: #fff;
+  animation: kalkNaik .22s cubic-bezier(.22,.61,.36,1) both;
   background: linear-gradient(135deg, rgba(58,54,53,.94), rgba(207,123,114,.94));
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: var(--shadow-card);
 }
 [data-app='dashboard'] .kalk-ringkas b { font-size: 14px; margin-left: 4px; }
+@keyframes kalkNaik { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { [data-app='dashboard'] .kalk-ringkas { animation: none; } }
+[data-app='dashboard'] .kalk { padding-bottom: 56px; }
 [data-app='dashboard'] .kalk-ringkas b.neg,
 [data-app='dashboard'] .kalk td.neg { color: #ffb3b3; }
 :root[data-theme='light'] [data-app='dashboard'] .kalk td.neg { color: #c0392b; }
@@ -1487,9 +1492,10 @@
 @container dashboard-main (max-width: 1100px) {
   [data-app='dashboard'] .kalk-layout { grid-template-columns: minmax(0, 1fr); }
   [data-app='dashboard'] .kalk-hasil { position: static; max-height: none; overflow: visible; padding-right: 0; order: -1; }
-  [data-app='dashboard'] .kalk-ringkas { display: flex; }
 }
 @container dashboard-main (max-width: 600px) {
+  [data-app='dashboard'] .kalk .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  [data-app='dashboard'] .kalk .stat-card { padding: 12px; }
   [data-app='dashboard'] .kalk-bar__aksi .kalk-btn { flex: 1 1 auto; justify-content: center; }
   [data-app='dashboard'] .kalk-dirty { flex: 1 0 100%; }
   [data-app='dashboard'] .kalk-sec__body { padding: 0 12px 14px; }

@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle } from 'lucide-react';
 import ChartCard from '@/components/charts/ChartCard';
 import Bars from '@/components/charts/Bars';
@@ -33,10 +35,27 @@ function KartuHasil({ label, nilai, sub, bg }: Kartu) {
 
 const teksBep = (h: HasilHitung) => (h.bep === null ? 'Tidak tercapai' : `${h.bep} kamar`);
 
-/** Ringkasan yang menempel di atas saat layar sempit, supaya efek tiap geseran input langsung terlihat. */
+/**
+ * Bilah ringkas melayang di bawah layar, muncul hanya saat kartu hasil tidak terlihat (mis. di HP ketika
+ * menggeser input). Di-portal ke wrapper [data-app] karena leluhur di dalam .app memakai transform/overflow
+ * yang membuat sticky/fixed tidak bekerja.
+ */
 export function RingkasHasil({ h }: { h: HasilHitung }) {
-  return (
-    <div className="kalk-ringkas" aria-live="polite">
+  const [tampil, setTampil] = useState(false);
+  const [wadah, setWadah] = useState<Element | null>(null);
+
+  useEffect(() => {
+    setWadah(document.querySelector('[data-app="dashboard"]'));
+    const target = document.querySelector('.kalk-hasil .stat-grid');
+    if (!target) return;
+    const io = new IntersectionObserver(([e]) => setTampil(!e.isIntersecting));
+    io.observe(target);
+    return () => io.disconnect();
+  }, []);
+
+  if (!wadah || !tampil) return null;
+  return createPortal(
+    <div className="kalk-ringkas" role="status">
       <span>
         Laba/bln <b className={h.labaBersih < 0 ? 'neg' : ''}>{rpRingkas(h.labaBersih)}</b>
       </span>
@@ -46,7 +65,8 @@ export function RingkasHasil({ h }: { h: HasilHitung }) {
       <span>
         OER <b>{persen(h.oer)}</b>
       </span>
-    </div>
+    </div>,
+    wadah
   );
 }
 
