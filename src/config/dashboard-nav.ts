@@ -101,7 +101,12 @@ export const ROLE_NAV: Record<DashboardRole, RoleNav> = {
       { id: 'target', label: 'Target KPI', group: 'page', crumb: 'Target KPI' }
     ]
   },
-  owner: { label: 'Owner', sidebarName: 'Owner', pages: pagesFor('Owner') },
+  // Kalkulator Bisnis sengaja hanya untuk Owner, tidak lewat OWNER_PAGES yang juga dipakai Pengawas.
+  owner: {
+    label: 'Owner',
+    sidebarName: 'Owner',
+    pages: [...pagesFor('Owner'), { id: 'kalkulator', label: 'Kalkulator Bisnis', group: 'dash', crumb: 'Kalkulator Bisnis' }]
+  },
   pengawas: { label: 'Pengawas', sidebarName: 'Pengawas', pages: pagesFor('Pengawas') }
 };
 

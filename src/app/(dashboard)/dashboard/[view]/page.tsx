@@ -6,6 +6,8 @@ import DashboardShell from '@/components/dashboard/DashboardShell';
 import { bolehBukaLandingAdmin } from '@/lib/landing-admin';
 import OverviewFor, { type OverviewKey } from '@/components/dashboard/overviews/OverviewFor';
 import ViewFor from '@/components/dashboard/pages/ViewFor';
+import KalkulatorBisnis from '@/components/kalkulator/KalkulatorBisnis';
+import { hanyaOwner } from '@/lib/kalkulator/skema';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +28,28 @@ export default async function DashboardViewPage({
   if (!canOpenView(user.role, view)) notFound();
   const page = findPage(user.role, view)!;
   const period = sp.period || DEFAULT_PERIOD;
+
+  // Kalkulator Bisnis: lapis kedua cek owner, dan tidak butuh data dashboard (tidak memanggil loadDashboardData).
+  if (view === 'kalkulator') {
+    if (!hanyaOwner(user.role)) notFound();
+    return (
+      <DashboardShell
+        role={user.role}
+        userName={user.name || user.username}
+        tfaEnabled={s.totpEnrolled}
+        hasOpsAccess={!!s.user}
+        canLandingAdmin={bolehBukaLandingAdmin({ dashboard: user.role })}
+        view={view}
+        crumb={page.crumb}
+        isDash
+        period={period}
+        from={sp.from}
+        to={sp.to}
+      >
+        <KalkulatorBisnis />
+      </DashboardShell>
+    );
+  }
 
   const loaded = await loadDashboardData(user.role, period, sp.from, sp.to, {
     withInventory: view === 'stok',
