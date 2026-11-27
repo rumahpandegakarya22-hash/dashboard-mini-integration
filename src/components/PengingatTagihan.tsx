@@ -38,7 +38,9 @@ export default function PengingatTagihan({ daftar }: { daftar: Record<Tahap, Kar
       </div>
     );
   }
-  const rekeningKosong = URUTAN_TAHAP.some((t) => daftar[t].some((k) => k.draft === null));
+  const berisi = URUTAN_TAHAP.filter((t) => daftar[t].length > 0);
+  if (!berisi.length) return null;
+  const rekeningKosong = berisi.some((t) => daftar[t].some((k) => k.draft === null));
 
   return (
     <div className="tagihan">
@@ -48,7 +50,7 @@ export default function PengingatTagihan({ daftar }: { daftar: Record<Tahap, Kar
           <span>Rekening pembayaran belum diatur. Minta Owner mengisinya di Pengaturan &gt; Rekening Pembayaran.</span>
         </div>
       )}
-      {URUTAN_TAHAP.map((tahap) => {
+      {berisi.map((tahap) => {
         const { ikon: Ikon, rentang } = TAMPILAN[tahap];
         const isi = daftar[tahap];
         return (
@@ -62,34 +64,30 @@ export default function PengingatTagihan({ daftar }: { daftar: Record<Tahap, Kar
               <span className="tagihan-jumlah" aria-label={`${isi.length} penghuni`}>{isi.length}</span>
             </header>
 
-            {isi.length === 0 ? (
-              <p className="muted tagihan-kosong">Tidak ada</p>
-            ) : (
-              <ul>
-                {isi.map((k) => (
-                  <li key={k.id}>
-                    <div className="tagihan-info">
-                      <strong>{k.nama}</strong>
-                      <span>Kamar {k.noKamar}{k.tipe && ` · ${k.tipe}`}</span>
-                      <span>Jatuh tempo {k.jatuhTempo} · <b>{k.keterangan}</b></span>
-                    </div>
-                    {k.draft && k.nomor ? (
-                      <a
-                        className="tagihan-wa"
-                        href={tautanWhatsApp(k.draft, seluler, k.nomor)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Kirim tagihan ke ${k.nama} lewat WhatsApp`}
-                      >
-                        <MessageCircle size={18} aria-hidden /> WhatsApp
-                      </a>
-                    ) : (
-                      <span className="tagihan-nonaktif">{k.nomor ? 'Rekening belum diatur' : 'Nomor HP belum diisi'}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ul>
+              {isi.map((k) => (
+                <li key={k.id}>
+                  <div className="tagihan-info">
+                    <strong>{k.nama}</strong>
+                    <span>Kamar {k.noKamar}{k.tipe && ` · ${k.tipe}`}</span>
+                    <span>Jatuh tempo {k.jatuhTempo} · <b>{k.keterangan}</b></span>
+                  </div>
+                  {k.draft && k.nomor ? (
+                    <a
+                      className="tagihan-wa"
+                      href={tautanWhatsApp(k.draft, seluler, k.nomor)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Kirim tagihan ke ${k.nama} lewat WhatsApp`}
+                    >
+                      <MessageCircle size={18} aria-hidden /> WhatsApp
+                    </a>
+                  ) : (
+                    <span className="tagihan-nonaktif">{k.nomor ? 'Rekening belum diatur' : 'Nomor HP belum diisi'}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </section>
         );
       })}

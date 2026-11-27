@@ -28,7 +28,7 @@ Di luar lingkup: kirim WhatsApp otomatis, status "sudah dibroadcast", nominal ta
 
 `selisih` di bawah -3 tidak ditampilkan. Satu penghuni hanya ada di satu section.
 
-Posisi: di bawah sapaan dan pengumuman, di atas Joblist. Tiap section punya penanda pemisah sendiri: judul, jumlah, ikon, dan warna (Terlambat merah, Jatuh Tempo kuning/oranye, Pengingat biru), memakai token tema yang ada. Warna bukan satu-satunya pembeda. Ketiga section selalu tampil; yang kosong menampilkan "Tidak ada". Kalau database gagal dibaca, tampil pesan gagal (bukan "Tidak ada") dan isi beranda lain tetap jalan.
+Posisi: di bawah sapaan dan pengumuman, di atas Joblist. Tiap section punya penanda pemisah sendiri: judul, jumlah, ikon, dan warna (Terlambat merah, Jatuh Tempo kuning/oranye, Pengingat biru), memakai token tema yang ada. Warna bukan satu-satunya pembeda. Section tanpa data disembunyikan; kalau ketiganya kosong, tidak ada yang tampil (revisi setelah rilis). Kalau database gagal dibaca, tampil pesan gagal (tidak disembunyikan) dan isi beranda lain tetap jalan.
 
 Isi kartu: nama, nomor kamar, tipe kamar, tanggal jatuh tempo, keterangan hari, tombol WhatsApp. Tanpa nominal. Dirancang untuk layar HP.
 
