@@ -2,7 +2,7 @@
 
 Peran: menjaga kamar dan fasilitas layak huni. Satu role mencakup **Maintenance, Inspeksi, dan Cleaning**.
 
-Aplikasi yang dipakai: **Mini App** (form perawatan, perbaikan, inspeksi, work order, Kamar Siap Sewa, Pemakaian Stok, Tambah Vendor, Kecelakaan Kerja, Tugas Harian, Pre-Check In dan Pre-Check Out, Status Kamar, Joblist di Beranda), **Dashboard** (Overview, Daftar Tiket, Daftar Vendor, Stok Inventory, Data Kamar, Dokumen, Target KPI), **Inventory Stock** (Dashboard, Daftar Bahan, Daftar Alat, Pembelian, Pemakaian). **Teman Rara** tidak punya panel untuk Operasional; pengaduan penghuni sampai ke Operasional lewat Admin and Finance (K8).
+Aplikasi yang dipakai: **Mini App** (form perawatan, perbaikan, inspeksi, work order, Kegiatan Harian Cleaning, Kamar Siap Sewa, Pemakaian Stok, Tambah Vendor, Kecelakaan Kerja, Tugas Harian, Pre-Check In dan Pre-Check Out, Status Kamar, Joblist di Beranda), **Dashboard** (Overview, Daftar Tiket, Daftar Vendor, Stok Inventory, Data Kamar, Dokumen, Target KPI), **Inventory Stock** (Dashboard, Daftar Bahan, Daftar Alat, Pembelian, Pemakaian). **Teman Rara** tidak punya panel untuk Operasional; pengaduan penghuni sampai ke Operasional lewat Admin and Finance (K8).
 
 Cara membaca diagram: kotak = langkah, belah ketupat = keputusan. Nama di awal kotak menunjukkan siapa yang mengerjakan.
 
@@ -20,6 +20,7 @@ Cara membaca diagram: kotak = langkah, belah ketupat = keputusan. Nama di awal k
 | K10 | Pemakaian stok, stok menipis, dan opname | Mini App, Inventory |
 | K11 | Vendor dan kecelakaan kerja | Mini App |
 | K12 | Evaluasi mingguan KPI Operasional | Dashboard |
+| K13 | Kegiatan harian Cleaning dengan foto kamera | Mini App |
 
 ---
 
@@ -309,6 +310,29 @@ flowchart TD
     G --> I
     H --> I
 ```
+
+---
+
+## K13. Kegiatan harian Cleaning dengan foto kamera
+
+**Kapan terjadi:** setiap hari kerja, setelah petugas Cleaning menyelesaikan pekerjaannya.
+
+```mermaid
+flowchart TD
+    A["Cleaning: buka Kegiatan Harian Cleaning"] --> B["Ketuk kegiatan yang selesai<br/>Sapu, Pel, Buang sampah, Kebersihan dapur, dll"]
+    B --> C["Kamera terbuka, izinkan akses kamera"]
+    C --> D["Ambil foto"]
+    D --> E["Foto diberi stempel<br/>tanggal, jam WIB, nama petugas"]
+    E --> F{"Pakai foto ini?"}
+    F -->|"ulangi"| D
+    F -->|"pakai"| G["Foto terunggah ke Drive"]
+    G --> H{"Ada kegiatan lain<br/>atau foto tambahan?"}
+    H -->|"ya"| B
+    H -->|"tidak"| I["Simpan"]
+    I --> J["Tercatat per hari, lengkap dengan foto"]
+```
+
+**Perhatikan:** foto tidak bisa dipilih dari galeri. Kalau kamera tidak terbuka, cek izin kamera untuk situs ini di pengaturan browser. Aturan kamera dan stempel yang sama berlaku untuk foto di Perawatan Preventif, Perbaikan Korektif, Inspeksi Kebersihan, Inspeksi Fasilitas, Input Work Order, dan foto kondisi kamar di Checkout.
 
 ---
 

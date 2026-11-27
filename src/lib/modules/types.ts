@@ -1,6 +1,6 @@
 import type { SessionUser } from '../core/auth';
 
-export type FieldType = 'text' | 'number' | 'date' | 'datetime' | 'month' | 'time' | 'select' | 'select-async' | 'textarea' | 'file' | 'checkbox';
+export type FieldType = 'text' | 'number' | 'date' | 'datetime' | 'month' | 'time' | 'select' | 'select-async' | 'textarea' | 'file' | 'foto-kegiatan' | 'checkbox';
 
 export interface FieldOption {
   value: string;
@@ -33,6 +33,10 @@ export interface FieldDef {
   uploadKindFrom?: string;
   accept?: string; // type=file: atribut accept input (mis. 'image/jpeg,image/png')
   maxSizeMb?: number; // type=file: batas ukuran (default 2 MB)
+  /* type=file: true → foto hanya dari kamera langsung (tanpa galeri/album), diberi stempel
+     waktu WIB + nama pengunggah, hanya JPEG. `accept` diabaikan. */
+  kamera?: boolean;
+  maxFoto?: number; // type=foto-kegiatan: batas jumlah foto (default 12). `options` = daftar jenis kegiatan.
 }
 
 export interface SubmitContext {

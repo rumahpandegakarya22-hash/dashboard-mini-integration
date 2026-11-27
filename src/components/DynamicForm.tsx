@@ -13,6 +13,7 @@ import {
   WandSparkles
 } from 'lucide-react';
 import FileUploadCard from '@/components/ui/FileUploadCard';
+import FotoKegiatanField from '@/components/FotoKegiatanField';
 import FlowButton from '@/components/ui/FlowButton';
 import OriginSelect from '@/components/ui/OriginSelect';
 import { GlassDateField } from '@/components/ui/GlassCalendar';
@@ -479,7 +480,8 @@ function FileField({
         disabled={uploading}
         judul={f.label || 'Unggah berkas'}
         deskripsi={f.placeholder || 'Pilih dan unggah berkas yang diminta'}
-        petunjuk={`Maksimal ${maxMb} MB.`}
+        petunjuk={f.kamera ? 'Hanya dari kamera langsung. Foto diberi stempel tanggal, jam WIB, dan nama kamu.' : `Maksimal ${maxMb} MB.`}
+        kamera={f.kamera}
         berkas={fileName ? { nama: fileName, ukuran: fileSize } : null}
         uploading={uploading}
         done={!!value}
@@ -546,6 +548,8 @@ function renderField(f: FieldDef, value: string, onChange: (v: string) => void, 
       return <input id={f.name} name={f.name} type="month" value={value} onChange={onInputChange} />;
     case 'file':
       return <FileField f={f} value={value} onChange={onChange} kindExtra={kindExtra} />;
+    case 'foto-kegiatan':
+      return <FotoKegiatanField f={f} value={value} onChange={onChange} />;
     case 'select':
     case 'select-async': {
       const isAsync = f.type === 'select-async';

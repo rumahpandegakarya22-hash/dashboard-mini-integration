@@ -10,6 +10,7 @@ import { submitCheckout } from './checkout';
 import { autoFillCheckout } from './checkout-lookup';
 import { submitFeedback } from './feedback';
 import { submitInspeksiKebersihan } from './inspeksi-kebersihan';
+import { submitKegiatanCleaning } from './kegiatan-cleaning';
 import { submitLeads } from './leads';
 import { submitKonten } from './konten';
 import { submitPromosi } from './promosi';
@@ -45,6 +46,7 @@ export const HANDLERS: Record<string, SubmitHandler> = {
   checkout: submitCheckout,
   feedback: submitFeedback,
   'inspeksi-kebersihan': submitInspeksiKebersihan,
+  'kegiatan-cleaning': submitKegiatanCleaning,
   leads: submitLeads,
   konten: submitKonten,
   promosi: submitPromosi,
