@@ -112,7 +112,7 @@ Semua pemakai Inventory bisa melihat Dashboard, Daftar Bahan, Daftar Alat, Pembe
 6. Isi tepat waktu, jangan dikumpulkan di akhir bulan. Laporan dan KPI membaca waktu kejadian dan waktu input.
 7. Jangan membuat entri ganda untuk menimpa entri lama. Pakai Edit, Void, atau Koreksi (lihat bagian C4).
 
-**Foto kamera.** Foto di Checkout (kondisi kamar), Perawatan Preventif, Perbaikan Korektif, Inspeksi Kebersihan, Inspeksi Fasilitas, Input Work Order, dan Kegiatan Harian Cleaning hanya bisa diambil langsung dengan kamera. Ketuk tombol Buka Kamera, izinkan akses kamera saat browser bertanya, lalu tekan tombol bulat untuk memotret. Pilih Pakai foto untuk memakainya atau Ulangi untuk memotret lagi. Setiap foto otomatis diberi stempel di pojok kiri bawah: tanggal dan jam WIB saat foto diambil, lalu nama akunmu. Foto lama di galeri tidak bisa diunggah di kolom ini. Kalau kamera tidak terbuka, cek izin kamera untuk situs ini di pengaturan browser HP. Jam di stempel mengikuti jam HP, jadi pastikan tanggal dan jam HP otomatis.
+**Foto kamera.** Foto di Checkout (kondisi kamar), Pre-Check In dan Pre-Check Out (foto kamar dan foto per item), Perawatan Preventif, Perbaikan Korektif, Inspeksi Kebersihan, Inspeksi Fasilitas, Input Work Order, dan Kegiatan Harian Cleaning hanya bisa diambil langsung dengan kamera. Ketuk tombol Buka Kamera, izinkan akses kamera saat browser bertanya, lalu tekan tombol bulat untuk memotret. Pilih Pakai foto untuk memakainya atau Ulangi untuk memotret lagi. Setiap foto otomatis diberi stempel di pojok kiri bawah: tanggal dan jam WIB saat foto diambil, lalu nama akunmu. Foto lama di galeri tidak bisa diunggah di kolom ini. Kalau kamera tidak terbuka, cek izin kamera untuk situs ini di pengaturan browser HP. Jam di stempel mengikuti jam HP, jadi pastikan tanggal dan jam HP otomatis.
 
 Tugas Harian berlaku untuk semua role. Isinya: tanggal, tugas, PIC, divisi, deadline, dan status (Pending, In Progress, Complete). Laporan Pekerjaan dan Laporan Kerja Operasional dibuat dari catatan ini. Kalau tugas tidak dicatat, laporan divisimu kosong.
 
@@ -624,7 +624,7 @@ Dipakai saat menemukan masalah yang harus dikerjakan divisi lain. Isi lokasi ata
 
 ### Pre-Check In dan Pre-Check Out
 
-Form pemeriksaan kondisi kamar sebelum penghuni masuk atau keluar. Isi tanggal cek dan catatan kondisi. Setelah diajukan, form tidak bisa diubah. Hasilnya menunggu persetujuan Admin and Finance atau Owner. Urutan lengkapnya ada di bagian C2.
+Form pemeriksaan kondisi kamar sebelum penghuni masuk atau keluar. Isi tanggal cek dan catatan kondisi. Foto kamar dan foto per item hanya dari kamera langsung, berstempel waktu. Setelah diajukan, form tidak bisa diubah. Hasilnya menunggu persetujuan Admin and Finance atau Owner. Urutan lengkapnya ada di bagian C2.
 
 ### Kamar Siap Sewa
 

@@ -332,7 +332,7 @@ flowchart TD
     I --> J["Tercatat per hari, lengkap dengan foto"]
 ```
 
-**Perhatikan:** foto tidak bisa dipilih dari galeri. Kalau kamera tidak terbuka, cek izin kamera untuk situs ini di pengaturan browser. Aturan kamera dan stempel yang sama berlaku untuk foto di Perawatan Preventif, Perbaikan Korektif, Inspeksi Kebersihan, Inspeksi Fasilitas, Input Work Order, dan foto kondisi kamar di Checkout.
+**Perhatikan:** foto tidak bisa dipilih dari galeri. Kalau kamera tidak terbuka, cek izin kamera untuk situs ini di pengaturan browser. Aturan kamera dan stempel yang sama berlaku untuk foto di Pre-Check In, Pre-Check Out, Perawatan Preventif, Perbaikan Korektif, Inspeksi Kebersihan, Inspeksi Fasilitas, Input Work Order, dan foto kondisi kamar di Checkout.
 
 ---
 

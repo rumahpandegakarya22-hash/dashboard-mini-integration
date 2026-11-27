@@ -1,9 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { CircleAlert, ClipboardCheck, LoaderCircle } from 'lucide-react';
+import { Camera, CircleAlert, ClipboardCheck, LoaderCircle } from 'lucide-react';
 import Modal from './Modal';
 import FileUploadCard from './ui/FileUploadCard';
+import KameraCapture from './ui/KameraCapture';
+import { useNamaPengunggah } from './PengunggahContext';
 import { KONDISI_ITEMS, KONDISI_OPTIONS } from '@/lib/kondisi-items';
 import type { KondisiValue } from '@/lib/kondisi-items';
 import { GlassDateField } from '@/components/ui/GlassCalendar';
@@ -138,6 +140,8 @@ export default function KondisiKamarPanel({ fase }: Props) {
   // foto per-item (key item → url) + status upload per item
   const [itemFotos, setItemFotos] = useState<Record<string, string>>({});
   const [itemFotoBusy, setItemFotoBusy] = useState<Record<string, boolean>>({});
+  const [itemKamera, setItemKamera] = useState<string | null>(null);
+  const namaPengunggah = useNamaPengunggah();
 
   const apiPath = fase === 'awal' ? '/api/ops/admin/pre-checkin' : '/api/ops/admin/pre-checkout';
 
@@ -451,16 +455,15 @@ export default function KondisiKamarPanel({ fase }: Props) {
                             )}
                           </span>
                         ) : (
-                          <label className="btn secondary" style={{ padding: '3px 8px', fontSize: '0.72rem', cursor: isReadonly ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, opacity: isReadonly ? 0.5 : 1 }}>
-                            {itemFotoBusy[key] ? <LoaderCircle size={12} className="spin" /> : 'Upload'}
-                            <input
-                              type="file"
-                              accept="image/jpeg,image/png"
-                              hidden
-                              disabled={isReadonly || itemFotoBusy[key]}
-                              onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleItemFotoPick(key, f); e.target.value = ''; }}
-                            />
-                          </label>
+                          <button
+                            type="button"
+                            className="btn secondary"
+                            style={{ padding: '3px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: 4, opacity: isReadonly ? 0.5 : 1 }}
+                            disabled={isReadonly || itemFotoBusy[key]}
+                            onClick={() => setItemKamera(key)}
+                          >
+                            {itemFotoBusy[key] ? <LoaderCircle size={12} className="spin" /> : <><Camera size={12} /> Foto</>}
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -504,9 +507,9 @@ export default function KondisiKamarPanel({ fase }: Props) {
                 <label>Foto Kamar (opsional)</label>
                 <FileUploadCard
                   judul="Foto Kondisi Kamar"
-                  deskripsi="Unggah foto kondisi kamar saat check-in"
-                  petunjuk="Format: JPG atau PNG. Maks 2 MB."
-                  accept="image/jpeg,image/png"
+                  deskripsi="Ambil foto kondisi kamar saat check-in"
+                  petunjuk="Hanya dari kamera langsung. Foto diberi stempel tanggal, jam WIB, dan nama kamu."
+                  kamera
                   berkas={fotoFile ? { nama: fotoFile.name, ukuran: fotoFile.size } : null}
                   uploading={fotoUploading}
                   done={fotoUrl !== null}
@@ -534,6 +537,17 @@ export default function KondisiKamarPanel({ fase }: Props) {
           </div>
         )}
       </Modal>
+      {itemKamera && (
+        <KameraCapture
+          nama={namaPengunggah}
+          onTutup={() => setItemKamera(null)}
+          onSelesai={(f) => {
+            const k = itemKamera;
+            setItemKamera(null);
+            void handleItemFotoPick(k, f);
+          }}
+        />
+      )}
     </div>
   );
 }
