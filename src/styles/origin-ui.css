@@ -293,6 +293,171 @@
 }
 .upload-card__del:hover { background: var(--surface-2, #e8dfd5); }
 
+/* ============ Kamera dalam halaman (KameraCapture) ============ */
+
+.kamera {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  color: #fff;
+}
+.kamera__layar { flex: 1 1 0; height: 0; min-height: 0; width: 100%; object-fit: contain; background: #000; }
+.kamera__x {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+}
+.kamera__bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+  background: rgba(0, 0, 0, 0.85);
+  position: relative;
+  z-index: 2;
+}
+.kamera__spasi { width: 44px; height: 44px; }
+.kamera__rana {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: var(--brand, #c92d31);
+  color: #fff;
+  cursor: pointer;
+}
+.kamera__rana:disabled { opacity: 0.45; cursor: wait; }
+.kamera__balik {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+}
+.kamera__aksi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1 1 0;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  background: transparent;
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kamera__aksi--utama { border-color: transparent; background: var(--brand, #c92d31); }
+.kamera__galat {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.88);
+}
+.kamera__galat p { margin: 0; max-width: 320px; line-height: 1.5; }
+.kamera__galat .kamera__aksi { flex: 0 0 auto; }
+
+/* Tombol pemicu kamera pada kartu upload (menggantikan area seret-lepas). */
+.upload-card__drop--kamera { cursor: pointer; border-style: solid; }
+.upload-card__drop--kamera .upload-card__browse { background: var(--brand, #c92d31); border-color: transparent; color: #fff; font-weight: 600; padding: 10px 18px; }
+.upload-card__thumb { width: 40px; height: 40px; flex: 0 0 auto; border-radius: 6px; object-fit: cover; }
+
+/* ============ Foto kegiatan (banyak foto, dikelompokkan per jenis) ============ */
+
+.foto-keg { display: flex; flex-direction: column; gap: 14px; }
+.foto-keg__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.foto-keg__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border, #e8dfd5);
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  color: var(--ink, #3a3635);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.foto-keg__chip:hover:not(:disabled) { border-color: var(--brand, #c92d31); color: var(--brand, #c92d31); }
+.foto-keg__chip:disabled { opacity: 0.5; cursor: not-allowed; }
+.foto-keg__chip .jml {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--brand, #c92d31);
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 20px;
+  text-align: center;
+}
+.foto-keg__lainnya { display: flex; gap: 8px; }
+.foto-keg__lainnya input { flex: 1 1 auto; min-width: 0; }
+.foto-keg__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.foto-keg__item { position: relative; border: 1px solid var(--border, #e8dfd5); border-radius: 10px; overflow: hidden; background: var(--surface, #fff); }
+.foto-keg__item img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #000; }
+.foto-keg__cap { padding: 6px 8px; font-size: 0.75rem; font-weight: 600; color: var(--ink, #3a3635); }
+.foto-keg__cap small { display: block; font-weight: 400; color: var(--ink-2, #8e8b87); }
+.foto-keg__hapus {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+}
+.foto-keg__busy {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--brand, #c92d31);
+}
+
 /* Pemicu GlassDateField di Ops — meniru gaya input Ops karena token Dashboard
    (--card-2, --text) tidak ada di sana. */
 .ou-datefield {

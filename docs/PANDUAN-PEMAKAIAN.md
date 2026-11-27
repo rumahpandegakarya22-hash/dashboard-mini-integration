@@ -77,7 +77,7 @@ Kolom data pribadi penghuni (email, kontak darurat, tanggal lahir, usia) disamar
 | Admin and Finance | Penghuni Baru & Review, Pembayaran & Verifikasi, Checkout, Aktivitas Finansial, Feedback & Pengaduan, Kepuasan Penghuni, Pelanggaran Peraturan, Kecelakaan Kerja, Tugas Harian |
 | Sales | Log Survey, Tambah Waiting List, Tugas Harian |
 | Marketing | Log Leads Harian, Log Konten, Log Promosi, Tugas Harian |
-| Operasional | Perawatan Preventif, Perbaikan Korektif, Inspeksi Kebersihan, Inspeksi Fasilitas, Input Work Order, Kamar Siap Sewa, Pemakaian Stok (Maintenance dan Cleaning), Tambah Vendor, Kecelakaan Kerja, Tugas Harian |
+| Operasional | Perawatan Preventif, Perbaikan Korektif, Inspeksi Kebersihan, Inspeksi Fasilitas, Input Work Order, Kegiatan Harian Cleaning, Kamar Siap Sewa, Pemakaian Stok (Maintenance dan Cleaning), Tambah Vendor, Kecelakaan Kerja, Tugas Harian |
 
 ### Mini App: menu lain
 
@@ -106,11 +106,13 @@ Semua pemakai Inventory bisa melihat Dashboard, Daftar Bahan, Daftar Alat, Pembe
 
 1. Kolom bertanda wajib harus diisi.
 2. Tanggal biasanya terisi hari ini. Ganti kalau kejadiannya bukan hari ini.
-3. Lampiran foto atau PDF maksimal 2 MB. Foto Work Order hanya JPG atau PNG.
+3. Lampiran foto atau PDF maksimal 2 MB. Kolom foto yang berlabel "(kamera)" hanya bisa diisi dengan memotret langsung, tidak bisa memilih dari galeri atau album (lihat bagian Foto kamera di bawah).
 4. Baca teks kecil di bawah kolom. Di situ ada contoh dan peringatan.
 5. Setelah kirim, tunggu pesan sukses sebelum menutup halaman.
 6. Isi tepat waktu, jangan dikumpulkan di akhir bulan. Laporan dan KPI membaca waktu kejadian dan waktu input.
 7. Jangan membuat entri ganda untuk menimpa entri lama. Pakai Edit, Void, atau Koreksi (lihat bagian C4).
+
+**Foto kamera.** Foto di Checkout (kondisi kamar), Pre-Check In dan Pre-Check Out (foto kamar dan foto per item), Perawatan Preventif, Perbaikan Korektif, Inspeksi Kebersihan, Inspeksi Fasilitas, Input Work Order, dan Kegiatan Harian Cleaning hanya bisa diambil langsung dengan kamera. Ketuk tombol Buka Kamera, izinkan akses kamera saat browser bertanya, lalu tekan tombol bulat untuk memotret. Pilih Pakai foto untuk memakainya atau Ulangi untuk memotret lagi. Setiap foto otomatis diberi stempel di pojok kiri bawah: tanggal dan jam WIB saat foto diambil, lalu nama akunmu. Foto lama di galeri tidak bisa diunggah di kolom ini. Kalau kamera tidak terbuka, cek izin kamera untuk situs ini di pengaturan browser HP. Jam di stempel mengikuti jam HP, jadi pastikan tanggal dan jam HP otomatis.
 
 Tugas Harian berlaku untuk semua role. Isinya: tanggal, tugas, PIC, divisi, deadline, dan status (Pending, In Progress, Complete). Laporan Pekerjaan dan Laporan Kerja Operasional dibuat dari catatan ini. Kalau tugas tidak dicatat, laporan divisimu kosong.
 
@@ -578,7 +580,7 @@ Kamar Booking dan Maintenance tidak muncul di pilihan booking baru, dan checkout
 | Aplikasi | Menu |
 |---|---|
 | Dashboard | Overview, Daftar Tiket, Daftar Vendor, Stok Inventory, Data Kamar, Dokumen |
-| Mini App, form | Perawatan Preventif, Perbaikan Korektif, Inspeksi Kebersihan, Inspeksi Fasilitas, Input Work Order, Kamar Siap Sewa, Pemakaian Stok (Maintenance dan Cleaning), Tambah Vendor, Kecelakaan Kerja, Tugas Harian |
+| Mini App, form | Perawatan Preventif, Perbaikan Korektif, Inspeksi Kebersihan, Inspeksi Fasilitas, Input Work Order, Kegiatan Harian Cleaning, Kamar Siap Sewa, Pemakaian Stok (Maintenance dan Cleaning), Tambah Vendor, Kecelakaan Kerja, Tugas Harian |
 | Mini App, menu lain | Pre-Check In Form dan Pre-Check Out Form |
 | Inventory | Dashboard, Daftar Bahan, Daftar Alat, Pembelian, Pemakaian (lihat bagian C1) |
 
@@ -602,15 +604,27 @@ Khusus Korektif ada dua waktu: Waktu Laporan Masuk dan Waktu Mulai Ditindak. Wak
 
 ### Inspeksi Kebersihan dan Inspeksi Fasilitas
 
-Mencatat area, kondisi yang ditemukan, tindak lanjut, petugas, dan foto. Satu inspeksi per hari sudah cukup untuk membuat hari itu dihitung patuh.
+Mencatat area, kondisi yang ditemukan, tindak lanjut, petugas, dan foto. Satu inspeksi per hari sudah cukup untuk membuat hari itu dihitung patuh. Foto hanya dari kamera dan berstempel waktu.
+
+### Kegiatan Harian Cleaning
+
+Dipakai petugas Cleaning untuk membuktikan pekerjaan hari itu. Satu entri per hari:
+
+1. Tanggal terisi hari ini.
+2. Ketuk kegiatan yang baru selesai (Sapu, Pel, Buang sampah, Kebersihan dapur, Kamar mandi, Koridor & tangga, Halaman & taman), lalu foto dengan kamera. Untuk kegiatan lain, ketuk Lainnya, tulis nama kegiatannya, lalu foto.
+3. Satu kegiatan boleh punya beberapa foto. Maksimal 12 foto per entri. Foto yang salah bisa dihapus dengan tombol X di pojok foto.
+4. Wajib ada minimal satu foto. Catatan boleh dikosongkan.
+5. Tekan Simpan. Nama petugas diambil dari akun yang login, sama dengan nama di stempel foto.
+
+Foto tersimpan di Google Drive. Karena foto diunggah begitu diambil, tunggu tulisan Mengunggah hilang sebelum menekan Simpan.
 
 ### Input Work Order
 
-Dipakai saat menemukan masalah yang harus dikerjakan divisi lain. Isi lokasi atau item, kategori, deskripsi, prioritas (Rendah, Sedang, Tinggi, Darurat), divisi tujuan, target deadline, dan foto bukti. Work order muncul di Joblist divisi tujuan.
+Dipakai saat menemukan masalah yang harus dikerjakan divisi lain. Isi lokasi atau item, kategori, deskripsi, prioritas (Rendah, Sedang, Tinggi, Darurat), divisi tujuan, target deadline, dan foto bukti (kamera langsung, berstempel waktu). Work order muncul di Joblist divisi tujuan.
 
 ### Pre-Check In dan Pre-Check Out
 
-Form pemeriksaan kondisi kamar sebelum penghuni masuk atau keluar. Isi tanggal cek dan catatan kondisi. Setelah diajukan, form tidak bisa diubah. Hasilnya menunggu persetujuan Admin and Finance atau Owner. Urutan lengkapnya ada di bagian C2.
+Form pemeriksaan kondisi kamar sebelum penghuni masuk atau keluar. Isi tanggal cek dan catatan kondisi. Foto kamar dan foto per item hanya dari kamera langsung, berstempel waktu. Setelah diajukan, form tidak bisa diubah. Hasilnya menunggu persetujuan Admin and Finance atau Owner. Urutan lengkapnya ada di bagian C2.
 
 ### Kamar Siap Sewa
 

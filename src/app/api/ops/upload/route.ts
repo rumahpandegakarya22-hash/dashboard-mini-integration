@@ -25,6 +25,8 @@ const ALLOWED_MIME: Record<string, string> = {
 const KIND_FOLDERS: Record<string, string | undefined> = {
   'work-order': process.env.DRIVE_FOLDER_WORK_ORDER || process.env.DRIVE_FOLDER_MAINTENANCE,
   'maintenance': process.env.DRIVE_FOLDER_MAINTENANCE,
+  // Foto kegiatan harian Cleaning; belum ada folder khusus → ikut folder Maintenance.
+  'cleaning': process.env.DRIVE_FOLDER_CLEANING || process.env.DRIVE_FOLDER_MAINTENANCE,
   'penghuni': process.env.DRIVE_FOLDER_PENGHUNI,
   'kontrak': process.env.DRIVE_FOLDER_KONTRAK,
   // Bukti bayar dipisah per jenis, dan SATU FOLDER dengan arsip PDF invoice-nya:

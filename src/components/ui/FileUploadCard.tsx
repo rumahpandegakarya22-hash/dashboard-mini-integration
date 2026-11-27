@@ -2,7 +2,9 @@
 
 import { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, Trash2, UploadCloud } from 'lucide-react';
+import { Camera, CheckCircle2, Trash2, UploadCloud } from 'lucide-react';
+import KameraCapture from './KameraCapture';
+import { useNamaPengunggah } from '@/components/PengunggahContext';
 
 
 export function formatFileSize(b: number) {
@@ -24,6 +26,7 @@ export default function FileUploadCard({
   judul = 'Unggah berkas',
   deskripsi = 'Pilih dan unggah berkas yang diminta',
   petunjuk,
+  kamera,
   berkas,
   uploading,
   done,
@@ -37,6 +40,8 @@ export default function FileUploadCard({
   judul?: string;
   deskripsi?: string;
   petunjuk?: string;
+  /** true → hanya lewat kamera langsung (tanpa galeri/seret-lepas), foto diberi stempel waktu WIB + nama user. */
+  kamera?: boolean;
   berkas: { nama: string; ukuran?: number } | null;
   uploading?: boolean;
   done?: boolean;
@@ -45,6 +50,8 @@ export default function FileUploadCard({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [kameraBuka, setKameraBuka] = useState(false);
+  const nama = useNamaPengunggah();
 
   const stop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -69,42 +76,62 @@ export default function FileUploadCard({
         </div>
       </div>
 
-      <div
-        className={dragging ? 'upload-card__drop is-dragging' : 'upload-card__drop'}
-        onDragEnter={(e) => {
-          stop(e);
-          setDragging(true);
-        }}
-        onDragLeave={(e) => {
-          stop(e);
-          setDragging(false);
-        }}
-        onDragOver={stop}
-        onDrop={(e) => {
-          stop(e);
-          setDragging(false);
-          const f = e.dataTransfer.files?.[0];
-          if (f && !disabled) onPick(f);
-        }}
-        onClick={() => !disabled && inputRef.current?.click()}
-      >
-        <input
-          ref={inputRef}
-          id={id}
-          name={name}
-          type="file"
-          accept={accept}
-          disabled={disabled}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onPick(f);
+      {kamera ? (
+        <div
+          className="upload-card__drop upload-card__drop--kamera"
+          role="button"
+          tabIndex={disabled ? -1 : 0}
+          onClick={() => !disabled && setKameraBuka(true)}
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
+              e.preventDefault();
+              setKameraBuka(true);
+            }
           }}
-        />
-        <UploadCloud size={40} aria-hidden />
-        <p className="upload-card__lead">Pilih berkas atau seret ke sini.</p>
-        {petunjuk && <p className="upload-card__hint">{petunjuk}</p>}
-        <span className="upload-card__browse">Pilih Berkas</span>
-      </div>
+        >
+          <Camera size={40} aria-hidden />
+          <p className="upload-card__lead">{berkas ? 'Ambil ulang dengan kamera.' : 'Ambil foto langsung dengan kamera.'}</p>
+          {petunjuk && <p className="upload-card__hint">{petunjuk}</p>}
+          <span className="upload-card__browse">{berkas ? 'Foto Ulang' : 'Buka Kamera'}</span>
+        </div>
+      ) : (
+        <div
+          className={dragging ? 'upload-card__drop is-dragging' : 'upload-card__drop'}
+          onDragEnter={(e) => {
+            stop(e);
+            setDragging(true);
+          }}
+          onDragLeave={(e) => {
+            stop(e);
+            setDragging(false);
+          }}
+          onDragOver={stop}
+          onDrop={(e) => {
+            stop(e);
+            setDragging(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f && !disabled) onPick(f);
+          }}
+          onClick={() => !disabled && inputRef.current?.click()}
+        >
+          <input
+            ref={inputRef}
+            id={id}
+            name={name}
+            type="file"
+            accept={accept}
+            disabled={disabled}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onPick(f);
+            }}
+          />
+          <UploadCloud size={40} aria-hidden />
+          <p className="upload-card__lead">Pilih berkas atau seret ke sini.</p>
+          {petunjuk && <p className="upload-card__hint">{petunjuk}</p>}
+          <span className="upload-card__browse">Pilih Berkas</span>
+        </div>
+      )}
 
       <AnimatePresence>
         {berkas && (
@@ -164,6 +191,16 @@ export default function FileUploadCard({
           </motion.ul>
         )}
       </AnimatePresence>
+      {kameraBuka && (
+        <KameraCapture
+          nama={nama}
+          onTutup={() => setKameraBuka(false)}
+          onSelesai={(f) => {
+            setKameraBuka(false);
+            onPick(f);
+          }}
+        />
+      )}
     </motion.div>
   );
 }

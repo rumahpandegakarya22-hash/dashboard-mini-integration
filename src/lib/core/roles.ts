@@ -67,6 +67,7 @@ export const MODULE_ACCESS: Record<string, Role[]> = {
   'perawatan-preventif': ['operasional'],
   'perbaikan-korektif': ['operasional'],
   'inspeksi-kebersihan': ['operasional'],
+  'kegiatan-cleaning': ['operasional'],
   'inspeksi-fasilitas': ['operasional'],
   'wo-inspeksi': ['operasional'],
   'wo-cleaning': ['operasional'],

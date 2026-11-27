@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
 import { motion } from 'framer-motion';
+import { NamaPengunggahProvider } from '@/components/PengunggahContext';
 import { ChevronLeft, House, LoaderCircle, LogOut, Menu, Settings, ShieldCheck, Users, LayoutDashboard, Package } from 'lucide-react';
 import { DIVISION_GROUPS, NAV_TEMAN_RARA, NAV_LANDING_PAGE, NAV_RIWAYAT_BAYAR, NAV_PENGATURAN, NAV_PENGHUNI, NAV_CHECKIN, NAV_CHECKOUT, NAV_LAPORAN_KEUANGAN, NAV_STATUS_KAMAR, NAV_DRAFT_INFO, moduleIcon } from './module-icons';
 
@@ -313,7 +314,9 @@ export default function AppShell({ userName, roleLabel, isOwner, canKelola,
         </header>
 
        
-        <main className="content content--wide">{children}</main>
+        <main className="content content--wide">
+          <NamaPengunggahProvider value={userName}>{children}</NamaPengunggahProvider>
+        </main>
 
         {/* ---- Dock kaca (mobile) ---- */}
         <nav className="dock" aria-label="Navigasi bawah">

@@ -2,6 +2,7 @@
 // id harus konsisten dengan MODULE_ACCESS di lib/roles.ts
 
 import type { FieldDef, FieldOption } from './types';
+import { JENIS_KEGIATAN, MAKS_FOTO } from '../kegiatan-cleaning/foto';
 
 // Opsi statis modul maintenance (Turso-only, arahan 2026-07-19): nilai diambil dari
 // sheet SETTING LOG_INSPEKSI_PERAWATAN saat migrasi — sheet tidak dibaca lagi saat runtime.
@@ -309,13 +310,14 @@ export const MODULES: ModuleMeta[] = [
       { name: 'catatanKerusakan', label: 'Catatan Kerusakan', type: 'textarea', required: false },
       {
         name: 'lampiran',
-        label: 'Foto/Dokumen (kondisi kamar dsb., opsional)',
+        label: 'Foto Kondisi Kamar (kamera, opsional)',
         type: 'file',
         required: false,
         uploadKind: 'penghuni',
-        accept: 'application/pdf,image/png,image/jpeg',
+        accept: 'image/jpeg',
+        kamera: true,
         maxSizeMb: 2,
-        placeholder: 'Pilih foto/pdf (maks 2 MB)'
+        placeholder: 'Ambil foto kondisi kamar'
       }
     ]
   },
@@ -765,13 +767,14 @@ export const MODULES: ModuleMeta[] = [
       { name: 'catatan', label: 'Catatan/Dokumentasi', type: 'textarea', required: false },
       {
         name: 'lampiran',
-        label: 'Foto/Dokumen (opsional)',
+        label: 'Foto Pekerjaan (kamera, opsional)',
         type: 'file',
         required: false,
         uploadKind: 'maintenance',
-        accept: 'application/pdf,image/png,image/jpeg',
+        accept: 'image/jpeg',
+        kamera: true,
         maxSizeMb: 2,
-        placeholder: 'Pilih foto/pdf (maks 2 MB)'
+        placeholder: 'Ambil foto pekerjaan'
       }
     ]
   },
@@ -846,13 +849,14 @@ export const MODULES: ModuleMeta[] = [
       { name: 'catatan', label: 'Catatan/Dokumentasi', type: 'textarea', required: false },
       {
         name: 'lampiran',
-        label: 'Foto/Dokumen (opsional)',
+        label: 'Foto Pekerjaan (kamera, opsional)',
         type: 'file',
         required: false,
         uploadKind: 'maintenance',
-        accept: 'application/pdf,image/png,image/jpeg',
+        accept: 'image/jpeg',
+        kamera: true,
         maxSizeMb: 2,
-        placeholder: 'Pilih foto/pdf (maks 2 MB)'
+        placeholder: 'Ambil foto pekerjaan'
       }
     ]
   },
@@ -921,13 +925,14 @@ export const MODULES: ModuleMeta[] = [
       },
       {
         name: 'lampiran',
-        label: 'Foto Inspeksi (opsional)',
+        label: 'Foto Inspeksi (kamera, opsional)',
         type: 'file',
         required: false,
         uploadKind: 'maintenance',
-        accept: 'application/pdf,image/png,image/jpeg',
+        accept: 'image/jpeg',
+        kamera: true,
         maxSizeMb: 2,
-        placeholder: 'Pilih foto (maks 2 MB)'
+        placeholder: 'Ambil foto inspeksi'
       }
     ]
   },
@@ -1096,14 +1101,34 @@ export const MODULES: ModuleMeta[] = [
       { name: 'catatan', label: 'Catatan', type: 'textarea', required: false },
       {
         name: 'lampiran',
-        label: 'Foto Inspeksi (opsional)',
+        label: 'Foto Inspeksi (kamera, opsional)',
         type: 'file',
         required: false,
         uploadKind: 'maintenance',
-        accept: 'application/pdf,image/png,image/jpeg',
+        accept: 'image/jpeg',
+        kamera: true,
         maxSizeMb: 2,
-        placeholder: 'Pilih foto (maks 2 MB)'
+        placeholder: 'Ambil foto inspeksi'
       }
+    ]
+  },
+  {
+    id: 'kegiatan-cleaning',
+    title: 'Kegiatan Harian Cleaning',
+    ready: true,
+    // Satu entri per hari: banyak foto, tiap foto bertanda jenis kegiatan. Foto hanya dari kamera.
+    fields: [
+      { name: 'tanggal', label: 'Tanggal', type: 'date', required: true, defaultToday: true },
+      {
+        name: 'fotoKegiatan',
+        label: 'Foto Kegiatan (kamera)',
+        type: 'foto-kegiatan',
+        required: true,
+        uploadKind: 'cleaning',
+        options: opsi([...JENIS_KEGIATAN]),
+        maxFoto: MAKS_FOTO
+      },
+      { name: 'catatan', label: 'Catatan', type: 'textarea', required: false }
     ]
   },
   {
@@ -1204,13 +1229,14 @@ function makeWorkOrderModules(): ModuleMeta[] {
     { name: 'catatan', label: 'Catatan', type: 'textarea', required: false },
     {
       name: 'buktiFoto',
-      label: 'Bukti Foto',
+      label: 'Bukti Foto (kamera)',
       type: 'file',
       required: false,
       uploadKind: 'work-order',
-      accept: 'image/jpeg,image/png',
+      accept: 'image/jpeg',
+      kamera: true,
       maxSizeMb: 2,
-      placeholder: 'Pilih foto (jpg/png, maks 2 MB)'
+      placeholder: 'Ambil foto bukti'
     }
   ];
 

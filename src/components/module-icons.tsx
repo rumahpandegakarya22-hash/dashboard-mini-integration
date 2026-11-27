@@ -28,6 +28,7 @@ import {
   ReceiptText,
   Smile,
   Sparkles,
+  Brush,
   Store,
   Tag,
   TrendingUp,
@@ -54,6 +55,7 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   'perawatan-preventif': Wrench,
   'perbaikan-korektif': Hammer,
   'inspeksi-kebersihan': Sparkles,
+  'kegiatan-cleaning': Brush,
   'inspeksi-fasilitas': ClipboardCheck,
   'wo-inspeksi': FileCog,
   'wo-cleaning': FileCog,
@@ -85,7 +87,7 @@ export const DIVISION_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Marketing', ids: ['leads', 'konten', 'promosi'] },
   { label: 'Maintenance', ids: ['perawatan-preventif', 'perbaikan-korektif', 'pemakaian-stok-maintenance', 'tambah-vendor'] },
   { label: 'Inspeksi', ids: ['inspeksi-kebersihan', 'inspeksi-fasilitas', 'wo-inspeksi', 'kamar-siap'] },
-  { label: 'Cleaning', ids: ['wo-cleaning', 'pemakaian-stok-cleaning'] }
+  { label: 'Cleaning', ids: ['kegiatan-cleaning', 'wo-cleaning', 'pemakaian-stok-cleaning'] }
 ];
 
 export const NAV_TEMAN_RARA: { href: string; label: string; icon: LucideIcon }[] = [
