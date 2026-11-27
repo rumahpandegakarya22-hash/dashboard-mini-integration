@@ -113,6 +113,7 @@ export const NAV_PENGATURAN: { href: string; label: string; icon: LucideIcon; ow
   { href: '/ops/admin/aset-tetap', label: 'Aset Tetap & Penyusutan', icon: Landmark },
   { href: '/ops/admin/jenis-pelanggaran', label: 'Jenis Pelanggaran', icon: Gavel },
   { href: '/ops/admin/kamar', label: 'Kelola Harga Kamar', icon: Tag, ownerOnly: true },
+  { href: '/ops/admin/rekening', label: 'Rekening Pembayaran', icon: Wallet, ownerOnly: true },
   { href: '/ops/admin/users', label: 'Kelola User', icon: Users, ownerOnly: true }
 ];
 

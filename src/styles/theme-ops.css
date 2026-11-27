@@ -1379,3 +1379,28 @@
   max-width: 420px;
 }
 
+
+/* Pengingat jatuh tempo di beranda: warna tiap tahap lewat --aksen. */
+[data-app='ops'] .tagihan { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+[data-app='ops'] .tagihan-seksi { --aksen: var(--danger); margin: 0; padding: 0; overflow: hidden; border-left: 5px solid var(--aksen); }
+[data-app='ops'] .tagihan-seksi.jatuh_tempo { --aksen: var(--warn-ink); }
+[data-app='ops'] .tagihan-seksi.pengingat { --aksen: #2563a8; }
+[data-app='ops'] .tagihan-kepala { display: flex; align-items: center; gap: 10px; padding: 12px 14px; color: var(--aksen); background: color-mix(in srgb, var(--aksen) 10%, transparent); }
+[data-app='ops'] .tagihan-kepala > div { flex: 1; min-width: 0; }
+[data-app='ops'] .tagihan-kepala h2 { margin: 0; font-size: 1rem; color: inherit; }
+[data-app='ops'] .tagihan-kepala p { margin: 0; font-size: 0.8rem; color: var(--ink); opacity: 0.75; }
+[data-app='ops'] .tagihan-jumlah { min-width: 30px; padding: 3px 9px; border-radius: 999px; border: 1.5px solid var(--aksen); font-weight: 700; text-align: center; }
+[data-app='ops'] .tagihan-kosong { margin: 0; padding: 10px 14px; }
+[data-app='ops'] .tagihan-seksi ul { list-style: none; margin: 0; padding: 0; }
+[data-app='ops'] .tagihan-seksi li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 14px; border-top: 1px solid var(--hairline); }
+[data-app='ops'] .tagihan-info { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; font-size: 0.875rem; overflow-wrap: anywhere; }
+[data-app='ops'] .tagihan-info strong { font-size: 1rem; }
+[data-app='ops'] .tagihan-wa { flex: 1 0 140px; max-width: 100%; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 14px; border-radius: var(--r-md); background: #0f7a3d; color: #fff; font-weight: 600; text-decoration: none; }
+[data-app='ops'] .tagihan-wa:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+[data-app='ops'] .tagihan-nonaktif { flex: 1 0 140px; font-size: 0.8rem; color: var(--ink); opacity: 0.75; text-align: center; }
+@media (min-width: 640px) {
+  [data-app='ops'] .tagihan-wa, [data-app='ops'] .tagihan-nonaktif { flex-grow: 0; }
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) [data-app='ops'] .tagihan-seksi.pengingat { --aksen: #7fb2e5; }
+}

@@ -53,7 +53,7 @@ export async function kodeAkunKas(namaAkun: string): Promise<number | null> {
 }
 
 /** Tambah n bulan, tetap di akhir bulan kalau tanggal asalnya tidak ada (31 → 30/28). */
-function tambahBulan(iso: string, n: number): string {
+export function tambahBulan(iso: string, n: number): string {
   const d = new Date(`${iso}T00:00:00`);
   const tgl = d.getDate();
   d.setMonth(d.getMonth() + n);

@@ -69,7 +69,7 @@ export function fmtRentang(a: unknown, b: unknown): string {
 }
 
 /** Tanggal hari ini (WIB) dalam format ISO, untuk nilai default input. */
-export function hariIniIso(): string {
-  const b = bagianWib(new Date());
+export function hariIniIso(sekarang = new Date()): string {
+  const b = bagianWib(sekarang);
   return `${b.y}-${dua(b.m0 + 1)}-${dua(b.d)}`;
 }

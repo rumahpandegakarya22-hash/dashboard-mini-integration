@@ -7,6 +7,9 @@ import HomeMenu from '@/components/HomeMenu';
 import Joblist from '@/components/Joblist';
 import PendingAnnouncement from '@/components/PendingAnnouncement';
 import { bolehBukaLandingAdmin } from '@/lib/landing-admin';
+import PengingatTagihan from '@/components/PengingatTagihan';
+import { bolehLihatPengingat } from '@/lib/pengingat/tagihan';
+import { muatKartuTagihan } from '@/lib/pengingat/beranda';
 
 export default async function HomePage() {
   const user = await getSessionUser();
@@ -24,11 +27,16 @@ export default async function HomePage() {
     console.error('[joblist] gagal membaca work_orders:', e);
   }
 
-  // Improvement v1.1 §3: tabel joblist di paling atas, grid menu modul di bawahnya.
+  // Data tagihan (termasuk nomor HP) hanya dibaca untuk role yang berhak.
+  const bolehTagihan = bolehLihatPengingat(user.role);
+  const tagihan = bolehTagihan ? await muatKartuTagihan() : null;
+
+  // Improvement v1.1 §3: tabel joblist di atas grid menu modul; pengingat tagihan di atas keduanya.
   return (
     <>
       <HomeGreeting userName={user.name} roleLabel={ROLE_LABEL[user.role]} />
       <PendingAnnouncement role={user.role} />
+      {bolehTagihan && <PengingatTagihan daftar={tagihan} />}
       <Joblist rows={joblistRows} divisi={divisi} />
       <HomeMenu
         isOwner={user.role === 'owner'}

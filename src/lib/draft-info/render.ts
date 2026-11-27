@@ -192,9 +192,11 @@ export const perangkatSeluler = (ua: string, titikSentuh = 0): boolean =>
   /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && titikSentuh > 1);
 
 /**
- * Membuka WhatsApp dengan teks siap kirim; admin memilih grup lalu menekan kirim.
+ * Membuka WhatsApp dengan teks siap kirim; admin menekan kirim sendiri. Tanpa `nomor`, admin memilih tujuan (mis. grup).
  * HP: wa.me membuka aplikasi WhatsApp. Komputer: WhatsApp Web, karena wa.me di komputer membuka aplikasi
  * WhatsApp Desktop (Windows) yang mengubah emoji menjadi "?"; WhatsApp Web menerima Unicode utuh.
  */
-export const tautanWhatsApp = (teks: string, seluler = true): string =>
-  `${seluler ? 'https://wa.me/' : 'https://web.whatsapp.com/send'}?text=${encodeURIComponent(teks)}`;
+export const tautanWhatsApp = (teks: string, seluler = true, nomor = ''): string => {
+  const isi = `text=${encodeURIComponent(teks)}`;
+  return seluler ? `https://wa.me/${nomor}?${isi}` : `https://web.whatsapp.com/send?${nomor ? `phone=${nomor}&` : ''}${isi}`;
+};

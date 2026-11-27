@@ -3,6 +3,9 @@ import { getSessionUser } from '@/lib/core/auth';
 import DraftInfoPanel from '@/components/DraftInfoPanel';
 import templates from '@/lib/draft-info/templates.json';
 import type { TemplateInfo } from '@/lib/draft-info/parse-html';
+import { turso } from '@/lib/core/turso';
+import { bacaRekening } from '@/lib/pengingat/db';
+import { gantiRekeningTemplate } from '@/lib/pengingat/rekening';
 
 export const metadata = { title: 'Draft Info Admin' };
 
@@ -15,6 +18,11 @@ export default async function DraftInfoPage() {
       </div>
     );
   }
+  const rekening = await bacaRekening(turso()).then((d) => d.rekening).catch((e) => {
+    console.error('[draft-info] gagal membaca rekening:', e);
+    return null;
+  });
+  const daftar = (templates as TemplateInfo[]).map((t) => ({ ...t, isi: gantiRekeningTemplate(t.isi, rekening) }));
   return (
     <>
       <header className="page-head">
@@ -26,7 +34,7 @@ export default async function DraftInfoPage() {
           <p className="page-head-sub">Pengumuman dan pesan siap kirim ke WhatsApp</p>
         </div>
       </header>
-      <DraftInfoPanel templates={templates as TemplateInfo[]} />
+      <DraftInfoPanel templates={daftar} />
     </>
   );
 }
